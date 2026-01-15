@@ -344,7 +344,8 @@ class Agent:
 
         # non-config vars
         self.number = number
-        self.agent_name = f"A{self.number}"
+        # PRISM Oracle branding: main agent = "PRISM Oracle", subordinates = "Oracle-N"
+        self.agent_name = "PRISM Oracle" if self.number == 0 else f"Oracle-{self.number}"
 
         self.history = history.History(self)  # type: ignore[abstract]
         self.last_user_message: history.Message | None = None
@@ -832,7 +833,27 @@ class Agent:
                     # Allow extensions to preprocess tool arguments
                     await self.call_extensions("tool_execute_before", tool_args=tool_args or {}, tool_name=tool_name)
 
-                    response = await tool.execute(**tool_args)
+                    # ─── TOOL FAIL-SAFE GUARD ───────────────────────────────
+                    # Wrap tool execution to catch any unexpected errors.
+                    # Tools should never crash the agent — soft-fail instead.
+                    try:
+                        response = await tool.execute(**tool_args)
+                    except Exception as tool_error:
+                        # Log the error but don't crash the agent
+                        from python.helpers.print_style import PrintStyle
+                        PrintStyle.error(f"Tool '{tool_name}' failed: {tool_error}")
+                        self.context.log.log(
+                            type="error",
+                            content=f"Tool '{tool_name}' execution failed: {tool_error}"
+                        )
+                        # Return a soft-fail response to the LLM
+                        from python.helpers.tool import Response
+                        response = Response(
+                            message=f"[Tool Error] {tool_name} failed: {str(tool_error)}",
+                            break_loop=False
+                        )
+                    # ─── END FAIL-SAFE GUARD ────────────────────────────────
+                    
                     await self.handle_intervention()
 
                     # Allow extensions to postprocess tool response

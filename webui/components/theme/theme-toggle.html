@@ -1,0 +1,155 @@
+<html>
+<head>
+    <script type="module">
+        import { createStore } from "/js/AlpineStore.js";
+
+        const model = {
+            isDark: true,
+
+            init() {
+                // Get initial theme from body class
+                this.isDark = document.body.classList.contains('dark-mode') || 
+                              !document.body.classList.contains('light-mode');
+            },
+
+            toggle() {
+                this.isDark = !this.isDark;
+                this.apply();
+            },
+
+            apply() {
+                if (this.isDark) {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.body.classList.add('light-mode');
+                }
+                localStorage.setItem('prism.theme', this.isDark ? 'dark' : 'light');
+                localStorage.setItem('darkMode', this.isDark);
+                
+                // Sync with preferences store if available
+                if (window.Alpine && Alpine.store('preferences')) {
+                    Alpine.store('preferences')._darkMode = this.isDark;
+                }
+            }
+        };
+
+        export const store = createStore('themeToggle', model);
+    </script>
+</head>
+<body>
+    <div x-data>
+        <template x-if="$store.themeToggle">
+            <button 
+                class="prism-theme-toggle"
+                role="switch"
+                :aria-checked="$store.themeToggle.isDark ? 'true' : 'false'"
+                aria-label="Toggle dark mode"
+                @click="$store.themeToggle.toggle()"
+            >
+                <!-- Sun icon (for light mode) -->
+                <svg 
+                    class="prism-theme-icon prism-theme-icon--sun" 
+                    :class="{ 'active': !$store.themeToggle.isDark }"
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="18" 
+                    height="18" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-width="2" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                >
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                
+                <!-- Moon icon (for dark mode) -->
+                <svg 
+                    class="prism-theme-icon prism-theme-icon--moon" 
+                    :class="{ 'active': $store.themeToggle.isDark }"
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="18" 
+                    height="18" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-width="2" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                >
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </template>
+    </div>
+
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════
+         * PRISM THEME TOGGLE — Premium, minimal, accessible
+         * ═══════════════════════════════════════════════════════════════════════ */
+        .prism-theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            background: var(--prism-bg-surface-2, var(--color-background));
+            border: 1px solid var(--prism-border, var(--color-border));
+            border-radius: var(--prism-radius-md, 10px);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prism-theme-toggle:hover {
+            background: var(--prism-bg-elevated, var(--color-secondary));
+            border-color: var(--prism-border-strong, var(--color-border));
+        }
+
+        .prism-theme-toggle:focus-visible {
+            outline: none;
+            box-shadow: var(--prism-focus-ring, 0 0 0 2px var(--color-highlight));
+        }
+
+        .prism-theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* Icons */
+        .prism-theme-icon {
+            position: absolute;
+            color: var(--prism-text-secondary, var(--color-primary));
+            opacity: 0;
+            transform: scale(0.5) rotate(-30deg);
+            transition: all 0.25s ease;
+        }
+
+        .prism-theme-icon.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        /* Sun specific — warm yellow */
+        .prism-theme-icon--sun.active {
+            color: #f59e0b;
+        }
+
+        /* Moon specific — PRISM accent */
+        .prism-theme-icon--moon.active {
+            color: var(--prism-accent, #6366f1);
+        }
+    </style>
+</body>
+</html>

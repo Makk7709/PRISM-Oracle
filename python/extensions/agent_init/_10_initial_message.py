@@ -32,10 +32,10 @@ class InitialMessage(Extension):
         initial_message_json = json.loads(initial_message)
         initial_message_text = initial_message_json.get("tool_args", {}).get("text", "Hello! How can I help you?")
 
-        # Add to log (green bubble) for immediate UI display
+        # Add to log for immediate UI display (PRISM style heading)
         self.agent.context.log.log(
             type="response",
-            heading=f"{self.agent.agent_name}: Welcome",
+            heading=f"{self.agent.agent_name}: Initialized",
             content=initial_message_text,
             finished=True,
             update_progress="none",

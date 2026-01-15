@@ -4,9 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Agent Zero</title>
-    <link rel="icon" type="image/svg+xml" href="public/favicon.svg">
+    <title>PRISM Oracle</title>
+    <link rel="icon" type="image/svg+xml" href="public/prism-oracle-logo.svg">
+    <!-- PRISM Typography: Space Grotesk (angulaire-lisible) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="css/prism-design-system.css">
+    
+    <!-- Early theme detection to prevent FOUC -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('prism.theme');
+            // Also check old key for backwards compatibility
+            var savedOld = localStorage.getItem('darkMode');
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var isDark;
+            if (saved) {
+                isDark = saved === 'dark';
+            } else if (savedOld !== null) {
+                isDark = savedOld !== 'false';
+            } else {
+                isDark = prefersDark !== false; // default to dark
+            }
+            // Apply to body on load
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add(isDark ? 'dark-mode' : 'light-mode');
+            });
+            // Also store for immediate use
+            window.__prismThemeIsDark = isDark;
+        })();
+    </script>
     <link rel="stylesheet" href="css/messages.css">
     <link rel="stylesheet" href="components/messages/action-buttons/simple-action-buttons.css">
     <link rel="stylesheet" href="css/toast.css">
@@ -134,7 +164,7 @@
     </script>
 </head>
 
-<body class="dark-mode device-pointer" x-data>
+<body class="device-pointer" x-data>
     <div class="container">
         <!-- Sidebar Overlay -->
         <div id="sidebar-overlay" x-data>
@@ -353,7 +383,7 @@
                             <div id="section-task-scheduler" class="section" x-data="schedulerSettings">
                                 <div class="section-title">Task Scheduler</div>
                                 <div class="section-description">Manage scheduled tasks and automated processes for
-                                    Agent Zero.</div>
+                                    PRISM Oracle.</div>
 
                                 <!-- Create Task Form -->
                                 <div class="scheduler-form" x-show="isCreating">

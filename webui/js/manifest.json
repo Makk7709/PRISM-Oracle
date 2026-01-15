@@ -1,6 +1,6 @@
 {
-  "name": "Agent Zero",
-  "short_name": "Agent Zero",
+  "name": "PRISM Oracle",
+  "short_name": "PRISM Oracle",
   "description": "Autonomous AI agent",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#333333",
   "icons": [
     {
-      "src": "/public/icon-maskable.svg",
+      "src": "/public/prism-oracle-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/public/icon.svg",
+      "src": "/public/prism-oracle-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

@@ -64,8 +64,16 @@ const model = {
     try {
       // Load persisted preferences with safe fallbacks
       try {
+        // Check new key first, then old key for backwards compatibility
+        const storedTheme = localStorage.getItem("prism.theme");
         const storedDarkMode = localStorage.getItem("darkMode");
-        this._darkMode = storedDarkMode !== "false";
+        if (storedTheme) {
+          this._darkMode = storedTheme === "dark";
+        } else if (storedDarkMode !== null) {
+          this._darkMode = storedDarkMode !== "false";
+        } else {
+          this._darkMode = true; // Default to dark mode
+        }
       } catch {
         this._darkMode = true; // Default to dark mode if localStorage is unavailable
       }
@@ -101,7 +109,14 @@ const model = {
       document.body.classList.remove("dark-mode");
       document.body.classList.add("light-mode");
     }
+    // Save to both keys for compatibility
+    localStorage.setItem("prism.theme", value ? "dark" : "light");
     localStorage.setItem("darkMode", value);
+    
+    // Sync with themeToggle store if available
+    if (window.Alpine && Alpine.store('themeToggle')) {
+      Alpine.store('themeToggle').isDark = value;
+    }
   },
 
   _applySpeech(value) {

@@ -589,9 +589,26 @@ class DocumentQueryHelper:
 
     def handle_pdf_document(self, document: str, scheme: str) -> str:
         temp_file_path = ""
+        PrintStyle.debug(f"[PDF] handle_pdf_document called with document={document}, scheme={scheme}")
         if scheme == "file":
-            # Use RFC file operations to read the PDF file as binary
-            file_content_bytes = files.read_file_bin(document)
+            # Log file access attempt
+            PrintStyle.debug(f"[PDF] Attempting to read file: {document}")
+            PrintStyle.debug(f"[PDF] File exists (direct): {os.path.exists(document)}")
+            
+            # Try to resolve the path if it doesn't exist directly
+            resolved_path = document
+            if not os.path.exists(document):
+                # Try with fix_dev_path
+                resolved_path = files.fix_dev_path(document)
+                PrintStyle.debug(f"[PDF] Resolved path: {resolved_path}")
+                PrintStyle.debug(f"[PDF] Resolved exists: {os.path.exists(resolved_path)}")
+            
+            if not os.path.exists(resolved_path):
+                raise FileNotFoundError(f"PDF file not found: {document} (resolved: {resolved_path})")
+            
+            # Use the resolved path for reading
+            file_content_bytes = files.read_file_bin(resolved_path)
+            PrintStyle.debug(f"[PDF] Read {len(file_content_bytes)} bytes")
             # Create a temporary file for PyMuPDFLoader since it needs a file path
             import tempfile
 
@@ -639,17 +656,26 @@ class DocumentQueryHelper:
                 contents = ""
 
             if not contents:
-                import pdf2image
-                import pytesseract
+                try:
+                    import pdf2image
+                    import pytesseract
 
-                PrintStyle.debug(
-                    f"DocumentQueryHelper::handle_pdf_document: FALLBACK Converting PDF to images: {temp_file_path}"
-                )
+                    PrintStyle.debug(
+                        f"DocumentQueryHelper::handle_pdf_document: FALLBACK Converting PDF to images: {temp_file_path}"
+                    )
 
-                # Convert PDF to images
-                pages = pdf2image.convert_from_path(temp_file_path)  # type: ignore
-                for page in pages:
-                    contents += pytesseract.image_to_string(page) + "\n\n"
+                    # Convert PDF to images
+                    pages = pdf2image.convert_from_path(temp_file_path)  # type: ignore
+                    for page in pages:
+                        contents += pytesseract.image_to_string(page) + "\n\n"
+                except Exception as ocr_error:
+                    PrintStyle.warning(f"[PDF] OCR fallback failed: {ocr_error}")
+                    contents = ""
+
+            # Check if we got any content
+            if not contents or len(contents.strip()) < 50:
+                PrintStyle.warning(f"[PDF] Extracted content is empty or very short ({len(contents.strip())} chars)")
+                return f"[PDF extraction warning: The PDF appears to be scanned/image-based with minimal extractable text. Content length: {len(contents.strip())} characters. OCR may be required for full extraction.]\n\n{contents}"
 
             return contents
         finally:

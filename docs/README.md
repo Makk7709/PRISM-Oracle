@@ -1,35 +1,35 @@
-![Agent Zero Logo](res/header.png)
-# Agent Zero Documentation
-To begin with Agent Zero, follow the links below for detailed guides on various topics:
+![PRISM Oracle Logo](res/header.png)
+# PRISM Oracle Documentation
+To begin with PRISM Oracle, follow the links below for detailed guides on various topics:
 
-- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-agent-zero)) Agent Zero on your system.
+- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-agent-zero)) PRISM Oracle on your system.
 - **[Usage Guide](usage.md):** Explore GUI features and usage scenarios.
-- **[Development](development.md):** Set up a development environment for Agent Zero.
-- **[Extensibility](extensibility.md):** Learn how to create custom extensions for Agent Zero.
-- **[Connectivity](connectivity.md):** Learn how to connect to Agent Zero from other applications.
+- **[Development](development.md):** Set up a development environment for PRISM Oracle.
+- **[Extensibility](extensibility.md):** Learn how to create custom extensions for PRISM Oracle.
+- **[Connectivity](connectivity.md):** Learn how to connect to PRISM Oracle from other applications.
 - **[Architecture Overview](architecture.md):** Understand the internal workings of the framework.
-- **[Contributing](contribution.md):** Learn how to contribute to the Agent Zero project.
+- **[Contributing](contribution.md):** Learn how to contribute to the PRISM Oracle project.
 - **[Troubleshooting and FAQ](troubleshooting.md):** Find answers to common issues and questions.
 
-### Your experience with Agent Zero starts now!
+### Your experience with PRISM Oracle starts now!
 
-- **Download Agent Zero:** Follow the [installation guide](installation.md) to download and run Agent Zero.
-- **Join the Community:** Join the Agent Zero [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community to discuss ideas, ask questions, and collaborate with other contributors.
-- **Share your Work:** Share your Agent Zero creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area on GitHub.
+- **Download PRISM Oracle:** Follow the [installation guide](installation.md) to download and run PRISM Oracle.
+- **Join the Community:** Join the PRISM Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community to discuss ideas, ask questions, and collaborate with other contributors.
+- **Share your Work:** Share your PRISM Oracle creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area on GitHub.
 - **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/agent-zero/issues) to report framework-relative bugs or suggest new features.
 
 ## Table of Contents
 
-- [Welcome to the Agent Zero Documentation](#agent-zero-documentation)
-  - [Your Experience with Agent Zero](#your-experience-with-agent-zero-starts-now)
+- [Welcome to the PRISM Oracle Documentation](#agent-zero-documentation)
+  - [Your Experience with PRISM Oracle](#your-experience-with-agent-zero-starts-now)
   - [Table of Contents](#table-of-contents)
 - [Installation Guide](installation.md)
   - [Windows, macOS and Linux Setup](installation.md#windows-macos-and-linux-setup-guide)
   - [Settings Configuration](installation.md#settings-configuration)
   - [Choosing Your LLMs](installation.md#choosing-your-llms)
   - [Installing and Using Ollama](installation.md#installing-and-using-ollama-local-models)
-  - [Using Agent Zero on Mobile](installation.md#using-agent-zero-on-your-mobile-device)
-  - [How to Update Agent Zero](installation.md#how-to-update-agent-zero)
+  - [Using PRISM Oracle on Mobile](installation.md#using-agent-zero-on-your-mobile-device)
+  - [How to Update PRISM Oracle](installation.md#how-to-update-agent-zero)
   - [Full Binaries Installation](installation.md#in-depth-guide-for-full-binaries-installation)
 - [Usage Guide](usage.md)
   - [Basic Operations](usage.md#basic-operations)

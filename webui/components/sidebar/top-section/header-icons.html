@@ -5,72 +5,179 @@
   </script>
 </head>
 <body>
-  <div class="icons-section" id="hide-button" x-data>
+  <div class="prism-sidebar-header" x-data>
     <!-- Sidebar Toggle Button -->
-    <button id="toggle-sidebar" class="toggle-sidebar-button" @click="$store.sidebar.toggle()" aria-label="Toggle Sidebar" aria-expanded="false">
-      <span aria-hidden="true">
-        <!-- Hamburger Icon -->
-        <svg id="sidebar-hamburger-svg" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="CurrentColor">
-          <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V7H3v2z"></path>
-        </svg>
-      </span>
+    <button id="toggle-sidebar" class="prism-sidebar-toggle" @click="$store.sidebar.toggle()" aria-label="Toggle Sidebar" aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="CurrentColor">
+        <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V7H3v2z"></path>
+      </svg>
     </button>
 
-    <div id="logo-container">
-      <a href="https://github.com/agent0ai/agent-zero" target="_blank" rel="noopener noreferrer">
-        <img src="./public/splash.jpg" alt="a0" width="22" height="22">
-      </a>
+    <!-- PRISM Oracle Logo + Status -->
+    <div class="prism-sidebar-brand">
+      <div class="prism-sidebar-logo">
+        <img src="./public/prism-oracle-logo.svg" alt="PRISM Oracle" width="34" height="34" class="prism-sidebar-logo-img prism-sidebar-logo-img--dark" />
+        <img src="./public/prism-oracle-logo-light.svg" alt="PRISM Oracle" width="34" height="34" class="prism-sidebar-logo-img prism-sidebar-logo-img--light" />
+      </div>
+      <div class="prism-sidebar-brand-info">
+        <span class="prism-sidebar-brand-name">PRISM</span>
+        <span class="prism-sidebar-brand-module">Oracle</span>
+        <div class="prism-status prism-status--online">
+          <span class="prism-status-dot"></span>
+          <span>Online</span>
+        </div>
+      </div>
     </div>
   </div>
 
-
   <style>
-    /* Sidebar toggle button + logo container (migrated) */
-    .toggle-sidebar-button {
-      height: 2.6rem;
-      width: 2.6rem;
-      background-color: var(--color-background);
-      border: 0.1rem solid var(--color-border);
-      border-radius: var(--spacing-xs);
-      color: var(--color-text);
-      opacity: 0.8;
-      cursor: pointer;
-      left: var(--spacing-md);
-      padding: 0.47rem 0.56rem;
-      position: absolute;
-      top: var(--spacing-md);
-      z-index: 999;
-      -webkit-transition: all var(--transition-speed) ease-in-out;
-      transition: all var(--transition-speed) ease-in-out;
-    }
-    .toggle-sidebar-button:hover { background-color: var(--color-secondary); opacity: 1; }
-    .toggle-sidebar-button:active { opacity: 0.5; }
-    #sidebar-hamburger-svg { -webkit-transition: all var(--transition-speed) ease; transition: all var(--transition-speed) ease; }
-    .toggle-sidebar-button:active #sidebar-hamburger-svg { -webkit-transform: scaleY(0.8); transform: scaleY(0.8); }
-
-    #logo-container {
-      display: -webkit-flex;
+    /* ═══════════════════════════════════════════════════════════════════════
+     * PRISM SIDEBAR HEADER
+     * ═══════════════════════════════════════════════════════════════════════ */
+    .prism-sidebar-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: var(--prism-space-3);
       position: fixed;
-      left: 4.6rem;
-      top: var(--spacing-md);
+      top: 0;
+      left: 0;
       z-index: 1004;
-      -webkit-transition: margin-left var(--transition-speed) ease-in-out;
-      transition: margin-left var(--transition-speed) ease-in-out;
+      padding: var(--prism-space-4);
+      width: 250px;
+      background: var(--prism-bg-surface);
+      border-bottom: 1px solid var(--prism-border-subtle);
     }
-    #logo-container a { color: inherit; text-decoration: none; }
-    #logo-container img { border-radius: var(--spacing-xs); width: auto; height: 2.6rem; -webkit-transition: filter 0.3s ease; transition: filter 0.3s ease; }
 
-    .light-mode #logo-container img { -webkit-filter: invert(100%) grayscale(100%); filter: invert(100%) grayscale(100%); }
+    .prism-sidebar-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: var(--prism-bg-surface-2);
+      border: 1px solid var(--prism-border);
+      border-radius: var(--prism-radius-sm);
+      color: var(--prism-text-secondary);
+      cursor: pointer;
+      transition: all var(--prism-transition-fast);
+      flex-shrink: 0;
+    }
 
+    .prism-sidebar-toggle:hover {
+      background: var(--prism-bg-elevated);
+      color: var(--prism-text-primary);
+      border-color: var(--prism-border-strong);
+    }
+
+    .prism-sidebar-toggle:focus-visible {
+      outline: none;
+      box-shadow: var(--prism-focus-ring);
+    }
+
+    .prism-sidebar-toggle:active {
+      transform: scale(0.95);
+    }
+
+    /* Brand Section */
+    .prism-sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--prism-space-3);
+    }
+
+    .prism-sidebar-logo {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prism-sidebar-logo-img {
+      width: 34px;
+      height: 34px;
+      opacity: 0.9;
+    }
+    /* Important: do NOT invert the PRISM Oracle logo.
+       The provided SVG already encodes correct colors (black bg, white mark). */
+    .prism-sidebar-logo-img {
+      filter: none;
+    }
+    .prism-sidebar-logo-img--light {
+      display: none;
+    }
+    [data-theme="light"] .prism-sidebar-logo-img--dark {
+      display: none;
+    }
+    [data-theme="light"] .prism-sidebar-logo-img--light {
+      display: block;
+    }
+    .light-mode .prism-sidebar-logo-img--dark {
+      display: none;
+    }
+    .light-mode .prism-sidebar-logo-img--light {
+      display: block;
+    }
+
+    .prism-sidebar-brand-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .prism-sidebar-brand-name {
+      font-size: var(--prism-text-sm);
+      font-weight: 600;
+      color: var(--prism-text-primary);
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+
+    .prism-sidebar-brand-module {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--prism-text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    /* Status Badge (reusing design system) */
+    .prism-sidebar-header .prism-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--prism-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .prism-sidebar-header .prism-status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--prism-accent);
+      animation: prism-pulse 2s ease-in-out infinite;
+    }
+
+    .prism-sidebar-header .prism-status--offline .prism-status-dot {
+      background: var(--prism-text-muted);
+      animation: none;
+    }
+
+    @keyframes prism-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .toggle-sidebar-button { position: fixed; left: var(--spacing-md); z-index: 1004; }
-      #logo-container { -webkit-transition: all 0.3s ease; transition: all 0.3s ease; z-index: 1004; }
+      .prism-sidebar-header {
+        width: 250px;
+      }
     }
   </style>
 </body>
 </html>
-
-

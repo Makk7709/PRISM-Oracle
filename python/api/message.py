@@ -29,8 +29,13 @@ class Message(ApiHandler):
             attachments = request.files.getlist("attachments")
             attachment_paths = []
 
-            upload_folder_int = "/a0/tmp/uploads"
-            upload_folder_ext = files.get_abs_path("tmp/uploads") # for development environment
+            from python.helpers import runtime
+            # In Docker: use /a0/tmp/uploads, in development: use local path
+            upload_folder_ext = files.get_abs_path("tmp/uploads")
+            if runtime.is_dockerized():
+                upload_folder_int = "/a0/tmp/uploads"
+            else:
+                upload_folder_int = upload_folder_ext
 
             if attachments:
                 os.makedirs(upload_folder_ext, exist_ok=True)
@@ -38,9 +43,15 @@ class Message(ApiHandler):
                     if attachment.filename is None:
                         continue
                     filename = secure_filename(attachment.filename)
-                    save_path = files.get_abs_path(upload_folder_ext, filename)
+                    save_path = os.path.join(upload_folder_ext, filename)
                     attachment.save(save_path)
-                    attachment_paths.append(os.path.join(upload_folder_int, filename))
+                    final_path = os.path.join(upload_folder_int, filename)
+                    attachment_paths.append(final_path)
+                    # Log for debugging
+                    PrintStyle(font_color="cyan").print(f"[Upload] Saved: {filename}")
+                    PrintStyle(font_color="cyan").print(f"  → Disk: {save_path}")
+                    PrintStyle(font_color="cyan").print(f"  → Agent path: {final_path}")
+                    PrintStyle(font_color="cyan").print(f"  → Exists: {os.path.exists(save_path)}")
         else:
             # Handle JSON request as before
             input_data = request.get_json()

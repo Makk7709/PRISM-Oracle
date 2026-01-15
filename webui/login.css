@@ -1,12 +1,57 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PRISM ORACLE — Login Page
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* PRISM Tokens (inline for login page) */
+:root {
+    --prism-bg-base: #0d0d0f;
+    --prism-bg-surface: #141418;
+    --prism-bg-surface-2: #1a1a1f;
+    --prism-border: rgba(255, 255, 255, 0.08);
+    --prism-border-strong: rgba(255, 255, 255, 0.12);
+    --prism-text-primary: #e8e8ec;
+    --prism-text-secondary: #8a8a94;
+    --prism-text-muted: #5a5a64;
+    --prism-accent: #6366f1;
+    --prism-accent-hover: #7c7ff7;
+    --prism-accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --prism-accent-subtle: rgba(99, 102, 241, 0.15);
+    --prism-radius-md: 10px;
+    --prism-radius-lg: 14px;
+    --prism-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
+    --prism-font-sans: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --prism-refraction-grid: repeating-linear-gradient(
+        -3deg,
+        transparent,
+        transparent 40px,
+        rgba(255, 255, 255, 0.015) 40px,
+        rgba(255, 255, 255, 0.015) 41px
+    );
+}
+
 body {
-    background-color: #131313;
-    color: #d4d4d4;
-    font-family: "Rubik", Arial, Helvetica, sans-serif;
+    background-color: var(--prism-bg-base);
+    color: var(--prism-text-primary);
+    font-family: var(--prism-font-sans);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
+    position: relative;
+}
+
+/* Refraction Grid Background */
+body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--prism-refraction-grid);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .login-container {
@@ -14,68 +59,133 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
+    position: relative;
+    z-index: 1;
 }
 
 .login-form {
-    background-color: #1a1a1a;
-    padding: 2rem;
-    border-radius: 1.125rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    background-color: var(--prism-bg-surface);
+    padding: 2.5rem;
+    border-radius: var(--prism-radius-lg);
+    border: 1px solid var(--prism-border);
+    box-shadow: var(--prism-shadow-elevated);
     width: 100%;
-    max-width: 400px;
+    max-width: 380px;
     text-align: center;
+    
+    /* Prism Cut signature */
+    clip-path: polygon(
+        0 0,
+        calc(100% - 16px) 0,
+        100% 16px,
+        100% 100%,
+        0 100%
+    );
 }
 
 .logo {
-    width: 80px;
-    height: 80px;
-    border-radius: 0.3125rem; /* Match the main page logo style */
+    width: 56px;
+    height: 56px;
+    border-radius: var(--prism-radius-md);
     margin-bottom: 1rem;
+    filter: invert(0.85);
+    opacity: 0.9;
 }
 
 h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--prism-text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+/* Subtitle */
+.login-form h2 + p,
+.login-subtitle {
+    font-size: 0.875rem;
+    color: var(--prism-text-secondary);
     margin-bottom: 2rem;
 }
 
 .input-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     text-align: left;
 }
 
 .input-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #737a81;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--prism-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .input-group input {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #444444a8;
-    border-radius: 0.5rem;
-    background-color: #131313;
-    color: #d4d4d4;
-    font-size: 1rem;
-    box-sizing: border-box; /* Added for consistent padding */
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--prism-border);
+    border-radius: var(--prism-radius-md);
+    background-color: var(--prism-bg-surface-2);
+    color: var(--prism-text-primary);
+    font-family: var(--prism-font-sans);
+    font-size: 0.9375rem;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.input-group input::placeholder {
+    color: var(--prism-text-muted);
+}
+
+.input-group input:hover {
+    border-color: var(--prism-border-strong);
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--prism-accent);
+    box-shadow: 0 0 0 3px var(--prism-accent-subtle);
 }
 
 button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem 1.5rem;
     border: none;
-    border-radius: 0.5rem;
-    background-color: #4248f1;
+    border-radius: var(--prism-radius-md);
+    background: var(--prism-accent-gradient);
     color: white;
-    font-size: 1rem;
+    font-family: var(--prism-font-sans);
+    font-size: 0.9375rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
 }
 
 button:hover {
-    background-color: #353bc5;
+    filter: brightness(1.1);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+button:focus-visible {
+    outline: none;
+    box-shadow: var(--prism-focus-ring);
+}
+
+button:active {
+    filter: brightness(0.95);
+    transform: scale(0.99);
 }
 
 .error {
-    color: #cf6679;
+    color: #f87171;
+    font-size: 0.875rem;
     margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(248, 113, 113, 0.1);
+    border-radius: var(--prism-radius-md);
+    border: 1px solid rgba(248, 113, 113, 0.2);
 }

@@ -1,9 +1,11 @@
 import argparse
 import inspect
+import os
 import secrets
 from pathlib import Path
 from typing import TypeVar, Callable, Awaitable, Union, overload, cast
 from python.helpers import dotenv, rfc, settings, files
+from python.helpers.print_style import PrintStyle
 import asyncio
 import threading
 import queue
@@ -16,6 +18,24 @@ parser = argparse.ArgumentParser()
 args = {}
 dockerman = None
 runtime_id = None
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRISM Runtime Mode: "user" (default) or "dev"
+# In "user" mode: no RFC bridge dependency, direct execution only
+# In "dev" mode: RFC bridge optional, fallback to direct if unavailable
+# ─────────────────────────────────────────────────────────────────────────────
+RUNTIME_MODE_USER = "user"
+RUNTIME_MODE_DEV = "dev"
+
+
+def get_runtime_mode() -> str:
+    """Return the current runtime mode: 'user' (default) or 'dev'."""
+    return os.environ.get("PRISM_RUNTIME_MODE", RUNTIME_MODE_USER).lower()
+
+
+def is_user_mode() -> bool:
+    """True if running in user-safe mode (no RFC bridge dependency)."""
+    return get_runtime_mode() == RUNTIME_MODE_USER
 
 
 def initialize():
@@ -95,24 +115,54 @@ async def call_development_function(func: Callable[..., T], *args, **kwargs) -> 
 async def call_development_function(
     func: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args, **kwargs
 ) -> T:
+    """
+    Execute a function either via RFC bridge (dev mode with bridge) or directly.
+    
+    MODE=user (default): Always execute directly, never attempt RFC bridge.
+    MODE=dev: Try RFC bridge if configured, fallback to direct execution.
+    
+    NEVER raises an exception for missing RFC password — always falls back gracefully.
+    """
+    # USER MODE: Always execute directly, no RFC bridge dependency
+    if is_user_mode():
+        if inspect.iscoroutinefunction(func):
+            return await func(*args, **kwargs)
+        return func(*args, **kwargs)  # type: ignore
+
+    # DEV MODE: Try RFC bridge if available, fallback to direct
     if is_development():
-        url = _get_rfc_url()
-        password = _get_rfc_password()
-        # Normalize path components to build a valid Python module path across OSes
-        module_path = Path(
-            files.deabsolute_path(func.__code__.co_filename)
-        ).with_suffix("")
-        module = ".".join(module_path.parts)  # __module__ is not reliable
-        result = await rfc.call_rfc(
-            url=url,
-            password=password,
-            module=module,
-            function_name=func.__name__,
-            args=list(args),
-            kwargs=kwargs,
-        )
-        return cast(T, result)
+        try:
+            url = _get_rfc_url()
+            password = _get_rfc_password()
+        except Exception:
+            # No RFC password configured — fall back to local execution in dev.
+            if inspect.iscoroutinefunction(func):
+                return await func(*args, **kwargs)
+            return func(*args, **kwargs)  # type: ignore
+
+        try:
+            # Normalize path components to build a valid Python module path across OSes
+            module_path = Path(
+                files.deabsolute_path(func.__code__.co_filename)
+            ).with_suffix("")
+            module = ".".join(module_path.parts)  # __module__ is not reliable
+            result = await rfc.call_rfc(
+                url=url,
+                password=password,
+                module=module,
+                function_name=func.__name__,
+                args=list(args),
+                kwargs=kwargs,
+            )
+            return cast(T, result)
+        except Exception as e:
+            # RFC call failed — fall back to direct execution
+            PrintStyle.hint(f"RFC bridge unavailable ({e}), falling back to direct execution.")
+            if inspect.iscoroutinefunction(func):
+                return await func(*args, **kwargs)
+            return func(*args, **kwargs)  # type: ignore
     else:
+        # Dockerized mode: execute directly
         if inspect.iscoroutinefunction(func):
             return await func(*args, **kwargs)
         else:
@@ -124,10 +174,17 @@ async def handle_rfc(rfc_call: rfc.RFCCall):
 
 
 def _get_rfc_password() -> str:
+    """Get RFC password from env. Raises Exception if not set (handled by caller)."""
     password = dotenv.get_dotenv_value(dotenv.KEY_RFC_PASSWORD)
     if not password:
-        raise Exception("No RFC password, cannot handle RFC calls.")
+        raise Exception("RFC password not configured.")
     return password
+
+
+def has_rfc_password() -> bool:
+    """Check if RFC password is configured (without raising)."""
+    password = dotenv.get_dotenv_value(dotenv.KEY_RFC_PASSWORD)
+    return bool(password)
 
 
 def _get_rfc_url() -> str:

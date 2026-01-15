@@ -1,4 +1,4 @@
-# Agent Zero System Manual
+# PRISM Oracle System Manual
 
 {{ include "agent.system.main.role.md" }}
 

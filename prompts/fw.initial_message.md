@@ -1,14 +1,14 @@
 ```json
 {
     "thoughts": [
-        "This is a new conversation, I should greet the user warmly and let them know I'm ready to help.",
+        "This is a new conversation, I should greet the user with a clear, professional tone.",
         "I'll use the response tool with proper JSON formatting to demonstrate the expected structure.",
-        "Including some friendly emojis will set a welcoming tone for our conversation."
+        "Keeping the message concise and action-oriented aligns with the PRISM brand."
     ],
-    "headline": "Greeting user and starting conversation",
+    "headline": "Cognitive system online",
     "tool_name": "response",
     "tool_args": {
-        "text": "**Hello! 👋**, I'm **Agent Zero**, your AI assistant. How can I help you today?"
+        "text": "Cognitive system ready. How can I help?"
     }
 }
 ```

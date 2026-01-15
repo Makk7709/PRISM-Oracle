@@ -833,8 +833,19 @@ def _adjust_call_args(provider_name: str, model_name: str, kwargs: dict):
     if provider_name == "openrouter":
         kwargs["extra_headers"] = {
             "HTTP-Referer": "https://agent-zero.ai",
-            "X-Title": "Agent Zero",
+            "X-Title": "PRISM Oracle",
         }
+
+    # Normalize OpenAI model ids (strip vendor prefix + map gpt-5.x -> gpt-5)
+    if provider_name == "openai":
+        if model_name.lower().startswith("openai/"):
+            model_name = model_name.split("/", 1)[1]
+        if model_name.lower().startswith("gpt-5."):
+            model_name = "gpt-5"
+
+    # gpt-5 models only support temperature=1
+    if "gpt-5" in model_name.lower():
+        kwargs["temperature"] = 1
 
     # remap other to openai for litellm
     if provider_name == "other":

@@ -1,0 +1,432 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PRISM ORACLE — Design System Tokens & Signatures
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * Identity: Calm, sovereign, contained light
+ * Signatures:
+ *   1. Spectral Edge — Single accent (blue→violet), used sparingly
+ *   2. Prism Cut — Beveled corners on cards/panels
+ *   3. Refraction Grid — Ultra-subtle background pattern
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+   * PRISM COLOR TOKENS — Dark Mode (Default)
+   * ───────────────────────────────────────────────────────────────────────── */
+  
+  /* Backgrounds (never pure black) */
+  --prism-bg-base: #0d0d0f;
+  --prism-bg-surface: #141418;
+  --prism-bg-surface-2: #1a1a1f;
+  --prism-bg-elevated: #1e1e24;
+  
+  /* Borders */
+  --prism-border: rgba(255, 255, 255, 0.08);
+  --prism-border-subtle: rgba(255, 255, 255, 0.04);
+  --prism-border-strong: rgba(255, 255, 255, 0.12);
+  
+  /* Text (never pure white) */
+  --prism-text-primary: #e8e8ec;
+  --prism-text-secondary: #8a8a94;
+  --prism-text-muted: #5a5a64;
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * SPECTRAL EDGE — PRISM Accent (Blue→Violet, controlled)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-accent: #6366f1;
+  --prism-accent-hover: #7c7ff7;
+  --prism-accent-subtle: rgba(99, 102, 241, 0.15);
+  --prism-accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  
+  /* Focus ring (Spectral Edge on focus) */
+  --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
+  --prism-focus-ring-inset: inset 0 0 0 2px var(--prism-accent);
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * SPACING SCALE
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-space-1: 0.25rem;   /* 4px */
+  --prism-space-2: 0.5rem;    /* 8px */
+  --prism-space-3: 0.75rem;   /* 12px */
+  --prism-space-4: 1rem;      /* 16px */
+  --prism-space-5: 1.5rem;    /* 24px */
+  --prism-space-6: 2rem;      /* 32px */
+  --prism-space-8: 3rem;      /* 48px */
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * RADIUS TOKENS (moderate, not bubble)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-radius-sm: 6px;
+  --prism-radius-md: 10px;
+  --prism-radius-lg: 14px;
+  --prism-radius-xl: 20px;
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * SHADOWS (subtle, not heavy)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --prism-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+  --prism-shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * TYPOGRAPHY
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-font-sans: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --prism-font-mono: 'Roboto Mono', 'SF Mono', 'Fira Code', monospace;
+  
+  --prism-text-xs: 0.75rem;   /* 12px */
+  --prism-text-sm: 0.875rem;  /* 14px */
+  --prism-text-base: 1rem;    /* 16px */
+  --prism-text-lg: 1.125rem;  /* 18px */
+  --prism-text-xl: 1.25rem;   /* 20px */
+  --prism-text-2xl: 1.5rem;   /* 24px */
+  --prism-text-3xl: 2rem;     /* 32px */
+  
+  --prism-leading-tight: 1.25;
+  --prism-leading-normal: 1.5;
+  --prism-leading-relaxed: 1.75;
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * TRANSITIONS
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-transition-fast: 150ms ease;
+  --prism-transition-base: 200ms ease;
+  --prism-transition-slow: 300ms ease;
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * PRISM CUT — Beveled corner signature
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-cut-size: 12px;
+  --prism-cut-clip: polygon(
+    0 0,
+    calc(100% - var(--prism-cut-size)) 0,
+    100% var(--prism-cut-size),
+    100% 100%,
+    0 100%
+  );
+  
+  /* ─────────────────────────────────────────────────────────────────────────
+   * REFRACTION GRID — Ultra-subtle background pattern (3-5% opacity)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --prism-refraction-grid: repeating-linear-gradient(
+    -3deg,
+    transparent,
+    transparent 40px,
+    rgba(255, 255, 255, 0.015) 40px,
+    rgba(255, 255, 255, 0.015) 41px
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * LIGHT MODE OVERRIDES — Cream-based, warm, premium
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.light-mode {
+  /* Backgrounds — Warm cream tones (not pure white) */
+  --prism-bg-base: #f8f6f2;
+  --prism-bg-surface: #fffefa;
+  --prism-bg-surface-2: #f5f3ef;
+  --prism-bg-elevated: #fffefa;
+  
+  /* Borders — Warm gray */
+  --prism-border: rgba(60, 50, 40, 0.1);
+  --prism-border-subtle: rgba(60, 50, 40, 0.05);
+  --prism-border-strong: rgba(60, 50, 40, 0.15);
+  
+  /* Text — Soft black (charcoal, not pure #000) */
+  --prism-text-primary: #1c1917;
+  --prism-text-secondary: #57534e;
+  --prism-text-muted: #a8a29e;
+  
+  /* Accent — Slightly darker for better contrast on light */
+  --prism-accent: #4f46e5;
+  --prism-accent-hover: #4338ca;
+  --prism-accent-subtle: rgba(79, 70, 229, 0.12);
+  --prism-accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  
+  /* Shadows — Shorter, more diffuse */
+  --prism-shadow-soft: 0 1px 4px rgba(60, 50, 40, 0.08);
+  --prism-shadow-elevated: 0 2px 12px rgba(60, 50, 40, 0.1), 0 1px 3px rgba(60, 50, 40, 0.06);
+  --prism-shadow-glow: 0 0 16px rgba(79, 70, 229, 0.15);
+  
+  /* Focus ring — Adjusted for light bg */
+  --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
+  
+  /* Refraction Grid — Lower opacity for light mode */
+  --prism-refraction-grid: repeating-linear-gradient(
+    -3deg,
+    transparent,
+    transparent 40px,
+    rgba(60, 50, 40, 0.02) 40px,
+    rgba(60, 50, 40, 0.02) 41px
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * COMPONENT: PRISM BUTTON
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--prism-space-2);
+  padding: var(--prism-space-3) var(--prism-space-5);
+  font-family: var(--prism-font-sans);
+  font-size: var(--prism-text-sm);
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--prism-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--prism-transition-base);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.prism-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--prism-focus-ring);
+}
+
+/* Primary Button — Spectral Edge accent */
+.prism-btn-primary {
+  background: var(--prism-accent-gradient);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.prism-btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: var(--prism-shadow-glow);
+}
+
+.prism-btn-primary:active {
+  filter: brightness(0.95);
+}
+
+/* Secondary Button */
+.prism-btn-secondary {
+  background: var(--prism-bg-surface-2);
+  color: var(--prism-text-primary);
+  border-color: var(--prism-border);
+}
+
+.prism-btn-secondary:hover {
+  background: var(--prism-bg-elevated);
+  border-color: var(--prism-border-strong);
+}
+
+/* Ghost Button */
+.prism-btn-ghost {
+  background: transparent;
+  color: var(--prism-text-secondary);
+  border-color: transparent;
+}
+
+.prism-btn-ghost:hover {
+  background: var(--prism-accent-subtle);
+  color: var(--prism-accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * COMPONENT: PRISM CARD (with Prism Cut signature)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-card {
+  position: relative;
+  background: var(--prism-bg-surface);
+  border: 1px solid var(--prism-border);
+  border-radius: var(--prism-radius-lg);
+  padding: var(--prism-space-5);
+  transition: all var(--prism-transition-base);
+  clip-path: var(--prism-cut-clip);
+}
+
+.prism-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 0;
+  background: var(--prism-accent-gradient);
+  border-radius: 2px 0 0 2px;
+  transition: height var(--prism-transition-base);
+}
+
+.prism-card:hover {
+  border-color: var(--prism-border-strong);
+  box-shadow: var(--prism-shadow-soft);
+  transform: translateY(-2px);
+}
+
+.prism-card:hover::before {
+  height: 100%;
+}
+
+/* Card without Prism Cut (optional) */
+.prism-card--no-cut {
+  clip-path: none;
+}
+
+/* Card clickable state */
+.prism-card--interactive {
+  cursor: pointer;
+}
+
+.prism-card--interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--prism-focus-ring);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * COMPONENT: PRISM STATUS BADGE
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--prism-space-2);
+  font-size: var(--prism-text-xs);
+  font-weight: 500;
+  color: var(--prism-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prism-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--prism-accent);
+  animation: prism-pulse 2s ease-in-out infinite;
+}
+
+.prism-status--offline .prism-status-dot {
+  background: var(--prism-text-muted);
+  animation: none;
+}
+
+@keyframes prism-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * COMPONENT: PRISM SECTION HEADER
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--prism-space-2);
+  margin-bottom: var(--prism-space-4);
+  padding-bottom: var(--prism-space-3);
+  border-bottom: 1px solid var(--prism-border-subtle);
+}
+
+.prism-section-title {
+  font-size: var(--prism-text-xs);
+  font-weight: 600;
+  color: var(--prism-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.prism-section-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * COMPONENT: PRISM INPUT (with Spectral Edge focus)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-input {
+  width: 100%;
+  padding: var(--prism-space-3) var(--prism-space-4);
+  font-family: var(--prism-font-sans);
+  font-size: var(--prism-text-sm);
+  color: var(--prism-text-primary);
+  background: var(--prism-bg-surface-2);
+  border: 1px solid var(--prism-border);
+  border-radius: var(--prism-radius-md);
+  transition: all var(--prism-transition-fast);
+}
+
+.prism-input::placeholder {
+  color: var(--prism-text-muted);
+}
+
+.prism-input:hover {
+  border-color: var(--prism-border-strong);
+}
+
+.prism-input:focus {
+  outline: none;
+  border-color: var(--prism-accent);
+  box-shadow: 0 0 0 3px var(--prism-accent-subtle);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITY: REFRACTION GRID BACKGROUND
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-refraction-bg {
+  position: relative;
+}
+
+.prism-refraction-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--prism-refraction-grid);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.prism-refraction-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITY: SPECTRAL EDGE BORDER (left accent line)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-spectral-edge {
+  position: relative;
+}
+
+.prism-spectral-edge::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--prism-accent-gradient);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity var(--prism-transition-base);
+}
+
+.prism-spectral-edge:hover::before,
+.prism-spectral-edge:focus-within::before {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITY: PRISM CUT CORNER (standalone)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.prism-cut {
+  clip-path: var(--prism-cut-clip);
+}
+
+/* Smaller cut variant */
+.prism-cut--sm {
+  --prism-cut-size: 8px;
+}
+
+/* Larger cut variant */
+.prism-cut--lg {
+  --prism-cut-size: 16px;
+}

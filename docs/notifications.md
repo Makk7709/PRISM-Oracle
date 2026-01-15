@@ -1,6 +1,6 @@
-# Agent Zero Notifications
+# PRISM Oracle Notifications
 
-Quick guide for using the notification system in Agent Zero.
+Quick guide for using the notification system in PRISM Oracle.
 
 ## Backend Usage
 

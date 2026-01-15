@@ -9,62 +9,68 @@
 <body>
     <div x-data x-show="$store.welcomeStore && $store.welcomeStore.isVisible">
         <template x-if="$store.welcomeStore">
-            <div x-data="$store.welcomeStore" class="welcome-container">
-                <!-- Agent Zero Logo -->
-                <div class="welcome-logo-container">
-                    <img src="./public/darkSymbol.svg" alt="Agent Zero Logo" class="welcome-logo" />
-                </div>
-
-                <!-- Welcome Title -->
-                <h1 class="welcome-title">Welcome to Agent Zero</h1>
-                <p class="welcome-subtitle">
-                    Start a new conversation or explore the features below.
-                </p>
-
-                <!-- Action Cards -->
-                <div class="welcome-actions">
-                    <div class="welcome-action-card" @click="executeAction('new-chat')">
-                        <span class="material-symbols-outlined welcome-action-icon">add_circle</span>
-                        <h3 class="welcome-action-title">New Chat</h3>
-                        <p class="welcome-action-description">
-                            Start a new conversation
-                        </p>
+            <div x-data="$store.welcomeStore" class="prism-welcome">
+                <!-- Refraction Grid Background -->
+                <div class="prism-welcome__grid"></div>
+                
+                <!-- Content Container -->
+                <div class="prism-welcome__content">
+                    <!-- PRISM Oracle Logo -->
+                    <div class="prism-welcome__logo">
+                        <img src="./public/prism-oracle-logo.svg" alt="PRISM Oracle" class="prism-welcome__logo-img prism-welcome__logo-img--dark" />
+                        <img src="./public/prism-oracle-logo-light.svg" alt="PRISM Oracle" class="prism-welcome__logo-img prism-welcome__logo-img--light" />
                     </div>
 
-                    <div class="welcome-action-card" @click="executeAction('projects')">
-                        <span class="material-symbols-outlined welcome-action-icon">folder</span>
-                        <h3 class="welcome-action-title">Projects</h3>
-                        <p class="welcome-action-description">
-                            Manage your projects
-                        </p>
-                    </div>
-                    <div class="welcome-action-card" @click="executeAction('memory')">
-                        <span class="material-symbols-outlined welcome-action-icon">memory</span>
-                        <h3 class="welcome-action-title">Memory</h3>
-                        <p class="welcome-action-description">
-                            Open Memory Dashboard
-                        </p>
-                    </div>
-                    <div class="welcome-action-card" @click="executeAction('settings')">
-                        <span class="material-symbols-outlined welcome-action-icon">settings</span>
-                        <h3 class="welcome-action-title">Settings</h3>
-                        <p class="welcome-action-description">
-                            Configure Agent Zero
-                        </p>
-                    </div>
-                    <div class="welcome-action-card" @click="executeAction('website')">
-                        <span class="material-symbols-outlined welcome-action-icon">language</span>
-                        <h3 class="welcome-action-title">Visit Website</h3>
-                        <p class="welcome-action-description">
-                            Learn more about Agent Zero
-                        </p>
-                    </div>
-                    <div class="welcome-action-card" @click="executeAction('github')">
-                        <span class="material-symbols-outlined welcome-action-icon">code</span>
-                        <h3 class="welcome-action-title">Visit GitHub</h3>
-                        <p class="welcome-action-description">
-                            View source code and documentation
-                        </p>
+                    <!-- Brand hierarchy: PRISM > ORACLE > endorsement > status -->
+                    <h1 class="prism-welcome__brand">PRISM</h1>
+                    <span class="prism-welcome__overline">Oracle</span>
+                    <span class="prism-welcome__endorsement">by Korev AI</span>
+                    <p class="prism-welcome__title">Cognitive system</p>
+                    <p class="prism-welcome__subtitle">
+                        Select an action below to begin.
+                    </p>
+
+                    <!-- Action Cards with Prism Cut -->
+                    <div class="prism-welcome__actions">
+                        <button class="prism-welcome__card" @click="executeAction('new-chat')" tabindex="0">
+                            <div class="prism-welcome__card-inner">
+                                <span class="material-symbols-outlined prism-welcome__icon">add_circle</span>
+                                <div class="prism-welcome__card-text">
+                                    <h3 class="prism-welcome__card-title">New Chat</h3>
+                                    <p class="prism-welcome__card-desc">Start conversation</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="prism-welcome__card" @click="executeAction('projects')" tabindex="0">
+                            <div class="prism-welcome__card-inner">
+                                <span class="material-symbols-outlined prism-welcome__icon">folder</span>
+                                <div class="prism-welcome__card-text">
+                                    <h3 class="prism-welcome__card-title">Projects</h3>
+                                    <p class="prism-welcome__card-desc">Manage workspaces</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="prism-welcome__card" @click="executeAction('memory')" tabindex="0">
+                            <div class="prism-welcome__card-inner">
+                                <span class="material-symbols-outlined prism-welcome__icon">memory</span>
+                                <div class="prism-welcome__card-text">
+                                    <h3 class="prism-welcome__card-title">Memory</h3>
+                                    <p class="prism-welcome__card-desc">Knowledge base</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="prism-welcome__card" @click="executeAction('settings')" tabindex="0">
+                            <div class="prism-welcome__card-inner">
+                                <span class="material-symbols-outlined prism-welcome__icon">settings</span>
+                                <div class="prism-welcome__card-text">
+                                    <h3 class="prism-welcome__card-title">Settings</h3>
+                                    <p class="prism-welcome__card-desc">Configure system</p>
+                                </div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -72,168 +78,266 @@
     </div>
 
     <style>
-        /* Welcome Screen Styles */
-        .welcome-container {
+        /* ═══════════════════════════════════════════════════════════════════════
+         * PRISM WELCOME SCREEN
+         * Premium, minimal, identifiable PRISM identity
+         * ═══════════════════════════════════════════════════════════════════════ */
+        
+        .prism-welcome {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 3%;
-            text-align: center;
-            background: var(--color-background);
-            color: var(--color-text);
             min-height: 100vh;
+            padding: var(--prism-space-6);
+            background: var(--prism-bg-base);
+            overflow: hidden;
         }
 
-        /* Welcome container styles */
-        .welcome-logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Refraction Grid — Ultra-subtle background pattern */
+        .prism-welcome__grid {
+            position: absolute;
+            inset: 0;
+            background: var(--prism-refraction-grid);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .welcome-logo {
-            width: 7rem;
-            height: 7rem;
-        }
-
-        /* Themes adjustments for logo */
-        .light-mode .welcome-logo {
-            filter: invert(0.5);
-        }
-
-        .dark-mode .welcome-logo {
-            filter: invert(0.8);
-        }
-
-        .welcome-title {
-            font-size: 2rem;
-            font-weight: 400;
-            margin: var(--spacing-xs) 0 0 0;
-            color: var(--color-text);
-        }
-
-        .welcome-action-title {
-            margin-bottom: 0;
-        }
-
-        .welcome-subtitle {
-            font-size: 1rem;
-            margin-bottom: 2rem;
-            color: var(--color-secondary);
-            max-width: 600px;
-            line-height: 1.5;
-        }
-
-        .welcome-actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.2rem;
-            max-width: 520px;
-            width: 100%;
-            margin: 1.5rem 0;
-        }
-
-        .welcome-action-card {
-            background: var(--color-panel);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
+        .prism-welcome__content {
+            position: relative;
+            z-index: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            min-height: 10rem;
-            justify-content: center;
+            max-width: 480px;
+            width: 100%;
         }
 
-        .welcome-action-card:hover {
-            border-color: var(--color-primary);
-            background: var(--color-message-bg);
+        /* Logo */
+        .prism-welcome__logo {
+            margin-bottom: var(--prism-space-5);
         }
 
-        .welcome-action-icon {
-            font-size: 2rem;
-            margin-bottom: 0;
-            color: var(--color-highlight-dark);
+        .prism-welcome__logo-img {
+            width: 88px;
+            height: 88px;
+            opacity: 0.9;
+        }
+        /* Important: do NOT invert the PRISM Oracle logo.
+           The provided SVG already encodes correct colors (black bg, white mark). */
+        .prism-welcome__logo-img {
+            filter: none;
+        }
+        .prism-welcome__logo-img--light {
+            display: none;
+        }
+        [data-theme="light"] .prism-welcome__logo-img--dark {
+            display: none;
+        }
+        [data-theme="light"] .prism-welcome__logo-img--light {
+            display: block;
+        }
+        .light-mode .prism-welcome__logo-img--dark {
+            display: none;
+        }
+        .light-mode .prism-welcome__logo-img--light {
+            display: block;
         }
 
-        .welcome-action-description {
-            font-size: 0.8rem;
-            color: var(--color-secondary);
-            line-height: 1.3;
+        /* PRISM Brand Title — Main identity */
+        .prism-welcome__brand {
+            font-family: var(--prism-font-sans);
+            font-size: var(--prism-text-3xl);
+            font-weight: 600;
+            color: var(--prism-text-primary);
+            margin: 0;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        /* Light mode adjustments */
-        .light-mode .welcome-title {
-            color: #2d2d2d;
+        /* ORACLE Overline — Module identifier */
+        .prism-welcome__overline {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--prism-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--prism-space-1);
+            opacity: 0.9;
         }
 
-        .light-mode .welcome-subtitle {
-            color: #666;
+        /* Endorsement — Discreet marketing signature */
+        .prism-welcome__endorsement {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--prism-text-muted);
+            letter-spacing: 0.02em;
+            margin-bottom: var(--prism-space-3);
+            opacity: 0.75;
         }
 
-        .light-mode .welcome-action-title {
-            color: #2d2d2d;
+        /* Title — Short, system-like */
+        .prism-welcome__title {
+            font-family: var(--prism-font-sans);
+            font-size: var(--prism-text-2xl);
+            font-weight: 500;
+            color: var(--prism-text-primary);
+            margin: 0 0 var(--prism-space-2) 0;
+            letter-spacing: -0.02em;
         }
 
-        .light-mode .welcome-action-description {
-            color: #666;
+        .prism-welcome__subtitle {
+            font-size: var(--prism-text-sm);
+            color: var(--prism-text-secondary);
+            margin: 0 0 var(--prism-space-8) 0;
+            line-height: var(--prism-leading-relaxed);
         }
 
-        .light-mode .welcome-footer {
-            color: #666;
+        /* Actions Grid — 2x2 */
+        .prism-welcome__actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--prism-space-4);
+            width: 100%;
+            max-width: 400px;
         }
 
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .welcome-container {
-                padding: 1rem;
-                padding-top: 3rem;
+        /* Card — Prism Cut signature */
+        .prism-welcome__card {
+            position: relative;
+            background: var(--prism-bg-surface);
+            border: 1px solid var(--prism-border);
+            border-radius: var(--prism-radius-lg);
+            padding: 0;
+            cursor: pointer;
+            transition: all var(--prism-transition-base);
+            text-align: left;
+            font-family: inherit;
+            
+            /* Prism Cut — Signature beveled corner */
+            clip-path: polygon(
+                0 0,
+                calc(100% - 14px) 0,
+                100% 14px,
+                100% 100%,
+                0 100%
+            );
+        }
+
+        /* Spectral Edge — Left accent line on hover */
+        .prism-welcome__card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--prism-accent-gradient);
+            border-radius: 2px 0 0 2px;
+            opacity: 0;
+            transition: opacity var(--prism-transition-base);
+        }
+
+        .prism-welcome__card:hover {
+            border-color: var(--prism-border-strong);
+            box-shadow: var(--prism-shadow-soft);
+            transform: translateY(-3px);
+        }
+
+        .prism-welcome__card:hover::before {
+            opacity: 1;
+        }
+
+        .prism-welcome__card:focus-visible {
+            outline: none;
+            box-shadow: var(--prism-focus-ring);
+        }
+
+        .prism-welcome__card:active {
+            transform: translateY(-1px);
+        }
+
+        .prism-welcome__card-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--prism-space-5) var(--prism-space-4);
+            gap: var(--prism-space-3);
+        }
+
+        /* Icon */
+        .prism-welcome__icon {
+            font-size: 28px;
+            color: var(--prism-accent);
+            opacity: 0.85;
+            transition: opacity var(--prism-transition-fast);
+        }
+
+        .prism-welcome__card:hover .prism-welcome__icon {
+            opacity: 1;
+        }
+
+        /* Card Text */
+        .prism-welcome__card-text {
+            text-align: center;
+        }
+
+        .prism-welcome__card-title {
+            font-size: var(--prism-text-sm);
+            font-weight: 500;
+            color: var(--prism-text-primary);
+            margin: 0 0 var(--prism-space-1) 0;
+        }
+
+        .prism-welcome__card-desc {
+            font-size: var(--prism-text-xs);
+            color: var(--prism-text-muted);
+            margin: 0;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────────
+         * RESPONSIVE
+         * ───────────────────────────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            .prism-welcome {
+                padding: var(--prism-space-5);
             }
 
-            .welcome-logo {
-                width: 5rem;
-                height: 5rem;
+            .prism-welcome__title {
+                font-size: var(--prism-text-xl);
             }
 
-            .welcome-logo-container {
-                margin-top: 2rem;
-            }
-
-            .welcome-title {
-                font-size: 1.5rem;
-                margin: 0 !important;
-            }
-
-            .welcome-subtitle {
-                font-size: 1rem;
-                margin-top: var(--spacing-xs);
-                margin-bottom: 0;
-            }
-
-            .welcome-actions {
+            .prism-welcome__actions {
                 grid-template-columns: 1fr;
-                gap: 1rem;
-                margin-bottom: 2rem;
+                gap: var(--prism-space-3);
             }
 
-            .welcome-action-card {
-                padding: 1.5rem;
-                min-height: 120px;
+            .prism-welcome__card-inner {
+                flex-direction: row;
+                padding: var(--prism-space-4);
+                gap: var(--prism-space-4);
             }
 
-            .welcome-action-icon {
-                font-size: 2rem;
+            .prism-welcome__card-text {
+                text-align: left;
             }
 
-            .welcome-action-title {
-                font-size: 1.1rem;
+            .prism-welcome__icon {
+                font-size: 24px;
             }
+        }
+
+        /* ─────────────────────────────────────────────────────────────────────
+         * LIGHT MODE ADJUSTMENTS
+         * ───────────────────────────────────────────────────────────────────── */
+        .light-mode .prism-welcome {
+            background: var(--prism-bg-base);
+        }
+
+        .light-mode .prism-welcome__card {
+            background: var(--prism-bg-surface);
         }
     </style>
 </body>
