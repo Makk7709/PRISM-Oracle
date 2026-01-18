@@ -12,24 +12,24 @@
     <div class="prism-sidebar-section">
       <div class="prism-section-header">
         <span class="material-symbols-outlined prism-section-icon">workspaces</span>
-        <h3 class="prism-section-title">Workspace</h3>
+        <h3 class="prism-section-title" x-text="t('sidebar.workspace')">Workspace</h3>
       </div>
       <div class="prism-action-grid">
         <button class="prism-action-btn" @click="$store.chats.newChat()">
           <span class="material-symbols-outlined">add_circle</span>
-          <span>New Chat</span>
+          <span x-text="t('sidebar.new_chat')">New Chat</span>
         </button>
         <button class="prism-action-btn" @click="$store.chats.loadChats()">
           <span class="material-symbols-outlined">folder_open</span>
-          <span>Load Chat</span>
+          <span x-text="t('sidebar.load_chat')">Load Chat</span>
         </button>
         <button class="prism-action-btn" @click="$store.chats.saveChat()">
           <span class="material-symbols-outlined">save</span>
-          <span>Save Chat</span>
+          <span x-text="t('sidebar.save_chat')">Save Chat</span>
         </button>
         <button class="prism-action-btn" @click="deselectChat()">
           <span class="material-symbols-outlined">dashboard</span>
-          <span>Dashboard</span>
+          <span x-text="t('sidebar.dashboard')">Dashboard</span>
         </button>
       </div>
     </div>
@@ -38,24 +38,24 @@
     <div class="prism-sidebar-section">
       <div class="prism-section-header">
         <span class="material-symbols-outlined prism-section-icon">settings_suggest</span>
-        <h3 class="prism-section-title">System</h3>
+        <h3 class="prism-section-title" x-text="t('sidebar.system')">System</h3>
       </div>
       <div class="prism-action-grid">
         <button class="prism-action-btn" @click="openModal('settings/memory/memory-dashboard.html');">
           <span class="material-symbols-outlined">memory</span>
-          <span>Memory</span>
+          <span x-text="t('sidebar.memory')">Memory</span>
         </button>
         <button class="prism-action-btn" @click="settingsModalProxy.openModal()">
           <span class="material-symbols-outlined">settings</span>
-          <span>Settings</span>
+          <span x-text="t('sidebar.settings')">Settings</span>
         </button>
         <button class="prism-action-btn prism-action-btn--subtle" @click="$store.chats.resetChat()">
           <span class="material-symbols-outlined">refresh</span>
-          <span>Reset</span>
+          <span x-text="t('sidebar.reset')">Reset</span>
         </button>
         <button class="prism-action-btn prism-action-btn--subtle" @click="$store.chats.restart()">
           <span class="material-symbols-outlined">restart_alt</span>
-          <span>Restart</span>
+          <span x-text="t('sidebar.restart')">Restart</span>
         </button>
       </div>
     </div>

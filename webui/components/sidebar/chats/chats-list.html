@@ -10,7 +10,7 @@
   <div x-data>
     <template x-if="$store.chats">
       <div class="chats-list-container" x-data>
-        <h3 class="section-header">Chats</h3>
+        <h3 class="section-header" x-text="t('sidebar.chats')">Chats</h3>
         <ul class="config-list chats-config-list" x-show="$store.chats.contexts.length > 0">
           <template x-for="context in $store.chats.contexts" :key="context.id">
             <li>

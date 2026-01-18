@@ -46,13 +46,20 @@
   },
   "sidebar": {
     "toggle": "Afficher/Masquer la barre latérale",
-    "new_chat": "Nouvelle conversation",
+    "new_chat": "Nouvelle conv.",
+    "load_chat": "Charger",
+    "save_chat": "Sauvegarder",
+    "dashboard": "Tableau de bord",
     "chats": "Conversations",
     "projects": "Projets",
     "memory": "Mémoire",
     "settings": "Paramètres",
+    "reset": "Réinitialiser",
+    "restart": "Redémarrer",
     "workspace": "Espace de travail",
-    "system": "Système"
+    "system": "Système",
+    "tasks": "Tâches",
+    "preferences": "Préférences"
   },
   "chat": {
     "placeholder": "Tapez votre message...",
@@ -177,9 +184,13 @@
     "full_licenses": "Pour la liste complète des licences, voir"
   },
   "preferences": {
+    "autoscroll": "Défilement auto",
     "dark_mode": "Mode sombre",
     "sound": "Son",
     "speech": "Parole",
+    "show_thoughts": "Afficher les pensées",
+    "show_json": "Afficher JSON",
+    "show_utils": "Messages utilitaires",
     "microphone": "Microphone",
     "microphone_settings": "Paramètres du microphone",
     "request_permission": "Demander la permission de sélectionner un appareil"

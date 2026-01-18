@@ -47,12 +47,19 @@
   "sidebar": {
     "toggle": "Toggle Sidebar",
     "new_chat": "New Chat",
+    "load_chat": "Load Chat",
+    "save_chat": "Save Chat",
+    "dashboard": "Dashboard",
     "chats": "Chats",
     "projects": "Projects",
     "memory": "Memory",
     "settings": "Settings",
+    "reset": "Reset",
+    "restart": "Restart",
     "workspace": "Workspace",
-    "system": "System"
+    "system": "System",
+    "tasks": "Tasks",
+    "preferences": "Preferences"
   },
   "chat": {
     "placeholder": "Type your message...",
@@ -177,9 +184,13 @@
     "full_licenses": "For the complete list of licenses, see"
   },
   "preferences": {
-    "dark_mode": "Dark Mode",
+    "autoscroll": "Autoscroll",
+    "dark_mode": "Dark mode",
     "sound": "Sound",
     "speech": "Speech",
+    "show_thoughts": "Show thoughts",
+    "show_json": "Show JSON",
+    "show_utils": "Show utility messages",
     "microphone": "Microphone",
     "microphone_settings": "Microphone settings",
     "request_permission": "Request permission to select device"

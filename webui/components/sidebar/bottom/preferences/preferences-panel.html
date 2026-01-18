@@ -14,7 +14,7 @@
              x-effect="!$store.sidebar.isSectionOpen('preferences') ? $el.classList.add('collapsed') : $el.classList.remove('collapsed')">
           <div class="prism-section-header__left">
             <span class="material-symbols-outlined prism-section-icon">tune</span>
-            <h3 class="prism-section-title">Preferences</h3>
+            <h3 class="prism-section-title" x-text="t('sidebar.preferences')">Preferences</h3>
           </div>
           <svg class="prism-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
             <path d="M8 4l8 8-8 8" />
@@ -24,14 +24,14 @@
         <ul class="prism-preferences-list collapse" id="preferences-collapse"
             x-effect="(() => { const c = bootstrap.Collapse.getOrCreateInstance($el, { toggle: false }); $store.sidebar.isSectionOpen('preferences') ? c.show() : c.hide(); })()">
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Autoscroll</span>
+            <span class="prism-preference-label" x-text="t('preferences.autoscroll')">Autoscroll</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.autoScroll">
               <span class="prism-switch__track"></span>
             </label>
           </li>
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Dark mode</span>
+            <span class="prism-preference-label" x-text="t('preferences.dark_mode')">Dark mode</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.darkMode">
               <span class="prism-switch__track"></span>
@@ -39,35 +39,35 @@
           </li>
           <li class="prism-preference-item" x-data="{ lang: localStorage.getItem('korev.language') || 'auto' }">
             <span class="prism-preference-label" x-text="t('settings.language')">Language</span>
-            <select class="prism-lang-select" x-model="lang" @change="window.i18n.setLanguage(lang)">
+            <select class="prism-lang-select" x-model="lang" @change="window.i18n.setLanguage(lang).then(() => location.reload())">
               <option value="auto">Auto</option>
               <option value="en">EN</option>
               <option value="fr">FR</option>
             </select>
           </li>
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Speech</span>
+            <span class="prism-preference-label" x-text="t('preferences.speech')">Speech</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.speech">
               <span class="prism-switch__track"></span>
             </label>
           </li>
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Show thoughts</span>
+            <span class="prism-preference-label" x-text="t('preferences.show_thoughts')">Show thoughts</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.showThoughts">
               <span class="prism-switch__track"></span>
             </label>
           </li>
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Show JSON</span>
+            <span class="prism-preference-label" x-text="t('preferences.show_json')">Show JSON</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.showJson">
               <span class="prism-switch__track"></span>
             </label>
           </li>
           <li class="prism-preference-item" x-data>
-            <span class="prism-preference-label">Show utility messages</span>
+            <span class="prism-preference-label" x-text="t('preferences.show_utils')">Show utility messages</span>
             <label class="prism-switch">
               <input type="checkbox" x-model="$store.preferences.showUtils">
               <span class="prism-switch__track"></span>
