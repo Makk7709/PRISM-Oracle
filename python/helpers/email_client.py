@@ -498,7 +498,7 @@ class EmailClient:
         """
         Save attachment to disk and return absolute path.
 
-        Uses PRISM Oracle's file helpers for path management.
+        Uses Korev Oracle's file helpers for path management.
         """
         # Sanitize filename
         filename = files.safe_file_name(filename)

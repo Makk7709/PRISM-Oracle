@@ -15,7 +15,7 @@ from python.helpers.print_style import PrintStyle
 
 class BackupService:
     """
-    Core backup and restore service for PRISM Oracle.
+    Core backup and restore service for Korev Oracle.
 
     Features:
     - JSON-based metadata with user-editable path specifications
@@ -27,7 +27,7 @@ class BackupService:
 
     def __init__(self):
         self.agent_zero_version = self._get_agent_zero_version()
-        self.agent_zero_root = files.get_abs_path("")  # Resolved PRISM Oracle root
+        self.agent_zero_root = files.get_abs_path("")  # Resolved Korev Oracle root
 
         # Build base paths map for pattern resolution
         self.base_paths = {
@@ -55,16 +55,16 @@ class BackupService:
     def _get_default_patterns(self) -> str:
         """Get default backup patterns with resolved absolute paths.
 
-        Only includes PRISM Oracle project directory patterns.
+        Only includes Korev Oracle project directory patterns.
         """
         # Ensure paths don't have double slashes
         agent_root = self.agent_zero_root.rstrip('/')
 
-        return f"""# PRISM Oracle Knowledge (excluding defaults)
+        return f"""# Korev Oracle Knowledge (excluding defaults)
 {agent_root}/knowledge/**
 !{agent_root}/knowledge/default/**
 
-# PRISM Oracle Instruments (excluding defaults)
+# Korev Oracle Instruments (excluding defaults)
 {agent_root}/instruments/**
 !{agent_root}/instruments/default/**
 
@@ -85,7 +85,7 @@ class BackupService:
 """
 
     def _get_agent_zero_version(self) -> str:
-        """Get current PRISM Oracle version"""
+        """Get current Korev Oracle version"""
         try:
             # Get version from git info (same as run_ui.py)
             gitinfo = git.get_git_info()
@@ -217,7 +217,7 @@ class BackupService:
     def _translate_patterns(self, patterns: List[str], backup_metadata: Dict[str, Any]) -> List[str]:
         """Translate patterns from backed up system to current system.
 
-        Replaces the backed up PRISM Oracle root path with the current PRISM Oracle root path
+        Replaces the backed up Korev Oracle root path with the current Korev Oracle root path
         in all patterns if there's an exact match at the beginning of the pattern.
 
         Args:
@@ -774,7 +774,7 @@ class BackupService:
     def _translate_restore_path(self, archive_path: str, backup_metadata: Dict[str, Any]) -> str:
         """Translate file path from backed up system to current system.
 
-        Replaces the backed up PRISM Oracle root path with the current PRISM Oracle root path
+        Replaces the backed up Korev Oracle root path with the current Korev Oracle root path
         if there's an exact match at the beginning of the path.
 
         Args:

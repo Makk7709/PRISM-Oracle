@@ -1,10 +1,10 @@
 <div align="center">
 
-# `PRISM Oracle`
+# `Korev Oracle`
 
-### Système cognitif autonome par Korev AI
+### Système cognitif autonome par KOREV AI
 
-[![PRISM Oracle](https://img.shields.io/badge/Version-1.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Oracle)
+[![Korev Oracle](https://img.shields.io/badge/Version-1.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Oracle)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
 
 ## Documentation
@@ -21,9 +21,9 @@
 
 ## Un framework d'agent IA personnel qui grandit et apprend avec vous
 
-- PRISM Oracle n'est pas un framework rigide. Il est conçu pour être dynamique, évolutif et apprenant au fil de votre utilisation.
-- PRISM Oracle est entièrement transparent, lisible, compréhensible, personnalisable et interactif.
-- PRISM Oracle utilise l'ordinateur comme un outil pour accomplir vos tâches.
+- Korev Oracle n'est pas un framework rigide. Il est conçu pour être dynamique, évolutif et apprenant au fil de votre utilisation.
+- Korev Oracle est entièrement transparent, lisible, compréhensible, personnalisable et interactif.
+- Korev Oracle utilise l'ordinateur comme un outil pour accomplir vos tâches.
 
 ---
 
@@ -31,19 +31,19 @@
 
 ## 1. Assistant Polyvalent
 
-PRISM Oracle n'est pas pré-programmé pour des tâches spécifiques. C'est un assistant personnel généraliste. Donnez-lui une tâche, et il collectera les informations, exécutera du code, coopérera avec d'autres instances d'agents et fera tout son possible pour l'accomplir.
+Korev Oracle n'est pas pré-programmé pour des tâches spécifiques. C'est un assistant personnel généraliste. Donnez-lui une tâche, et il collectera les informations, exécutera du code, coopérera avec d'autres instances d'agents et fera tout son possible pour l'accomplir.
 
 Il dispose d'une **mémoire persistante**, lui permettant de mémoriser les solutions précédentes, le code, les faits et instructions pour résoudre les tâches plus rapidement à l'avenir.
 
-![PRISM Oracle Interface](/docs/res/ui-screen-2.png)
+![Korev Oracle Interface](/docs/res/ui-screen-2.png)
 
 ## 2. L'Ordinateur comme Outil
 
-- PRISM Oracle utilise le système d'exploitation comme outil pour accomplir ses tâches.
+- Korev Oracle utilise le système d'exploitation comme outil pour accomplir ses tâches.
 - Il peut écrire son propre code et utiliser le terminal pour créer et utiliser ses propres outils selon les besoins.
 - **Outils par défaut** : recherche en ligne, fonctionnalités mémoire, communication (avec l'utilisateur et autres agents), exécution de code/terminal.
 - **Outils personnalisés** : Étendez les fonctionnalités en créant vos propres outils.
-- **Instruments** : Créez des fonctions et procédures personnalisées appelables par PRISM Oracle.
+- **Instruments** : Créez des fonctions et procédures personnalisées appelables par Korev Oracle.
 
 ## 3. Coopération Multi-Agents
 
@@ -65,7 +65,7 @@ Il dispose d'une **mémoire persistante**, lui permettant de mémoriser les solu
 
 ## 5. Profils Métiers Spécialisés
 
-PRISM Oracle supporte des **profils d'agents** spécialisés par métier :
+Korev Oracle supporte des **profils d'agents** spécialisés par métier :
 
 | Profil | Spécialisation |
 |--------|----------------|
@@ -144,11 +144,11 @@ docker run -p 8080:80 prism-oracle
 
 # ⚠️ Points Importants
 
-### PRISM Oracle Peut Être Puissant
+### Korev Oracle Peut Être Puissant
 
-Avec les bonnes instructions, PRISM Oracle est capable de nombreuses actions, y compris potentiellement dangereuses concernant votre ordinateur, données ou comptes. Exécutez toujours PRISM Oracle dans un environnement isolé (comme Docker) et soyez prudent dans vos demandes.
+Avec les bonnes instructions, Korev Oracle est capable de nombreuses actions, y compris potentiellement dangereuses concernant votre ordinateur, données ou comptes. Exécutez toujours Korev Oracle dans un environnement isolé (comme Docker) et soyez prudent dans vos demandes.
 
-### PRISM Oracle Est Basé sur les Prompts
+### Korev Oracle Est Basé sur les Prompts
 
 Tout le framework est guidé par le dossier **prompts/**. Guidelines de l'agent, instructions des outils, messages, fonctions utilitaires IA — tout est là.
 
@@ -161,7 +161,7 @@ Tout le framework est guidé par le dossier **prompts/**. Guidelines de l'agent,
 | [Installation](./docs/installation.md) | Installation, configuration |
 | [Utilisation](./docs/usage.md) | Usage basique et avancé |
 | [Développement](./docs/development.md) | Développement et personnalisation |
-| [Extensibilité](./docs/extensibility.md) | Étendre PRISM Oracle |
+| [Extensibilité](./docs/extensibility.md) | Étendre Korev Oracle |
 | [Connectivité](./docs/connectivity.md) | Endpoints API, connexions MCP, protocole A2A |
 | [Architecture](./docs/architecture.md) | Design système et composants |
 | [Contribution](./docs/contribution.md) | Comment contribuer |
@@ -171,7 +171,7 @@ Tout le framework est guidé par le dossier **prompts/**. Guidelines de l'agent,
 
 # 🔧 Configuration Runtime
 
-PRISM Oracle supporte deux modes d'exécution :
+Korev Oracle supporte deux modes d'exécution :
 
 | Mode | Description |
 |------|-------------|
@@ -189,7 +189,7 @@ export SEARXNG_URL=http://localhost:55510
 
 # 📝 Changelog
 
-### v1.0.0 — PRISM Oracle
+### v1.0.0 — Korev Oracle
 
 - Rebranding complet avec design system PRISM
 - Mode Jour/Nuit avec persistance
@@ -203,6 +203,6 @@ export SEARXNG_URL=http://localhost:55510
 
 <div align="center">
 
-**PRISM Oracle** — Système cognitif par **Korev AI**
+**Korev Oracle** — Système cognitif par **KOREV AI**
 
 </div>

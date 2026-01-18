@@ -1,6 +1,6 @@
 {
-  "name": "PRISM Oracle",
-  "short_name": "PRISM Oracle",
+  "name": "Korev Oracle",
+  "short_name": "Korev Oracle",
   "description": "Autonomous AI agent",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#333333",
   "icons": [
     {
-      "src": "/public/prism-oracle-logo.svg",
+      "src": "/public/korev-oracle-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/public/prism-oracle-logo.svg",
+      "src": "/public/korev-oracle-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

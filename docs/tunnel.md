@@ -1,10 +1,10 @@
-# PRISM Oracle Tunnel Feature
+# Korev Oracle Tunnel Feature
 
-The tunnel feature in PRISM Oracle allows you to expose your local PRISM Oracle instance to the internet using Flaredantic tunnels. This makes it possible to share your PRISM Oracle instance with others without requiring them to install and run PRISM Oracle themselves.
+The tunnel feature in Korev Oracle allows you to expose your local Korev Oracle instance to the internet using Flaredantic tunnels. This makes it possible to share your Korev Oracle instance with others without requiring them to install and run Korev Oracle themselves.
 
 ## How It Works
 
-PRISM Oracle uses the [Flaredantic](https://pypi.org/project/flaredantic/) library to create secure tunnels to expose your local instance to the internet. These tunnels:
+Korev Oracle uses the [Flaredantic](https://pypi.org/project/flaredantic/) library to create secure tunnels to expose your local instance to the internet. These tunnels:
 
 - Are secure (HTTPS)
 - Don't require any configuration
@@ -17,16 +17,16 @@ PRISM Oracle uses the [Flaredantic](https://pypi.org/project/flaredantic/) libra
 2. Click on "Flare Tunnel" in the navigation menu
 3. Click the "Create Tunnel" button to generate a new tunnel
 4. Once created, the tunnel URL will be displayed and can be copied to share with others
-5. The tunnel URL will remain active until you stop the tunnel or close the PRISM Oracle application
+5. The tunnel URL will remain active until you stop the tunnel or close the Korev Oracle application
 
 ## Security Considerations
 
-When sharing your PRISM Oracle instance via a tunnel:
+When sharing your Korev Oracle instance via a tunnel:
 
-- Anyone with the URL can access your PRISM Oracle instance
-- No additional authentication is added beyond what your PRISM Oracle instance already has
+- Anyone with the URL can access your Korev Oracle instance
+- No additional authentication is added beyond what your Korev Oracle instance already has
 - Consider setting up authentication if you're sharing sensitive information
-- The tunnel exposes your local PRISM Oracle instance, not your entire system
+- The tunnel exposes your local Korev Oracle instance, not your entire system
 
 ## Troubleshooting
 
@@ -34,12 +34,12 @@ If you encounter issues with the tunnel feature:
 
 1. Check your internet connection
 2. Try refreshing the tunnel URL
-3. Restart PRISM Oracle
+3. Restart Korev Oracle
 4. Check the console logs for any error messages
 
 ## Adding Authentication
 
-To add basic authentication to your PRISM Oracle instance when using tunnels, you can set the following environment variables:
+To add basic authentication to your Korev Oracle instance when using tunnels, you can set the following environment variables:
 
 ```
 AUTH_LOGIN=your_username
@@ -48,10 +48,10 @@ AUTH_PASSWORD=your_password
 
 Alternatively, you can configure the username and password directly in the settings:
 
-1. Open the settings modal in the PRISM Oracle UI
+1. Open the settings modal in the Korev Oracle UI
 2. Navigate to the "External Services" tab
 3. Find the "Authentication" section
 4. Enter your desired username and password in the "UI Login" and "UI Password" fields
 5. Click the "Save" button to apply the changes
 
-This will require users to enter these credentials when accessing your tunneled PRISM Oracle instance. When attempting to create a tunnel without authentication configured, PRISM Oracle will display a security warning.
+This will require users to enter these credentials when accessing your tunneled Korev Oracle instance. When attempting to create a tunnel without authentication configured, Korev Oracle will display a security warning.

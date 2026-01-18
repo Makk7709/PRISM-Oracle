@@ -1,6 +1,6 @@
-# PRISM Oracle Notifications
+# Korev Oracle Notifications
 
-Quick guide for using the notification system in PRISM Oracle.
+Quick guide for using the notification system in Korev Oracle.
 
 ## Backend Usage
 

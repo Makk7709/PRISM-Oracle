@@ -1,35 +1,35 @@
-![PRISM Oracle Logo](res/header.png)
-# PRISM Oracle Documentation
-To begin with PRISM Oracle, follow the links below for detailed guides on various topics:
+![Korev Oracle Logo](res/header.png)
+# Korev Oracle Documentation
+To begin with Korev Oracle, follow the links below for detailed guides on various topics:
 
-- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-agent-zero)) PRISM Oracle on your system.
+- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-agent-zero)) Korev Oracle on your system.
 - **[Usage Guide](usage.md):** Explore GUI features and usage scenarios.
-- **[Development](development.md):** Set up a development environment for PRISM Oracle.
-- **[Extensibility](extensibility.md):** Learn how to create custom extensions for PRISM Oracle.
-- **[Connectivity](connectivity.md):** Learn how to connect to PRISM Oracle from other applications.
+- **[Development](development.md):** Set up a development environment for Korev Oracle.
+- **[Extensibility](extensibility.md):** Learn how to create custom extensions for Korev Oracle.
+- **[Connectivity](connectivity.md):** Learn how to connect to Korev Oracle from other applications.
 - **[Architecture Overview](architecture.md):** Understand the internal workings of the framework.
-- **[Contributing](contribution.md):** Learn how to contribute to the PRISM Oracle project.
+- **[Contributing](contribution.md):** Learn how to contribute to the Korev Oracle project.
 - **[Troubleshooting and FAQ](troubleshooting.md):** Find answers to common issues and questions.
 
-### Your experience with PRISM Oracle starts now!
+### Your experience with Korev Oracle starts now!
 
-- **Download PRISM Oracle:** Follow the [installation guide](installation.md) to download and run PRISM Oracle.
-- **Join the Community:** Join the PRISM Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community to discuss ideas, ask questions, and collaborate with other contributors.
-- **Share your Work:** Share your PRISM Oracle creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area on GitHub.
+- **Download Korev Oracle:** Follow the [installation guide](installation.md) to download and run Korev Oracle.
+- **Join the Community:** Join the Korev Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community to discuss ideas, ask questions, and collaborate with other contributors.
+- **Share your Work:** Share your Korev Oracle creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area on GitHub.
 - **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/agent-zero/issues) to report framework-relative bugs or suggest new features.
 
 ## Table of Contents
 
-- [Welcome to the PRISM Oracle Documentation](#agent-zero-documentation)
-  - [Your Experience with PRISM Oracle](#your-experience-with-agent-zero-starts-now)
+- [Welcome to the Korev Oracle Documentation](#agent-zero-documentation)
+  - [Your Experience with Korev Oracle](#your-experience-with-agent-zero-starts-now)
   - [Table of Contents](#table-of-contents)
 - [Installation Guide](installation.md)
   - [Windows, macOS and Linux Setup](installation.md#windows-macos-and-linux-setup-guide)
   - [Settings Configuration](installation.md#settings-configuration)
   - [Choosing Your LLMs](installation.md#choosing-your-llms)
   - [Installing and Using Ollama](installation.md#installing-and-using-ollama-local-models)
-  - [Using PRISM Oracle on Mobile](installation.md#using-agent-zero-on-your-mobile-device)
-  - [How to Update PRISM Oracle](installation.md#how-to-update-agent-zero)
+  - [Using Korev Oracle on Mobile](installation.md#using-agent-zero-on-your-mobile-device)
+  - [How to Update Korev Oracle](installation.md#how-to-update-agent-zero)
   - [Full Binaries Installation](installation.md#in-depth-guide-for-full-binaries-installation)
 - [Usage Guide](usage.md)
   - [Basic Operations](usage.md#basic-operations)

@@ -72,7 +72,7 @@ def print_test_commands():
     print("   HTTP/1.1 200 OK")
     print("   Content-Type: application/json")
     print("   {")
-    print('     "name": "PRISM Oracle",')
+    print('     "name": "Korev Oracle",')
     print('     "version": "1.0.0",')
     print('     "skills": [...]')
     print("   }")
@@ -90,7 +90,7 @@ def print_troubleshooting():
     print("=" * 40)
     print()
     print("1. Server not running:")
-    print("   - Make sure PRISM Oracle is running: python run_ui.py")
+    print("   - Make sure Korev Oracle is running: python run_ui.py")
     print("   - Check the correct port (default: 50101)")
     print()
 
@@ -157,10 +157,10 @@ async def test_server_connectivity():
             try:
                 # Test basic server
                 await client.get("http://localhost:50101/", timeout=5.0)
-                print("✅ PRISM Oracle server is running")
+                print("✅ Korev Oracle server is running")
                 return True
             except httpx.ConnectError:
-                print("❌ Cannot connect to PRISM Oracle server")
+                print("❌ Cannot connect to Korev Oracle server")
                 print("   Make sure the server is running: python run_ui.py")
                 return False
             except Exception as e:
@@ -204,7 +204,7 @@ def main():
     print_test_commands()
 
     print("📋 Next Steps:")
-    print("1. Start PRISM Oracle server if not running")
+    print("1. Start Korev Oracle server if not running")
     print("2. Run one of the curl commands above")
     print("3. Check for successful 200 response with agent card JSON")
     print("4. If issues occur, see troubleshooting section")

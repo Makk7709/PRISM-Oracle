@@ -22,12 +22,12 @@ _PRINTER = PrintStyle(italic=True, font_color="green", padding=False)
 
 
 mcp_server: FastMCP = FastMCP(
-    name="PRISM Oracle integrated MCP Server",
+    name="Korev Oracle integrated MCP Server",
     instructions="""
-    Connect to remote PRISM Oracle instance.
-    PRISM Oracle is a general AI assistant controlling it's linux environment.
-    PRISM Oracle can install software, manage files, execute commands, code, use internet, etc.
-    PRISM Oracle's environment is isolated unless configured otherwise.
+    Connect to remote Korev Oracle instance.
+    Korev Oracle is a general AI assistant controlling it's linux environment.
+    Korev Oracle can install software, manage files, execute commands, code, use internet, etc.
+    Korev Oracle's environment is isolated unless configured otherwise.
     """,
 )
 
@@ -37,7 +37,7 @@ class ToolResponse(BaseModel):
         description="The status of the response", default="success"
     )
     response: str = Field(
-        description="The response from the remote PRISM Oracle Instance"
+        description="The response from the remote Korev Oracle Instance"
     )
     chat_id: str = Field(description="The id of the chat this message belongs to.")
 
@@ -47,14 +47,14 @@ class ToolError(BaseModel):
         description="The status of the response", default="error"
     )
     error: str = Field(
-        description="The error message from the remote PRISM Oracle Instance"
+        description="The error message from the remote Korev Oracle Instance"
     )
     chat_id: str = Field(description="The id of the chat this message belongs to.")
 
 
 SEND_MESSAGE_DESCRIPTION = """
-Send a message to the remote PRISM Oracle Instance.
-This tool is used to send a message to the remote PRISM Oracle Instance connected remotely via MCP.
+Send a message to the remote Korev Oracle Instance.
+This tool is used to send a message to the remote Korev Oracle Instance connected remotely via MCP.
 """
 
 
@@ -87,7 +87,7 @@ async def send_message(
     message: Annotated[
         str,
         Field(
-            description="The message to send to the remote PRISM Oracle Instance",
+            description="The message to send to the remote Korev Oracle Instance",
             title="message",
         ),
     ],
@@ -95,7 +95,7 @@ async def send_message(
         Annotated[
             list[str],
             Field(
-                description="Optional: A list of attachments (file paths or web urls) to send to the remote PRISM Oracle Instance with the message. Default: Empty list",
+                description="Optional: A list of attachments (file paths or web urls) to send to the remote Korev Oracle Instance with the message. Default: Empty list",
                 title="attachments",
             ),
         ]
@@ -124,7 +124,7 @@ async def send_message(
 ) -> Annotated[
     Union[ToolResponse, ToolError],
     Field(
-        description="The response from the remote PRISM Oracle Instance", title="response"
+        description="The response from the remote Korev Oracle Instance", title="response"
     ),
 ]:
     context: AgentContext | None = None
@@ -160,10 +160,10 @@ async def send_message(
 
 
 FINISH_CHAT_DESCRIPTION = """
-Finish a chat with the remote PRISM Oracle Instance.
-This tool is used to finish a persistent chat (send_message with persistent_chat=True) with the remote PRISM Oracle Instance connected remotely via MCP.
+Finish a chat with the remote Korev Oracle Instance.
+This tool is used to finish a persistent chat (send_message with persistent_chat=True) with the remote Korev Oracle Instance connected remotely via MCP.
 If you want to continue the chat, use the send_message tool instead.
-Always use this tool to finish persistent chat conversations with remote PRISM Oracle.
+Always use this tool to finish persistent chat conversations with remote Korev Oracle.
 """
 
 
@@ -202,7 +202,7 @@ async def finish_chat(
 ) -> Annotated[
     Union[ToolResponse, ToolError],
     Field(
-        description="The response from the remote PRISM Oracle Instance", title="response"
+        description="The response from the remote Korev Oracle Instance", title="response"
     ),
 ]:
     if not chat_id:

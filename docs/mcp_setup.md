@@ -1,31 +1,31 @@
-# PRISM Oracle: MCP Server Integration Guide
+# Korev Oracle: MCP Server Integration Guide
 
-This guide explains how to configure and utilize external tool providers through the Model Context Protocol (MCP) with PRISM Oracle. This allows PRISM Oracle to leverage tools hosted by separate local or remote MCP-compliant servers.
+This guide explains how to configure and utilize external tool providers through the Model Context Protocol (MCP) with Korev Oracle. This allows Korev Oracle to leverage tools hosted by separate local or remote MCP-compliant servers.
 
 ## What are MCP Servers?
 
-MCP servers are external processes or services that expose a set of tools that PRISM Oracle can use. PRISM Oracle acts as an MCP *client*, consuming tools made available by these servers. The integration supports three main types of MCP servers:
+MCP servers are external processes or services that expose a set of tools that Korev Oracle can use. Korev Oracle acts as an MCP *client*, consuming tools made available by these servers. The integration supports three main types of MCP servers:
 
-1.  **Local Stdio Servers**: These are typically local executables that PRISM Oracle communicates with via standard input/output (stdio).
-2.  **Remote SSE Servers**: These are servers, often accessible over a network, that PRISM Oracle communicates with using Server-Sent Events (SSE), usually over HTTP/S.
+1.  **Local Stdio Servers**: These are typically local executables that Korev Oracle communicates with via standard input/output (stdio).
+2.  **Remote SSE Servers**: These are servers, often accessible over a network, that Korev Oracle communicates with using Server-Sent Events (SSE), usually over HTTP/S.
 3.  **Remote Streaming HTTP Servers**: These are servers that use the streamable HTTP transport protocol for MCP communication, providing an alternative to SSE for network-based MCP servers.
 
-## How PRISM Oracle Consumes MCP Tools
+## How Korev Oracle Consumes MCP Tools
 
-PRISM Oracle discovers and integrates MCP tools dynamically:
+Korev Oracle discovers and integrates MCP tools dynamically:
 
-1.  **Configuration**: You define the MCP servers PRISM Oracle should connect to in its configuration. The primary way to do this is through the PRISM Oracle settings UI.
-2.  **Saving Settings**: When you save your settings via the UI, PRISM Oracle updates the `tmp/settings.json` file, specifically the `"mcp_servers"` key.
-3.  **Automatic Installation (on Restart)**: After saving your settings and restarting PRISM Oracle, the system will attempt to automatically install any MCP server packages defined with `command: "npx"` and the `--package` argument in their configuration (this process is managed by `initialize.py`). You can monitor the application logs (e.g., Docker logs) for details on this installation attempt.
-4.  **Tool Discovery**: Upon initialization (or when settings are updated), PRISM Oracle connects to each configured and enabled MCP server and queries it for the list of available tools, their descriptions, and expected parameters.
+1.  **Configuration**: You define the MCP servers Korev Oracle should connect to in its configuration. The primary way to do this is through the Korev Oracle settings UI.
+2.  **Saving Settings**: When you save your settings via the UI, Korev Oracle updates the `tmp/settings.json` file, specifically the `"mcp_servers"` key.
+3.  **Automatic Installation (on Restart)**: After saving your settings and restarting Korev Oracle, the system will attempt to automatically install any MCP server packages defined with `command: "npx"` and the `--package` argument in their configuration (this process is managed by `initialize.py`). You can monitor the application logs (e.g., Docker logs) for details on this installation attempt.
+4.  **Tool Discovery**: Upon initialization (or when settings are updated), Korev Oracle connects to each configured and enabled MCP server and queries it for the list of available tools, their descriptions, and expected parameters.
 5.  **Dynamic Prompting**: The information about these discovered tools is then dynamically injected into the agent's system prompt. A placeholder like `{{tools}}` in a system prompt template (e.g., `prompts/default/agent.system.mcp_tools.md`) is replaced with a formatted list of all available MCP tools. This allows the agent's underlying Language Model (LLM) to know which external tools it can request.
-6.  **Tool Invocation**: When the LLM decides to use an MCP tool, PRISM Oracle's `process_tools` method (handled by `mcp_handler.py`) identifies it as an MCP tool and routes the request to the appropriate `MCPConfig` helper, which then communicates with the designated MCP server to execute the tool.
+6.  **Tool Invocation**: When the LLM decides to use an MCP tool, Korev Oracle's `process_tools` method (handled by `mcp_handler.py`) identifies it as an MCP tool and routes the request to the appropriate `MCPConfig` helper, which then communicates with the designated MCP server to execute the tool.
 
 ## Configuration
 
 ### Configuration File & Method
 
-The primary method for configuring MCP servers is through **PRISM Oracle's settings UI**.
+The primary method for configuring MCP servers is through **Korev Oracle's settings UI**.
 
 When you input and save your MCP server details in the UI, these settings are written to:
 
@@ -36,7 +36,7 @@ When you input and save your MCP server details in the UI, these settings are wr
 Within `tmp/settings.json`, the MCP servers are defined under the `"mcp_servers"` key.
 
 *   **Value Type**: The value for `"mcp_servers"` must be a **JSON formatted string**. This string itself contains an **array** of server configuration objects.
-*   **Default Value**: If `tmp/settings.json` does not exist, or if it exists but does not contain the `"mcp_servers"` key, PRISM Oracle will use a default value of `""` (an empty string), meaning no MCP servers are configured.
+*   **Default Value**: If `tmp/settings.json` does not exist, or if it exists but does not contain the `"mcp_servers"` key, Korev Oracle will use a default value of `""` (an empty string), meaning no MCP servers are configured.
 *   **Manual Editing (Advanced)**: While UI configuration is recommended, you can also manually edit `tmp/settings.json`. If you do, ensure the `"mcp_servers"` value is a valid JSON string, with internal quotes properly escaped.
 
 **Example `mcp_servers` string in `tmp/settings.json`:**
@@ -50,10 +50,10 @@ Within `tmp/settings.json`, the MCP servers are defined under the `"mcp_servers"
 ```
 *Note: In the actual `settings.json` file, the entire value for `mcp_servers` is a single string, with backslashes escaping the quotes within the array structure.*
 
-*   **Updating**: As mentioned, the recommended way to set or update this value is through PRISM Oracle's settings UI.
-*   **For Existing `settings.json` Files (After an Upgrade)**: If you have an existing `tmp/settings.json` from a version of PRISM Oracle prior to MCP server support, the `"mcp_servers"` key will likely be missing. To add this key:
-    1.  Ensure you are running a version of PRISM Oracle that includes MCP server support.
-    2.  Run PRISM Oracle and open its settings UI.
+*   **Updating**: As mentioned, the recommended way to set or update this value is through Korev Oracle's settings UI.
+*   **For Existing `settings.json` Files (After an Upgrade)**: If you have an existing `tmp/settings.json` from a version of Korev Oracle prior to MCP server support, the `"mcp_servers"` key will likely be missing. To add this key:
+    1.  Ensure you are running a version of Korev Oracle that includes MCP server support.
+    2.  Run Korev Oracle and open its settings UI.
     3.  Save the settings (even without making changes). This action will write the complete current settings structure, including a default `"mcp_servers": ""` if not otherwise populated, to `tmp/settings.json`. You can then configure your servers via the UI or by carefully editing this string.
 
 ### MCP Server Configuration Structure
@@ -129,7 +129,7 @@ Here are templates for configuring individual servers within the `mcp_servers` J
 
 *   `"name"`: A unique name for the server. This name will be used to prefix the tools provided by this server (e.g., `my_server_name.tool_name`). The name is normalized internally (converted to lowercase, spaces and hyphens replaced with underscores).
 *   `"type"`: Optional explicit server type specification. Can be `"stdio"`, `"sse"`, or streaming HTTP variants (`"http-stream"`, `"streaming-http"`, `"streamable-http"`, `"http-streaming"`). If omitted, the type is auto-detected based on the presence of `"command"` (stdio) or `"url"` (defaults to sse for backward compatibility).
-*   `"disabled"`: A boolean (`true` or `false`). If `true`, PRISM Oracle will ignore this server configuration.
+*   `"disabled"`: A boolean (`true` or `false`). If `true`, Korev Oracle will ignore this server configuration.
 *   `"url"`: **Required for Remote SSE and Streaming HTTP Servers.** The endpoint URL.
 *   `"command"`: **Required for Local Stdio Servers.** The executable command.
 *   `"args"`: Optional list of arguments for local Stdio servers.
@@ -137,10 +137,10 @@ Here are templates for configuring individual servers within the `mcp_servers` J
 
 ## Using MCP Tools
 
-Once configured, successfully installed (if applicable, e.g., for `npx` based servers), and discovered by PRISM Oracle:
+Once configured, successfully installed (if applicable, e.g., for `npx` based servers), and discovered by Korev Oracle:
 
 *   **Tool Naming**: MCP tools will appear to the agent with a name prefixed by the server name you defined (and normalized, e.g., lowercase, underscores for spaces/hyphens). For instance, if your server is named `"sequential-thinking"` in the configuration and it offers a tool named `"run_chain"`, the agent will know it as `sequential_thinking.run_chain`.
 *   **Agent Interaction**: You can instruct the agent to use these tools. For example: "Agent, use the `sequential_thinking.run_chain` tool with the following input..." The agent's LLM will then formulate the appropriate JSON request.
-*   **Execution Flow**: PRISM Oracle's `process_tools` method (with logic in `python/helpers/mcp_handler.py`) prioritizes looking up the tool name in the `MCPConfig`. If found, the execution is delegated to the corresponding MCP server. If not found as an MCP tool, it then attempts to find a local/built-in tool with that name.
+*   **Execution Flow**: Korev Oracle's `process_tools` method (with logic in `python/helpers/mcp_handler.py`) prioritizes looking up the tool name in the `MCPConfig`. If found, the execution is delegated to the corresponding MCP server. If not found as an MCP tool, it then attempts to find a local/built-in tool with that name.
 
-This setup provides a flexible way to extend PRISM Oracle's capabilities by integrating with various external tool providers without modifying its core codebase.
+This setup provides a flexible way to extend Korev Oracle's capabilities by integrating with various external tool providers without modifying its core codebase.

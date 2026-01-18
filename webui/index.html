@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>PRISM Oracle</title>
-    <link rel="icon" type="image/svg+xml" href="public/prism-oracle-logo.svg">
+    <title>Korev Oracle</title>
+    <link rel="icon" type="image/svg+xml" href="public/korev-oracle-logo.svg">
     <!-- PRISM Typography: Space Grotesk (angulaire-lisible) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +238,8 @@
                                     @click="switchTab('scheduler')" title="Task Scheduler">Task Scheduler</div>
                                 <div class="settings-tab" :class="{'active': activeTab === 'backup'}"
                                     @click="switchTab('backup')" title="Backup & Restore">Backup & Restore</div>
+                                <div class="settings-tab" :class="{'active': activeTab === 'legal'}"
+                                    @click="switchTab('legal')" title="Legal">Legal</div>
                             </div>
                         </div>
 
@@ -364,6 +366,11 @@
                             <div id="section-tunnel" class="section" x-show="activeTab === 'external'">
                                 <x-component path="settings/tunnel/tunnel-section.html" />
                             </div>
+
+                            <!-- Legal section content - only visible in Legal tab -->
+                            <div id="section-legal" class="section" x-show="activeTab === 'legal'">
+                                <x-component path="settings/legal/legal-notices.html" />
+                            </div>
                         </div>
 
                         <!-- Task Scheduler Tab Content -->
@@ -383,7 +390,7 @@
                             <div id="section-task-scheduler" class="section" x-data="schedulerSettings">
                                 <div class="section-title">Task Scheduler</div>
                                 <div class="section-description">Manage scheduled tasks and automated processes for
-                                    PRISM Oracle.</div>
+                                    Korev Oracle.</div>
 
                                 <!-- Create Task Form -->
                                 <div class="scheduler-form" x-show="isCreating">

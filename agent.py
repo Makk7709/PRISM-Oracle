@@ -344,8 +344,8 @@ class Agent:
 
         # non-config vars
         self.number = number
-        # PRISM Oracle branding: main agent = "PRISM Oracle", subordinates = "Oracle-N"
-        self.agent_name = "PRISM Oracle" if self.number == 0 else f"Oracle-{self.number}"
+        # Korev Oracle branding: main agent = "Korev Oracle", subordinates = "Oracle-N"
+        self.agent_name = "Korev Oracle" if self.number == 0 else f"Oracle-{self.number}"
 
         self.history = history.History(self)  # type: ignore[abstract]
         self.last_user_message: history.Message | None = None

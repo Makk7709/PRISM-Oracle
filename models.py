@@ -833,7 +833,7 @@ def _adjust_call_args(provider_name: str, model_name: str, kwargs: dict):
     if provider_name == "openrouter":
         kwargs["extra_headers"] = {
             "HTTP-Referer": "https://agent-zero.ai",
-            "X-Title": "PRISM Oracle",
+            "X-Title": "Korev Oracle",
         }
 
     # Normalize OpenAI model ids (strip vendor prefix + map gpt-5.x -> gpt-5)

@@ -1,0 +1,74 @@
+================================================================================
+                        KOREV ORACLE — PROPRIETARY LICENSE
+================================================================================
+
+Copyright (c) 2025 Korev AI
+All Rights Reserved.
+
+================================================================================
+PROPRIETARY SOFTWARE LICENSE AGREEMENT
+================================================================================
+
+This software ("Korev Oracle") is the proprietary product of Korev AI.
+
+GRANT OF LICENSE
+----------------
+Subject to the terms of this Agreement, Korev AI grants you a limited,
+non-exclusive, non-transferable license to use this software for internal
+business purposes only.
+
+RESTRICTIONS
+------------
+You may NOT:
+- Copy, modify, or distribute this software without written permission
+- Reverse engineer, decompile, or disassemble this software
+- Remove or alter any proprietary notices or labels
+- Use this software to create derivative products for commercial distribution
+- Sublicense, rent, or lease this software to third parties
+
+INTELLECTUAL PROPERTY
+---------------------
+All intellectual property rights in Korev Oracle, including but not limited to:
+- The "Korev Oracle" name and branding
+- PRISM design system (Spectral Edge, Prism Cut, Refraction Grid)
+- Specialized agent profiles (Finance, Marketing, Sales)
+- User interface designs and layouts
+- Custom extensions and modifications
+
+remain the exclusive property of Korev AI.
+
+THIRD-PARTY COMPONENTS
+----------------------
+Korev Oracle incorporates open-source software components which are subject to
+their own license terms. See THIRD_PARTY_NOTICES.txt for details.
+
+The inclusion of third-party components does not grant you any rights beyond
+those specified in their respective licenses.
+
+DISCLAIMER OF WARRANTY
+----------------------
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. KOREV AI
+DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+THE WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+LIMITATION OF LIABILITY
+-----------------------
+IN NO EVENT SHALL KOREV AI BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF THE USE OR INABILITY TO
+USE THIS SOFTWARE.
+
+TERMINATION
+-----------
+This license is effective until terminated. It will terminate automatically
+if you fail to comply with any term of this Agreement.
+
+GOVERNING LAW
+-------------
+This Agreement shall be governed by the laws of France.
+
+CONTACT
+-------
+Korev AI
+Email: contact@korev-ai.com
+
+================================================================================
