@@ -37,6 +37,14 @@
               <span class="prism-switch__track"></span>
             </label>
           </li>
+          <li class="prism-preference-item" x-data="{ lang: localStorage.getItem('korev.language') || 'auto' }">
+            <span class="prism-preference-label" x-text="t('settings.language')">Language</span>
+            <select class="prism-lang-select" x-model="lang" @change="window.i18n.setLanguage(lang)">
+              <option value="auto">Auto</option>
+              <option value="en">EN</option>
+              <option value="fr">FR</option>
+            </select>
+          </li>
           <li class="prism-preference-item" x-data>
             <span class="prism-preference-label">Speech</span>
             <label class="prism-switch">
@@ -200,6 +208,27 @@
     }
 
     .prism-switch input:focus-visible + .prism-switch__track {
+      box-shadow: var(--prism-focus-ring);
+    }
+
+    /* Language Selector */
+    .prism-lang-select {
+      padding: 4px 8px;
+      font-size: var(--prism-text-xs);
+      background: var(--prism-bg-elevated);
+      color: var(--prism-text-secondary);
+      border: 1px solid var(--prism-border);
+      border-radius: var(--prism-radius-sm);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .prism-lang-select:hover {
+      border-color: var(--prism-border-strong);
+    }
+
+    .prism-lang-select:focus {
+      border-color: var(--prism-accent);
       box-shadow: var(--prism-focus-ring);
     }
   </style>
