@@ -157,6 +157,7 @@
     <link rel="manifest" href="js/manifest.json">
 
     <!-- Non-module scripts after Alpine.js -->
+    <script type="text/javascript" src="js/i18n.js"></script>
     <script type="text/javascript" src="js/settings.js"></script>
     <script>
         // Expose git info for sidebar component
@@ -369,6 +370,10 @@
 
                             <!-- Legal section content - only visible in Legal tab -->
                             <div id="section-legal" class="section" x-show="activeTab === 'legal'">
+                                <!-- Language Selector -->
+                                <x-component path="settings/language/language-selector.html" />
+                                
+                                <!-- Legal Notices -->
                                 <x-component path="settings/legal/legal-notices.html" />
                             </div>
                         </div>

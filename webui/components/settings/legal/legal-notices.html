@@ -1,30 +1,30 @@
 <template x-component="legal-notices">
     <div class="settings-section">
         <div class="settings-header">
-            <h3>📜 Mentions Légales</h3>
-            <p class="settings-description">Licences et attributions des composants tiers</p>
+            <h3>📜 <span x-text="t('legal.title')">Legal Notices</span></h3>
+            <p class="settings-description" x-text="t('legal.description')">Licenses and attributions for third-party components</p>
         </div>
 
         <div class="legal-content" style="margin-top: 1rem;">
             <!-- Korev License -->
             <div class="legal-card" style="background: var(--prism-surface); border-radius: var(--prism-radius-md); padding: 1rem; margin-bottom: 1rem;">
-                <h4 style="margin: 0 0 0.5rem 0; color: var(--prism-text);">Korev Oracle</h4>
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--prism-text);" x-text="t('legal.korev_license')">Korev Oracle</h4>
                 <p style="color: var(--prism-text-muted); font-size: 0.875rem; margin: 0;">
-                    Copyright © 2025 KOREV AI. Tous droits réservés.<br>
-                    Logiciel propriétaire sous licence KOREV AI.
+                    <span x-text="t('legal.korev_copyright')">Copyright © 2025 KOREV AI. All rights reserved.</span><br>
+                    <span x-text="t('legal.korev_proprietary')">Proprietary software under KOREV AI license.</span>
                 </p>
             </div>
 
             <!-- Third-Party Notices -->
             <div class="legal-card" style="background: var(--prism-surface); border-radius: var(--prism-radius-md); padding: 1rem;">
-                <h4 style="margin: 0 0 0.5rem 0; color: var(--prism-text);">Composants Open Source</h4>
-                <p style="color: var(--prism-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
-                    Ce logiciel intègre des composants open source sous licence MIT.
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--prism-text);" x-text="t('legal.opensource_title')">Open Source Components</h4>
+                <p style="color: var(--prism-text-muted); font-size: 0.875rem; margin-bottom: 1rem;" x-text="t('legal.opensource_desc')">
+                    This software incorporates open source components under MIT license.
                 </p>
                 
                 <details style="cursor: pointer;">
-                    <summary style="color: var(--prism-accent); font-weight: 500; padding: 0.5rem 0;">
-                        Afficher les licences tierces
+                    <summary style="color: var(--prism-accent); font-weight: 500; padding: 0.5rem 0;" x-text="t('legal.show_licenses')">
+                        Show third-party licenses
                     </summary>
                     <div style="margin-top: 1rem; padding: 1rem; background: var(--prism-bg); border-radius: var(--prism-radius-sm); font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; color: var(--prism-text-muted);">
 <strong>AGENT ZERO — MIT License</strong>
@@ -56,7 +56,7 @@ Source: https://github.com/frdel/agent-zero
 
             <!-- Additional info -->
             <p style="color: var(--prism-text-muted); font-size: 0.75rem; margin-top: 1rem; text-align: center;">
-                Pour la liste complète des licences, voir <code>legal/THIRD_PARTY_NOTICES.txt</code>
+                <span x-text="t('legal.full_licenses')">For the complete list of licenses, see</span> <code>legal/THIRD_PARTY_NOTICES.txt</code>
             </p>
         </div>
     </div>

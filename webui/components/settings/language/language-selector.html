@@ -1,0 +1,67 @@
+<template x-component="language-selector">
+    <div class="settings-section" x-data="languageSelector()">
+        <div class="settings-header">
+            <h3>🌐 <span x-text="t('settings.language')">Language</span></h3>
+            <p class="settings-description" x-text="t('settings.language_auto')">Select your preferred language</p>
+        </div>
+
+        <div class="language-selector" style="margin-top: 1rem;">
+            <div class="field">
+                <div class="field-label">
+                    <span x-text="t('settings.language')">Language</span>
+                </div>
+                <div class="field-input">
+                    <select 
+                        x-model="selectedLanguage"
+                        @change="changeLanguage($event.target.value)"
+                        class="language-dropdown"
+                        style="width: 100%; padding: 0.5rem; border-radius: var(--prism-radius-sm); background: var(--prism-surface); color: var(--prism-text); border: 1px solid var(--prism-border);">
+                        <option value="auto" x-text="t('settings.language_auto')">Auto (detect from browser)</option>
+                        <option value="en" x-text="t('settings.language_en')">English</option>
+                        <option value="fr" x-text="t('settings.language_fr')">Français</option>
+                    </select>
+                </div>
+            </div>
+            
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--prism-text-muted);">
+                <span x-show="selectedLanguage === 'auto'">
+                    🔍 <span x-text="'Detected: ' + effectiveLanguage.toUpperCase()"></span>
+                </span>
+                <span x-show="selectedLanguage !== 'auto'">
+                    ✓ <span x-text="selectedLanguage === 'fr' ? 'Langue sélectionnée' : 'Language selected'"></span>
+                </span>
+            </p>
+        </div>
+    </div>
+</template>
+
+<script>
+function languageSelector() {
+    return {
+        selectedLanguage: 'auto',
+        effectiveLanguage: 'en',
+        
+        init() {
+            const info = window.i18n.getLanguageInfo();
+            this.selectedLanguage = info.setting;
+            this.effectiveLanguage = info.current;
+            
+            // Listen for language changes from other sources
+            window.addEventListener('languageChanged', (e) => {
+                this.effectiveLanguage = e.detail.language;
+            });
+        },
+        
+        async changeLanguage(lang) {
+            this.selectedLanguage = lang;
+            await window.i18n.setLanguage(lang);
+            this.effectiveLanguage = window.i18n.getLanguageInfo().current;
+            
+            // Trigger UI refresh
+            // The page will need a soft refresh to update all translations
+            // For now, we dispatch an event that components can listen to
+            window.dispatchEvent(new CustomEvent('i18n:refresh'));
+        }
+    };
+}
+</script>
