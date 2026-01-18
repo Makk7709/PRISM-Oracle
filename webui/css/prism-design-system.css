@@ -109,15 +109,9 @@
   );
   
   /* ─────────────────────────────────────────────────────────────────────────
-   * REFRACTION GRID — Ultra-subtle background pattern (3-5% opacity)
+   * REFRACTION GRID — Disabled (clean background)
    * ───────────────────────────────────────────────────────────────────────── */
-  --prism-refraction-grid: repeating-linear-gradient(
-    -3deg,
-    transparent,
-    transparent 40px,
-    rgba(255, 255, 255, 0.015) 40px,
-    rgba(255, 255, 255, 0.015) 41px
-  );
+  --prism-refraction-grid: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -154,14 +148,8 @@
   /* Focus ring — Adjusted for light bg */
   --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
   
-  /* Refraction Grid — Lower opacity for light mode */
-  --prism-refraction-grid: repeating-linear-gradient(
-    -3deg,
-    transparent,
-    transparent 40px,
-    rgba(60, 50, 40, 0.02) 40px,
-    rgba(60, 50, 40, 0.02) 41px
-  );
+  /* Refraction Grid — Disabled (clean background) */
+  --prism-refraction-grid: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
