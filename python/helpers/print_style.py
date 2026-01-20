@@ -108,11 +108,11 @@ class PrintStyle:
     def print(self, *args, sep=' ', **kwargs):
         self._add_padding_if_needed()
         if not PrintStyle.last_endline:
-            print()
+            self._safe_print("")
             self._log_html("<br>")
         plain_text, styled_text, html_text = self.get(*args, sep=sep, **kwargs)
         if not self.log_only:
-            print(styled_text, end='\n', flush=True)
+            self._safe_print(styled_text, end='\n')
         self._log_html(html_text+"<br>\n")
         PrintStyle.last_endline = True
 
@@ -120,9 +120,27 @@ class PrintStyle:
         self._add_padding_if_needed()
         plain_text, styled_text, html_text = self.get(*args, sep=sep, **kwargs)
         if not self.log_only:
-            print(styled_text, end='', flush=True)
+            self._safe_print(styled_text, end='')
         self._log_html(html_text)
         PrintStyle.last_endline = False
+    
+    def _safe_print(self, text, end='\n'):
+        """Print with retry on BlockingIOError"""
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(text, end=end, flush=True)
+                return
+            except BlockingIOError:
+                if attempt < max_retries - 1:
+                    time.sleep(0.1)  # Wait a bit for buffer to clear
+                else:
+                    # Last attempt: try without flush
+                    try:
+                        print(text, end=end, flush=False)
+                    except BlockingIOError:
+                        pass  # Silently fail if still blocking
 
     def is_last_line_empty(self):
         lines = sys.stdin.readlines()
