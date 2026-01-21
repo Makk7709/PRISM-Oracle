@@ -14,6 +14,7 @@ import models
 from python.helpers import extract_tools, files, errors, history, tokens, context as context_helper
 from python.helpers import dirty_json
 from python.helpers.print_style import PrintStyle
+from python.helpers.execution_guard import check_execution_guard, ExecutionGuardResult
 
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -445,6 +446,24 @@ class Agent:
                             self.context.log.log(type="warning", content=warning_msg)
 
                         else:  # otherwise proceed with tool
+                            # === EXECUTION GUARD: Enforce tool execution for action requests ===
+                            user_msg_text = self.last_user_message.content if self.last_user_message else ""
+                            guard_result = check_execution_guard(user_msg_text, agent_response)
+                            
+                            if not guard_result.is_valid:
+                                # VIOLATION: Action request without tool call
+                                PrintStyle(font_color="yellow", bold=True, padding=True).print(
+                                    f"[Execution Guard] EXECUTION_REQUIRED - forcing tool call"
+                                )
+                                self.context.log.log(
+                                    type="warning",
+                                    content=f"Execution guard violation: {guard_result.detected_actions}"
+                                )
+                                # Inject rejection message and continue loop
+                                self.hist_add_warning(guard_result.rejection_message)
+                                continue  # Force new generation with EXECUTION_REQUIRED
+                            # === END EXECUTION GUARD ===
+                            
                             # Append the assistant's response to the history
                             self.hist_add_ai_response(agent_response)
                             # process tools requested in agent message
