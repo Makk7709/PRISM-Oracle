@@ -132,6 +132,13 @@ def detect_action_request(user_message: str) -> tuple[bool, list[str]]:
     if not user_message:
         return False, []
     
+    # Ensure user_message is a string
+    if not isinstance(user_message, str):
+        try:
+            user_message = str(user_message)
+        except Exception:
+            return False, []
+    
     detected_actions = []
     message_lower = user_message.lower()
     

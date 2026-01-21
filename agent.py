@@ -447,7 +447,19 @@ class Agent:
 
                         else:  # otherwise proceed with tool
                             # === EXECUTION GUARD: Enforce tool execution for action requests ===
-                            user_msg_text = self.last_user_message.content if self.last_user_message else ""
+                            user_msg_text = ""
+                            if self.last_user_message:
+                                content = self.last_user_message.content
+                                if isinstance(content, str):
+                                    user_msg_text = content
+                                elif isinstance(content, list):
+                                    # Multimodal message - extract text parts
+                                    user_msg_text = " ".join(
+                                        p.get("text", "") if isinstance(p, dict) else str(p)
+                                        for p in content
+                                    )
+                                elif isinstance(content, dict):
+                                    user_msg_text = content.get("text", str(content))
                             guard_result = check_execution_guard(user_msg_text, agent_response)
                             
                             if not guard_result.is_valid:
