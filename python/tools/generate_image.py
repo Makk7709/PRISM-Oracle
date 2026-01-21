@@ -76,7 +76,7 @@ class GenerateImage(Tool):
         primary = current_settings.get("image_gen_primary_provider", "openai")
         fallback = current_settings.get("image_gen_fallback_provider", "none")
         
-        self.update_progress(f"Generating image with {primary}...")
+        PrintStyle(font_color="cyan").print(f"[Image Gen] Generating image with {primary}...")
         
         # Try primary provider
         result = await self._generate_with_provider(
@@ -97,7 +97,7 @@ class GenerateImage(Tool):
             PrintStyle(font_color="yellow").print(
                 f"Primary provider ({primary}) failed, trying fallback ({fallback})..."
             )
-            self.update_progress(f"Fallback: generating with {fallback}...")
+            PrintStyle(font_color="yellow").print(f"[Image Gen] Fallback: generating with {fallback}...")
             
             result = await self._generate_with_provider(
                 provider=fallback,
