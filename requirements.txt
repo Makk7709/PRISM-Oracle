@@ -47,3 +47,7 @@ html2text>=2024.2.26
 beautifulsoup4>=4.12.3
 exchangelib>=5.4.3
 pywinpty==3.0.2; sys_platform == "win32"
+# Excel file support
+openpyxl>=3.1.0
+pandas>=2.0.0
+xlrd>=2.0.0
