@@ -204,6 +204,7 @@ export function _drawMessage(
       processedContent = convertImageTags(processedContent);
       processedContent = convertImgFilePaths(processedContent);
       processedContent = marked.parse(processedContent, { breaks: true });
+      processedContent = convertGeneratedImageDownloadLinks(processedContent);
       processedContent = convertPathsToLinks(processedContent);
       processedContent = addBlankTargetsToLinks(processedContent);
 
@@ -953,6 +954,19 @@ function escapeHTML(str) {
     '"': "&quot;",
   };
   return str.replace(/[&<>'"]/g, (char) => escapeChars[char]);
+}
+
+function convertGeneratedImageDownloadLinks(str) {
+  // Convert text paths like /a0/tmp/generated_images/xxx.png or /tmp/generated_images/xxx.png
+  // to clickable download links (after markdown parsing, so they may be inside <strong> tags)
+  
+  // Match paths inside or outside of HTML tags, with optional /a0 prefix
+  const pathPattern = /(?:\/a0)?\/tmp\/generated_images\/([a-zA-Z0-9_\-\.]+\.png)/g;
+  
+  return str.replace(pathPattern, (match, filename) => {
+    const downloadUrl = `/image_get?path=tmp/generated_images/${filename}`;
+    return `<a href="${downloadUrl}" download="${filename}" class="download-link" style="color: var(--prism-accent); text-decoration: underline;">⬇️ ${filename}</a>`;
+  });
 }
 
 function convertPathsToLinks(str) {
