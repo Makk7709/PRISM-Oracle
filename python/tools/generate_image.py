@@ -416,35 +416,28 @@ class GenerateImage(Tool):
         model = result.get("model", "")
         latency = result.get("latency_ms", 0)
         fallback = result.get("fallback_used", False)
-        revised = result.get("revised_prompt", "")
         
         # Prefer local images if available
         display_images = local_images if local_images else images
         
-        output = f"## ✅ Image Generated\n\n"
-        output += f"**Provider:** {provider}"
+        # Build clean output - image will be displayed inline by UI
+        output = "## ✅ Image générée avec succès\n\n"
+        
+        # Display images
+        for i, img in enumerate(display_images, 1):
+            output += f"![Image {i}]({img})\n\n"
+        
+        # Add simple metadata
+        output += f"*{provider}"
         if model:
             output += f" ({model})"
-        output += "\n"
-        
+        output += f" • {latency}ms"
         if fallback:
-            output += "**Note:** Fallback provider was used\n"
+            output += " • fallback"
+        output += "*\n\n"
         
-        output += f"**Generation time:** {latency}ms\n\n"
-        
-        if revised and revised != prompt:
-            output += f"**Revised prompt:** {revised}\n\n"
-        
-        output += "### Generated Images\n\n"
-        for i, img in enumerate(display_images, 1):
-            if img.startswith("img://"):
-                # Local image path - will be converted by UI
-                output += f"![Generated Image {i}]({img})\n\n"
-            elif img.startswith("data:"):
-                output += f"![Generated Image {i}]({img})\n\n"
-            else:
-                output += f"**Image {i}:** [View Image]({img})\n\n"
-                output += f"![Generated Image {i}]({img})\n\n"
+        # Simple download instruction
+        output += "💾 **Pour télécharger** : clic droit sur l'image → Enregistrer sous\n"
         
         return output
 
