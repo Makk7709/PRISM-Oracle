@@ -423,9 +423,13 @@ class GenerateImage(Tool):
         # Build clean output - image will be displayed inline by UI
         output = "## ✅ Image générée avec succès\n\n"
         
-        # Display images
+        # Display images with download links
         for i, img in enumerate(display_images, 1):
             output += f"![Image {i}]({img})\n\n"
+            # Add direct download link (convert img:// to /image_get URL)
+            if img.startswith("img://"):
+                download_url = img.replace("img://", "/image_get?path=")
+                output += f"[⬇️ Télécharger l'image]({download_url})\n\n"
         
         # Add simple metadata
         output += f"*{provider}"
@@ -434,10 +438,7 @@ class GenerateImage(Tool):
         output += f" • {latency}ms"
         if fallback:
             output += " • fallback"
-        output += "*\n\n"
-        
-        # Simple download instruction
-        output += "💾 **Pour télécharger** : clic droit sur l'image → Enregistrer sous\n"
+        output += "*\n"
         
         return output
 

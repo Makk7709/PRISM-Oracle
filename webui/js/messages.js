@@ -920,7 +920,16 @@ function convertHTML(str) {
 }
 
 function convertImgFilePaths(str) {
-  return str.replace(/img:\/\//g, "/image_get?path=");
+  // Convert img:// and img:/// protocols to API endpoint
+  // Handle both img://path and img:///path (with extra slash)
+  let result = str.replace(/img:\/\/\/?/g, "/image_get?path=");
+  
+  // Also convert Docker-style paths (/a0/tmp/...) and absolute paths (/tmp/...)
+  // that appear in markdown links or plain text
+  result = result.replace(/\/a0\/(tmp\/generated_images\/[^\s\)\"\']+)/g, "/image_get?path=$1");
+  result = result.replace(/(?<![?=])\/tmp\/generated_images\/([^\s\)\"\']+)/g, "/image_get?path=tmp/generated_images/$1");
+  
+  return result;
 }
 
 export function convertIcons(str) {
