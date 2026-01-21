@@ -920,13 +920,18 @@ function convertHTML(str) {
 }
 
 function convertImgFilePaths(str) {
+  // First, normalize Docker paths /a0/ to nothing (remove the /a0 prefix)
+  let result = str.replace(/\/a0\//g, "/");
+  
   // Convert img:// and img:/// protocols to API endpoint
   // Handle both img://path and img:///path (with extra slash)
-  let result = str.replace(/img:\/\/\/?/g, "/image_get?path=");
+  // Also handle img:////path (4 slashes case from /a0/ removal)
+  result = result.replace(/img:\/\/\/?/g, "/image_get?path=");
   
-  // Also convert Docker-style paths (/a0/tmp/...) and absolute paths (/tmp/...)
-  // that appear in markdown links or plain text
-  result = result.replace(/\/a0\/(tmp\/generated_images\/[^\s\)\"\']+)/g, "/image_get?path=$1");
+  // Normalize any double slashes in paths after conversion
+  result = result.replace(/path=\/+/g, "path=");
+  
+  // Also convert standalone /tmp/... paths that aren't already converted
   result = result.replace(/(?<![?=])\/tmp\/generated_images\/([^\s\)\"\']+)/g, "/image_get?path=tmp/generated_images/$1");
   
   return result;
