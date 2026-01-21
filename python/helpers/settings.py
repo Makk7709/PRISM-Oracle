@@ -56,6 +56,17 @@ class Settings(TypedDict):
     browser_model_kwargs: dict[str, Any]
     browser_http_headers: dict[str, Any]
 
+    # Image Generation settings
+    image_gen_enabled: bool
+    image_gen_primary_provider: str
+    image_gen_fallback_provider: str
+    image_gen_openai_model: str
+    image_gen_openai_api_key: str
+    image_gen_google_model: str
+    image_gen_google_api_key: str
+    image_gen_default_size: str
+    image_gen_default_quality: str
+
     agent_profile: str
     agent_memory_subdir: str
     agent_knowledge_subdir: str
@@ -528,6 +539,137 @@ def convert_out(settings: Settings) -> SettingsOutput:
         "title": "Web Browser Model",
         "description": "Settings for the web browser model. Korev Oracle uses <a href='https://github.com/browser-use/browser-use' target='_blank'>browser-use</a> agentic framework to handle web interactions.",
         "fields": browser_model_fields,
+        "tab": "agent",
+    }
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # IMAGE GENERATION SECTION
+    # ═══════════════════════════════════════════════════════════════════════════
+    image_gen_fields: list[SettingsField] = []
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_enabled",
+            "title": "Enable Image Generation",
+            "description": "Enable or disable image generation tools for all agents.",
+            "type": "switch",
+            "value": settings["image_gen_enabled"],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_primary_provider",
+            "title": "Primary Image Provider",
+            "description": "Select the primary provider for image generation. Will be tried first.",
+            "type": "select",
+            "value": settings["image_gen_primary_provider"],
+            "options": [
+                {"value": "openai", "label": "OpenAI (DALL-E)"},
+                {"value": "google", "label": "Google (Imagen)"},
+            ],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_fallback_provider",
+            "title": "Fallback Image Provider",
+            "description": "Fallback provider if primary fails. Set to 'none' to disable fallback.",
+            "type": "select",
+            "value": settings["image_gen_fallback_provider"],
+            "options": [
+                {"value": "none", "label": "None (no fallback)"},
+                {"value": "openai", "label": "OpenAI (DALL-E)"},
+                {"value": "google", "label": "Google (Imagen)"},
+            ],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_openai_model",
+            "title": "OpenAI Model",
+            "description": "OpenAI image model to use (e.g., dall-e-3, dall-e-2).",
+            "type": "select",
+            "value": settings["image_gen_openai_model"],
+            "options": [
+                {"value": "dall-e-3", "label": "DALL-E 3 (Best quality)"},
+                {"value": "dall-e-2", "label": "DALL-E 2 (Faster, cheaper)"},
+            ],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_openai_api_key",
+            "title": "OpenAI API Key",
+            "description": "API key for OpenAI image generation. Leave empty to use the main OpenAI API key from API Keys section.",
+            "type": "password",
+            "value": settings["image_gen_openai_api_key"] if settings["image_gen_openai_api_key"] else "",
+            "placeholder": "sk-... (optional, uses main key if empty)",
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_google_model",
+            "title": "Google Imagen Model",
+            "description": "Google Imagen model to use.",
+            "type": "select",
+            "value": settings["image_gen_google_model"],
+            "options": [
+                {"value": "imagen-3.0-generate-001", "label": "Imagen 3.0 (Latest)"},
+                {"value": "imagen-3.0-fast-generate-001", "label": "Imagen 3.0 Fast"},
+            ],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_google_api_key",
+            "title": "Google API Key",
+            "description": "API key for Google Imagen. Required if using Google as provider.",
+            "type": "password",
+            "value": settings["image_gen_google_api_key"] if settings["image_gen_google_api_key"] else "",
+            "placeholder": "AIza... (required for Google)",
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_default_size",
+            "title": "Default Image Size",
+            "description": "Default size for generated images.",
+            "type": "select",
+            "value": settings["image_gen_default_size"],
+            "options": [
+                {"value": "1024x1024", "label": "1024x1024 (Square)"},
+                {"value": "1792x1024", "label": "1792x1024 (Landscape)"},
+                {"value": "1024x1792", "label": "1024x1792 (Portrait)"},
+            ],
+        }
+    )
+
+    image_gen_fields.append(
+        {
+            "id": "image_gen_default_quality",
+            "title": "Default Quality",
+            "description": "Default quality setting for image generation.",
+            "type": "select",
+            "value": settings["image_gen_default_quality"],
+            "options": [
+                {"value": "standard", "label": "Standard (Faster)"},
+                {"value": "hd", "label": "HD (Better quality)"},
+            ],
+        }
+    )
+
+    image_gen_section: SettingsSection = {
+        "id": "image_gen",
+        "title": "Image Generation",
+        "description": "Configure image generation providers (OpenAI DALL-E, Google Imagen). Used by agents for creating visuals, marketing assets, and illustrations.",
+        "fields": image_gen_fields,
         "tab": "agent",
     }
 
@@ -1281,6 +1423,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
             chat_model_section,
             util_model_section,
             browser_model_section,
+            image_gen_section,
             embed_model_section,
             memory_section,
             speech_section,
@@ -1511,6 +1654,17 @@ def get_default_settings() -> Settings:
         auth_login="",
         auth_password="",
         root_password="",
+        # Image Generation defaults
+        image_gen_enabled=True,
+        image_gen_primary_provider="openai",
+        image_gen_fallback_provider="google",
+        image_gen_openai_model="dall-e-3",
+        image_gen_openai_api_key="",
+        image_gen_google_model="imagen-3.0-generate-001",
+        image_gen_google_api_key="",
+        image_gen_default_size="1024x1024",
+        image_gen_default_quality="standard",
+        # Agent config
         agent_profile="multitask",
         agent_memory_subdir="default",
         agent_knowledge_subdir="custom",
