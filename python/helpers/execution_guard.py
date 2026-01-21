@@ -185,11 +185,14 @@ def has_tool_call(agent_response: str) -> bool:
     
     tool_name = tool_name_match.group(1).lower()
     
-    # 'response' tool is valid only if it's MISSING_TOOL or very short
+    # 'response' tool requires validation
     if tool_name == "response":
-        # Check if it's a MISSING_TOOL response (valid)
-        if "MISSING_TOOL:" in agent_response:
-            return True
+        # REJECT MISSING_TOOL responses - agent should use code_execution instead!
+        if "MISSING_TOOL:" in agent_response or "MISSING_TOOL" in agent_response:
+            PrintStyle(font_color="yellow", bold=True).print(
+                "[Execution Guard] REJECTED: MISSING_TOOL is not allowed. Use code_execution!"
+            )
+            return False  # Force agent to use code_execution
         
         # Check if the response text is short (< 200 chars = acceptable brief response)
         text_match = re.search(r'"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', agent_response, re.DOTALL)
@@ -269,12 +272,21 @@ def _build_rejection_message(detected_actions: list[str]) -> str:
     
     return f"""{{
     "error": "EXECUTION_REQUIRED",
-    "message": "You must call an appropriate tool to execute this task. Detected action intent: {actions_str}",
+    "message": "You must call a tool to execute this task. Detected action intent: {actions_str}",
     "instructions": [
-        "Do not explain what you will do. Execute it.",
-        "Call the appropriate tool immediately.",
-        "If no tool exists, respond with MISSING_TOOL: <tool_name>"
-    ]
+        "NEVER say MISSING_TOOL. Use code_execution instead.",
+        "Write Python code to accomplish the task.",
+        "Available: pandas, openpyxl, fitz (PyMuPDF), reportlab, pytesseract, PIL",
+        "Files are in: tmp/uploads/",
+        "Execute immediately with code_execution tool."
+    ],
+    "example": {{
+        "tool_name": "code_execution",
+        "tool_args": {{
+            "runtime": "python",
+            "code": "import pandas as pd\\ndf = pd.read_excel('tmp/uploads/yourfile.xlsx')\\nprint(df)"
+        }}
+    }}
 }}"""
 
 
