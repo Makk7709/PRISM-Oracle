@@ -9,6 +9,11 @@ from mimetypes import guess_type
 class ImageGet(ApiHandler):
 
     @classmethod
+    def requires_csrf(cls) -> bool:
+        # Image serving is read-only, no CSRF protection needed
+        return False
+
+    @classmethod
     def get_methods(cls) -> list[str]:
         return ["GET"]
 
@@ -22,6 +27,10 @@ class ImageGet(ApiHandler):
 
         if not path:
             raise ValueError("No path provided")
+        
+        # Normalize path: strip leading "/" to ensure it's treated as relative to project
+        # This fixes paths like "/tmp/generated_images/..." -> "tmp/generated_images/..."
+        path = path.lstrip("/")
 
         # check if path is within base directory
         if runtime.is_development():
