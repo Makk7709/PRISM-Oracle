@@ -5,7 +5,7 @@
 ║  Unified tool for AI image generation with provider fallback.               ║
 ║  Supports: OpenAI DALL-E, Google Imagen                                     ║
 ║                                                                              ║
-║  Version: 1.0.0                                                              ║
+║  Version: 1.1.0                                                              ║
 ║  © 2025 Korev AI — Proprietary                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -13,13 +13,17 @@
 import base64
 import os
 import time
+import uuid
 from typing import Any, Optional
 
 import aiohttp
 
 from python.helpers.tool import Tool, Response
-from python.helpers import settings
+from python.helpers import settings, files
 from python.helpers.print_style import PrintStyle
+
+# Directory for saving generated images
+GENERATED_IMAGES_DIR = "tmp/generated_images"
 
 
 class GenerateImage(Tool):
@@ -117,6 +121,26 @@ class GenerateImage(Tool):
         latency_ms = int((time.time() - start_time) * 1000)
         result["latency_ms"] = latency_ms
         result["fallback_used"] = fallback_used
+        
+        # Download and save images locally for better display
+        if result.get("status") == "success":
+            images = result.get("images", [])
+            local_images = []
+            
+            async with aiohttp.ClientSession() as session:
+                for img in images:
+                    if img.startswith("data:"):
+                        # Base64 image - save locally
+                        local_path = await self._save_base64_image(img)
+                        local_images.append(local_path)
+                    elif img.startswith("http"):
+                        # URL image - download and save locally
+                        local_path = await self._download_and_save_image(img, session)
+                        local_images.append(local_path)
+                    else:
+                        local_images.append(img)
+            
+            result["local_images"] = local_images
         
         # Log result
         self._log_generation(result, prompt, purpose)
@@ -319,14 +343,83 @@ class GenerateImage(Tool):
                     "images": images
                 }
 
+    async def _download_and_save_image(self, url: str, session: aiohttp.ClientSession) -> str:
+        """Download image from URL and save locally, return local path."""
+        try:
+            async with session.get(url, timeout=60) as response:
+                if response.status != 200:
+                    PrintStyle(font_color="red").print(f"[Image Gen] Failed to download image: HTTP {response.status}")
+                    return url  # Return original URL as fallback
+                
+                # Generate unique filename
+                image_id = str(uuid.uuid4())[:8]
+                timestamp = int(time.time())
+                filename = f"generated_{timestamp}_{image_id}.png"
+                
+                # Ensure directory exists
+                save_dir = files.get_abs_path(GENERATED_IMAGES_DIR)
+                os.makedirs(save_dir, exist_ok=True)
+                
+                # Save image
+                filepath = os.path.join(save_dir, filename)
+                image_data = await response.read()
+                
+                with open(filepath, "wb") as f:
+                    f.write(image_data)
+                
+                PrintStyle(font_color="green").print(f"[Image Gen] Image saved to: {filepath}")
+                
+                # Return path that can be served by Flask
+                return f"img://{GENERATED_IMAGES_DIR}/{filename}"
+                
+        except Exception as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] Error downloading image: {e}")
+            return url  # Return original URL as fallback
+
+    async def _save_base64_image(self, base64_data: str) -> str:
+        """Save base64 image locally, return local path."""
+        try:
+            # Remove data URL prefix if present
+            if "," in base64_data:
+                base64_data = base64_data.split(",", 1)[1]
+            
+            # Generate unique filename
+            image_id = str(uuid.uuid4())[:8]
+            timestamp = int(time.time())
+            filename = f"generated_{timestamp}_{image_id}.png"
+            
+            # Ensure directory exists
+            save_dir = files.get_abs_path(GENERATED_IMAGES_DIR)
+            os.makedirs(save_dir, exist_ok=True)
+            
+            # Save image
+            filepath = os.path.join(save_dir, filename)
+            image_data = base64.b64decode(base64_data)
+            
+            with open(filepath, "wb") as f:
+                f.write(image_data)
+            
+            PrintStyle(font_color="green").print(f"[Image Gen] Image saved to: {filepath}")
+            
+            # Return path that can be served by Flask
+            return f"img://{GENERATED_IMAGES_DIR}/{filename}"
+            
+        except Exception as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] Error saving base64 image: {e}")
+            return base64_data  # Return original as fallback
+
     def _format_success(self, result: dict, prompt: str) -> str:
         """Format successful generation result."""
         images = result.get("images", [])
+        local_images = result.get("local_images", [])  # Use local paths if available
         provider = result.get("provider", "unknown")
         model = result.get("model", "")
         latency = result.get("latency_ms", 0)
         fallback = result.get("fallback_used", False)
         revised = result.get("revised_prompt", "")
+        
+        # Prefer local images if available
+        display_images = local_images if local_images else images
         
         output = f"## ✅ Image Generated\n\n"
         output += f"**Provider:** {provider}"
@@ -343,8 +436,11 @@ class GenerateImage(Tool):
             output += f"**Revised prompt:** {revised}\n\n"
         
         output += "### Generated Images\n\n"
-        for i, img in enumerate(images, 1):
-            if img.startswith("data:"):
+        for i, img in enumerate(display_images, 1):
+            if img.startswith("img://"):
+                # Local image path - will be converted by UI
+                output += f"![Generated Image {i}]({img})\n\n"
+            elif img.startswith("data:"):
                 output += f"![Generated Image {i}]({img})\n\n"
             else:
                 output += f"**Image {i}:** [View Image]({img})\n\n"
