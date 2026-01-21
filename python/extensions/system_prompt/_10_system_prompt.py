@@ -32,7 +32,15 @@ class SystemPrompt(Extension):
 
 
 def get_main_prompt(agent: Agent):
-    return agent.read_prompt("agent.system.main.md")
+    from python.helpers import runtime, files
+    
+    # Pass environment variables to the prompt
+    work_dir = files.get_abs_path("")
+    return agent.read_prompt(
+        "agent.system.main.md",
+        dockerized=runtime.is_dockerized(),
+        work_dir=work_dir
+    )
 
 
 def get_tools_prompt(agent: Agent):
