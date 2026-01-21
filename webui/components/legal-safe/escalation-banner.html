@@ -1,0 +1,485 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    LEGAL-SAFE MODE — ESCALATION BANNER                      ║
+║                                                                              ║
+║  Bandeau d'alerte affiché quand requires_human_review=true.                 ║
+║  Rouge vif, message clair, triggers listés.                                 ║
+║                                                                              ║
+║  Version: 1.0.0                                                              ║
+║  © 2025 Korev AI — Proprietary                                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<div x-data="legalSafeEscalation()" 
+     x-show="show" 
+     x-cloak
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform -translate-y-2"
+     x-transition:enter-end="opacity-100 transform translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="legal-safe-escalation-banner"
+     role="alert"
+     aria-live="assertive">
+    
+    <!-- Main Banner -->
+    <div class="escalation-banner__main">
+        <!-- Icon -->
+        <div class="escalation-banner__icon">
+            <span class="material-symbols-outlined">gavel</span>
+        </div>
+        
+        <!-- Content -->
+        <div class="escalation-banner__content">
+            <h3 class="escalation-banner__title">
+                ⚖️ Validation Humaine Requise
+            </h3>
+            <p class="escalation-banner__subtitle">
+                Cette analyse juridique nécessite la validation d'un professionnel du droit.
+            </p>
+        </div>
+        
+        <!-- Dismiss Button -->
+        <button @click="dismiss()" 
+                class="escalation-banner__dismiss"
+                aria-label="Fermer l'alerte">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+    
+    <!-- Triggers List (expandable) -->
+    <div x-show="expanded" 
+         x-collapse
+         class="escalation-banner__details">
+        
+        <div class="escalation-banner__triggers">
+            <h4 class="escalation-banner__triggers-title">
+                Raisons de l'escalade :
+            </h4>
+            <ul class="escalation-banner__triggers-list">
+                <template x-for="trigger in triggers" :key="trigger.id">
+                    <li class="escalation-banner__trigger-item">
+                        <span class="escalation-banner__trigger-icon" :class="getTriggerIconClass(trigger.level)">
+                            <span class="material-symbols-outlined" x-text="getTriggerIcon(trigger.level)"></span>
+                        </span>
+                        <span class="escalation-banner__trigger-text" x-text="trigger.label"></span>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        
+        <!-- Confidence Score -->
+        <div class="escalation-banner__confidence">
+            <span class="escalation-banner__confidence-label">Niveau de confiance :</span>
+            <div class="escalation-banner__confidence-bar">
+                <div class="escalation-banner__confidence-fill" 
+                     :style="`width: ${confidence * 100}%`"
+                     :class="getConfidenceClass(confidence)">
+                </div>
+            </div>
+            <span class="escalation-banner__confidence-value" x-text="`${Math.round(confidence * 100)}%`"></span>
+        </div>
+        
+        <!-- Recommendation -->
+        <div class="escalation-banner__recommendation">
+            <span class="material-symbols-outlined">info</span>
+            <span>Consultez un <strong>avocat</strong> ou un <strong>juriste qualifié</strong> avant toute décision.</span>
+        </div>
+    </div>
+    
+    <!-- Expand/Collapse Button -->
+    <button @click="expanded = !expanded" 
+            class="escalation-banner__toggle"
+            :aria-expanded="expanded">
+        <span x-text="expanded ? 'Masquer les détails' : 'Voir les détails'"></span>
+        <span class="material-symbols-outlined" :class="{'rotate-180': expanded}">expand_more</span>
+    </button>
+</div>
+
+<script>
+/**
+ * Alpine.js component for Legal-Safe Escalation Banner
+ */
+function legalSafeEscalation() {
+    return {
+        show: false,
+        expanded: false,
+        triggers: [],
+        confidence: 0,
+        correlationId: null,
+        
+        // Trigger labels mapping
+        triggerLabels: {
+            'missing_citations': 'Citations juridiques manquantes',
+            'high_impact': 'Impact potentiellement élevé',
+            'criminal_liability': 'Responsabilité pénale potentielle',
+            'employment_law_sensitive': 'Sujet sensible en droit du travail',
+            'tax_heavy': 'Implications fiscales importantes',
+            'immigration_case': 'Dossier d\'immigration',
+            'contract_high_value': 'Contrat de valeur élevée',
+            'non_compete_clause': 'Clause de non-concurrence',
+            'rgpd_incident': 'Incident RGPD potentiel',
+            'harassment_discrimination': 'Harcèlement ou discrimination',
+            'termination_dismissal': 'Licenciement ou rupture',
+            'litigation_court': 'Contentieux judiciaire',
+            'low_confidence': 'Niveau de confiance insuffisant',
+            'jurisdiction_unknown': 'Juridiction non identifiée',
+            'no_reliable_source': 'Aucune source fiable',
+            'certainty_request': 'Demande de certitude juridique',
+            'domain_penal': 'Domaine pénal (escalade obligatoire)',
+            'complexity_expert': 'Complexité nécessitant un expert',
+            'restricted_activity': 'Acte réservé aux professionnels',
+            'conflict_of_interest': 'Conflit d\'intérêts potentiel',
+            'out_of_scope': 'Hors du périmètre supporté',
+            'abuse_detected': 'Utilisation anormale détectée',
+        },
+        
+        // Trigger risk levels
+        triggerLevels: {
+            'domain_penal': 'high',
+            'restricted_activity': 'high',
+            'conflict_of_interest': 'high',
+            'out_of_scope': 'high',
+            'criminal_liability': 'high',
+            'low_confidence': 'medium',
+            'no_reliable_source': 'medium',
+            'missing_citations': 'medium',
+            'complexity_expert': 'medium',
+            'employment_law_sensitive': 'medium',
+            'tax_heavy': 'medium',
+        },
+        
+        init() {
+            // Listen for legal-safe escalation events
+            window.addEventListener('legal-safe:escalation', (e) => {
+                this.showEscalation(e.detail);
+            });
+            
+            // Also check log items for escalation data
+            if (typeof Alpine !== 'undefined') {
+                this.$watch('$store.logs.items', (items) => {
+                    this.checkLogsForEscalation(items);
+                });
+            }
+        },
+        
+        showEscalation(data) {
+            if (!data || !data.requires_human_review) return;
+            
+            this.triggers = (data.review_triggers || []).map(t => ({
+                id: t,
+                label: this.triggerLabels[t] || t,
+                level: this.triggerLevels[t] || 'low'
+            }));
+            
+            this.confidence = data.confidence || 0;
+            this.correlationId = data.correlation_id || null;
+            this.show = true;
+            this.expanded = false;
+        },
+        
+        checkLogsForEscalation(items) {
+            if (!items || !items.length) return;
+            
+            // Find the most recent log with escalation data
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                if (item.kvps && item.kvps.requires_human_review === true) {
+                    this.showEscalation({
+                        requires_human_review: true,
+                        review_triggers: item.kvps.review_triggers || [],
+                        confidence: item.kvps.confidence || 0,
+                        correlation_id: item.kvps.correlation_id
+                    });
+                    break;
+                }
+            }
+        },
+        
+        dismiss() {
+            this.show = false;
+        },
+        
+        getTriggerIcon(level) {
+            switch (level) {
+                case 'high': return 'error';
+                case 'medium': return 'warning';
+                default: return 'info';
+            }
+        },
+        
+        getTriggerIconClass(level) {
+            switch (level) {
+                case 'high': return 'trigger-icon--high';
+                case 'medium': return 'trigger-icon--medium';
+                default: return 'trigger-icon--low';
+            }
+        },
+        
+        getConfidenceClass(confidence) {
+            if (confidence < 0.5) return 'confidence--low';
+            if (confidence < 0.75) return 'confidence--medium';
+            return 'confidence--high';
+        }
+    };
+}
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ESCALATION BANNER — STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.legal-safe-escalation-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    color: white;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+    font-family: var(--prism-font-primary, 'Space Grotesk', system-ui, sans-serif);
+}
+
+/* Main Banner */
+.escalation-banner__main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+}
+
+.escalation-banner__icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+}
+
+.escalation-banner__icon .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.escalation-banner__content {
+    flex: 1;
+}
+
+.escalation-banner__title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.escalation-banner__subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.escalation-banner__dismiss {
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.escalation-banner__dismiss:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Details Section */
+.escalation-banner__details {
+    padding: 0 1.5rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin-top: 0.5rem;
+}
+
+.escalation-banner__triggers {
+    margin-bottom: 1rem;
+}
+
+.escalation-banner__triggers-title {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+}
+
+.escalation-banner__triggers-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.5rem;
+}
+
+.escalation-banner__trigger-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.escalation-banner__trigger-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.escalation-banner__trigger-icon .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.trigger-icon--high {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.trigger-icon--medium {
+    background: #fefce8;
+    color: #ca8a04;
+}
+
+.trigger-icon--low {
+    background: #f0f9ff;
+    color: #0284c7;
+}
+
+/* Confidence Bar */
+.escalation-banner__confidence {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.escalation-banner__confidence-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.escalation-banner__confidence-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.escalation-banner__confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.confidence--low {
+    background: #fbbf24;
+}
+
+.confidence--medium {
+    background: #f97316;
+}
+
+.confidence--high {
+    background: #22c55e;
+}
+
+.escalation-banner__confidence-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    min-width: 45px;
+    text-align: right;
+}
+
+/* Recommendation */
+.escalation-banner__recommendation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    border-left: 3px solid white;
+}
+
+.escalation-banner__recommendation .material-symbols-outlined {
+    font-size: 20px;
+    opacity: 0.9;
+}
+
+/* Toggle Button */
+.escalation-banner__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    color: white;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.escalation-banner__toggle:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.escalation-banner__toggle .material-symbols-outlined {
+    font-size: 20px;
+    transition: transform 0.3s;
+}
+
+.escalation-banner__toggle .rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Light Mode Adjustments */
+.light-mode .legal-safe-escalation-banner {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .escalation-banner__main {
+        flex-wrap: wrap;
+    }
+    
+    .escalation-banner__triggers-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .escalation-banner__confidence {
+        flex-wrap: wrap;
+    }
+}
+</style>

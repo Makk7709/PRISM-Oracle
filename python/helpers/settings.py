@@ -1397,11 +1397,14 @@ def normalize_settings(settings: Settings) -> Settings:
 
 
 def _adjust_to_version(settings: Settings, default: Settings):
-    # starting with 0.9, the default prompt subfolder for agent no. 0 is agent0
-    # switch to agent0 if the old default is used from v0.8
+    # starting with 0.9, the default prompt subfolder for agent no. 0 is multitask
+    # switch to multitask if the old default is used from v0.8
     if "version" not in settings or settings["version"].startswith("v0.8"):
         if "agent_profile" not in settings or settings["agent_profile"] == "default":
-            settings["agent_profile"] = "agent0"
+            settings["agent_profile"] = "multitask"
+    # migrate from agent0 to multitask
+    if settings.get("agent_profile") == "agent0":
+        settings["agent_profile"] = "multitask"
 
 
 def _read_settings_file() -> Settings | None:
@@ -1508,7 +1511,7 @@ def get_default_settings() -> Settings:
         auth_login="",
         auth_password="",
         root_password="",
-        agent_profile="agent0",
+        agent_profile="multitask",
         agent_memory_subdir="default",
         agent_knowledge_subdir="custom",
         rfc_auto_docker=True,
