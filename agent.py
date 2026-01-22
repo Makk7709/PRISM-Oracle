@@ -447,6 +447,10 @@ class Agent:
 
                         else:  # otherwise proceed with tool
                             # === EXECUTION GUARD: Enforce tool execution for action requests ===
+                            # Track guard violations to prevent infinite loops
+                            guard_violations = self.get_data("_guard_violations") or 0
+                            MAX_GUARD_VIOLATIONS = 2  # Allow max 2 retries, then let it pass
+                            
                             user_msg_text = ""
                             if self.last_user_message:
                                 content = self.last_user_message.content
@@ -462,18 +466,23 @@ class Agent:
                                     user_msg_text = content.get("text", str(content))
                             guard_result = check_execution_guard(user_msg_text, agent_response)
                             
-                            if not guard_result.is_valid:
+                            if not guard_result.is_valid and guard_violations < MAX_GUARD_VIOLATIONS:
                                 # VIOLATION: Action request without tool call
+                                guard_violations += 1
+                                self.set_data("_guard_violations", guard_violations)
                                 PrintStyle(font_color="yellow", bold=True, padding=True).print(
-                                    f"[Execution Guard] EXECUTION_REQUIRED - forcing tool call"
+                                    f"[Execution Guard] EXECUTION_REQUIRED - attempt {guard_violations}/{MAX_GUARD_VIOLATIONS}"
                                 )
                                 self.context.log.log(
                                     type="warning",
-                                    content=f"Execution guard violation: {guard_result.detected_actions}"
+                                    content=f"Execution guard violation {guard_violations}: {guard_result.detected_actions}"
                                 )
                                 # Inject rejection message and continue loop
                                 self.hist_add_warning(guard_result.rejection_message)
                                 continue  # Force new generation with EXECUTION_REQUIRED
+                            
+                            # Reset counter on valid response or after max violations
+                            self.set_data("_guard_violations", 0)
                             # === END EXECUTION GUARD ===
                             
                             # Append the assistant's response to the history
