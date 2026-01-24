@@ -25,6 +25,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import time
 import uuid
 from abc import ABC, abstractmethod
@@ -44,6 +45,43 @@ from typing import (
     TypedDict,
     Union,
 )
+
+
+# ============================================================================
+# EXCEPTION SANITIZATION (NO-PII)
+# ============================================================================
+
+_PII_PATTERNS = [
+    (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'), '[EMAIL]'),
+    (re.compile(r'\b\d{3}[-.]?\d{2}[-.]?\d{4}\b'), '[SSN]'),
+    (re.compile(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'), '[PHONE]'),
+    (re.compile(r'\b\d{9,}\b'), '[LONG_NUMBER]'),
+    (re.compile(r'https?://[^\s]+'), '[URL]'),
+    (re.compile(r'password["\s:=]+[^\s,}"\]]+', re.IGNORECASE), '[PASSWORD_REDACTED]'),
+    (re.compile(r'token["\s:=]+[^\s,}"\]]+', re.IGNORECASE), '[TOKEN_REDACTED]'),
+    (re.compile(r'api[_-]?key["\s:=]+[^\s,}"\]]+', re.IGNORECASE), '[APIKEY_REDACTED]'),
+]
+
+
+def sanitize_exception(e: Exception, max_length: int = 100) -> Dict[str, Any]:
+    """
+    Sanitize exception pour logging sans PII.
+    
+    Returns:
+        Dict safe pour logging JSON: {"error_type": ..., "message": ...}
+    """
+    error_type = type(e).__name__
+    raw_message = str(e)[:max_length * 2]
+    
+    sanitized = raw_message
+    for pattern, replacement in _PII_PATTERNS:
+        sanitized = pattern.sub(replacement, sanitized)
+    
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length] + "..."
+    
+    return {"error_type": error_type, "message": sanitized}
+
 
 # ============================================================================
 # CONFIGURATION
@@ -528,8 +566,13 @@ class ReasoningEngine:
             return outcome
             
         except Exception as e:
-            self._logger.error(f"Reasoning error: {str(e)[:100]}")
-            return self._create_error_outcome(str(e), debug_id, start_time)
+            safe_error = sanitize_exception(e)
+            self._logger.error(json.dumps({
+                "event": "reasoning_error",
+                "correlation_id": debug_id,
+                **safe_error,
+            }))
+            return self._create_error_outcome(safe_error["message"], debug_id, start_time)
     
     async def decompose_task(
         self,
@@ -1050,7 +1093,12 @@ class ReasoningPipeline:
             return result
             
         except Exception as e:
-            self._logger.error(f"Pipeline error: {str(e)[:100]}")
+            safe_error = sanitize_exception(e)
+            self._logger.error(json.dumps({
+                "event": "pipeline_error",
+                "correlation_id": debug_id,
+                **safe_error,
+            }))
             return ReasoningResult(
                 answer="",
                 trace=[],

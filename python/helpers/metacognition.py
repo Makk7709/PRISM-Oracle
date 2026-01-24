@@ -74,6 +74,58 @@ class InvariantViolationError(Exception):
 
 
 # ============================================================================
+# EXCEPTION SANITIZATION (NO-PII)
+# ============================================================================
+
+import re as _re
+
+# Patterns PII à supprimer des messages d'exception
+_PII_PATTERNS = [
+    (_re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'), '[EMAIL]'),
+    (_re.compile(r'\b\d{3}[-.]?\d{2}[-.]?\d{4}\b'), '[SSN]'),
+    (_re.compile(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'), '[PHONE]'),
+    (_re.compile(r'\b\d{9,}\b'), '[LONG_NUMBER]'),
+    (_re.compile(r'https?://[^\s]+'), '[URL]'),
+    (_re.compile(r'password["\s:=]+[^\s,}"\]]+', _re.IGNORECASE), '[PASSWORD_REDACTED]'),
+    (_re.compile(r'token["\s:=]+[^\s,}"\]]+', _re.IGNORECASE), '[TOKEN_REDACTED]'),
+    (_re.compile(r'api[_-]?key["\s:=]+[^\s,}"\]]+', _re.IGNORECASE), '[APIKEY_REDACTED]'),
+]
+
+
+def sanitize_exception(e: Exception, max_length: int = 100) -> Dict[str, Any]:
+    """
+    Sanitize exception pour logging sans PII.
+    
+    Retourne un dict structuré avec:
+    - error_type: nom de la classe d'exception
+    - message: message tronqué et sanitizé (PII supprimés)
+    
+    Args:
+        e: Exception à sanitizer
+        max_length: Longueur max du message (défaut 100)
+    
+    Returns:
+        Dict safe pour logging JSON
+    """
+    error_type = type(e).__name__
+    raw_message = str(e)[:max_length * 2]  # Prendre plus pour sanitization
+    
+    # Appliquer tous les patterns de sanitization
+    sanitized = raw_message
+    for pattern, replacement in _PII_PATTERNS:
+        sanitized = pattern.sub(replacement, sanitized)
+    
+    # Tronquer après sanitization
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length] + "..."
+    
+    return {
+        "error_type": error_type,
+        "message": sanitized,
+    }
+
+
+# ============================================================================
 # CONFIGURATION
 # ============================================================================
 
@@ -402,7 +454,12 @@ class Metacognition:
             return decision
             
         except Exception as e:
-            self._logger.error(f"Metacognition error: {str(e)[:100]}")
+            safe_error = sanitize_exception(e)
+            self._logger.error(json.dumps({
+                "event": "metacognition_error",
+                "correlation_id": debug_id,
+                **safe_error,
+            }))
             return self._create_fallback_decision(debug_id)
     
     # ========================================================================

@@ -640,5 +640,129 @@ class TestNoPIILogPayloads:
                 f"PII PATTERN [{pattern_name}] trouvé dans to_safe_dict: {match.group()}"
 
 
+# ============================================================================
+# T8: EXCEPTION SANITIZATION (sanitize_exception)
+# ============================================================================
+
+class TestExceptionSanitization:
+    """
+    Tests que sanitize_exception() supprime correctement les PII des exceptions.
+    
+    Vérifie que les patterns suivants sont remplacés:
+    - Emails -> [EMAIL]
+    - SSN -> [SSN]
+    - Phones -> [PHONE]
+    - Long numbers -> [LONG_NUMBER]
+    - URLs -> [URL]
+    - Passwords -> [PASSWORD_REDACTED]
+    """
+    
+    def test_sanitize_exception_removes_email(self):
+        """sanitize_exception supprime les emails."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = ValueError("Failed for user john.doe@company.com: invalid input")
+        result = sanitize_exception(exc)
+        
+        assert "john.doe@company.com" not in result["message"], \
+            f"EMAIL non sanitizé: {result['message']}"
+        assert "[EMAIL]" in result["message"], \
+            f"EMAIL non remplacé par placeholder: {result['message']}"
+        assert result["error_type"] == "ValueError"
+    
+    def test_sanitize_exception_removes_ssn(self):
+        """sanitize_exception supprime les SSN (format xxx-xx-xxxx)."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = RuntimeError("User SSN 123-45-6789 is invalid")
+        result = sanitize_exception(exc)
+        
+        assert "123-45-6789" not in result["message"], \
+            f"SSN non sanitizé: {result['message']}"
+        assert "[SSN]" in result["message"]
+    
+    def test_sanitize_exception_removes_phone(self):
+        """sanitize_exception supprime les numéros de téléphone."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = Exception("Contact at 555-123-4567 failed")
+        result = sanitize_exception(exc)
+        
+        assert "555-123-4567" not in result["message"], \
+            f"PHONE non sanitizé: {result['message']}"
+        assert "[PHONE]" in result["message"]
+    
+    def test_sanitize_exception_removes_long_numbers(self):
+        """sanitize_exception supprime les nombres longs (>= 9 chiffres)."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = ValueError("Account 1234567890123456 not found")
+        result = sanitize_exception(exc)
+        
+        assert "1234567890123456" not in result["message"], \
+            f"LONG_NUMBER non sanitizé: {result['message']}"
+        assert "[LONG_NUMBER]" in result["message"]
+    
+    def test_sanitize_exception_removes_url(self):
+        """sanitize_exception supprime les URLs."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = ConnectionError("Failed to connect to https://api.secret.com/v1/users?token=abc123")
+        result = sanitize_exception(exc)
+        
+        assert "https://api.secret.com" not in result["message"], \
+            f"URL non sanitizé: {result['message']}"
+        assert "[URL]" in result["message"]
+    
+    def test_sanitize_exception_removes_password(self):
+        """sanitize_exception supprime les passwords dans les messages."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = AuthenticationError("password='MySecretPass123' is wrong")
+        result = sanitize_exception(exc)
+        
+        assert "MySecretPass123" not in result["message"], \
+            f"PASSWORD non sanitizé: {result['message']}"
+        assert "[PASSWORD_REDACTED]" in result["message"]
+    
+    def test_sanitize_exception_truncates_long_messages(self):
+        """sanitize_exception tronque les messages longs."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        long_message = "A" * 500
+        exc = Exception(long_message)
+        result = sanitize_exception(exc, max_length=100)
+        
+        assert len(result["message"]) <= 103  # 100 + "..."
+        assert result["message"].endswith("...")
+    
+    def test_sanitize_exception_combined_pii(self):
+        """sanitize_exception gère plusieurs PII dans le même message."""
+        from python.helpers.metacognition import sanitize_exception
+        
+        exc = ValueError(
+            "User john@example.com (SSN: 123-45-6789, phone: 555-123-4567) "
+            "tried to access https://admin.secret.com"
+        )
+        result = sanitize_exception(exc)
+        
+        # Aucun PII ne doit rester
+        assert "john@example.com" not in result["message"]
+        assert "123-45-6789" not in result["message"]
+        assert "555-123-4567" not in result["message"]
+        assert "https://admin.secret.com" not in result["message"]
+        
+        # Tous les placeholders doivent être présents
+        assert "[EMAIL]" in result["message"]
+        assert "[SSN]" in result["message"]
+        assert "[PHONE]" in result["message"]
+        assert "[URL]" in result["message"]
+
+
+class AuthenticationError(Exception):
+    """Exception de test pour l'authentification."""
+    pass
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
