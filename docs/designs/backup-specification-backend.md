@@ -181,7 +181,7 @@ class BackupCreate(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         patterns = input.get("patterns", "")
         include_hidden = input.get("include_hidden", False)
-        backup_name = input.get("backup_name", "agent-zero-backup")
+        backup_name = input.get("backup_name", "korev-oracle-backup")
 
         try:
             backup_service = BackupService()
@@ -385,7 +385,7 @@ class BackupProgressStream(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         patterns = input.get("patterns", "")
         include_hidden = input.get("include_hidden", False)
-        backup_name = input.get("backup_name", "agent-zero-backup")
+        backup_name = input.get("backup_name", "korev-oracle-backup")
 
         def generate_progress():
             try:
@@ -704,7 +704,7 @@ class BackupService:
 
         return matched_files
 
-    async def create_backup(self, patterns: str, include_hidden: bool = False, backup_name: str = "agent-zero-backup") -> str:
+    async def create_backup(self, patterns: str, include_hidden: bool = False, backup_name: str = "korev-oracle-backup") -> str:
         """Create backup archive with selected files"""
 
         # Get matched files
@@ -907,7 +907,7 @@ class BackupService:
             "total_size": total_size
         }
 
-    def create_backup_with_progress(self, patterns: str, include_hidden: bool = False, backup_name: str = "agent-zero-backup"):
+    def create_backup_with_progress(self, patterns: str, include_hidden: bool = False, backup_name: str = "korev-oracle-backup"):
         """Generator that yields backup progress for streaming"""
 
         try:

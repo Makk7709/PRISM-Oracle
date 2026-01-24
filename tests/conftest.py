@@ -80,6 +80,11 @@ def _create_forbidden_embedding(*args: Any, **kwargs: Any) -> None:
     raise RealLiteLLMCallForbiddenError("litellm.embedding", args, kwargs)
 
 
+async def _create_forbidden_unified_call(*args: Any, **kwargs: Any) -> None:
+    """Replacement for LiteLLMChatWrapper.unified_call that always raises."""
+    raise RealLiteLLMCallForbiddenError("LiteLLMChatWrapper.unified_call", args, kwargs)
+
+
 @pytest.fixture(autouse=True, scope="function")
 def _network_guard(monkeypatch):
     """
@@ -88,33 +93,78 @@ def _network_guard(monkeypatch):
     This runs for EVERY test automatically. If a test needs to call
     a real LLM API (which should NEVER happen in CI), it must explicitly
     skip this guard via environment variable A0_ALLOW_REAL_LLM=1.
+    
+    IMPORTANT: Guards are applied at multiple levels to ensure coverage
+    even when litellm is not installed:
+    1. litellm module functions (completion, acompletion, embedding)
+    2. models module imports
+    3. LiteLLMChatWrapper.unified_call (internal wrapper - ALWAYS patched)
     """
     # Allow bypass only if explicitly requested (NEVER in CI)
     if os.environ.get("A0_ALLOW_REAL_LLM") == "1":
         yield
         return
     
-    # Patch litellm module
+    patched_something = False
+    
+    # Layer 1: Patch litellm module (if available)
     try:
         import litellm
         monkeypatch.setattr(litellm, "completion", _create_forbidden_completion)
         monkeypatch.setattr(litellm, "acompletion", _create_forbidden_acompletion)
         monkeypatch.setattr(litellm, "embedding", _create_forbidden_embedding)
+        patched_something = True
     except ImportError:
-        pass  # litellm not installed (shouldn't happen)
+        pass  # litellm not installed - will patch wrappers instead
     
-    # Also patch the models module wrapper if it imports these at module level
+    # Layer 2: Patch the models module imports (if available)
     try:
         import models
-        # Patch the imported functions in models.py namespace
         if hasattr(models, "completion"):
             monkeypatch.setattr(models, "completion", _create_forbidden_completion)
+            patched_something = True
         if hasattr(models, "acompletion"):
             monkeypatch.setattr(models, "acompletion", _create_forbidden_acompletion)
+            patched_something = True
         if hasattr(models, "embedding"):
             monkeypatch.setattr(models, "embedding", _create_forbidden_embedding)
+            patched_something = True
     except ImportError:
         pass
+    
+    # Layer 3: ALWAYS patch internal wrappers (critical for litellm-absent envs)
+    # This ensures coverage even when litellm is not installed
+    try:
+        import models
+        # Patch LiteLLMChatWrapper.unified_call
+        if hasattr(models, "LiteLLMChatWrapper"):
+            monkeypatch.setattr(
+                models.LiteLLMChatWrapper,
+                "unified_call",
+                _create_forbidden_unified_call,
+            )
+            patched_something = True
+        # Patch BrowserCompatibleChatWrapper.unified_call  
+        if hasattr(models, "BrowserCompatibleChatWrapper"):
+            monkeypatch.setattr(
+                models.BrowserCompatibleChatWrapper,
+                "unified_call",
+                _create_forbidden_unified_call,
+            )
+            patched_something = True
+    except ImportError:
+        pass
+    
+    # Layer 4: Patch testing fake provider to verify it's installed
+    # If FakeProvider is used, its unified_call should NOT raise
+    # This layer just ensures we patched SOMETHING
+    if not patched_something:
+        import warnings
+        warnings.warn(
+            "NETWORK GUARD: No LLM modules found to patch. "
+            "This may indicate a misconfigured test environment.",
+            RuntimeWarning,
+        )
     
     yield
 

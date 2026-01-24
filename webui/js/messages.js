@@ -921,12 +921,12 @@ function convertHTML(str) {
 }
 
 function convertImgFilePaths(str) {
-  // First, normalize Docker paths /a0/ to nothing (remove the /a0 prefix)
-  let result = str.replace(/\/a0\//g, "/");
+  // First, normalize Docker paths /korev/ or legacy /a0/ to nothing (remove the prefix)
+  let result = str.replace(/\/korev\//g, "/").replace(/\/a0\//g, "/");
   
   // Convert img:// and img:/// protocols to API endpoint
   // Handle both img://path and img:///path (with extra slash)
-  // Also handle img:////path (4 slashes case from /a0/ removal)
+  // Also handle img:////path (4 slashes case from /korev/ or /a0/ removal)
   result = result.replace(/img:\/\/\/?/g, "/image_get?path=");
   
   // Normalize any double slashes in paths after conversion
@@ -957,7 +957,7 @@ function escapeHTML(str) {
 }
 
 function convertGeneratedImageDownloadLinks(str) {
-  // Convert text paths like /a0/tmp/generated_images/xxx.png or /tmp/generated_images/xxx.png
+  // Convert text paths like /korev/tmp/generated_images/xxx.png, /a0/tmp/generated_images/xxx.png or /tmp/generated_images/xxx.png
   // to clickable download links (after markdown parsing, so they may be inside <strong> tags)
   
   // Match paths inside or outside of HTML tags, with optional /a0 prefix

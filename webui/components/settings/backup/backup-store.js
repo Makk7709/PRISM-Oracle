@@ -113,7 +113,7 @@ const model = {
         const exclude_patterns = response.default_patterns.exclude_patterns;
 
         return {
-          backup_name: `agent-zero-backup-${timestamp.slice(0, 10)}`,
+          backup_name: `korev-oracle-backup-${timestamp.slice(0, 10)}`,
           include_hidden: false,
           include_patterns: include_patterns,
           exclude_patterns: exclude_patterns,
@@ -129,7 +129,7 @@ const model = {
 
     // Fallback patterns (will be overridden by backend on first use)
     return {
-      backup_name: `agent-zero-backup-${timestamp.slice(0, 10)}`,
+      backup_name: `korev-oracle-backup-${timestamp.slice(0, 10)}`,
       include_hidden: false,
       include_patterns: [
         // These will be replaced with resolved absolute paths by backend

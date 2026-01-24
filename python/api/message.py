@@ -30,10 +30,10 @@ class Message(ApiHandler):
             attachment_paths = []
 
             from python.helpers import runtime
-            # In Docker: use /a0/tmp/uploads, in development: use local path
+            # In Docker: use /korev/tmp/uploads, in development: use local path
             upload_folder_ext = files.get_abs_path("tmp/uploads")
             if runtime.is_dockerized():
-                upload_folder_int = "/a0/tmp/uploads"
+                upload_folder_int = "/korev/tmp/uploads"
             else:
                 upload_folder_int = upload_folder_ext
 

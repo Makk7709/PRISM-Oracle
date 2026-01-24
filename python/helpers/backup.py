@@ -26,12 +26,12 @@ class BackupService:
     """
 
     def __init__(self):
-        self.agent_zero_version = self._get_agent_zero_version()
-        self.agent_zero_root = files.get_abs_path("")  # Resolved Korev Oracle root
+        self.korev_version = self._get_korev_version()
+        self.korev_root = files.get_abs_path("")  # Resolved Korev Oracle root
 
         # Build base paths map for pattern resolution
         self.base_paths = {
-            self.agent_zero_root: self.agent_zero_root,
+            self.korev_root: self.korev_root,
         }
 
     def get_default_backup_metadata(self) -> Dict[str, Any]:
@@ -42,7 +42,7 @@ class BackupService:
         include_patterns, exclude_patterns = self._parse_patterns(default_patterns)
 
         return {
-            "backup_name": f"agent-zero-backup-{timestamp[:10]}",
+            "backup_name": f"korev-oracle-backup-{timestamp[:10]}",
             "include_hidden": False,
             "include_patterns": include_patterns,
             "exclude_patterns": exclude_patterns,
@@ -58,7 +58,7 @@ class BackupService:
         Only includes Korev Oracle project directory patterns.
         """
         # Ensure paths don't have double slashes
-        agent_root = self.agent_zero_root.rstrip('/')
+        agent_root = self.korev_root.rstrip('/')
 
         return f"""# Korev Oracle Knowledge (excluding defaults)
 {agent_root}/knowledge/**
@@ -84,7 +84,7 @@ class BackupService:
 {agent_root}/usr/**
 """
 
-    def _get_agent_zero_version(self) -> str:
+    def _get_korev_version(self) -> str:
         """Get current Korev Oracle version"""
         try:
             # Get version from git info (same as run_ui.py)
@@ -166,7 +166,7 @@ class BackupService:
                 "path": os.environ.get("PATH", "")[:200] + "..." if len(os.environ.get("PATH", "")) > 200 else os.environ.get("PATH", ""),
                 "timezone": str(datetime.datetime.now().astimezone().tzinfo),
                 "working_directory": os.getcwd(),
-                "agent_zero_root": files.get_abs_path(""),
+                "korev_root": files.get_abs_path(""),
                 "runtime_mode": "development" if runtime.is_development() else "production"
             }
         except Exception as e:
@@ -222,17 +222,17 @@ class BackupService:
 
         Args:
             patterns: List of patterns from the backed up system
-            backup_metadata: Backup metadata containing the original agent_zero_root
+            backup_metadata: Backup metadata containing the original korev_root
 
         Returns:
             List of translated patterns for the current system
         """
-        # Get the backed up agent zero root path from metadata
+        # Get the backed up korev root path from metadata
         environment_info = backup_metadata.get("environment_info", {})
-        backed_up_agent_root = environment_info.get("agent_zero_root", "")
+        backed_up_agent_root = environment_info.get("korev_root", "")
 
-        # Get current agent zero root path
-        current_agent_root = self.agent_zero_root
+        # Get current korev root path
+        current_agent_root = self.korev_root
 
         # If we don't have the backed up root path, return patterns as-is
         if not backed_up_agent_root:
@@ -244,7 +244,7 @@ class BackupService:
 
         translated_patterns = []
         for pattern in patterns:
-            # Check if the pattern starts with the backed up agent zero root
+            # Check if the pattern starts with the backed up korev root
             if pattern.startswith(backed_up_agent_root + '/') or pattern == backed_up_agent_root:
                 # Replace the backed up root with the current root
                 relative_pattern = pattern[len(backed_up_agent_root):].lstrip('/')
@@ -349,7 +349,7 @@ class BackupService:
         include_patterns: List[str],
         exclude_patterns: List[str],
         include_hidden: bool = False,
-        backup_name: str = "agent-zero-backup"
+        backup_name: str = "korev-oracle-backup"
     ) -> str:
         """Create backup archive and return path to created file"""
 
@@ -375,7 +375,7 @@ class BackupService:
                 # Add comprehensive metadata
                 metadata = {
                     # Basic backup information
-                    "agent_zero_version": self.agent_zero_version,
+                    "korev_version": self.korev_version,
                     "timestamp": datetime.datetime.now().isoformat(),
                     "backup_name": backup_name,
                     "include_hidden": include_hidden,
@@ -779,17 +779,17 @@ class BackupService:
 
         Args:
             archive_path: Original file path from the archive
-            backup_metadata: Backup metadata containing the original agent_zero_root
+            backup_metadata: Backup metadata containing the original korev_root
 
         Returns:
             Translated path for the current system
         """
-        # Get the backed up agent zero root path from metadata
+        # Get the backed up korev root path from metadata
         environment_info = backup_metadata.get("environment_info", {})
-        backed_up_agent_root = environment_info.get("agent_zero_root", "")
+        backed_up_agent_root = environment_info.get("korev_root", "")
 
-        # Get current agent zero root path
-        current_agent_root = self.agent_zero_root
+        # Get current korev root path
+        current_agent_root = self.korev_root
 
         # If we don't have the backed up root path, use original path with leading slash
         if not backed_up_agent_root:
@@ -805,7 +805,7 @@ class BackupService:
         else:
             absolute_archive_path = archive_path
 
-        # Check if the archive path starts with the backed up agent zero root
+        # Check if the archive path starts with the backed up korev root
         if absolute_archive_path.startswith(backed_up_agent_root + '/') or absolute_archive_path == backed_up_agent_root:
             # Replace the backed up root with the current root
             relative_path = absolute_archive_path[len(backed_up_agent_root):].lstrip('/')

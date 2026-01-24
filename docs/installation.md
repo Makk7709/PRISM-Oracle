@@ -58,10 +58,10 @@ The following user guide provides instructions for installing and running Korev 
 
 2. **Run Korev Oracle:**
 
-- Note: Korev Oracle also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the agent0ai/agent-zero:hacking image instead of agent0ai/agent-zero.
+- Note: Korev Oracle also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-oracle:hacking image instead of korevai/korev-oracle.
 
 2.1. Pull the Korev Oracle Docker image:
-- Search for `agent0ai/agent-zero` in Docker Desktop
+- Search for `korevai/korev-oracle` in Docker Desktop
 - Click the `Pull` button
 - The image will be downloaded to your machine in a few minutes
 
@@ -71,7 +71,7 @@ The following user guide provides instructions for installing and running Korev 
 > Alternatively, run the following command in your terminal:
 >
 > ```bash
-> docker pull agent0ai/agent-zero
+> docker pull korevai/korev-oracle
 > ```
 
 2.2. OPTIONAL - Create a data directory for persistence:
@@ -81,7 +81,7 @@ The following user guide provides instructions for installing and running Korev 
 > By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Oracle to a newer version.
 
 - Choose or create a directory on your machine where you want to store Korev Oracle's data
-- This can be any location you prefer (e.g., `C:/agent-zero-data` or `/home/user/agent-zero-data`)
+- This can be any location you prefer (e.g., `C:/korev-oracle-data` or `/home/user/korev-oracle-data`)
 - You can map individual subfolders of `/a0` to a local directory or the full `/a0` directory (not recommended).
 - This directory will contain all your Korev Oracle files, like the legacy root folder structure:
   - `/agents` - Specialized agents with their prompts and tools
@@ -98,7 +98,7 @@ The following user guide provides instructions for installing and running Korev 
 
 2.3. Run the container:
 - In Docker Desktop, go back to the "Images" tab
-- Click the `Run` button next to the `agent0ai/agent-zero` image
+- Click the `Run` button next to the `korevai/korev-oracle` image
 - Open the "Optional settings" menu
 - Set the web port (80) to desired host port number in the second "Host port" field or set to `0` for automatic port assignment
 
@@ -107,7 +107,7 @@ Optionally you can map local folders for file persistence:
 > Preferred way of persisting Korev Oracle data is to use the backup and restore feature.
 > By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Oracle to a newer version.
 - OPTIONAL: Under "Volumes", configure your mapped folders, if needed:
-  - Example host path: Your chosen directory (e.g., `C:\agent-zero\memory`)
+  - Example host path: Your chosen directory (e.g., `C:\korev-oracle\memory`)
   - Example container path: `/a0/memory`
 
 
@@ -123,7 +123,7 @@ Optionally you can map local folders for file persistence:
 > [!TIP]
 > Alternatively, run the following command in your terminal:
 > ```bash
-> docker run -p $PORT:80 -v /path/to/your/data:/a0 agent0ai/agent-zero
+> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-oracle
 > ```
 > - Replace `$PORT` with the port you want to use (e.g., `50080`)
 > - Replace `/path/to/your/data` with your chosen directory path
@@ -204,7 +204,7 @@ Korev Oracle provides a comprehensive settings interface to customize various as
 ### Development Settings
 - **RFC Parameters (local instances only):** configure URLs and ports for remote function calls between instances
 - **RFC Password:** Configure password for remote function calls
-Learn more about Remote Function Calls and their purpose [here](#7-configure-agent-zero-rfc).
+Learn more about Remote Function Calls and their purpose [here](#7-configure-korev-oracle-rfc).
 
 > [!IMPORTANT]
 > Always keep your API keys and passwords secure.
@@ -216,7 +216,7 @@ The Settings page is the control center for selecting the Large Language Models 
 | --- | --- |
 | `chat_llm` | This is the primary LLM used for conversations and generating responses. |
 | `utility_llm` | This LLM handles internal tasks like summarizing messages, managing memory, and processing internal prompts.  Using a smaller, less expensive model here can improve efficiency. |
-| `embedding_llm` | This LLM is responsible for generating embeddings used for memory retrieval and knowledge base lookups. Changing the `embedding_llm` will re-index all of A0's memory. |
+| `embedding_llm` | This LLM is responsible for generating embeddings used for memory retrieval and knowledge base lookups. Changing the `embedding_llm` will re-index all of Korev's memory. |
 
 **How to Change:**
 1. Open Settings page in the Web UI.
@@ -340,7 +340,7 @@ For developers or users who need to run Korev Oracle directly on their system,se
 2. **Update Process (Docker Desktop)**
 - Go to Docker Desktop and stop the container from the "Containers" tab
 - Right-click and select "Remove" to remove the container
-- Go to "Images" tab and remove the `agent0ai/agent-zero` image or click the three dots to pull the difference and update the Docker image.
+- Go to "Images" tab and remove the `korevai/korev-oracle` image or click the three dots to pull the difference and update the Docker image.
 
 ![docker delete image](res/setup/docker-delete-image-1.png)
 
@@ -357,24 +357,24 @@ For developers or users who need to run Korev Oracle directly on their system,se
 >
 > ```bash
 > # Stop the current container
-> docker stop agent-zero
+> docker stop korev-oracle
 >
 > # Remove the container (data is safe in the folder)
-> docker rm agent-zero
+> docker rm korev-oracle
 >
 > # Remove the old image
-> docker rmi agent0ai/agent-zero
+> docker rmi korevai/korev-oracle
 >
 > # Pull the latest image
-> docker pull agent0ai/agent-zero
+> docker pull korevai/korev-oracle
 >
 > # Run new container with the same volume mount
-> docker run -p $PORT:80 -v /path/to/your/data:/a0 agent0ai/agent-zero
+> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-oracle
 > ```
 
       
 ### Conclusion
 After following the instructions for your specific operating system, you should have Korev Oracle successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
 
-If you encounter any issues during the installation process, please consult the [Troubleshooting section](troubleshooting.md) of this documentation or refer to the Korev Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community for assistance.
+If you encounter any issues during the installation process, please consult the [Troubleshooting section](troubleshooting.md) of this documentation or refer to the [korev.ai](https://korev.ai) for assistance.
 

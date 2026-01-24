@@ -2,7 +2,7 @@
 # Korev Oracle Documentation
 To begin with Korev Oracle, follow the links below for detailed guides on various topics:
 
-- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-agent-zero)) Korev Oracle on your system.
+- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-korev-oracle)) Korev Oracle on your system.
 - **[Usage Guide](usage.md):** Explore GUI features and usage scenarios.
 - **[Development](development.md):** Set up a development environment for Korev Oracle.
 - **[Extensibility](extensibility.md):** Learn how to create custom extensions for Korev Oracle.
@@ -14,22 +14,22 @@ To begin with Korev Oracle, follow the links below for detailed guides on variou
 ### Your experience with Korev Oracle starts now!
 
 - **Download Korev Oracle:** Follow the [installation guide](installation.md) to download and run Korev Oracle.
-- **Join the Community:** Join the Korev Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community to discuss ideas, ask questions, and collaborate with other contributors.
-- **Share your Work:** Share your Korev Oracle creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area on GitHub.
-- **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/agent-zero/issues) to report framework-relative bugs or suggest new features.
+- **Join the Community:** Visit [korev.ai](https://korev.ai) for support and documentation.
+- **Share your Work:** Share your Korev Oracle creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/korev-oracle/discussions/categories/show-and-tell) area on GitHub.
+- **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/korev-oracle/issues) to report framework-relative bugs or suggest new features.
 
 ## Table of Contents
 
-- [Welcome to the Korev Oracle Documentation](#agent-zero-documentation)
-  - [Your Experience with Korev Oracle](#your-experience-with-agent-zero-starts-now)
+- [Welcome to the Korev Oracle Documentation](#korev-oracle-documentation)
+  - [Your Experience with Korev Oracle](#your-experience-with-korev-oracle-starts-now)
   - [Table of Contents](#table-of-contents)
 - [Installation Guide](installation.md)
   - [Windows, macOS and Linux Setup](installation.md#windows-macos-and-linux-setup-guide)
   - [Settings Configuration](installation.md#settings-configuration)
   - [Choosing Your LLMs](installation.md#choosing-your-llms)
   - [Installing and Using Ollama](installation.md#installing-and-using-ollama-local-models)
-  - [Using Korev Oracle on Mobile](installation.md#using-agent-zero-on-your-mobile-device)
-  - [How to Update Korev Oracle](installation.md#how-to-update-agent-zero)
+  - [Using Korev Oracle on Mobile](installation.md#using-korev-oracle-on-your-mobile-device)
+  - [How to Update Korev Oracle](installation.md#how-to-update-korev-oracle)
   - [Full Binaries Installation](installation.md#in-depth-guide-for-full-binaries-installation)
 - [Usage Guide](usage.md)
   - [Basic Operations](usage.md#basic-operations)

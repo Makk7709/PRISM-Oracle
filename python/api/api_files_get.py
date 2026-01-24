@@ -47,14 +47,15 @@ class ApiFilesGet(ApiHandler):
             for path in paths:
                 try:
                     # Convert internal paths to external paths
-                    if path.startswith("/a0/tmp/uploads/"):
+                    # Support both /korev/ and legacy /a0/ paths
+                    if path.startswith("/korev/tmp/uploads/") or path.startswith("/a0/tmp/uploads/"):
                         # Internal path - convert to external
-                        filename = path.replace("/a0/tmp/uploads/", "")
+                        filename = path.replace("/korev/tmp/uploads/", "").replace("/a0/tmp/uploads/", "")
                         external_path = files.get_abs_path("tmp/uploads", filename)
                         filename = os.path.basename(external_path)
-                    elif path.startswith("/a0/"):
+                    elif path.startswith("/korev/") or path.startswith("/a0/"):
                         # Other internal Korev Oracle paths
-                        relative_path = path.replace("/a0/", "")
+                        relative_path = path.replace("/korev/", "").replace("/a0/", "")
                         external_path = files.get_abs_path(relative_path)
                         filename = os.path.basename(external_path)
                     else:

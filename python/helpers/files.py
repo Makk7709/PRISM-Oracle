@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 import json
@@ -414,21 +416,28 @@ def deabsolute_path(path: str):
 
 
 def fix_dev_path(path: str):
-    "On dev environment, convert /a0/... paths to local absolute paths"
+    "On dev environment, convert /korev/... paths to local absolute paths"
     from python.helpers.runtime import is_development
 
     if is_development():
-        if path.startswith("/a0/"):
+        # Support both legacy /a0/ and new /korev/ paths
+        if path.startswith("/korev/"):
+            path = path.replace("/korev/", "")
+        elif path.startswith("/a0/"):
             path = path.replace("/a0/", "")
     return get_abs_path(path)
 
 
-def normalize_a0_path(path: str):
-    "Convert absolute paths into /a0/... paths"
+def normalize_korev_path(path: str):
+    "Convert absolute paths into /korev/... paths"
     if is_in_base_dir(path):
         deabs = deabsolute_path(path)
-        return "/a0/" + deabs
+        return "/korev/" + deabs
     return path
+
+
+# Alias for backward compatibility
+normalize_a0_path = normalize_korev_path
 
 
 def exists(*relative_paths):

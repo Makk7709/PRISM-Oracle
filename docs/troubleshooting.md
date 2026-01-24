@@ -15,10 +15,10 @@ Refer to the [Choosing your LLMs](installation.md#installing-and-using-ollama-lo
 > Some LLM providers offer free usage of their APIs, for example Groq, Mistral, SambaNova or CometAPI.
 
 **6. How can I make Korev Oracle retain memory between sessions?**
-Refer to the [How to update Korev Oracle](installation.md#how-to-update-agent-zero) section of the documentation for instructions on how to update Korev Oracle while retaining memory and data.
+Refer to the [How to update Korev Oracle](installation.md#how-to-update-korev-oracle) section of the documentation for instructions on how to update Korev Oracle while retaining memory and data.
 
 **7. Where can I find more documentation or tutorials?**
--   Join the Korev Oracle [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community for support and discussions.
+-   Visit [korev.ai](https://korev.ai) for support and documentation.
 
 **8. How do I adjust API rate limits?**
 Modify the `rate_limit_seconds` and `rate_limit_requests` parameters in the `AgentConfig` class within `initialize.py`.

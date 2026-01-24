@@ -231,7 +231,7 @@ class DynamicA2AProxy:
 
             provider: AgentProvider = {  # type: ignore
                 "organization": "Korev Oracle",
-                "url": "https://github.com/frdel/agent-zero"
+                "url": "https://github.com/Makk7709/PRISM-Oracle"
             }
 
             # Create new FastA2A app with proper thread safety

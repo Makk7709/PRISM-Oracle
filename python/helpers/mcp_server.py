@@ -62,7 +62,7 @@ This tool is used to send a message to the remote Korev Oracle Instance connecte
     name="send_message",
     description=SEND_MESSAGE_DESCRIPTION,
     tags={
-        "agent_zero",
+        "korev_oracle",
         "chat",
         "remote",
         "communication",
@@ -171,7 +171,7 @@ Always use this tool to finish persistent chat conversations with remote Korev O
     name="finish_chat",
     description=FINISH_CHAT_DESCRIPTION,
     tags={
-        "agent_zero",
+        "korev_oracle",
         "chat",
         "remote",
         "communication",

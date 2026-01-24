@@ -9,7 +9,8 @@ if TYPE_CHECKING:
     from agent import AgentContext
 
 PROJECTS_PARENT_DIR = "usr/projects"
-PROJECT_META_DIR = ".a0proj"
+PROJECT_META_DIR = ".korevproj"
+PROJECT_META_DIR_LEGACY = ".a0proj"  # For backward compatibility
 PROJECT_INSTRUCTIONS_DIR = "instructions"
 PROJECT_KNOWLEDGE_DIR = "knowledge"
 PROJECT_HEADER_FILE = "project.json"

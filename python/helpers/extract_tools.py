@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re, os, importlib, importlib.util, inspect
 from types import ModuleType
 from typing import Any, Type, TypeVar
