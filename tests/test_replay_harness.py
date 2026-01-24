@@ -281,11 +281,17 @@ _scorecard = ReplayScorecard()
 # TEST CLASS
 # ============================================================================
 
+@pytest.mark.slow
+@pytest.mark.replay
 class TestReplayHarness:
     """
     Replay harness tests for Oracle/Agent Zero.
     
     These tests run OFFLINE with deterministic fixtures.
+    
+    Marked as 'slow' for CI gate separation:
+    - FAST gate: pytest -m "not slow" (excludes replay)
+    - FULL gate: pytest (includes all)
     """
     
     SEVERITY_ORDER = {

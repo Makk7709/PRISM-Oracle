@@ -5,7 +5,8 @@ Testing utilities for Agent Zero / Korev Oracle.
 This module provides:
 - FakeLiteLLMProvider: Deterministic LLM responses from fixtures
 - FakeTimeProvider: Injectable clock for timeout testing
-- Fixture management: Load/validate/record fixtures
+- Fixture management: Load/validate/record fixtures (VERSIONED)
+- Version constants for fixture key computation
 
 Usage in tests:
     from python.helpers.testing import (
@@ -13,6 +14,8 @@ Usage in tests:
         FakeTimeProvider,
         install_fake_provider,
         MissingFixtureError,
+        PROMPT_VERSION,
+        TOOL_SCHEMA_VERSION,
     )
 """
 
@@ -22,9 +25,11 @@ from .fake_provider import (
     install_fake_provider,
     uninstall_fake_provider,
     MissingFixtureError,
+    is_fake_provider_installed,
 )
 from .fixtures import (
     FixtureManager,
+    Fixture,
     normalize_messages,
     compute_fixture_key,
 )
@@ -36,6 +41,14 @@ from .time_provider import (
     set_time_provider,
     with_timeout,
     TimeoutExceeded,
+    check_timeout,
+)
+from .versions import (
+    PROMPT_VERSION,
+    TOOL_SCHEMA_VERSION,
+    ORACLE_LOGIC_VERSION,
+    get_version_suffix,
+    get_all_versions,
 )
 
 __all__ = [
@@ -44,9 +57,11 @@ __all__ = [
     "FakeLiteLLMChatWrapper",
     "install_fake_provider",
     "uninstall_fake_provider",
+    "is_fake_provider_installed",
     "MissingFixtureError",
     # Fixtures
     "FixtureManager",
+    "Fixture",
     "normalize_messages",
     "compute_fixture_key",
     # Time
@@ -57,4 +72,11 @@ __all__ = [
     "set_time_provider",
     "with_timeout",
     "TimeoutExceeded",
+    "check_timeout",
+    # Versions
+    "PROMPT_VERSION",
+    "TOOL_SCHEMA_VERSION",
+    "ORACLE_LOGIC_VERSION",
+    "get_version_suffix",
+    "get_all_versions",
 ]
