@@ -475,6 +475,8 @@ class TestMergeGateGuardRail:
         "test_non_dilution_with_high_composite",
         "test_monotonicity_never_decreases",
         "test_S2_safe_dict_no_sensitive_fields",
+        "test_replay_case",  # Replay harness
+        "test_invariant_i1_non_dilution_comprehensive",  # Replay harness
     ]
     
     def test_critical_tests_exist_in_collection(self):
@@ -488,6 +490,7 @@ class TestMergeGateGuardRail:
                 sys.executable, "-m", "pytest",
                 "tests/test_metacognition_policy.py",
                 "tests/test_metacognition.py",
+                "tests/test_replay_harness.py",
                 "--collect-only", "-q",
             ],
             capture_output=True,
@@ -501,6 +504,27 @@ class TestMergeGateGuardRail:
         for marker in self.CRITICAL_TEST_MARKERS:
             assert marker in collected, \
                 f"GUARD RAIL: Test critique '{marker}' absent de la collection!"
+    
+    def test_replay_harness_included_in_gate(self):
+        """
+        Vérifie que test_replay_harness.py est inclus dans le merge gate.
+        """
+        result = subprocess.run(
+            [
+                sys.executable, "-m", "pytest",
+                "tests/test_replay_harness.py",
+                "--collect-only", "-q",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/Users/aminemohamed/Desktop/APP/Agent0prism/agent-zero",
+            timeout=30,
+        )
+        
+        assert "test_replay_case" in result.stdout, \
+            "GUARD RAIL: test_replay_harness.py non collecté ou test_replay_case absent!"
+        assert "14 tests collected" in result.stdout or "tests collected" in result.stdout, \
+            f"GUARD RAIL: Replay harness tests non collectés! stdout={result.stdout}"
     
     def test_minimum_test_count(self):
         """
