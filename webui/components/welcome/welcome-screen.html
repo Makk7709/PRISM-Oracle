@@ -4,72 +4,79 @@
     <script type="module">
         import { store } from "/components/welcome/welcome-store.js";
     </script>
+    <!-- Playfair Display for sovereign typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div x-data x-show="$store.welcomeStore && $store.welcomeStore.isVisible">
         <template x-if="$store.welcomeStore">
-            <div x-data="$store.welcomeStore" class="prism-welcome">
-                <!-- Refraction Grid Background -->
-                <div class="prism-welcome__grid"></div>
+            <div x-data="$store.welcomeStore" class="korev-home">
+                <!-- Background Grid -->
+                <div class="korev-home__grid"></div>
                 
-                <!-- Content Container -->
-                <div class="prism-welcome__content">
-                    <!-- Korev Oracle Logo -->
-                    <div class="prism-welcome__logo">
-                        <img src="./public/korev-oracle-logo.svg" alt="Korev Oracle" class="prism-welcome__logo-img prism-welcome__logo-img--dark" />
-                        <img src="./public/korev-oracle-logo-light.svg" alt="Korev Oracle" class="prism-welcome__logo-img prism-welcome__logo-img--light" />
+                <!-- Main Content -->
+                <div class="korev-home__content">
+                    
+                    <!-- Hero Section -->
+                    <div class="korev-home__hero">
+                        <h1 class="korev-home__title">
+                            <span class="korev-home__title-brand">KOREV</span>
+                            <span class="korev-home__title-oracle">Oracle</span>
+                        </h1>
+                        <p class="korev-home__subtitle" x-text="t('welcome.ecosystem_subtitle') || 'SYSTÈME COGNITIF AU SEIN DE L\'ÉCOSYSTÈME KOREV'">
+                            SYSTÈME COGNITIF AU SEIN DE L'ÉCOSYSTÈME KOREV
+                        </p>
                     </div>
 
-                    <!-- Brand hierarchy: KOREV > ORACLE > endorsement > status -->
-                    <h1 class="prism-welcome__brand">KOREV</h1>
-                    <span class="prism-welcome__overline">Oracle</span>
-                    <span class="prism-welcome__endorsement">powered by PRISM</span>
-                    <p class="prism-welcome__title" x-text="t('welcome.cognitive_system')">Cognitive system</p>
-                    <p class="prism-welcome__subtitle" x-text="t('welcome.subtitle')">
-                        Select an action below to begin.
-                    </p>
-
-                    <!-- Action Cards with Prism Cut -->
-                    <div class="prism-welcome__actions">
-                        <button class="prism-welcome__card" @click="executeAction('new-chat')" tabindex="0">
-                            <div class="prism-welcome__card-inner">
-                                <span class="material-symbols-outlined prism-welcome__icon">add_circle</span>
-                                <div class="prism-welcome__card-text">
-                                    <h3 class="prism-welcome__card-title" x-text="t('welcome.new_chat')">New Chat</h3>
-                                    <p class="prism-welcome__card-desc" x-text="t('welcome.new_chat_desc')">Start conversation</p>
-                                </div>
+                    <!-- Architecture Diagram -->
+                    <div class="korev-home__architecture">
+                        <!-- Oracle Layer -->
+                        <div class="korev-home__layer korev-home__layer--oracle">
+                            <span class="korev-home__layer-label">COUCHE COGNITIVE</span>
+                            <span class="korev-home__layer-name">Oracle</span>
+                            <span class="korev-home__layer-status">ACTIF</span>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div class="korev-home__connector"></div>
+                        
+                        <!-- PRISM Layer -->
+                        <div class="korev-home__layer korev-home__layer--prism">
+                            <span class="korev-home__layer-label">INFRASTRUCTURE SOUVERAINE</span>
+                            <span class="korev-home__layer-name">PRISM</span>
+                            <span class="korev-home__layer-status">SOCLE</span>
+                        </div>
+                        
+                        <!-- Connector -->
+                        <div class="korev-home__connector korev-home__connector--short"></div>
+                        
+                        <!-- Modules -->
+                        <div class="korev-home__modules">
+                            <div class="korev-home__module">
+                                <span class="korev-home__module-name">NEXUS</span>
                             </div>
+                            <div class="korev-home__module">
+                                <span class="korev-home__module-name">AEGIS</span>
+                            </div>
+                            <div class="korev-home__module">
+                                <span class="korev-home__module-name">ATLAS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="korev-home__actions">
+                        <button class="korev-home__action korev-home__action--primary" 
+                                @click="executeAction('new-chat')" 
+                                tabindex="0">
+                            <span class="korev-home__action-text" x-text="t('welcome.initiate_session') || 'Initier une session'">Initier une session</span>
                         </button>
-
-                        <button class="prism-welcome__card" @click="executeAction('projects')" tabindex="0">
-                            <div class="prism-welcome__card-inner">
-                                <span class="material-symbols-outlined prism-welcome__icon">folder</span>
-                                <div class="prism-welcome__card-text">
-                                    <h3 class="prism-welcome__card-title" x-text="t('welcome.projects')">Projects</h3>
-                                    <p class="prism-welcome__card-desc" x-text="t('welcome.projects_desc')">Manage workspaces</p>
-                                </div>
-                            </div>
-                        </button>
-
-                        <button class="prism-welcome__card" @click="executeAction('memory')" tabindex="0">
-                            <div class="prism-welcome__card-inner">
-                                <span class="material-symbols-outlined prism-welcome__icon">memory</span>
-                                <div class="prism-welcome__card-text">
-                                    <h3 class="prism-welcome__card-title" x-text="t('welcome.memory')">Memory</h3>
-                                    <p class="prism-welcome__card-desc" x-text="t('welcome.memory_desc')">Knowledge base</p>
-                                </div>
-                            </div>
-                        </button>
-
-                        <button class="prism-welcome__card" @click="executeAction('settings')" tabindex="0">
-                            <div class="prism-welcome__card-inner">
-                                <span class="material-symbols-outlined prism-welcome__icon">settings</span>
-                                <div class="prism-welcome__card-text">
-                                    <h3 class="prism-welcome__card-title" x-text="t('welcome.settings')">Settings</h3>
-                                    <p class="prism-welcome__card-desc" x-text="t('welcome.settings_desc')">Configure system</p>
-                                </div>
-                            </div>
+                        
+                        <button class="korev-home__action korev-home__action--secondary" 
+                                @click="executeAction('projects')" 
+                                tabindex="0">
+                            <span class="korev-home__action-text" x-text="t('welcome.explore_ecosystem') || 'Explorer l\'écosystème'">Explorer l'écosystème</span>
                         </button>
                     </div>
                 </div>
@@ -79,11 +86,11 @@
 
     <style>
         /* ═══════════════════════════════════════════════════════════════════════
-         * PRISM WELCOME SCREEN
-         * Premium, minimal, identifiable PRISM identity
+         * KOREV HOME — Sovereign Cognitive Interface
+         * Design: Authority, Hierarchy, Premium Minimal
          * ═══════════════════════════════════════════════════════════════════════ */
         
-        .prism-welcome {
+        .korev-home {
             position: relative;
             display: flex;
             flex-direction: column;
@@ -95,8 +102,8 @@
             overflow: hidden;
         }
 
-        /* Refraction Grid — Ultra-subtle background pattern */
-        .prism-welcome__grid {
+        /* Background Grid */
+        .korev-home__grid {
             position: absolute;
             inset: 0;
             background: var(--prism-refraction-grid);
@@ -104,240 +111,256 @@
             z-index: 0;
         }
 
-        .prism-welcome__content {
+        .korev-home__content {
             position: relative;
             z-index: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            max-width: 480px;
+            max-width: 700px;
             width: 100%;
+            gap: var(--prism-space-8);
         }
 
-        /* Logo */
-        .prism-welcome__logo {
-            margin-bottom: var(--prism-space-5);
+        /* ─────────────────────────────────────────────────────────────────────
+         * HERO SECTION
+         * ───────────────────────────────────────────────────────────────────── */
+        .korev-home__hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--prism-space-3);
         }
 
-        .prism-welcome__logo-img {
-            width: 88px;
-            height: 88px;
-            opacity: 0.9;
-        }
-        /* Important: do NOT invert the Korev Oracle logo.
-           The provided SVG already encodes correct colors (black bg, white mark). */
-        .prism-welcome__logo-img {
-            filter: none;
-        }
-        .prism-welcome__logo-img--light {
-            display: none;
-        }
-        [data-theme="light"] .prism-welcome__logo-img--dark {
-            display: none;
-        }
-        [data-theme="light"] .prism-welcome__logo-img--light {
-            display: block;
-        }
-        .light-mode .prism-welcome__logo-img--dark {
-            display: none;
-        }
-        .light-mode .prism-welcome__logo-img--light {
-            display: block;
-        }
-
-        /* PRISM Brand Title — Main identity */
-        .prism-welcome__brand {
-            font-family: var(--prism-font-sans);
-            font-size: var(--prism-text-3xl);
-            font-weight: 600;
+        .korev-home__title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 400;
             color: var(--prism-text-primary);
             margin: 0;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        /* ORACLE Overline — Module identifier */
-        .prism-welcome__overline {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--prism-accent);
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            margin-bottom: var(--prism-space-1);
-            opacity: 0.9;
-        }
-
-        /* Endorsement — Discreet marketing signature */
-        .prism-welcome__endorsement {
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--prism-text-muted);
-            letter-spacing: 0.02em;
-            margin-bottom: var(--prism-space-3);
-            opacity: 0.75;
-        }
-
-        /* Title — Short, system-like */
-        .prism-welcome__title {
-            font-family: var(--prism-font-sans);
-            font-size: var(--prism-text-2xl);
-            font-weight: 500;
-            color: var(--prism-text-primary);
-            margin: 0 0 var(--prism-space-2) 0;
+            line-height: 1.1;
             letter-spacing: -0.02em;
         }
 
-        .prism-welcome__subtitle {
-            font-size: var(--prism-text-sm);
-            color: var(--prism-text-secondary);
-            margin: 0 0 var(--prism-space-8) 0;
-            line-height: var(--prism-leading-relaxed);
+        .korev-home__title-brand {
+            font-weight: 700;
         }
 
-        /* Actions Grid — 2x2 */
-        .prism-welcome__actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .korev-home__title-oracle {
+            font-weight: 400;
+            font-style: italic;
+            margin-left: 0.15em;
+        }
+
+        .korev-home__subtitle {
+            font-family: var(--prism-font-sans);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--prism-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin: 0;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────────
+         * ARCHITECTURE DIAGRAM
+         * ───────────────────────────────────────────────────────────────────── */
+        .korev-home__architecture {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        /* Layer Box */
+        .korev-home__layer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: var(--prism-space-5) var(--prism-space-6);
+            border: 1px solid var(--prism-border);
+            border-radius: var(--prism-radius-md);
+            background: var(--prism-bg-surface);
+            gap: var(--prism-space-1);
+        }
+
+        .korev-home__layer--oracle {
+            border-color: var(--prism-accent);
+            background: color-mix(in srgb, var(--prism-accent) 5%, var(--prism-bg-surface));
+        }
+
+        .korev-home__layer--prism {
+            background: var(--prism-bg-surface-2);
+        }
+
+        .korev-home__layer-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--prism-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .korev-home__layer-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: var(--prism-text-xl);
+            font-weight: 500;
+            color: var(--prism-text-primary);
+        }
+
+        .korev-home__layer--oracle .korev-home__layer-name {
+            color: var(--prism-accent);
+        }
+
+        .korev-home__layer-status {
+            position: absolute;
+            right: var(--prism-space-4);
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--prism-text-muted);
+            letter-spacing: 0.1em;
+            opacity: 0.7;
+        }
+
+        /* Connector */
+        .korev-home__connector {
+            width: 1px;
+            height: 32px;
+            background: var(--prism-border);
+        }
+
+        .korev-home__connector--short {
+            height: 20px;
+        }
+
+        /* Modules Row */
+        .korev-home__modules {
+            display: flex;
+            gap: var(--prism-space-3);
+            width: 100%;
+        }
+
+        .korev-home__module {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--prism-space-4) var(--prism-space-3);
+            border: 1px solid var(--prism-border-subtle);
+            border-radius: var(--prism-radius-sm);
+            background: var(--prism-bg-surface);
+        }
+
+        .korev-home__module-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--prism-text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────────
+         * ACTION BUTTONS
+         * ───────────────────────────────────────────────────────────────────── */
+        .korev-home__actions {
+            display: flex;
             gap: var(--prism-space-4);
             width: 100%;
-            max-width: 400px;
+            max-width: 480px;
         }
 
-        /* Card — Prism Cut signature */
-        .prism-welcome__card {
-            position: relative;
-            background: var(--prism-bg-surface);
-            border: 1px solid var(--prism-border);
-            border-radius: var(--prism-radius-lg);
-            padding: 0;
+        .korev-home__action {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--prism-space-5) var(--prism-space-6);
+            border-radius: var(--prism-radius-md);
+            font-family: var(--prism-font-sans);
+            font-size: var(--prism-text-sm);
+            font-weight: 500;
             cursor: pointer;
             transition: all var(--prism-transition-base);
-            text-align: left;
-            font-family: inherit;
-            
-            /* Prism Cut — Signature beveled corner */
-            clip-path: polygon(
-                0 0,
-                calc(100% - 14px) 0,
-                100% 14px,
-                100% 100%,
-                0 100%
-            );
+            text-decoration: none;
         }
 
-        /* Spectral Edge — Left accent line on hover */
-        .prism-welcome__card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--prism-accent-gradient);
-            border-radius: 2px 0 0 2px;
-            opacity: 0;
-            transition: opacity var(--prism-transition-base);
+        .korev-home__action--primary {
+            background: var(--prism-accent);
+            border: 1px solid var(--prism-accent);
+            color: white;
         }
 
-        .prism-welcome__card:hover {
-            border-color: var(--prism-border-strong);
+        .korev-home__action--primary:hover {
+            background: var(--prism-accent-hover);
+            border-color: var(--prism-accent-hover);
+            transform: translateY(-2px);
             box-shadow: var(--prism-shadow-soft);
-            transform: translateY(-3px);
         }
 
-        .prism-welcome__card:hover::before {
-            opacity: 1;
+        .korev-home__action--secondary {
+            background: transparent;
+            border: 1px solid var(--prism-border);
+            color: var(--prism-text-primary);
         }
 
-        .prism-welcome__card:focus-visible {
+        .korev-home__action--secondary:hover {
+            background: var(--prism-bg-surface);
+            border-color: var(--prism-border-strong);
+            transform: translateY(-2px);
+        }
+
+        .korev-home__action:focus-visible {
             outline: none;
             box-shadow: var(--prism-focus-ring);
         }
 
-        .prism-welcome__card:active {
-            transform: translateY(-1px);
-        }
-
-        .prism-welcome__card-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: var(--prism-space-5) var(--prism-space-4);
-            gap: var(--prism-space-3);
-        }
-
-        /* Icon */
-        .prism-welcome__icon {
-            font-size: 28px;
-            color: var(--prism-accent);
-            opacity: 0.85;
-            transition: opacity var(--prism-transition-fast);
-        }
-
-        .prism-welcome__card:hover .prism-welcome__icon {
-            opacity: 1;
-        }
-
-        /* Card Text */
-        .prism-welcome__card-text {
-            text-align: center;
-        }
-
-        .prism-welcome__card-title {
-            font-size: var(--prism-text-sm);
-            font-weight: 500;
-            color: var(--prism-text-primary);
-            margin: 0 0 var(--prism-space-1) 0;
-        }
-
-        .prism-welcome__card-desc {
-            font-size: var(--prism-text-xs);
-            color: var(--prism-text-muted);
-            margin: 0;
+        .korev-home__action:active {
+            transform: translateY(0);
         }
 
         /* ─────────────────────────────────────────────────────────────────────
          * RESPONSIVE
          * ───────────────────────────────────────────────────────────────────── */
         @media (max-width: 640px) {
-            .prism-welcome {
+            .korev-home {
                 padding: var(--prism-space-5);
             }
 
-            .prism-welcome__title {
-                font-size: var(--prism-text-xl);
+            .korev-home__title {
+                font-size: 2rem;
             }
 
-            .prism-welcome__actions {
-                grid-template-columns: 1fr;
-                gap: var(--prism-space-3);
+            .korev-home__actions {
+                flex-direction: column;
             }
 
-            .prism-welcome__card-inner {
-                flex-direction: row;
-                padding: var(--prism-space-4);
-                gap: var(--prism-space-4);
+            .korev-home__modules {
+                flex-direction: column;
             }
 
-            .prism-welcome__card-text {
-                text-align: left;
-            }
-
-            .prism-welcome__icon {
-                font-size: 24px;
+            .korev-home__layer-status {
+                position: static;
+                transform: none;
+                margin-top: var(--prism-space-2);
             }
         }
 
         /* ─────────────────────────────────────────────────────────────────────
-         * LIGHT MODE ADJUSTMENTS
+         * LIGHT MODE
          * ───────────────────────────────────────────────────────────────────── */
-        .light-mode .prism-welcome {
+        .light-mode .korev-home {
             background: var(--prism-bg-base);
         }
 
-        .light-mode .prism-welcome__card {
-            background: var(--prism-bg-surface);
+        .light-mode .korev-home__layer--oracle {
+            background: color-mix(in srgb, var(--prism-accent) 8%, white);
         }
     </style>
 </body>

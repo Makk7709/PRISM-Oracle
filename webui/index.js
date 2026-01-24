@@ -367,9 +367,12 @@ export async function poll() {
           ? globalThis.Alpine.store("welcomeStore")
           : null;
       const welcomeVisible = Boolean(welcomeStore && welcomeStore.isVisible);
+      
+      // Check if user explicitly wants to stay on welcome screen
+      const showWelcome = localStorage.getItem("korev_show_welcome");
 
       // No context selected, try to select the first available item unless welcome screen is active
-      if (!welcomeVisible && contexts.length > 0) {
+      if (!welcomeVisible && showWelcome !== "true" && contexts.length > 0) {
         const firstChatId = chatsStore.firstId();
         if (firstChatId) {
           setContext(firstChatId);
@@ -466,6 +469,8 @@ function generateShortId() {
 
 export const newContext = function () {
   context = generateShortId();
+  // Clear welcome screen flag when starting a new chat
+  localStorage.removeItem("korev_show_welcome");
   setContext(context);
 };
 globalThis.newContext = newContext;
@@ -501,6 +506,9 @@ export const deselectChat = function () {
   // Clear localStorage selections so we don't auto-restore
   localStorage.removeItem("lastSelectedChat");
   localStorage.removeItem("lastSelectedTask");
+  
+  // Persist that user wants to stay on welcome screen
+  localStorage.setItem("korev_show_welcome", "true");
 
   // Clear the chat history
   chatHistory.innerHTML = "";

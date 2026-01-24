@@ -523,7 +523,7 @@ export function drawMessageTool(
     ["message-ai"],
     ["msg-output"],
     false,
-    false
+    true  // Enable markdown rendering for tool messages (needed for images)
   );
 }
 

@@ -67,13 +67,14 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       justify-content: flex-start;
       margin-top: 4.5rem; /* Space for fixed header */
       padding: var(--prism-space-4);
-      gap: var(--prism-space-4);
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      gap: var(--prism-space-2);
+      scrollbar-width: thin;
+      scrollbar-color: var(--prism-border) transparent;
     }
 
     .prism-sidebar__top::-webkit-scrollbar {
@@ -97,8 +98,9 @@
 
     #chats-section {
       flex: 1 1 auto;
-      max-height: 100%;
-      overflow: hidden;
+      min-height: 150px;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     #tasks-section {

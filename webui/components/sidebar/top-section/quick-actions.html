@@ -3,193 +3,241 @@
 <head>
   <script type="module">
     import { store } from "/components/sidebar/chats/chats-store.js";
+    import { store as welcomeStore } from "/components/welcome/welcome-store.js";
+    import { store as imageGalleryStore } from "/components/modals/image-gallery/image-gallery-store.js";
   </script>
 </head>
 
 <body>
-  <div class="prism-sidebar-actions" x-data>
-    <!-- WORKSPACE Section -->
-    <div class="prism-sidebar-section">
-      <div class="prism-section-header">
-        <span class="material-symbols-outlined prism-section-icon">workspaces</span>
-        <h3 class="prism-section-title" x-text="t('sidebar.workspace')">Workspace</h3>
-      </div>
-      <div class="prism-action-grid">
-        <button class="prism-action-btn" @click="$store.chats.newChat()">
-          <span class="material-symbols-outlined">add_circle</span>
-          <span x-text="t('sidebar.new_chat')">New Chat</span>
-        </button>
-        <button class="prism-action-btn" @click="$store.chats.loadChats()">
-          <span class="material-symbols-outlined">folder_open</span>
-          <span x-text="t('sidebar.load_chat')">Load Chat</span>
-        </button>
-        <button class="prism-action-btn" @click="$store.chats.saveChat()">
-          <span class="material-symbols-outlined">save</span>
-          <span x-text="t('sidebar.save_chat')">Save Chat</span>
-        </button>
-        <button class="prism-action-btn" @click="deselectChat()">
-          <span class="material-symbols-outlined">dashboard</span>
-          <span x-text="t('sidebar.dashboard')">Dashboard</span>
-        </button>
-      </div>
+  <div class="korev-sidebar-nav" x-data>
+    
+    <!-- NAVIGATION Header -->
+    <div class="korev-nav-header">
+      <span class="korev-nav-header-text">NAVIGATION</span>
     </div>
 
-    <!-- SYSTEM Section -->
-    <div class="prism-sidebar-section">
-      <div class="prism-section-header">
-        <span class="material-symbols-outlined prism-section-icon">settings_suggest</span>
-        <h3 class="prism-section-title" x-text="t('sidebar.system')">System</h3>
-      </div>
-      <div class="prism-action-grid">
-        <button class="prism-action-btn" @click="openModal('settings/memory/memory-dashboard.html');">
-          <span class="material-symbols-outlined">memory</span>
-          <span x-text="t('sidebar.memory')">Memory</span>
+    <!-- Accueil Button (always visible at top) -->
+    <button class="korev-nav-item korev-nav-item--home" @click="window.deselectChat()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span class="korev-nav-item-text" x-text="t('sidebar.dashboard') || 'Accueil'">Accueil</span>
+    </button>
+
+    <!-- Nouvelle conversation Button -->
+    <button class="korev-nav-item korev-nav-item--new" @click="$store.chats.newChat()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span class="korev-nav-item-text" x-text="t('sidebar.new_chat') || 'Chat'">Chat</span>
+    </button>
+
+    <!-- Images Button - Open image gallery (read-only) -->
+    <button class="korev-nav-item korev-nav-item--images" @click="$store.imageGallery.open()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      <span class="korev-nav-item-text" x-text="t('sidebar.images') || 'Images'">Images</span>
+    </button>
+
+    <!-- Divider -->
+    <div class="korev-nav-divider"></div>
+
+    <!-- SYSTÈME Section -->
+    <div class="korev-nav-section">
+      <span class="korev-nav-section-title" x-text="t('sidebar.system') || 'SYSTÈME'">SYSTÈME</span>
+      
+      <nav class="korev-nav-list">
+        <button class="korev-nav-item" @click="settingsModalProxy.openModal()">
+          <span class="korev-nav-item-text" x-text="t('sidebar.settings') || 'Paramètres'">Paramètres</span>
         </button>
-        <button class="prism-action-btn" @click="settingsModalProxy.openModal()">
-          <span class="material-symbols-outlined">settings</span>
-          <span x-text="t('sidebar.settings')">Settings</span>
+        
+        <button class="korev-nav-item" @click="openModal('settings/memory/memory-dashboard.html');">
+          <span class="korev-nav-item-text" x-text="t('sidebar.memory') || 'Mémoire'">Mémoire</span>
         </button>
-        <button class="prism-action-btn prism-action-btn--subtle" @click="$store.chats.resetChat()">
-          <span class="material-symbols-outlined">refresh</span>
-          <span x-text="t('sidebar.reset')">Reset</span>
+
+        <button class="korev-nav-item" @click="$store.projects ? $store.projects.openProjectsModal() : null">
+          <span class="korev-nav-item-text" x-text="t('sidebar.projects') || 'Projets'">Projets</span>
         </button>
-        <button class="prism-action-btn prism-action-btn--subtle" @click="$store.chats.restart()">
-          <span class="material-symbols-outlined">restart_alt</span>
-          <span x-text="t('sidebar.restart')">Restart</span>
-        </button>
-      </div>
+      </nav>
     </div>
+
   </div>
 
   <style>
     /* ═══════════════════════════════════════════════════════════════════════
-     * PRISM SIDEBAR ACTIONS
+     * KOREV SIDEBAR NAVIGATION
+     * Matches Figma design: Sovereign hierarchy, clean typography
      * ═══════════════════════════════════════════════════════════════════════ */
-    .prism-sidebar-actions {
+    
+    .korev-sidebar-nav {
       display: flex;
       flex-direction: column;
-      gap: var(--prism-space-5);
+      gap: var(--prism-space-1);
+      padding-bottom: var(--prism-space-3);
     }
 
-    /* Section */
-    .prism-sidebar-section {
-      display: flex;
-      flex-direction: column;
+    /* ─────────────────────────────────────────────────────────────────────
+     * NAVIGATION HEADER
+     * ───────────────────────────────────────────────────────────────────── */
+    .korev-nav-header {
+      padding: var(--prism-space-2) 0;
+      margin-bottom: var(--prism-space-2);
     }
 
-    /* Section Header */
-    .prism-sidebar-actions .prism-section-header {
-      display: flex;
-      align-items: center;
-      gap: var(--prism-space-2);
-      margin-bottom: var(--prism-space-3);
-      padding-bottom: var(--prism-space-2);
-      border-bottom: 1px solid var(--prism-border-subtle);
-    }
-
-    .prism-sidebar-actions .prism-section-title {
+    .korev-nav-header-text {
       font-size: 10px;
       font-weight: 600;
       color: var(--prism-text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin: 0;
-    }
-
-    .prism-sidebar-actions .prism-section-icon {
-      font-size: 14px;
-      color: var(--prism-text-muted);
+      letter-spacing: 0.15em;
       opacity: 0.6;
     }
 
-    /* Action Grid */
-    .prism-action-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--prism-space-2);
+    /* ─────────────────────────────────────────────────────────────────────
+     * DIVIDER
+     * ───────────────────────────────────────────────────────────────────── */
+    .korev-nav-divider {
+      height: 1px;
+      background: var(--prism-border-subtle);
+      margin: var(--prism-space-3) 0;
     }
 
-    /* Action Button */
-    .prism-action-btn {
+    /* ─────────────────────────────────────────────────────────────────────
+     * SECTIONS
+     * ───────────────────────────────────────────────────────────────────── */
+    .korev-nav-section {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: var(--prism-space-2);
+    }
+
+    .korev-nav-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--prism-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: var(--prism-space-2);
+      padding-left: var(--prism-space-1);
+      opacity: 0.5;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * NAVIGATION LIST
+     * ───────────────────────────────────────────────────────────────────── */
+    .korev-nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * NAVIGATION ITEMS
+     * ───────────────────────────────────────────────────────────────────── */
+    .korev-nav-item {
       display: flex;
       align-items: center;
       gap: var(--prism-space-2);
-      padding: var(--prism-space-3);
-      background: var(--prism-bg-surface-2);
-      border: 1px solid var(--prism-border);
-      border-radius: var(--prism-radius-md);
-      color: var(--prism-text-primary);
-      font-family: var(--prism-font-sans);
-      font-size: var(--prism-text-xs);
-      font-weight: 500;
+      padding: var(--prism-space-2) var(--prism-space-3);
+      background: transparent;
+      border: none;
+      border-radius: var(--prism-radius-sm);
       cursor: pointer;
       transition: all var(--prism-transition-fast);
       text-align: left;
-      white-space: nowrap;
-      overflow: hidden;
+      width: 100%;
       position: relative;
     }
 
-    .prism-action-btn .material-symbols-outlined {
-      font-size: 16px;
-      color: var(--prism-accent);
-      opacity: 0.8;
+    .korev-nav-item svg {
+      color: var(--prism-text-muted);
       flex-shrink: 0;
-      transition: opacity var(--prism-transition-fast);
+      transition: color var(--prism-transition-fast);
     }
 
-    /* Spectral Edge on hover */
-    .prism-action-btn::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: var(--prism-accent-gradient);
-      opacity: 0;
-      transition: opacity var(--prism-transition-fast);
+    .korev-nav-item-text {
+      font-family: var(--prism-font-sans);
+      font-size: var(--prism-text-sm);
+      font-weight: 450;
+      color: var(--prism-text-secondary);
+      transition: color var(--prism-transition-fast);
     }
 
-    .prism-action-btn:hover {
-      background: var(--prism-bg-elevated);
-      border-color: var(--prism-border-strong);
+    /* Hover State */
+    .korev-nav-item:hover {
+      background: var(--prism-bg-surface-2);
     }
 
-    .prism-action-btn:hover::before {
-      opacity: 1;
+    .korev-nav-item:hover .korev-nav-item-text,
+    .korev-nav-item:hover svg {
+      color: var(--prism-text-primary);
     }
 
-    .prism-action-btn:hover .material-symbols-outlined {
-      opacity: 1;
-    }
-
-    .prism-action-btn:focus-visible {
+    /* Active/Focus State */
+    .korev-nav-item:focus-visible {
       outline: none;
       box-shadow: var(--prism-focus-ring);
     }
 
-    .prism-action-btn:active {
-      transform: scale(0.98);
+    .korev-nav-item:active {
+      background: var(--prism-bg-elevated);
     }
 
-    /* Subtle variant for secondary actions */
-    .prism-action-btn--subtle {
-      background: transparent;
-      border-color: transparent;
+    /* Home button - special styling */
+    .korev-nav-item--home {
+      margin-bottom: var(--prism-space-1);
     }
 
-    .prism-action-btn--subtle .material-symbols-outlined {
-      color: var(--prism-text-secondary);
-    }
-
-    .prism-action-btn--subtle:hover {
+    /* New chat button - accent styling */
+    .korev-nav-item--new {
       background: var(--prism-bg-surface-2);
-      border-color: var(--prism-border);
+      border: 1px solid var(--prism-border);
     }
 
-    .prism-action-btn--subtle:hover .material-symbols-outlined {
+    .korev-nav-item--new:hover {
+      background: var(--prism-bg-elevated);
+      border-color: var(--prism-accent);
+    }
+
+    .korev-nav-item--new svg {
       color: var(--prism-accent);
+    }
+
+    /* Images button - gallery styling */
+    .korev-nav-item--images {
+      margin-top: var(--prism-space-1);
+    }
+
+    .korev-nav-item--images svg {
+      color: var(--prism-text-muted);
+    }
+
+    .korev-nav-item--images:hover svg {
+      color: var(--prism-accent);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * LIGHT MODE ADJUSTMENTS
+     * ───────────────────────────────────────────────────────────────────── */
+    .light-mode .korev-nav-item:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .light-mode .korev-nav-item:active {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .light-mode .korev-nav-item--new {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .light-mode .korev-nav-item--new:hover {
+      background: rgba(0, 0, 0, 0.06);
     }
   </style>
 </body>

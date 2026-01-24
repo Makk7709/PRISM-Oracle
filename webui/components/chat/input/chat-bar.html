@@ -21,23 +21,30 @@
 
 
     <style>
-    /* Input section wrapper */
+    /* ═══════════════════════════════════════════════════════════════════════
+     * KOREV INPUT SECTION — Premium, minimal
+     * ═══════════════════════════════════════════════════════════════════════ */
     #input-section {
       position: relative;
-      background-color: var(--color-panel);
-      display: -webkit-flex;
+      background: var(--prism-bg-surface);
+      border-top: 1px solid var(--prism-border-subtle);
       display: flex;
       flex-direction: column;
-      gap: var(--spacing-xs);
-      padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 0.8rem;
-      align-items: start;
-      place-items: normal;
+      gap: var(--prism-space-2);
+      padding: var(--prism-space-4) var(--prism-space-4) var(--prism-space-3);
       flex-shrink: 0;
       z-index: 1001;
     }
 
+    .light-mode #input-section {
+      background: var(--prism-bg-surface);
+      border-top-color: var(--prism-border);
+    }
+
     @media (max-width: 768px) {
-      #input-section { align-items: normal !important; }
+      #input-section {
+        padding: var(--prism-space-3);
+      }
     }
     </style>
 </body>
