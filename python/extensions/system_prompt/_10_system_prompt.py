@@ -47,14 +47,6 @@ def get_tools_prompt(agent: Agent):
     prompt = agent.read_prompt("agent.system.tools.md")
     if agent.config.chat_model.vision:
         prompt += "\n\n" + agent.read_prompt("agent.system.tools_vision.md")
-    
-    # Add Graph Policy (MANDATORY for all graph/chart requests)
-    try:
-        graph_policy = agent.read_prompt("fw.graph_policy.md")
-        prompt += "\n\n" + graph_policy
-    except FileNotFoundError:
-        pass  # Graph policy not found, continue without it
-    
     return prompt
 
 
