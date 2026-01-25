@@ -106,8 +106,10 @@ if exist ".env" (
         echo Creation du fichier .env...
         (
             echo # Korev Oracle Configuration
-            echo API_KEY_OPENAI=
+            echo # Cle OpenRouter ^(requise^) - https://openrouter.ai/keys
             echo API_KEY_OPENROUTER=
+            echo.
+            echo # Port interface web
             echo WEB_UI_PORT=5050
             echo ANONYMIZED_TELEMETRY=false
         ) > .env

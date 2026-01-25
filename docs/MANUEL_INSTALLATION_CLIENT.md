@@ -257,29 +257,25 @@ Le script affiche sa progression :
 
 ## Obtenir les clés API
 
-Oracle a besoin d'au moins **une clé API** pour fonctionner.
+Oracle utilise **OpenRouter** comme fournisseur principal pour accéder à tous les modèles IA.
 
-### Option A : OpenAI (recommandé)
-
-1. Allez sur **https://platform.openai.com/**
-2. Créez un compte ou connectez-vous
-3. Allez dans **API Keys**
-4. Cliquez sur **"Create new secret key"**
-5. Copiez la clé (commence par `sk-...`)
-6. Collez-la dans `.env` :
-   ```
-   API_KEY_OPENAI=sk-votre-cle
-   ```
-
-### Option B : OpenRouter
+### Clé OpenRouter (REQUISE)
 
 1. Allez sur **https://openrouter.ai/**
-2. Créez un compte
-3. Créez une clé API
-4. Collez-la dans `.env` :
+2. Créez un compte ou connectez-vous
+3. Allez dans **Keys** (menu en haut)
+4. Cliquez sur **"Create Key"**
+5. Copiez la clé (commence par `sk-or-...`)
+6. Collez-la dans `.env` :
    ```
    API_KEY_OPENROUTER=sk-or-votre-cle
    ```
+
+### Génération d'image (OPTIONNEL)
+
+Pour la génération d'images avec DALL-E 3 :
+1. La clé OpenAI sera fournie séparément par Korev
+2. Elle se configure dans **Paramètres → Génération d'image**
 
 ---
 

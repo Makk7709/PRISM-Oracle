@@ -115,12 +115,12 @@ ENV_FILE="$PROJECT_ROOT/.env"
 if [ -f "$ENV_FILE" ]; then
     echo -e "${GREEN}✅ Fichier .env trouvé${NC}"
     
-    # Check for API keys
-    if grep -q "API_KEY_OPENAI=sk-" "$ENV_FILE" || grep -q "API_KEY_OPENROUTER=sk-" "$ENV_FILE"; then
-        echo -e "${GREEN}✅ Clés API configurées${NC}"
+    # Check for OpenRouter key
+    if grep -q "API_KEY_OPENROUTER=sk-" "$ENV_FILE"; then
+        echo -e "${GREEN}✅ Clé OpenRouter configurée${NC}"
     else
-        echo -e "${YELLOW}⚠️  Attention: Aucune clé API détectée${NC}"
-        echo "   Éditez $ENV_FILE et ajoutez vos clés API"
+        echo -e "${YELLOW}⚠️  Attention: Clé OpenRouter non configurée${NC}"
+        echo "   Éditez $ENV_FILE et ajoutez votre clé OpenRouter"
     fi
 else
     echo -e "${YELLOW}⚠️  Fichier .env non trouvé.${NC}"
@@ -134,8 +134,10 @@ else
         echo "Création du fichier .env..."
         cat > "$ENV_FILE" << 'ENVFILE'
 # Korev Oracle Configuration
-API_KEY_OPENAI=
+# Clé OpenRouter (requise) - https://openrouter.ai/keys
 API_KEY_OPENROUTER=
+
+# Port interface web
 WEB_UI_PORT=5050
 ANONYMIZED_TELEMETRY=false
 ENVFILE
