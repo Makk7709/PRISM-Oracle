@@ -59,9 +59,9 @@ class DecisionTypeForDomain(str, Enum):
 CONSENSUS_REQUIRED_PROFILES: Set[str] = {
     "legal_safe",
     "researcher",
+    "medical",  # Agent médical spécialisé - PRISM obligatoire
     # Ajouter ici les futurs profils critiques
     # "scientific",
-    # "medical_advisor",
 }
 
 # Profils qui peuvent bypasser le consensus (dev/test uniquement)

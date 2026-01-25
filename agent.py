@@ -847,7 +847,7 @@ class Agent:
                         response = await tool.execute(**tool_args)
                     except Exception as tool_error:
                         # Log the error but don't crash the agent
-                        from python.helpers.print_style import PrintStyle
+                        # Note: PrintStyle is imported at module level (line 16)
                         PrintStyle.error(f"Tool '{tool_name}' failed: {tool_error}")
                         self.context.log.log(
                             type="error",

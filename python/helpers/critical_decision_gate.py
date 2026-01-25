@@ -48,6 +48,18 @@ from python.helpers.evidence import (
     create_fail_closed_response,
 )
 
+# Medical contract validation (T9 claim-first enforcement)
+try:
+    from python.helpers.medical_contract import (
+        validate_medical_output,
+        MedicalDecision,
+        MedicalValidationResult,
+        detect_red_flags,
+    )
+    MEDICAL_CONTRACT_AVAILABLE = True
+except ImportError:
+    MEDICAL_CONTRACT_AVAILABLE = False
+
 logger = logging.getLogger("critical_decision_gate")
 
 
@@ -481,6 +493,55 @@ class CriticalDecisionGate:
                     )
         
         # ═══════════════════════════════════════════════════════════════════════
+        # CHECK 4: MEDICAL DOMAIN → StructuredResponse Contract (T9)
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        if assessment.domain == CriticalDomain.MEDICAL and MEDICAL_CONTRACT_AVAILABLE:
+            # Déterminer si mode offline
+            offline_mode = os.environ.get("OFFLINE_MODE", "").lower() == "true"
+            
+            # Tenter de parser la sortie comme JSON/dict
+            output_data = output
+            if isinstance(output, str):
+                try:
+                    import json
+                    output_data = json.loads(output)
+                except (json.JSONDecodeError, TypeError):
+                    # Output est du texte libre - échec du contrat
+                    output_data = output  # Garder comme string pour le validateur
+            
+            # Valider contre le contrat médical
+            medical_result = validate_medical_output(output_data, offline_mode=offline_mode)
+            
+            if not medical_result.is_valid:
+                logger.warning(
+                    f"Medical contract violation: {medical_result.errors} "
+                    f"[{correlation_id}]"
+                )
+                
+                fail_response = self._create_fail_closed_medical_contract(
+                    output, assessment, medical_result.errors, correlation_id
+                )
+                
+                result = GateResult(
+                    decision=GateDecision.FAIL_CLOSED,
+                    can_emit=False,
+                    assessment=assessment,
+                    evidence_pack=evidence_pack,
+                    evidence_valid=False,
+                    consensus_required=assessment.requires_consensus,
+                    original_output=output,
+                    fail_closed_response=fail_response,
+                    gate_time_ms=int((time.time() - start_time) * 1000),
+                    correlation_id=correlation_id,
+                )
+                
+                self._log_decision(result, "validate_final_output")
+                return result
+            
+            logger.info(f"Medical contract validated [{correlation_id}]")
+        
+        # ═══════════════════════════════════════════════════════════════════════
         # TOUS LES CHECKS OK → AUTORISER
         # ═══════════════════════════════════════════════════════════════════════
         
@@ -583,6 +644,49 @@ soutenue par au moins une source vérifiable.
 - Claims non sourcés: {len(unsourced_claims)}
 
 *Principe "zéro hallucination": pas de source = pas d'affirmation.*
+"""
+    
+    def _create_fail_closed_medical_contract(
+        self,
+        output: str,
+        assessment: CriticalityAssessment,
+        errors: List[str],
+        correlation_id: str,
+    ) -> str:
+        """Crée une réponse fail-closed pour violation du contrat médical."""
+        errors_text = "\n".join(f"- {e}" for e in errors[:5])
+        
+        return f"""## ⚠️ NON VALIDABLE — Contrat médical non respecté
+
+**Domaine**: MEDICAL
+**Validation**: ÉCHEC
+**Raison**: Sortie non conforme au format StructuredResponse
+
+### Violations détectées
+
+{errors_text}
+
+### Ce que cela signifie
+
+En domaine médical, toute sortie DOIT respecter le contrat StructuredResponse :
+- `claims[]` : Liste de claims avec source_ids non vides
+- `citations[]` : Sources référencées par les claims
+- `meta` : Métadonnées incluant evidence_grade et consensus_status
+- Invariant PV : source_type="pv" => evidence_grade="VL"
+- Invariant citation : claim.source_ids ⊆ citations.ids
+
+### Recommandations
+
+Cette sortie a été bloquée pour non-conformité au contrat.
+Consulter un professionnel de santé pour obtenir des informations médicales fiables.
+
+### Traçabilité
+
+- Correlation ID: `{correlation_id}`
+- Domaine: {assessment.domain.value}
+- Erreurs: {len(errors)}
+
+*Contrat médical T9 : aucune sortie médicale sans validation structurée.*
 """
     
     def _log_decision(self, result: GateResult, operation: str):
