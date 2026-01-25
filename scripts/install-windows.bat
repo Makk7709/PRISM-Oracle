@@ -48,7 +48,7 @@ REM Pull image
 echo [2/4] Telechargement de l'image Docker...
 echo (Cela peut prendre plusieurs minutes la premiere fois)
 echo.
-docker pull korevai/korev-oracle-base:latest
+docker pull agent0ai/agent-zero:latest
 if errorlevel 1 (
     echo.
     echo ❌ Echec du telechargement

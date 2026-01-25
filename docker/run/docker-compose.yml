@@ -1,8 +1,14 @@
 services:
   korev-oracle:
     container_name: korev-oracle
-    image: korevai/korev-oracle:latest
+    # Image officielle agent-zero (si korev-oracle n'est pas disponible)
+    image: ${ORACLE_IMAGE:-agent0ai/agent-zero:latest}
     volumes:
       - ./korev-oracle:/korev
+      # Monter les fichiers de config locaux
+      - ../../.env:/a0/.env:ro
     ports:
-      - "50080:80"
+      - "${ORACLE_PORT:-50080}:80"
+    environment:
+      - WEB_UI_PORT=80
+    restart: unless-stopped

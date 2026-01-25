@@ -24,7 +24,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 ORACLE_PORT="${ORACLE_PORT:-50080}"
-DOCKER_IMAGE="korevai/korev-oracle-base:latest"
+DOCKER_IMAGE="agent0ai/agent-zero:latest"
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════════════════════════════╗"

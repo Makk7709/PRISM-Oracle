@@ -35,7 +35,7 @@ Korev Oracle est un assistant IA avancé conçu pour vous aider dans vos tâches
 | Windows | 20-30 minutes |
 | Mac | 15-20 minutes |
 
-> **Note** : La première installation prend plus de temps car elle télécharge les composants nécessaires (~2-3 Go).
+> **Note** : La première installation prend plus de temps car elle télécharge les composants nécessaires (~4-5 Go).
 
 ---
 

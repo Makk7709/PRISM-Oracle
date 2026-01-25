@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $ORACLE_PORT = if ($env:ORACLE_PORT) { $env:ORACLE_PORT } else { "50080" }
-$DOCKER_IMAGE = "korevai/korev-oracle-base:latest"
+$DOCKER_IMAGE = "agent0ai/agent-zero:latest"
 
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
