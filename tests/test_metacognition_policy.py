@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -451,7 +452,7 @@ sys.exit(1)
             [sys.executable, "-O", "-c", test_code],
             capture_output=True,
             text=True,
-            cwd="/Users/aminemohamed/Desktop/APP/Agent0prism/agent-zero",
+            cwd=str(Path(__file__).parent.parent),
             timeout=10,
         )
         
@@ -495,7 +496,7 @@ class TestMergeGateGuardRail:
             ],
             capture_output=True,
             text=True,
-            cwd="/Users/aminemohamed/Desktop/APP/Agent0prism/agent-zero",
+            cwd=str(Path(__file__).parent.parent),
             timeout=30,
         )
         
@@ -517,7 +518,7 @@ class TestMergeGateGuardRail:
             ],
             capture_output=True,
             text=True,
-            cwd="/Users/aminemohamed/Desktop/APP/Agent0prism/agent-zero",
+            cwd=str(Path(__file__).parent.parent),
             timeout=30,
         )
         
@@ -540,7 +541,7 @@ class TestMergeGateGuardRail:
             ],
             capture_output=True,
             text=True,
-            cwd="/Users/aminemohamed/Desktop/APP/Agent0prism/agent-zero",
+            cwd=str(Path(__file__).parent.parent),
             timeout=30,
         )
         

@@ -61,7 +61,7 @@ The backup system now uses **resolved absolute filesystem paths** instead of pla
 def _get_default_patterns(self) -> str:
     """Get default backup patterns with resolved absolute paths"""
     # Ensure paths don't have double slashes
-    agent_root = self.agent_zero_root.rstrip('/')
+    agent_root = self.korev_root.rstrip('/')
     user_home = self.user_home.rstrip('/')
 
     return f"""# Korev Oracle Knowledge (excluding defaults)
@@ -452,7 +452,7 @@ class BackupInspect(ApiHandler):
                 "include_patterns": metadata.get("include_patterns", []),  # Array of include patterns
                 "exclude_patterns": metadata.get("exclude_patterns", []),  # Array of exclude patterns
                 "default_patterns": metadata.get("backup_config", {}).get("default_patterns", ""),
-                "agent_zero_version": metadata.get("agent_zero_version", "unknown"),
+                "korev_version": metadata.get("korev_version", "unknown"),
                 "timestamp": metadata.get("timestamp", ""),
                 "backup_name": metadata.get("backup_name", ""),
                 "total_files": metadata.get("total_files", len(metadata.get("files", []))),
@@ -491,15 +491,15 @@ class BackupService:
     """Core backup and restore service for Korev Oracle"""
 
     def __init__(self):
-        self.agent_zero_version = self._get_agent_zero_version()
-        self.agent_zero_root = files.get_abs_path("")  # Resolved Korev Oracle root
+        self.korev_version = self._get_korev_version()
+        self.korev_root = files.get_abs_path("")  # Resolved Korev Oracle root
         self.user_home = os.path.expanduser("~")       # Current user's home directory
 
     def _get_default_patterns(self) -> str:
         """Get default backup patterns from specification"""
         return DEFAULT_BACKUP_PATTERNS
 
-    def _get_agent_zero_version(self) -> str:
+    def _get_korev_version(self) -> str:
         """Get current Korev Oracle version"""
         try:
             # Get version from git info (same as run_ui.py)
@@ -582,7 +582,7 @@ class BackupService:
                 "path": os.environ.get("PATH", "")[:200] + "..." if len(os.environ.get("PATH", "")) > 200 else os.environ.get("PATH", ""),
                 "timezone": str(datetime.datetime.now().astimezone().tzinfo),
                 "working_directory": os.getcwd(),
-                "agent_zero_root": files.get_abs_path(""),
+                "korev_root": files.get_abs_path(""),
                 "runtime_mode": "development" if runtime.is_development() else "production"
             }
         except Exception as e:
@@ -727,7 +727,7 @@ class BackupService:
 
                 metadata = {
                     # Basic backup information
-                    "agent_zero_version": self.agent_zero_version,
+                    "korev_version": self.korev_version,
                     "timestamp": datetime.datetime.now().isoformat(),
                     "backup_name": backup_name,
                     "include_hidden": include_hidden,
@@ -966,7 +966,7 @@ class BackupService:
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 # Create and add metadata first
                 metadata = {
-                    "agent_zero_version": self.agent_zero_version,
+                    "korev_version": self.korev_version,
                     "timestamp": datetime.datetime.now().isoformat(),
                     "backup_name": backup_name,
                     "backup_patterns": patterns,
@@ -1355,7 +1355,7 @@ Korev Oracle's existing task scheduler could be extended to support automated ba
 The backup system uses the same version detection method as Korev Oracle's main UI:
 
 ```python
-def _get_agent_zero_version(self) -> str:
+def _get_korev_version(self) -> str:
     """Get current Korev Oracle version"""
     try:
         # Get version from git info (same as run_ui.py)
@@ -1372,7 +1372,7 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
 
 ```json
 {
-  "agent_zero_version": "version",
+  "korev_version": "version",
   "timestamp": "ISO datetime",
   "backup_name": "user-defined name",
   "include_hidden": boolean,
@@ -1586,7 +1586,7 @@ metadata["exclude_patterns"] = original_backup_metadata.get("exclude_patterns", 
 
 # 2. Path translation for cross-system compatibility
 environment_info = original_backup_metadata.get("environment_info", {})
-backed_up_agent_root = environment_info.get("agent_zero_root", "")
+backed_up_agent_root = environment_info.get("korev_root", "")
 ```
 
 #### **✅ ACE editor metadata Usage** (EVERYTHING ELSE):

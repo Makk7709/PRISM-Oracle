@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Replay Harness — End-to-End Offline Testing for Oracle/Agent Zero
+Replay Harness — End-to-End Offline Testing for Korev Oracle
 
 This module provides deterministic, offline testing of the reasoning pipeline
 using fixtures instead of real LLM calls.
@@ -285,7 +285,7 @@ _scorecard = ReplayScorecard()
 @pytest.mark.replay
 class TestReplayHarness:
     """
-    Replay harness tests for Oracle/Agent Zero.
+    Replay harness tests for Korev Oracle.
     
     These tests run OFFLINE with deterministic fixtures.
     

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testing utilities for Agent Zero / Korev Oracle.
+Testing utilities for Korev Oracle.
 
 This module provides:
 - FakeLiteLLMProvider: Deterministic LLM responses from fixtures
