@@ -1,20 +1,20 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════════
-REM  KOREV ORACLE - Installation Script (Windows)
+REM  KOREV EVIDENCE - Installation Script (Windows)
 REM  VERSION COMPLÈTE avec toutes les customisations
 REM ═══════════════════════════════════════════════════════════════════════════════
 REM
-REM  Double-cliquez sur ce fichier pour installer et lancer Korev Oracle
+REM  Double-cliquez sur ce fichier pour installer et lancer Korev Evidence
 REM  avec toutes les customisations : WebUI, typography, MCP servers, etc.
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
-title Korev Oracle - Installation
+title Korev Evidence - Installation
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║           KOREV ORACLE - Installation Windows                 ║
-echo ║                 Version complete customisee                   ║
+echo ║          KOREV EVIDENCE - Installation Windows                ║
+echo ║                Version complete customisee                    ║
 echo ╚═══════════════════════════════════════════════════════════════╝
 echo.
 
@@ -105,7 +105,7 @@ if exist ".env" (
     ) else (
         echo Creation du fichier .env...
         (
-            echo # Korev Oracle Configuration
+            echo # Korev Evidence Configuration
             echo # Cle OpenRouter ^(requise^) - https://openrouter.ai/keys
             echo API_KEY_OPENROUTER=
             echo.
@@ -137,9 +137,9 @@ if not errorlevel 1 (
 echo.
 
 REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 6: Launch Oracle
+REM Step 6: Launch Evidence
 REM ───────────────────────────────────────────────────────────────────────────────
-echo [6/6] Lancement de Korev Oracle...
+echo [6/6] Lancement de Korev Evidence...
 
 set WEB_UI_PORT=5050
 
@@ -148,7 +148,7 @@ echo ╔════════════════════════
 echo ║           ✓ INSTALLATION TERMINEE                             ║
 echo ╠═══════════════════════════════════════════════════════════════╣
 echo ║                                                               ║
-echo ║  Korev Oracle demarre sur:                                    ║
+echo ║  Korev Evidence demarre sur:                                  ║
 echo ║  → http://localhost:5050                                      ║
 echo ║                                                               ║
 echo ║  Pour arreter: Fermez cette fenetre ou Ctrl+C                 ║
@@ -164,7 +164,7 @@ echo.
 REM Open browser after delay
 start "" /b cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:5050"
 
-REM Run Oracle
+REM Run Evidence
 python run_ui.py
 
 pause
