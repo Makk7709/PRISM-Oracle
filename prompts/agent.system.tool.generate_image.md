@@ -39,6 +39,27 @@ response format:
 - images: array of image URLs or base64
 - fallback_used: true if primary provider failed
 
+**CRITICAL: AFTER IMAGE GENERATION**
+Once generate_image returns successfully:
+1. The image is ALREADY displayed in the chat (no need to show it again)
+2. Use the `response` tool to confirm completion to the user
+3. Do NOT call any other tools - the task is complete
+
+Example after successful generation:
+~~~json
+{
+    "thoughts": [
+        "Image was generated successfully",
+        "I should confirm to the user and end the task"
+    ],
+    "headline": "Image delivered",
+    "tool_name": "response",
+    "tool_args": {
+        "text": "Voici votre image ! Si vous souhaitez des modifications, n'hésitez pas à demander."
+    }
+}
+~~~
+
 usage example 1 - marketing visual:
 ~~~json
 {
