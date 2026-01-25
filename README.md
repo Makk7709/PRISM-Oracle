@@ -2,207 +2,295 @@
 
 # `Korev Oracle`
 
-### Système cognitif autonome par KOREV AI
+### Système Cognitif Autonome de Nouvelle Génération
 
-[![Korev Oracle](https://img.shields.io/badge/Version-1.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Oracle)
+[![Version](https://img.shields.io/badge/Version-2.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Oracle)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-142%20Passed-green?style=for-the-badge)](#tests)
 
-## Documentation
+**Un assistant IA enterprise-grade avec raisonnement avancé, recherche académique intégrée et extraction de documents intelligente.**
 
-[Introduction](#un-framework-dagent-ia-personnel-qui-grandit-et-apprend-avec-vous) •
-[Installation](./docs/installation.md) •
-[Développement](./docs/development.md) •
-[Extensibilité](./docs/extensibility.md) •
-[Utilisation](./docs/usage.md)
+[Installation](#installation) •
+[Fonctionnalités](#fonctionnalités-clés) •
+[Architecture](#architecture) •
+[Documentation](./docs/)
 
 </div>
 
 ---
 
-## Un framework d'agent IA personnel qui grandit et apprend avec vous
+## Présentation
 
-- Korev Oracle n'est pas un framework rigide. Il est conçu pour être dynamique, évolutif et apprenant au fil de votre utilisation.
-- Korev Oracle est entièrement transparent, lisible, compréhensible, personnalisable et interactif.
-- Korev Oracle utilise l'ordinateur comme un outil pour accomplir vos tâches.
+Korev Oracle est un framework d'agent IA autonome conçu pour les professionnels exigeants. Il combine :
 
----
-
-# 💡 Fonctionnalités Clés
-
-## 1. Assistant Polyvalent
-
-Korev Oracle n'est pas pré-programmé pour des tâches spécifiques. C'est un assistant personnel généraliste. Donnez-lui une tâche, et il collectera les informations, exécutera du code, coopérera avec d'autres instances d'agents et fera tout son possible pour l'accomplir.
-
-Il dispose d'une **mémoire persistante**, lui permettant de mémoriser les solutions précédentes, le code, les faits et instructions pour résoudre les tâches plus rapidement à l'avenir.
-
-![Korev Oracle Interface](/docs/res/ui-screen-2.png)
-
-## 2. L'Ordinateur comme Outil
-
-- Korev Oracle utilise le système d'exploitation comme outil pour accomplir ses tâches.
-- Il peut écrire son propre code et utiliser le terminal pour créer et utiliser ses propres outils selon les besoins.
-- **Outils par défaut** : recherche en ligne, fonctionnalités mémoire, communication (avec l'utilisateur et autres agents), exécution de code/terminal.
-- **Outils personnalisés** : Étendez les fonctionnalités en créant vos propres outils.
-- **Instruments** : Créez des fonctions et procédures personnalisées appelables par Korev Oracle.
-
-## 3. Coopération Multi-Agents
-
-- Chaque agent a un agent supérieur qui lui donne des tâches et instructions.
-- Chaque agent peut créer des agents subordonnés pour décomposer et résoudre des sous-tâches.
-- Cela permet à tous les agents de garder leur contexte propre et focalisé.
-
-![Multi-agent](docs/res/physics.png)
-![Multi-agent 2](docs/res/physics-2.png)
-
-## 4. Entièrement Personnalisable et Extensible
-
-- Presque rien n'est codé en dur. Rien n'est caché. Tout peut être étendu ou modifié.
-- Le comportement est défini par un prompt système dans **prompts/default/agent.system.md**.
-- Chaque prompt, chaque template de message peut être trouvé dans le dossier **prompts/** et modifié.
-- Chaque outil par défaut peut être trouvé dans **python/tools/** et modifié.
-
-![Prompts](/docs/res/prompts.png)
-
-## 5. Profils Métiers Spécialisés
-
-Korev Oracle supporte des **profils d'agents** spécialisés par métier :
-
-| Profil | Spécialisation |
-|--------|----------------|
-| `finance` | Analyste financier, comptabilité, KPIs, valorisation |
-| `marketing` | Stratégie marketing, copywriting, SEO, ads |
-| `sales` | Commercial, CRM, prospection, closing |
-| `developer` | Développement logiciel, architecture |
-| `researcher` | Recherche, analyse de données, reporting |
-
-Changez de profil via **Settings → Default agent profile**.
+- **Raisonnement Métacognitif** — Auto-évaluation et escalade intelligente
+- **Recherche Académique** — Accès à 5 bases de données scientifiques
+- **Extraction PDF Robuste** — Pipeline avec circuit breakers et timeouts
+- **Multi-Agents** — Coopération hiérarchique pour tâches complexes
 
 ---
 
-# 🚀 Exemples d'Utilisation
+## Fonctionnalités Clés
 
-- **Projets de développement** — `"Crée un dashboard React avec visualisation de données en temps réel"`
-- **Analyse de données** — `"Analyse les données de vente du dernier trimestre et crée un rapport"`
-- **Création de contenu** — `"Rédige un article technique sur les microservices"`
-- **Administration système** — `"Configure un système de monitoring pour nos serveurs"`
-- **Recherche** — `"Résume les 5 derniers articles sur le prompting CoT"`
-- **Finance** — `"Analyse la santé financière de cette entreprise"`
-- **Marketing** — `"Crée une séquence email de nurturing B2B"`
-- **Commercial** — `"Génère un script de prospection téléphonique"`
+### 1. Moteur de Raisonnement (ReasoningEngine)
+
+Système de métacognition avec politique d'escalade non-diluable :
+
+| Niveau | Seuil | Action |
+|--------|-------|--------|
+| `SAFE_REFUSE` | confidence < 0.35 | Refuse poliment, explique pourquoi |
+| `HUMAN_REVIEW` | confidence < 0.35 | Demande validation humaine |
+| `ASK_CLARIFY` | confidence < 0.5 | Pose des questions ciblées |
+| `NONE` | confidence ≥ 0.5 | Exécution autonome |
+
+**Invariants garantis :**
+- Monotonie : les signaux ne peuvent que durcir l'escalade
+- Non-dilution : aucune logique ne peut abaisser le niveau d'escalade
+- No-PII : aucune donnée utilisateur dans les logs/exceptions
+
+### 2. Recherche Académique Intégrée
+
+5 serveurs MCP installés pour la recherche scientifique :
+
+| Serveur | Usage | Exemples |
+|---------|-------|----------|
+| **ArXiv** | Preprints, ML/AI, Physics | "dernières publications sur transformers" |
+| **Semantic Scholar** | Citations, auteurs | "articles de Yann LeCun" |
+| **OpenAlex** | Métriques, institutions | "publications MIT 2024" |
+| **Crossref** | DOI, métadonnées | "10.1038/nature12373" |
+| **EUR-Lex** | Droit européen | "RGPD article 17" |
+
+**Politique intelligente de sélection :**
+```
+Query: "RGPD droit à l'oubli"
+→ Intent détecté: EU_LEGISLATION
+→ Outils autorisés: [eurlex_search] (primary)
+→ Fallback: [openalex_search, crossref_search]
+```
+
+### 3. Extraction PDF Production-Ready
+
+Pipeline robuste avec protection contre les blocages :
+
+- **Circuit Breaker** — Désactive automatiquement les moteurs défaillants
+- **Timeouts stricts** — Total: 25s, Par page: 4s, Par moteur: 6s
+- **Reconstruction géométrique** — Tables extraites sans dépendances lourdes
+- **Fallback automatique** — PyMuPDF → Camelot → Tabula → Géométrie
+
+```python
+# Configuration par défaut (sécurisée)
+config = get_default_config()
+# - Tous les moteurs externes OFF
+# - OCR OFF (activable si nécessaire)
+# - Logs sans contenu utilisateur
+```
+
+### 4. Interface Korev Oracle
+
+Design system personnalisé avec typographie Playfair Display :
+
+- **Welcome Screen** — Page d'accueil brandée
+- **Chat Interface** — Bulles de conversation élégantes
+- **Dark/Light Mode** — Thème persistant
+- **Multilingual** — FR, EN (auto-détection)
 
 ---
 
-# ⚙️ Installation
+## Architecture
+
+```
+korev-oracle/
+├── python/
+│   ├── helpers/
+│   │   ├── metacognition.py      # ReasoningEngine
+│   │   ├── research_tool_policy.py # Politique outils recherche
+│   │   ├── research_executor.py   # Exécution avec fallback
+│   │   └── pdf_extraction/        # Pipeline PDF
+│   │       ├── config.py          # Configuration centralisée
+│   │       ├── pipeline.py        # Extraction avec timeouts
+│   │       └── types.py           # Types de données
+│   └── tools/                     # Outils de l'agent
+├── webui/                         # Interface React/Alpine
+├── prompts/                       # System prompts personnalisables
+├── conf/
+│   └── model_providers.yaml       # Configuration LLM providers
+├── tests/                         # 142 tests unitaires
+└── scripts/
+    ├── install-windows.bat        # Installation Windows
+    └── install-mac.sh             # Installation Mac/Linux
+```
+
+---
+
+## Installation
 
 ### Prérequis
 
-- Python 3.10+
-- Docker (optionnel mais recommandé)
+- **Python 3.11+**
+- **Clé API OpenRouter** (pour les LLMs)
+- Optionnel : Clé OpenAI (pour génération d'images DALL-E)
 
 ### Installation Rapide
 
-```bash
-# Cloner le repository
-git clone https://github.com/Makk7709/PRISM-Oracle.git
-cd PRISM-Oracle
+#### Windows
 
-# Installer les dépendances
-pip install -r requirements.txt
-
-# Lancer l'application
-python run_ui.py --port 8080
-
-# Ouvrir http://localhost:8080
+```batch
+# 1. Copier le dossier korev-oracle
+# 2. Double-cliquer sur:
+scripts\install-windows.bat
 ```
 
-### Avec Docker
+#### Mac / Linux
 
 ```bash
-docker build -t prism-oracle .
-docker run -p 8080:80 prism-oracle
+cd korev-oracle/scripts
+chmod +x install-mac.sh
+./install-mac.sh
 ```
 
----
+### Configuration
 
-# 🐳 Interface Web Complète
+1. Éditer `.env` :
+```env
+API_KEY_OPENROUTER=sk-or-votre-cle
+WEB_UI_PORT=5050
+```
 
-![Settings](docs/res/settings-page-ui.png)
+2. Ouvrir http://localhost:5050
 
-- Paramètres personnalisables pour adapter le comportement de l'agent
-- Interface propre, fluide et interactive
-- Sauvegarde et chargement des conversations
-- Logs automatiquement sauvegardés dans **logs/**
-- Mode Jour/Nuit avec persistance
-
-![Exemple](/docs/res/time_example.jpg)
-
-- Sortie en temps réel, permettant d'intervenir à tout moment
-- Aucun code requis, uniquement des compétences de prompting et communication
-- Fiable même avec de petits modèles grâce à un prompt système solide
-
----
-
-# ⚠️ Points Importants
-
-### Korev Oracle Peut Être Puissant
-
-Avec les bonnes instructions, Korev Oracle est capable de nombreuses actions, y compris potentiellement dangereuses concernant votre ordinateur, données ou comptes. Exécutez toujours Korev Oracle dans un environnement isolé (comme Docker) et soyez prudent dans vos demandes.
-
-### Korev Oracle Est Basé sur les Prompts
-
-Tout le framework est guidé par le dossier **prompts/**. Guidelines de l'agent, instructions des outils, messages, fonctions utilitaires IA — tout est là.
-
----
-
-# 📚 Documentation
-
-| Page | Description |
-|------|-------------|
-| [Installation](./docs/installation.md) | Installation, configuration |
-| [Utilisation](./docs/usage.md) | Usage basique et avancé |
-| [Développement](./docs/development.md) | Développement et personnalisation |
-| [Extensibilité](./docs/extensibility.md) | Étendre Korev Oracle |
-| [Connectivité](./docs/connectivity.md) | Endpoints API, connexions MCP, protocole A2A |
-| [Architecture](./docs/architecture.md) | Design système et composants |
-| [Contribution](./docs/contribution.md) | Comment contribuer |
-| [Dépannage](./docs/troubleshooting.md) | Problèmes courants et solutions |
-
----
-
-# 🔧 Configuration Runtime
-
-Korev Oracle supporte deux modes d'exécution :
-
-| Mode | Description |
-|------|-------------|
-| `user` (défaut) | Aucune dépendance RFC, exécution directe |
-| `dev` | Bridge RFC optionnel pour développement |
+### Lancement Manuel
 
 ```bash
-# Variables d'environnement
-export PRISM_RUNTIME_MODE=user
-export SEARCH_PROVIDER=searxng
-export SEARXNG_URL=http://localhost:55510
+# Activer l'environnement virtuel
+source venv/bin/activate  # Mac/Linux
+venv\Scripts\activate     # Windows
+
+# Lancer Oracle
+python run_ui.py
 ```
 
 ---
 
-# 📝 Changelog
+## Configuration des Modèles
 
-### v1.0.0 — Korev Oracle
+Oracle utilise **OpenRouter** comme provider principal, donnant accès à tous les modèles :
 
-- Rebranding complet avec design system PRISM
+| Modèle | Usage recommandé |
+|--------|------------------|
+| `openai/gpt-4o` | Chat principal, tâches complexes |
+| `openai/gpt-4.1-mini` | Utilitaire, tâches rapides |
+| `anthropic/claude-3.5-sonnet` | Raisonnement, code |
+| `google/gemini-2.0-flash` | Multimodal, vision |
+
+**Changer de modèle :** Paramètres → Agent Settings → Chat Model
+
+---
+
+## Tests
+
+142 tests unitaires couvrant les composants critiques :
+
+```bash
+# Lancer tous les tests
+python -m pytest tests/ -v
+
+# Tests spécifiques
+python -m pytest tests/test_metacognition_policy.py      # 42 tests
+python -m pytest tests/test_research_tool_policy.py      # 27 tests
+python -m pytest tests/test_research_executor.py         # 30 tests
+python -m pytest tests/test_pdf_extraction_config.py     # 18 tests
+python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
+```
+
+| Suite | Tests | Couverture |
+|-------|-------|------------|
+| Metacognition Policy | 42 | Escalade, monotonie, no-PII |
+| Research Tool Policy | 27 | Intent detection, validation |
+| Research Executor | 30 | Fallback, logging, integration |
+| PDF Extraction | 43 | Timeouts, circuit breaker |
+
+---
+
+## Exemples d'Utilisation
+
+### Recherche Académique
+```
+"Trouve les 5 derniers articles sur les Large Language Models publiés sur ArXiv"
+"Quelles sont les citations de l'article DOI 10.1038/nature12373 ?"
+"Résume le règlement RGPD article 17 sur le droit à l'effacement"
+```
+
+### Analyse de Documents
+```
+"Extrais les tableaux de ce rapport PDF et convertis-les en CSV"
+"Analyse ce contrat et identifie les clauses de responsabilité"
+```
+
+### Développement
+```
+"Crée une API REST avec FastAPI pour gérer des utilisateurs"
+"Refactorise ce code Python pour suivre les bonnes pratiques"
+```
+
+### Finance & Business
+```
+"Analyse les KPIs de ce trimestre et génère un rapport"
+"Compare ces deux offres commerciales"
+```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Manuel Installation Client](./docs/MANUEL_INSTALLATION_CLIENT.md) | Guide complet d'installation |
+| [Guide Rapide](./docs/GUIDE_RAPIDE_INSTALLATION.md) | Référence rapide 1 page |
+| [Architecture](./docs/architecture.md) | Design système |
+| [Extensibilité](./docs/extensibility.md) | Créer des outils/extensions |
+| [Dépannage](./docs/troubleshooting.md) | Problèmes courants |
+
+---
+
+## Changelog
+
+### v2.0.0 — Janvier 2026
+
+#### Nouveautés
+- **ReasoningEngine** — Moteur de métacognition avec escalade non-diluable
+- **Research MCP Servers** — 5 serveurs (ArXiv, Semantic Scholar, OpenAlex, Crossref, EUR-Lex)
+- **Research Tool Policy** — Sélection intelligente d'outils par intent
+- **PDF Extraction Pipeline** — Circuit breakers, timeouts stricts, reconstruction géométrique
+- **Scripts Installation** — Windows (.bat) et Mac (.sh) prêts pour clients
+- **Branding Korev Oracle** — Typographie Playfair Display, design complet
+
+#### Améliorations
+- Configuration simplifiée (OpenRouter uniquement requis)
+- 142 tests unitaires couvrant les invariants critiques
+- Logs sécurisés sans données utilisateur (No-PII)
+- Documentation client complète (FR)
+
+### v1.0.0 — Décembre 2025
+
+- Rebranding initial Korev Oracle
 - Mode Jour/Nuit avec persistance
 - Profils métiers : Finance, Marketing, Sales
-- Mode USER-SAFE sans dépendance RFC
-- Correction upload PDF local
 - Support OCR pour PDF scannés
-- Fix température LiteLLM pour GPT-5
+
+---
+
+## Licence
+
+Ce projet est sous licence MIT. Voir [LICENSE](./LICENSE) pour plus de détails.
+
+La licence MIT originale d'Agent Zero est respectée et conservée dans [legal/THIRD_PARTY_NOTICES.txt](./legal/THIRD_PARTY_NOTICES.txt).
 
 ---
 
 <div align="center">
 
-**Korev Oracle** — Système cognitif par **KOREV AI**
+**Korev Oracle** — Système Cognitif Autonome
+
+Développé par **KOREV AI**
 
 </div>
