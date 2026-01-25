@@ -1389,20 +1389,47 @@ def convert_out(settings: Settings) -> SettingsOutput:
         }
     )
 
-    # Model provider dropdown options
+    # Model provider dropdown options - Extended list for arbiter diversity
+    # OpenRouter models (recommended for consensus - diverse providers)
     arbiter_model_options: list[FieldOption] = [
+        # ═══ TIER 1: Flagship Models (Recommended) ═══
         {"value": "openrouter/anthropic/claude-3.5-sonnet", "label": "Claude 3.5 Sonnet (OpenRouter)"},
         {"value": "openrouter/anthropic/claude-3-opus", "label": "Claude 3 Opus (OpenRouter)"},
+        {"value": "openrouter/anthropic/claude-3.5-sonnet-20241022", "label": "Claude 3.5 Sonnet (Oct 2024)"},
         {"value": "openrouter/openai/gpt-4o", "label": "GPT-4o (OpenRouter)"},
+        {"value": "openrouter/openai/gpt-4o-2024-11-20", "label": "GPT-4o (Nov 2024)"},
         {"value": "openrouter/openai/gpt-4-turbo", "label": "GPT-4 Turbo (OpenRouter)"},
+        {"value": "openrouter/openai/o1-preview", "label": "OpenAI o1-preview (OpenRouter)"},
+        {"value": "openrouter/openai/o1-mini", "label": "OpenAI o1-mini (OpenRouter)"},
         {"value": "openrouter/google/gemini-pro-1.5", "label": "Gemini Pro 1.5 (OpenRouter)"},
-        {"value": "openrouter/google/gemini-flash-1.5", "label": "Gemini Flash 1.5 (OpenRouter)"},
+        {"value": "openrouter/google/gemini-2.0-flash-exp", "label": "Gemini 2.0 Flash (OpenRouter)"},
+        {"value": "openrouter/google/gemini-exp-1206", "label": "Gemini Exp 1206 (OpenRouter)"},
+        # ═══ TIER 2: Strong Alternative Models ═══
         {"value": "openrouter/mistralai/mistral-large", "label": "Mistral Large (OpenRouter)"},
+        {"value": "openrouter/mistralai/mistral-large-2411", "label": "Mistral Large 2411 (OpenRouter)"},
         {"value": "openrouter/meta-llama/llama-3.1-405b-instruct", "label": "Llama 3.1 405B (OpenRouter)"},
+        {"value": "openrouter/meta-llama/llama-3.3-70b-instruct", "label": "Llama 3.3 70B (OpenRouter)"},
+        {"value": "openrouter/deepseek/deepseek-chat", "label": "DeepSeek Chat (OpenRouter)"},
+        {"value": "openrouter/deepseek/deepseek-r1", "label": "DeepSeek R1 (OpenRouter)"},
+        {"value": "openrouter/qwen/qwen-2.5-72b-instruct", "label": "Qwen 2.5 72B (OpenRouter)"},
+        {"value": "openrouter/cohere/command-r-plus", "label": "Cohere Command R+ (OpenRouter)"},
+        # ═══ TIER 3: Fast/Economic Models ═══
+        {"value": "openrouter/google/gemini-flash-1.5", "label": "Gemini Flash 1.5 (OpenRouter)"},
+        {"value": "openrouter/anthropic/claude-3-haiku", "label": "Claude 3 Haiku (OpenRouter)"},
+        {"value": "openrouter/openai/gpt-4o-mini", "label": "GPT-4o Mini (OpenRouter)"},
+        {"value": "openrouter/mistralai/mistral-small", "label": "Mistral Small (OpenRouter)"},
+        # ═══ TIER 4: Specialized/Research Models ═══
         {"value": "openrouter/perplexity/llama-3.1-sonar-large-128k-online", "label": "Perplexity Sonar Large (OpenRouter)"},
-        {"value": "anthropic/claude-3.5-sonnet", "label": "Claude 3.5 Sonnet (Direct)"},
-        {"value": "openai/gpt-4o", "label": "GPT-4o (Direct)"},
-        {"value": "google/gemini-pro", "label": "Gemini Pro (Direct)"},
+        {"value": "openrouter/x-ai/grok-2-1212", "label": "Grok 2 (OpenRouter)"},
+        {"value": "openrouter/nvidia/llama-3.1-nemotron-70b-instruct", "label": "Nemotron 70B (OpenRouter)"},
+        # ═══ Direct API (requires separate API key) ═══
+        {"value": "anthropic/claude-3-5-sonnet-20241022", "label": "Claude 3.5 Sonnet (Direct API)"},
+        {"value": "openai/gpt-4o", "label": "GPT-4o (Direct API)"},
+        {"value": "google/gemini-pro", "label": "Gemini Pro (Direct API)"},
+        # ═══ Local Models (Ollama) ═══
+        {"value": "ollama/llama3.1:70b", "label": "Llama 3.1 70B (Ollama Local)"},
+        {"value": "ollama/qwen2.5:72b", "label": "Qwen 2.5 72B (Ollama Local)"},
+        {"value": "ollama/mistral-large", "label": "Mistral Large (Ollama Local)"},
     ]
 
     consensus_fields.append(
