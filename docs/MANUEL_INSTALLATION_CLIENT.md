@@ -1,6 +1,6 @@
 # Manuel d'Installation Korev Oracle
 
-## Guide Client - Version 1.0
+## Guide Client - Version 2.0
 
 ---
 
@@ -32,10 +32,10 @@ Korev Oracle est un assistant IA avancé conçu pour vous aider dans vos tâches
 
 | Système | Temps estimé |
 |---------|--------------|
-| Windows | 20-30 minutes |
-| Mac | 15-20 minutes |
+| Windows | 15-25 minutes |
+| Mac | 10-20 minutes |
 
-> **Note** : La première installation prend plus de temps car elle télécharge les composants nécessaires (~4-5 Go).
+> **Note** : La première installation télécharge les dépendances Python (~1-2 Go).
 
 ---
 
@@ -47,53 +47,49 @@ Korev Oracle est un assistant IA avancé conçu pour vous aider dans vos tâches
 |-----------|---------|-----|
 | **Système** | Windows 10/11 (64-bit) | macOS 11 (Big Sur) ou plus récent |
 | **RAM** | 8 Go minimum (16 Go recommandé) | 8 Go minimum |
-| **Stockage** | 10 Go disponibles | 10 Go disponibles |
+| **Stockage** | 5 Go disponibles | 5 Go disponibles |
 | **Connexion** | Internet haut débit | Internet haut débit |
 
 ## Logiciels requis
 
-- **Docker Desktop** (gratuit) - sera installé pendant le processus
+- **Python 3.11+** (gratuit) - sera installé pendant le processus
 
 ---
 
 # 3. Installation sur Windows
 
-## Étape 1 : Installer Docker Desktop
+## Étape 1 : Installer Python
 
-### 1.1 Télécharger Docker Desktop
+### 1.1 Télécharger Python
 
 1. Ouvrez votre navigateur web
-2. Allez sur : **https://www.docker.com/products/docker-desktop/**
-3. Cliquez sur le bouton **"Download for Windows"**
+2. Allez sur : **https://www.python.org/downloads/**
+3. Cliquez sur le bouton **"Download Python 3.12.x"** (ou version récente)
 
-![Téléchargement Docker](https://docs.docker.com/desktop/images/download-docker-desktop.png)
+### 1.2 Installer Python
 
-### 1.2 Installer Docker Desktop
-
-1. Double-cliquez sur le fichier téléchargé `Docker Desktop Installer.exe`
-2. **IMPORTANT** : Cochez l'option **"Use WSL 2 instead of Hyper-V"**
+1. Double-cliquez sur le fichier téléchargé
+2. **⚠️ TRÈS IMPORTANT** : Cochez la case **"Add Python to PATH"** en bas de la fenêtre
    
    ```
-   ☑ Use WSL 2 instead of Hyper-V (recommended)
-   ☑ Add shortcut to desktop
+   ☑ Add Python 3.12 to PATH    ← COCHEZ CETTE CASE !
    ```
 
-3. Cliquez sur **"Ok"** puis **"Install"**
-4. Attendez la fin de l'installation (5-10 minutes)
-5. Cliquez sur **"Close and restart"**
+3. Cliquez sur **"Install Now"**
+4. Attendez la fin de l'installation
+5. Cliquez sur **"Close"**
 
-> ⚠️ **Votre ordinateur va redémarrer automatiquement**
+### 1.3 Vérifier l'installation
 
-### 1.3 Finaliser l'installation Docker
+1. Ouvrez le menu Démarrer
+2. Tapez **"cmd"** et appuyez sur Entrée
+3. Dans la fenêtre noire, tapez :
+   ```
+   python --version
+   ```
+4. Vous devez voir : `Python 3.12.x` (ou similaire)
 
-1. Après le redémarrage, Docker Desktop se lance automatiquement
-2. Acceptez les conditions d'utilisation
-3. **Attendez que l'icône Docker devienne verte** dans la barre des tâches (en bas à droite)
-   
-   - 🟡 Jaune/Orange = Docker démarre (patientez)
-   - 🟢 Vert = Docker est prêt
-
-> **Temps d'attente** : 2-5 minutes au premier démarrage
+> Si vous voyez une erreur, redémarrez votre ordinateur et réessayez.
 
 ---
 
@@ -106,22 +102,21 @@ Vous avez reçu un dossier nommé `korev-oracle` (sur clé USB ou par téléchar
 1. Copiez ce dossier sur votre ordinateur
 2. **Emplacement recommandé** : `C:\Users\VotreNom\Documents\korev-oracle`
 
-> ⚠️ **Évitez** les emplacements avec des espaces ou caractères spéciaux dans le chemin.
+> ⚠️ **Évitez** les emplacements avec des espaces ou caractères spéciaux.
 
 ### 2.2 Structure du dossier
 
-Vérifiez que le dossier contient bien ces éléments :
+Vérifiez que le dossier contient :
 
 ```
 korev-oracle/
-├── docker/
-│   └── run/
-│       └── docker-compose.yml
 ├── scripts/
-│   ├── install-windows.bat
-│   └── install-windows.ps1
-├── .env                    ← Fichier de configuration
-└── ...
+│   └── install-windows.bat    ← Script d'installation
+├── webui/                      ← Interface web
+├── python/                     ← Code Python
+├── .env                        ← Configuration
+├── requirements.txt
+└── run_ui.py
 ```
 
 ---
@@ -133,7 +128,7 @@ korev-oracle/
 1. Ouvrez le dossier `korev-oracle`
 2. Trouvez le fichier `.env`
    
-   > **Si vous ne voyez pas le fichier .env** : Dans l'Explorateur Windows, cliquez sur "Affichage" → cochez "Éléments masqués"
+   > **Si vous ne voyez pas le fichier .env** : Dans l'Explorateur, cliquez sur "Affichage" → cochez "Éléments masqués"
 
 3. Ouvrez le fichier avec le **Bloc-notes** (clic droit → Ouvrir avec → Bloc-notes)
 
@@ -141,34 +136,31 @@ korev-oracle/
 
 ```
 API_KEY_OPENAI=sk-votre-cle-ici
-API_KEY_OPENROUTER=sk-votre-cle-ici
 ```
 
 5. Enregistrez le fichier (Ctrl + S)
-
-> **Où obtenir les clés API ?** Voir la section [5. Configuration initiale](#5-configuration-initiale)
 
 ---
 
 ## Étape 4 : Lancer l'installation
 
-### 4.1 Méthode simple (recommandée)
+### 4.1 Lancer le script
 
 1. Ouvrez le dossier `korev-oracle/scripts`
 2. **Double-cliquez** sur `install-windows.bat`
 3. Une fenêtre noire s'ouvre avec le processus d'installation
-4. Attendez le message **"INSTALLATION TERMINÉE"**
-5. Tapez `o` et appuyez sur Entrée pour ouvrir Oracle dans votre navigateur
+4. Attendez l'installation des dépendances (5-15 minutes)
+5. Oracle s'ouvre automatiquement dans votre navigateur
 
 ### 4.2 Résultat attendu
 
 ```
 ╔═══════════════════════════════════════════════════════════════╗
-║           ✓ INSTALLATION TERMINÉE                             ║
+║           ✓ INSTALLATION TERMINEE                             ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                               ║
-║  Oracle est accessible sur:                                   ║
-║  → http://localhost:50080                                     ║
+║  Korev Oracle demarre sur:                                    ║
+║  → http://localhost:5050                                      ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 ```
@@ -177,49 +169,36 @@ API_KEY_OPENROUTER=sk-votre-cle-ici
 
 # 4. Installation sur Mac
 
-## Étape 1 : Installer Docker Desktop
+## Étape 1 : Vérifier Python
 
-### 1.1 Télécharger Docker Desktop
+### 1.1 Vérifier si Python est installé
 
-1. Ouvrez Safari ou Chrome
-2. Allez sur : **https://www.docker.com/products/docker-desktop/**
-3. Cliquez sur **"Download for Mac"**
-4. Choisissez la version correspondant à votre Mac :
-   - **Apple Silicon** (M1, M2, M3) - Mac récents depuis 2020
-   - **Intel** - Mac plus anciens
+1. Ouvrez le **Terminal** (Cmd + Espace, tapez "Terminal")
+2. Tapez :
+   ```bash
+   python3 --version
+   ```
+3. Si vous voyez `Python 3.10+`, passez à l'étape 2
 
-> **Comment savoir ?** Cliquez sur le menu Apple (🍎) → "À propos de ce Mac" → regardez "Puce" ou "Processeur"
+### 1.2 Installer Python (si nécessaire)
 
-### 1.2 Installer Docker Desktop
+**Option A : Via le site officiel**
+1. Allez sur **https://www.python.org/downloads/**
+2. Téléchargez la version Mac
+3. Installez le .pkg
 
-1. Ouvrez le fichier téléchargé `Docker.dmg`
-2. Glissez l'icône Docker vers le dossier Applications
-3. Ouvrez Docker depuis le dossier Applications
-4. Cliquez sur **"Ouvrir"** si macOS demande confirmation
-5. Entrez votre mot de passe administrateur si demandé
-6. Acceptez les conditions d'utilisation
-
-### 1.3 Vérifier que Docker fonctionne
-
-1. Regardez dans la barre de menus (en haut à droite)
-2. Vous devez voir l'icône Docker (une baleine 🐳)
-3. Cliquez dessus → doit afficher **"Docker Desktop is running"**
+**Option B : Via Homebrew (recommandé)**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install python@3.11
+```
 
 ---
 
 ## Étape 2 : Copier les fichiers Oracle
 
-### 2.1 Récupérer les fichiers
-
 1. Copiez le dossier `korev-oracle` sur votre Mac
-2. **Emplacement recommandé** : `/Users/VotreNom/Documents/korev-oracle`
-
-### 2.2 Vérifier la structure
-
-Ouvrez le Finder et vérifiez que le dossier contient :
-- Un dossier `docker/`
-- Un dossier `scripts/`
-- Un fichier `.env`
+2. **Emplacement recommandé** : `~/Documents/korev-oracle`
 
 ---
 
@@ -227,24 +206,20 @@ Ouvrez le Finder et vérifiez que le dossier contient :
 
 ### 3.1 Afficher les fichiers cachés
 
-Le fichier `.env` est masqué par défaut. Pour l'afficher :
-
 1. Ouvrez le dossier `korev-oracle` dans le Finder
 2. Appuyez sur **Cmd + Shift + .** (point)
-3. Les fichiers cachés apparaissent (légèrement transparents)
+3. Le fichier `.env` apparaît
 
 ### 3.2 Modifier le fichier .env
 
-1. Faites un clic droit sur `.env`
-2. Choisissez **"Ouvrir avec"** → **"TextEdit"**
-3. Remplissez vos clés API :
+1. Ouvrez `.env` avec **TextEdit**
+2. Ajoutez votre clé API :
 
 ```
 API_KEY_OPENAI=sk-votre-cle-ici
-API_KEY_OPENROUTER=sk-votre-cle-ici
 ```
 
-4. Enregistrez (Cmd + S)
+3. Enregistrez (Cmd + S)
 
 ---
 
@@ -252,13 +227,11 @@ API_KEY_OPENROUTER=sk-votre-cle-ici
 
 ### 4.1 Ouvrir le Terminal
 
-1. Appuyez sur **Cmd + Espace** (Spotlight)
+1. Appuyez sur **Cmd + Espace**
 2. Tapez **"Terminal"**
 3. Appuyez sur Entrée
 
-### 4.2 Lancer le script d'installation
-
-Copiez et collez ces commandes dans le Terminal :
+### 4.2 Lancer le script
 
 ```bash
 cd ~/Documents/korev-oracle/scripts
@@ -266,17 +239,16 @@ chmod +x install-mac.sh
 ./install-mac.sh
 ```
 
-> **Adaptez le chemin** si vous avez mis le dossier ailleurs que dans Documents.
-
 ### 4.3 Suivre l'installation
 
 Le script affiche sa progression :
 ```
-[1/5] Vérification de Docker...          ✅
-[2/5] Vérification de docker-compose...  ✅
-[3/5] Téléchargement de l'image...       ✅
-[4/5] Vérification du fichier .env...    ✅
-[5/5] Lancement d'Oracle...              ✅
+[1/6] Vérification de Python...         ✅
+[2/6] Environnement virtuel...          ✅
+[3/6] Installation dépendances...       ✅
+[4/6] Vérification configuration...     ✅
+[5/6] Installation Playwright...        ✅
+[6/6] Lancement de Korev Oracle...      ✅
 ```
 
 ---
@@ -291,28 +263,23 @@ Oracle a besoin d'au moins **une clé API** pour fonctionner.
 
 1. Allez sur **https://platform.openai.com/**
 2. Créez un compte ou connectez-vous
-3. Allez dans **API Keys** (menu de gauche)
+3. Allez dans **API Keys**
 4. Cliquez sur **"Create new secret key"**
 5. Copiez la clé (commence par `sk-...`)
-6. Collez-la dans votre fichier `.env` :
+6. Collez-la dans `.env` :
    ```
-   API_KEY_OPENAI=sk-votre-cle-copiee
+   API_KEY_OPENAI=sk-votre-cle
    ```
 
-> ⚠️ **Tarification** : OpenAI facture à l'utilisation. Comptez ~$5-20/mois pour un usage normal.
-
-### Option B : OpenRouter (alternative)
+### Option B : OpenRouter
 
 1. Allez sur **https://openrouter.ai/**
 2. Créez un compte
-3. Allez dans **Keys**
-4. Créez une nouvelle clé
-5. Collez-la dans `.env` :
+3. Créez une clé API
+4. Collez-la dans `.env` :
    ```
    API_KEY_OPENROUTER=sk-or-votre-cle
    ```
-
-> **Avantage** : OpenRouter permet d'accéder à plusieurs modèles IA avec une seule clé.
 
 ---
 
@@ -320,36 +287,25 @@ Oracle a besoin d'au moins **une clé API** pour fonctionner.
 
 ## Accéder à Oracle
 
-1. Ouvrez votre navigateur web (Chrome, Firefox, Safari, Edge)
-2. Tapez dans la barre d'adresse : **http://localhost:50080**
+1. Ouvrez votre navigateur web
+2. Tapez : **http://localhost:5050**
 3. Appuyez sur Entrée
 
 ## Écran d'accueil
 
-Vous devriez voir l'interface de Korev Oracle :
-
-```
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│             🌟 Korev Oracle                     │
-│                                                 │
-│     Bienvenue ! Comment puis-je vous aider ?   │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │ Tapez votre question ici...             │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-└─────────────────────────────────────────────────┘
-```
+Vous devriez voir l'interface **Korev Oracle** avec :
+- Le logo et le titre "Korev Oracle"
+- Un champ pour taper vos questions
+- Le design avec la typographie Playfair Display
 
 ## Premier test
 
-Essayez de taper une question simple :
+Tapez une question :
 ```
-Bonjour, est-ce que tu fonctionnes correctement ?
+Bonjour, peux-tu te présenter ?
 ```
 
-Oracle devrait répondre dans les 5-10 secondes.
+Oracle devrait répondre en quelques secondes.
 
 ---
 
@@ -358,32 +314,27 @@ Oracle devrait répondre dans les 5-10 secondes.
 ## Démarrer Oracle
 
 ### Windows
-1. Lancez Docker Desktop (si pas déjà ouvert)
-2. Attendez l'icône verte
-3. Ouvrez **http://localhost:50080** dans votre navigateur
+1. Ouvrez le dossier `korev-oracle`
+2. Double-cliquez sur `scripts/install-windows.bat`
+
+**Ou manuellement :**
+```cmd
+cd korev-oracle
+venv\Scripts\activate
+python run_ui.py
+```
 
 ### Mac
-1. Lancez Docker Desktop depuis Applications
-2. Attendez que Docker soit prêt
-3. Ouvrez **http://localhost:50080** dans votre navigateur
+```bash
+cd ~/Documents/korev-oracle
+source venv/bin/activate
+python run_ui.py
+```
 
 ## Arrêter Oracle
 
-### Méthode 1 : Via Docker Desktop
-1. Ouvrez Docker Desktop
-2. Trouvez le conteneur "korev-oracle"
-3. Cliquez sur le bouton Stop (⏹)
-
-### Méthode 2 : Via le Terminal/PowerShell
-```bash
-docker stop korev-oracle
-```
-
-## Redémarrer Oracle
-
-```bash
-docker restart korev-oracle
-```
+- Fermez la fenêtre du terminal
+- Ou appuyez sur **Ctrl + C**
 
 ---
 
@@ -391,69 +342,42 @@ docker restart korev-oracle
 
 ## Problèmes courants
 
-### ❌ "La page ne se charge pas"
-
-**Causes possibles :**
-1. Docker n'est pas lancé
-2. Oracle n'est pas démarré
-
-**Solutions :**
-1. Vérifiez que Docker Desktop est ouvert et l'icône est verte
-2. Relancez le script d'installation
-
-### ❌ "Docker n'est pas lancé"
+### ❌ "Python n'est pas reconnu" (Windows)
 
 **Solution :**
-1. Ouvrez Docker Desktop
-2. Attendez 2-3 minutes que l'icône devienne verte
-3. Relancez le script
+1. Désinstallez Python
+2. Réinstallez en cochant **"Add Python to PATH"**
+3. Redémarrez l'ordinateur
+
+### ❌ "Module not found"
+
+**Solution :**
+```bash
+pip install -r requirements.txt
+pip install -r requirements2.txt
+```
+
+### ❌ "Port 5050 déjà utilisé"
+
+**Solution :**
+Modifiez le port dans `.env` :
+```
+WEB_UI_PORT=5051
+```
 
 ### ❌ "Erreur de clé API"
 
 **Solution :**
-1. Vérifiez que votre clé API est correcte dans `.env`
-2. Assurez-vous qu'il n'y a pas d'espaces avant ou après la clé
-3. Vérifiez que votre compte API a du crédit
+1. Vérifiez que la clé est correcte dans `.env`
+2. Pas d'espaces avant/après la clé
+3. Vérifiez votre crédit sur le compte API
 
-### ❌ "Port 50080 déjà utilisé"
+### ❌ "La page ne charge pas"
 
-**Solution Windows :**
-```powershell
-netstat -ano | findstr :50080
-taskkill /PID <numero_affiché> /F
-```
-
-**Solution Mac :**
-```bash
-lsof -i :50080
-kill -9 <PID>
-```
-
-### ❌ "Téléchargement très lent"
-
-C'est normal lors de la première installation. L'image Docker fait ~2-3 Go.
-- Utilisez une connexion filaire si possible
-- Évitez les heures de pointe
-
----
-
-## Réinitialisation complète
-
-Si rien ne fonctionne, réinitialisez tout :
-
-### Windows (PowerShell en administrateur)
-```powershell
-docker rm -f korev-oracle
-docker rmi korevai/korev-oracle-base:latest
-# Puis relancez install-windows.bat
-```
-
-### Mac (Terminal)
-```bash
-docker rm -f korev-oracle
-docker rmi korevai/korev-oracle-base:latest
-# Puis relancez ./install-mac.sh
-```
+**Solution :**
+1. Vérifiez que le terminal affiche "Running on http://..."
+2. Attendez 30 secondes après le lancement
+3. Essayez http://127.0.0.1:5050 au lieu de localhost
 
 ---
 
@@ -461,36 +385,17 @@ docker rmi korevai/korev-oracle-base:latest
 
 ## Informations à fournir
 
-En cas de problème, préparez ces informations :
-
-1. **Système d'exploitation** : Windows 10/11 ou macOS (version)
-2. **Message d'erreur** : Copiez le texte exact
-3. **Logs Docker** : 
-   ```bash
-   docker logs korev-oracle > logs.txt
-   ```
-4. **Captures d'écran** si possible
+En cas de problème :
+1. Système d'exploitation et version
+2. Message d'erreur exact
+3. Capture d'écran
 
 ## Contact
 
 - **Email** : support@korev.ai
-- **Documentation** : https://docs.korev.ai
 
 ---
 
-## Annexe : Commandes utiles
-
-| Action | Commande |
-|--------|----------|
-| Voir les logs | `docker logs -f korev-oracle` |
-| Arrêter Oracle | `docker stop korev-oracle` |
-| Démarrer Oracle | `docker start korev-oracle` |
-| Redémarrer | `docker restart korev-oracle` |
-| Statut | `docker ps` |
-| Version Docker | `docker --version` |
-
----
-
-*Document généré le 24 janvier 2026*
-*Version : 1.0*
+*Document généré le 25 janvier 2026*
+*Version : 2.0*
 *Korev Oracle - Guide d'installation client*

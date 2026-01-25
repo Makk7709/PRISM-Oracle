@@ -1,11 +1,28 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# KOREV ORACLE - Docker Compose
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# IMPORTANT: Cette configuration nécessite une image Docker personnalisée.
+# 
+# Pour construire l'image Korev Oracle:
+#   cd /chemin/vers/korev-oracle
+#   docker build -f DockerfileLocal -t korev-oracle:local .
+#
+# Puis lancer:
+#   docker compose up -d
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
 services:
   korev-oracle:
     container_name: korev-oracle
-    # Image officielle agent-zero (si korev-oracle n'est pas disponible)
-    image: ${ORACLE_IMAGE:-agent0ai/agent-zero:latest}
+    # Image locale construite avec DockerfileLocal
+    image: korev-oracle:local
+    build:
+      context: ../..
+      dockerfile: DockerfileLocal
     volumes:
-      - ./korev-oracle:/korev
-      # Monter les fichiers de config locaux
+      - ./data:/korev
       - ../../.env:/a0/.env:ro
     ports:
       - "${ORACLE_PORT:-50080}:80"

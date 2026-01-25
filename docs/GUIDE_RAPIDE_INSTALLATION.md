@@ -8,16 +8,14 @@
 ### Prérequis
 - Windows 10/11 (64-bit)
 - 8 Go RAM minimum
-- 10 Go espace disque
 
 ### Installation en 4 étapes
 
 ```
-1. DOCKER
-   → Télécharger : docker.com/products/docker-desktop
-   → Installer (cocher "Use WSL 2")
+1. PYTHON
+   → Télécharger : python.org/downloads
+   → Installer en cochant "Add Python to PATH" ⚠️
    → Redémarrer le PC
-   → Lancer Docker Desktop → attendre icône verte
 
 2. FICHIERS
    → Copier le dossier korev-oracle sur votre PC
@@ -30,8 +28,8 @@
 
 4. LANCEMENT
    → Double-cliquer sur scripts/install-windows.bat
-   → Attendre "INSTALLATION TERMINÉE"
-   → Ouvrir http://localhost:50080
+   → Attendre l'installation (~10 min la 1ère fois)
+   → Oracle s'ouvre sur http://localhost:5050
 ```
 
 ---
@@ -41,19 +39,16 @@
 ### Prérequis
 - macOS 11+ (Big Sur)
 - 8 Go RAM minimum
-- 10 Go espace disque
 
 ### Installation en 4 étapes
 
 ```
-1. DOCKER
-   → Télécharger : docker.com/products/docker-desktop
-   → Choisir Apple Silicon (M1/M2) ou Intel
-   → Installer et lancer
-   → Attendre l'icône baleine 🐳 dans la barre de menus
+1. PYTHON (vérifier)
+   → Terminal : python3 --version
+   → Si absent : brew install python@3.11
 
 2. FICHIERS
-   → Copier le dossier korev-oracle sur votre Mac
+   → Copier le dossier korev-oracle
    → Emplacement : ~/Documents/korev-oracle
 
 3. CONFIGURATION
@@ -66,7 +61,7 @@
    → cd ~/Documents/korev-oracle/scripts
    → chmod +x install-mac.sh
    → ./install-mac.sh
-   → Ouvrir http://localhost:50080
+   → Oracle s'ouvre sur http://localhost:5050
 ```
 
 ---
@@ -80,14 +75,21 @@
 
 ---
 
-## 📋 Commandes utiles
+## 📋 Commandes de relancement
 
-| Action | Commande |
-|--------|----------|
-| Voir les logs | `docker logs -f korev-oracle` |
-| Arrêter | `docker stop korev-oracle` |
-| Démarrer | `docker start korev-oracle` |
-| Redémarrer | `docker restart korev-oracle` |
+### Windows
+```cmd
+cd korev-oracle
+venv\Scripts\activate
+python run_ui.py
+```
+
+### Mac/Linux
+```bash
+cd korev-oracle
+source venv/bin/activate
+python run_ui.py
+```
 
 ---
 
@@ -95,19 +97,19 @@
 
 | Problème | Solution |
 |----------|----------|
-| Page ne charge pas | Vérifier Docker est lancé (icône verte) |
-| Docker non lancé | Ouvrir Docker Desktop, attendre 2-3 min |
-| Erreur clé API | Vérifier .env, pas d'espaces autour de la clé |
-| Port occupé | `docker rm -f korev-oracle` puis relancer |
+| "Python non reconnu" | Réinstaller Python avec "Add to PATH" coché |
+| "Module not found" | `pip install -r requirements.txt` |
+| Port 5050 occupé | Changer WEB_UI_PORT=5051 dans .env |
+| Page ne charge pas | Attendre 30s, essayer http://127.0.0.1:5050 |
 
 ---
 
 ## 📞 Support
 
-- **URL Oracle** : http://localhost:50080
+- **URL Oracle** : http://localhost:5050
 - **Email** : support@korev.ai
-- **Documentation complète** : voir MANUEL_INSTALLATION_CLIENT.md
+- **Documentation** : voir MANUEL_INSTALLATION_CLIENT.md
 
 ---
 
-*Korev Oracle - Guide rapide v1.0*
+*Korev Oracle - Guide rapide v2.0*

@@ -1,9 +1,11 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════════
-REM  KOREV ORACLE - Installation Script (Windows Batch)
+REM  KOREV ORACLE - Installation Script (Windows)
+REM  VERSION COMPLÈTE avec toutes les customisations
 REM ═══════════════════════════════════════════════════════════════════════════════
 REM
-REM  Double-cliquez sur ce fichier pour lancer l'installation.
+REM  Double-cliquez sur ce fichier pour installer et lancer Korev Oracle
+REM  avec toutes les customisations : WebUI, typography, MCP servers, etc.
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
@@ -12,99 +14,152 @@ title Korev Oracle - Installation
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗
 echo ║           KOREV ORACLE - Installation Windows                 ║
+echo ║                 Version complete customisee                   ║
 echo ╚═══════════════════════════════════════════════════════════════╝
 echo.
 
-REM Check Docker
-echo [1/4] Verification de Docker...
-docker --version >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo ❌ Docker n'est pas installe.
-    echo.
-    echo Installez Docker Desktop depuis: https://www.docker.com/products/docker-desktop/
-    echo Puis relancez ce script.
-    echo.
-    pause
-    exit /b 1
-)
-
-docker info >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo ❌ Docker n'est pas lance.
-    echo.
-    echo Lancez Docker Desktop et attendez qu'il soit pret.
-    echo Puis relancez ce script.
-    echo.
-    pause
-    exit /b 1
-)
-
-echo ✓ Docker OK
-echo.
-
-REM Pull image
-echo [2/4] Telechargement de l'image Docker...
-echo (Cela peut prendre plusieurs minutes la premiere fois)
-echo.
-docker pull agent0ai/agent-zero:latest
-if errorlevel 1 (
-    echo.
-    echo ❌ Echec du telechargement
-    pause
-    exit /b 1
-)
-echo.
-echo ✓ Image OK
-echo.
-
-REM Check .env
-echo [3/4] Verification du fichier .env...
+REM Get script directory
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%.."
-set "ENV_FILE=%PROJECT_ROOT%\.env"
+cd /d "%PROJECT_ROOT%"
 
-if not exist "%ENV_FILE%" (
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 1: Check Python
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [1/6] Verification de Python...
+
+where python >nul 2>&1
+if errorlevel 1 (
     echo.
-    echo ⚠️  Fichier .env non trouve.
+    echo ❌ Python n'est pas installe.
     echo.
-    echo Creez un fichier .env dans le dossier racine avec vos cles API.
-    echo Exemple:
-    echo   API_KEY_OPENAI=sk-votre-cle
-    echo   API_KEY_OPENROUTER=sk-votre-cle
+    echo Installez Python 3.11+ depuis:
+    echo   https://www.python.org/downloads/
     echo.
-    echo Puis relancez ce script.
+    echo IMPORTANT: Cochez "Add Python to PATH" lors de l'installation!
+    echo.
     pause
     exit /b 1
 )
-echo ✓ .env OK
+
+for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+echo ✓ Python %PYTHON_VERSION% trouve
 echo.
 
-REM Launch
-echo [4/4] Lancement d'Oracle...
-cd /d "%PROJECT_ROOT%\docker\run"
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 2: Create virtual environment
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [2/6] Configuration de l'environnement virtuel...
 
-docker compose up -d
-if errorlevel 1 (
-    docker-compose up -d
+if exist "venv" (
+    echo ✓ Environnement virtuel existant
+) else (
+    echo Creation de l'environnement virtuel...
+    python -m venv venv
+    if errorlevel 1 (
+        echo ❌ Echec de creation du venv
+        pause
+        exit /b 1
+    )
+    echo ✓ Environnement virtuel cree
 )
+echo.
+
+REM Activate venv
+call venv\Scripts\activate.bat
+
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 3: Install dependencies
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [3/6] Installation des dependances (peut prendre plusieurs minutes)...
+echo.
+
+pip install --upgrade pip --quiet
+
+if exist "requirements.txt" (
+    echo Installation des dependances principales...
+    pip install -r requirements.txt --quiet
+    echo ✓ Dependances principales installees
+)
+
+if exist "requirements2.txt" (
+    echo Installation des dependances secondaires...
+    pip install -r requirements2.txt --quiet
+    echo ✓ Dependances secondaires installees
+)
+echo.
+
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 4: Check .env file
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [4/6] Verification de la configuration...
+
+if exist ".env" (
+    echo ✓ Fichier .env trouve
+) else (
+    echo ⚠️  Fichier .env non trouve. Creation...
+    (
+        echo # Korev Oracle Configuration
+        echo # ==========================
+        echo.
+        echo # Cles API ^(au moins une requise^)
+        echo API_KEY_OPENAI=
+        echo API_KEY_OPENROUTER=
+        echo API_KEY_ANTHROPIC=
+        echo.
+        echo # Configuration
+        echo WEB_UI_PORT=5050
+        echo DEFAULT_USER_TIMEZONE=Europe/Paris
+        echo ANONYMIZED_TELEMETRY=false
+    ) > .env
+    echo ✓ Fichier .env cree
+    echo    ⚠️  Editez .env et ajoutez vos cles API!
+)
+echo.
+
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 5: Install Playwright
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [5/6] Installation de Playwright (navigation web)...
+
+python -c "import playwright" >nul 2>&1
+if not errorlevel 1 (
+    playwright install chromium >nul 2>&1
+    echo ✓ Playwright configure
+) else (
+    echo ⚠️  Playwright non disponible ^(optionnel^)
+)
+echo.
+
+REM ───────────────────────────────────────────────────────────────────────────────
+REM Step 6: Launch Oracle
+REM ───────────────────────────────────────────────────────────────────────────────
+echo [6/6] Lancement de Korev Oracle...
+
+set WEB_UI_PORT=5050
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗
 echo ║           ✓ INSTALLATION TERMINEE                             ║
 echo ╠═══════════════════════════════════════════════════════════════╣
 echo ║                                                               ║
-echo ║  Oracle est accessible sur:                                   ║
-echo ║  → http://localhost:50080                                     ║
+echo ║  Korev Oracle demarre sur:                                    ║
+echo ║  → http://localhost:5050                                      ║
+echo ║                                                               ║
+echo ║  Pour arreter: Fermez cette fenetre ou Ctrl+C                 ║
+echo ║                                                               ║
+echo ║  Pour relancer plus tard:                                     ║
+echo ║  1. Ouvrez un terminal dans le dossier                        ║
+echo ║  2. venv\Scripts\activate                                     ║
+echo ║  3. python run_ui.py                                          ║
 echo ║                                                               ║
 echo ╚═══════════════════════════════════════════════════════════════╝
 echo.
 
-set /p OPEN_BROWSER="Ouvrir dans le navigateur? (o/n): "
-if /i "%OPEN_BROWSER%"=="o" (
-    start http://localhost:50080
-)
+REM Open browser after delay
+start "" /b cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:5050"
 
-echo.
+REM Run Oracle
+python run_ui.py
+
 pause
