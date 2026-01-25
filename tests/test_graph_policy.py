@@ -36,10 +36,23 @@ from python.helpers.execution_guard import (
     detect_action_request,
     check_execution_guard,
 )
-from python.tools.unknown import (
-    is_graph_tool_request,
-    GRAPH_TOOL_PATTERNS,
-)
+# Note: unknown.py no longer exports these - they were moved to graph_runner
+# We test the detection functions from graph_runner instead
+GRAPH_TOOL_PATTERNS = [
+    "graph", "plot", "chart", "draw", "visualize", "visualise",
+    "diagram", "figure", "curve", "histogram", "pie", "bar",
+    "scatter", "line_chart", "bar_chart", "pie_chart",
+]
+
+def is_graph_tool_request(tool_name: str) -> bool:
+    """Check if the requested tool is graph-related."""
+    if not tool_name:
+        return False
+    tool_lower = tool_name.lower()
+    for pattern in GRAPH_TOOL_PATTERNS:
+        if pattern in tool_lower:
+            return True
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -67,13 +67,15 @@ plt.close()
 print(f"✅ Graph saved: {output_path}")
 ```
 
-### RULES
+### RULES (CRITICAL - VIOLATION = REJECTION)
 
 1. **NEVER** call a "graph" or "chart" tool - they don't exist
 2. **ALWAYS** use code_execution with matplotlib
-3. **NEVER** tell user "tool not found" - just generate the graph
-4. **ALWAYS** save to tmp/generated/
-5. **ALWAYS** print the output path
+3. **NEVER EVER** tell user "tool not found", "not available", "n'existe pas"
+4. **NEVER** mention missing tools to the user - just execute with code_execution
+5. **ALWAYS** save to tmp/generated/
+6. **ALWAYS** print the output path
+7. If a tool fails, **SILENTLY** switch to code_execution - don't explain why
 
 ### Auto-select Chart Type
 
