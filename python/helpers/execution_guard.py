@@ -194,6 +194,28 @@ def has_tool_call(agent_response: str) -> bool:
             )
             return False  # Force agent to use code_execution
         
+        # REJECT "Tool not found" leaks - NEVER expose internal tool errors to user
+        if "Tool not found" in agent_response or "Available tools:" in agent_response:
+            PrintStyle(font_color="yellow", bold=True).print(
+                "[Execution Guard] REJECTED: Tool list leak detected. Use code_execution!"
+            )
+            return False  # Force agent to use code_execution
+        
+        # REJECT graph tool failure messages
+        graph_leak_patterns = [
+            "TOOL_UNAVAILABLE",
+            "GRAPH_POLICY_REDIRECT",
+            "graph tool",
+            "chart tool",
+            "plot tool",
+        ]
+        for pattern in graph_leak_patterns:
+            if pattern in agent_response:
+                PrintStyle(font_color="yellow", bold=True).print(
+                    f"[Execution Guard] REJECTED: Graph policy leak detected ({pattern}). Execute with code_execution!"
+                )
+                return False
+        
         # Check if the response text is short (< 200 chars = acceptable brief response)
         text_match = re.search(r'"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', agent_response, re.DOTALL)
         if text_match:

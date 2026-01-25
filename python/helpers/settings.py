@@ -604,8 +604,8 @@ def convert_out(settings: Settings) -> SettingsOutput:
             "type": "select",
             "value": settings["image_gen_openai_model"],
             "options": [
-                {"value": "gpt-image-1", "label": "GPT-Image-1 (Latest, best quality)"},
-                {"value": "dall-e-3", "label": "DALL-E 3 (Good quality, stable)"},
+                {"value": "dall-e-3", "label": "DALL-E 3 (Recommended)"},
+                {"value": "gpt-image-1", "label": "GPT-Image-1 (Requires org verification)"},
                 {"value": "dall-e-2", "label": "DALL-E 2 (Faster, cheaper)"},
             ],
         }
@@ -1814,7 +1814,7 @@ def get_default_settings() -> Settings:
         image_gen_enabled=True,
         image_gen_primary_provider="openai",
         image_gen_fallback_provider="google",
-        image_gen_openai_model="gpt-image-1",
+        image_gen_openai_model="dall-e-3",
         image_gen_openai_api_key="",
         image_gen_google_model="imagen-3.0-generate-001",
         image_gen_google_api_key="",

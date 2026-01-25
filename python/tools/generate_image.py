@@ -225,7 +225,7 @@ class GenerateImage(Tool):
                 "error": "OpenAI API key not configured"
             }
         
-        model = settings.get("image_gen_openai_model", "gpt-image-1")
+        model = settings.get("image_gen_openai_model", "dall-e-3")
         
         # Prepare request
         url = "https://api.openai.com/v1/images/generations"
