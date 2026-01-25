@@ -17,13 +17,14 @@
 #                     This is useful for `api_base`, `extra_headers`, etc.
 
 chat:
-  a0_venice:
-    name: PRISM Oracle Venice.ai
-    litellm_provider: openai
-    kwargs:
-      api_base: https://api.agent-zero.ai/venice/v1
-      venice_parameters:
-        include_venice_system_prompt: false
+  # a0_venice: Désactivé - API externe non disponible
+  # a0_venice:
+  #   name: PRISM Oracle Venice.ai
+  #   litellm_provider: openai
+  #   kwargs:
+  #     api_base: https://api.korev.ai/venice/v1
+  #     venice_parameters:
+  #       include_venice_system_prompt: false
   anthropic:
     name: Anthropic
     litellm_provider: anthropic
@@ -69,8 +70,8 @@ chat:
     litellm_provider: openrouter
     kwargs:
       extra_headers:
-        "HTTP-Referer": "https://agent-zero.ai/"
-        "X-Title": "PRISM Oracle"
+        "HTTP-Referer": "https://korev.ai/"
+        "X-Title": "Korev Oracle"
   sambanova:
     name: Sambanova
     litellm_provider: sambanova
@@ -117,8 +118,8 @@ embedding:
     kwargs:
       api_base: https://openrouter.ai/api/v1
       extra_headers:
-        "HTTP-Referer": "https://agent-zero.ai/"
-        "X-Title": "PRISM Oracle"
+        "HTTP-Referer": "https://korev.ai/"
+        "X-Title": "Korev Oracle"
   other:
     name: Other OpenAI compatible
     litellm_provider: openai
