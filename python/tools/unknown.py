@@ -99,14 +99,6 @@ else:
     # Determine file extension
     ext = os.path.splitext(file_path)[1].lower()
     
-    # Generate appropriate loading code
-    if ext in ['.xlsx', '.xls']:
-        load_code = f"df = pd.read_excel('{file_path}')"
-    elif ext == '.csv':
-        load_code = f"df = pd.read_csv('{file_path}')"
-    else:
-        load_code = f"# Unsupported file type: {ext}"
-    
     return f'''import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
@@ -114,109 +106,204 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import uuid
+import warnings
+warnings.filterwarnings('ignore')
+
+file_path = "{file_path}"
+ext = file_path.split('.')[-1].lower()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 1. LOAD DATA
+# 1. SMART LOADING — Handle dirty Excel files
 # ═══════════════════════════════════════════════════════════════════════════════
-print("📂 Chargement du fichier...")
-{load_code}
-print(f"✅ Données chargées: {{len(df)}} lignes, {{len(df.columns)}} colonnes")
-print(f"\\n📋 Colonnes: {{list(df.columns)}}")
+print("📂 Chargement intelligent du fichier...")
+
+def smart_load_excel(path):
+    """Load Excel with auto-detection of header row."""
+    # Try different header rows (0, 1, 2, 3, 4, 5)
+    best_df = None
+    best_score = -1
+    best_header = 0
+    
+    for header_row in range(6):
+        try:
+            df = pd.read_excel(path, header=header_row)
+            
+            # Score: prefer named columns over "Unnamed"
+            unnamed_count = sum(1 for c in df.columns if 'Unnamed' in str(c) or 'datetime' in str(type(c)))
+            named_count = len(df.columns) - unnamed_count
+            
+            # Also prefer rows with actual data
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            data_score = len(numeric_cols) * 10 + named_count
+            
+            if data_score > best_score:
+                best_score = data_score
+                best_df = df
+                best_header = header_row
+        except:
+            continue
+    
+    if best_df is not None:
+        print(f"  → Header détecté à la ligne {{best_header}}")
+        return best_df
+    
+    # Fallback: load as-is
+    return pd.read_excel(path)
+
+def smart_load_csv(path):
+    """Load CSV with encoding detection."""
+    for encoding in ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']:
+        try:
+            return pd.read_csv(path, encoding=encoding)
+        except:
+            continue
+    return pd.read_csv(path)
+
+# Load file
+if ext in ['xlsx', 'xls']:
+    df = smart_load_excel(file_path)
+elif ext == 'csv':
+    df = smart_load_csv(file_path)
+else:
+    df = pd.read_excel(file_path)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 2. ANALYSE STATISTIQUE
+# 2. CLEAN DATA — Fix column names and types
 # ═══════════════════════════════════════════════════════════════════════════════
-print("\\n📊 ANALYSE STATISTIQUE:")
-print("-" * 50)
+print("🧹 Nettoyage des données...")
 
-# Afficher les premières lignes
-print("\\n🔍 Aperçu des données:")
-print(df.head(10).to_string())
+# Clean column names
+df.columns = [str(c).strip() if not isinstance(c, (int, float)) else f'Col_{{i}}' 
+              for i, c in enumerate(df.columns)]
 
-# Statistiques descriptives pour colonnes numériques
+# Remove columns that are mostly empty
+df = df.dropna(axis=1, thresh=len(df) * 0.3)  # Keep columns with >30% data
+
+# Remove rows that are completely empty
+df = df.dropna(how='all')
+
+# Remove rows where all values are NaN or whitespace
+df = df[df.apply(lambda row: row.astype(str).str.strip().str.len().sum() > 0, axis=1)]
+
+# Convert numeric columns properly
+for col in df.columns:
+    # Try to convert to numeric
+    try:
+        numeric_col = pd.to_numeric(df[col], errors='coerce')
+        if numeric_col.notna().sum() > len(df) * 0.5:  # >50% valid numbers
+            df[col] = numeric_col
+    except:
+        pass
+
+print(f"✅ Données nettoyées: {{len(df)}} lignes, {{len(df.columns)}} colonnes")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. IDENTIFY COLUMNS
+# ═══════════════════════════════════════════════════════════════════════════════
+# Find numeric and categorical columns
 numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-if numeric_cols:
-    print("\\n📈 Statistiques descriptives:")
-    print(df[numeric_cols].describe().to_string())
+cat_cols = [c for c in df.columns if c not in numeric_cols and df[c].nunique() < 50]
 
-# Valeurs uniques pour colonnes catégorielles
-cat_cols = df.select_dtypes(include=['object']).columns.tolist()
-if cat_cols:
-    print("\\n🏷️ Colonnes catégorielles:")
-    for col in cat_cols[:5]:  # Limiter à 5 colonnes
-        unique_count = df[col].nunique()
-        print(f"  - {{col}}: {{unique_count}} valeurs uniques")
-        if unique_count <= 10:
-            print(f"    Valeurs: {{df[col].unique().tolist()}}")
+print(f"📊 Colonnes numériques: {{numeric_cols[:5]}}")
+print(f"🏷️ Colonnes catégorielles: {{cat_cols[:5]}}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 3. GÉNÉRATION DU GRAPHIQUE
+# 4. ANALYSE STATISTIQUE
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\\n" + "=" * 60)
+print("📊 ANALYSE STATISTIQUE")
+print("=" * 60)
+
+# Show sample data
+print("\\n🔍 Échantillon de données:")
+print(df.head(10).to_string(max_cols=8))
+
+if numeric_cols:
+    print("\\n📈 Statistiques des colonnes numériques:")
+    stats = df[numeric_cols[:5]].describe()
+    print(stats.to_string())
+    
+    # Total/Sum for key columns
+    print("\\n💰 Totaux:")
+    for col in numeric_cols[:3]:
+        total = df[col].sum()
+        print(f"  {{col}}: {{total:,.2f}}")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. GÉNÉRATION DU GRAPHIQUE
 # ═══════════════════════════════════════════════════════════════════════════════
 print("\\n🎨 Génération du graphique...")
-
-# Créer le répertoire de sortie
 os.makedirs('tmp/generated', exist_ok=True)
 
-# Sélectionner les colonnes pour le graphique
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(14, 8))
 
-if numeric_cols and cat_cols:
-    # Bar chart: catégorie vs valeur numérique
-    x_col = cat_cols[0]
-    y_col = numeric_cols[0]
+try:
+    if numeric_cols and cat_cols:
+        # Bar chart: best categorical vs best numeric
+        x_col = cat_cols[0]
+        y_col = numeric_cols[0]
+        
+        # Clean and aggregate
+        plot_df = df[[x_col, y_col]].dropna()
+        plot_df[x_col] = plot_df[x_col].astype(str).str[:30]  # Truncate labels
+        plot_df[y_col] = pd.to_numeric(plot_df[y_col], errors='coerce')
+        plot_df = plot_df.dropna()
+        
+        if len(plot_df) > 0:
+            agg = plot_df.groupby(x_col)[y_col].sum().nlargest(15)
+            
+            colors = plt.cm.Blues(np.linspace(0.4, 0.9, len(agg)))
+            bars = ax.barh(range(len(agg)), agg.values, color=colors)
+            ax.set_yticks(range(len(agg)))
+            ax.set_yticklabels(agg.index)
+            ax.set_xlabel(y_col)
+            ax.set_title(f'Top 15 - {{y_col}} par {{x_col}}', fontsize=14, fontweight='bold')
+            
+            # Add value labels
+            for bar, val in zip(bars, agg.values):
+                ax.text(bar.get_width(), bar.get_y() + bar.get_height()/2, 
+                        f' {{val:,.0f}}', va='center', fontsize=9)
+        else:
+            raise ValueError("No valid data for bar chart")
     
-    # Agréger si nécessaire
-    if df[x_col].duplicated().any():
-        plot_data = df.groupby(x_col)[y_col].sum().sort_values(ascending=False).head(15)
+    elif len(numeric_cols) >= 2:
+        # Scatter plot
+        x_col, y_col = numeric_cols[0], numeric_cols[1]
+        ax.scatter(df[x_col].dropna(), df[y_col].dropna(), alpha=0.6, c='#2196F3', s=50)
+        ax.set_xlabel(x_col)
+        ax.set_ylabel(y_col)
+        ax.set_title(f'{{y_col}} vs {{x_col}}', fontsize=14, fontweight='bold')
+    
+    elif numeric_cols:
+        # Histogram
+        col = numeric_cols[0]
+        data = df[col].dropna()
+        ax.hist(data, bins=min(30, len(data)//5 + 1), color='#9C27B0', alpha=0.7, edgecolor='white')
+        ax.set_xlabel(col)
+        ax.set_ylabel('Fréquence')
+        ax.set_title(f'Distribution de {{col}}', fontsize=14, fontweight='bold')
+        ax.axvline(data.mean(), color='red', linestyle='--', label=f'Moyenne: {{data.mean():,.2f}}')
+        ax.legend()
+    
     else:
-        plot_data = df.set_index(x_col)[y_col].head(15)
-    
-    colors = plt.cm.Blues(np.linspace(0.4, 0.9, len(plot_data)))
-    bars = ax.bar(range(len(plot_data)), plot_data.values, color=colors)
-    ax.set_xticks(range(len(plot_data)))
-    ax.set_xticklabels([str(x)[:20] for x in plot_data.index], rotation=45, ha='right')
-    ax.set_xlabel(x_col)
-    ax.set_ylabel(y_col)
-    ax.set_title(f'{{y_col}} par {{x_col}}', fontsize=14, fontweight='bold')
-    
-    # Ajouter les valeurs sur les barres
-    for bar, val in zip(bars, plot_data.values):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(), 
-                f'{{val:,.0f}}', ha='center', va='bottom', fontsize=8)
+        # Fallback: show column value counts
+        if cat_cols:
+            col = cat_cols[0]
+            counts = df[col].value_counts().head(10)
+            ax.pie(counts.values, labels=[str(l)[:20] for l in counts.index], 
+                   autopct='%1.1f%%', colors=plt.cm.Set3(range(len(counts))))
+            ax.set_title(f'Répartition de {{col}}', fontsize=14, fontweight='bold')
+        else:
+            ax.text(0.5, 0.5, 'Données insuffisantes', ha='center', va='center', fontsize=16)
 
-elif len(numeric_cols) >= 2:
-    # Scatter plot: deux colonnes numériques
-    x_col = numeric_cols[0]
-    y_col = numeric_cols[1]
-    ax.scatter(df[x_col], df[y_col], alpha=0.6, c='#2196F3', s=50)
-    ax.set_xlabel(x_col)
-    ax.set_ylabel(y_col)
-    ax.set_title(f'{{y_col}} vs {{x_col}}', fontsize=14, fontweight='bold')
-
-elif numeric_cols:
-    # Histogram: une colonne numérique
-    col = numeric_cols[0]
-    ax.hist(df[col].dropna(), bins=30, color='#9C27B0', alpha=0.7, edgecolor='white')
-    ax.set_xlabel(col)
-    ax.set_ylabel('Fréquence')
-    ax.set_title(f'Distribution de {{col}}', fontsize=14, fontweight='bold')
-
-elif cat_cols:
-    # Pie chart: fréquences d'une colonne catégorielle
-    col = cat_cols[0]
-    counts = df[col].value_counts().head(10)
-    colors = plt.cm.Set3(range(len(counts)))
-    ax.pie(counts.values, labels=counts.index, autopct='%1.1f%%', colors=colors)
-    ax.set_title(f'Répartition de {{col}}', fontsize=14, fontweight='bold')
-
-else:
-    ax.text(0.5, 0.5, 'Données insuffisantes pour générer un graphique', 
-            ha='center', va='center', fontsize=14)
+except Exception as e:
+    print(f"⚠️ Erreur graphique: {{e}}")
+    ax.text(0.5, 0.5, f'Erreur: {{str(e)[:50]}}', ha='center', va='center', fontsize=12)
 
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
 
-# Sauvegarder
+# Save
 output_path = f"tmp/generated/graph_{{uuid.uuid4().hex[:8]}}.png"
 plt.savefig(output_path, dpi=100, bbox_inches='tight', facecolor='white')
 plt.close()
@@ -224,17 +311,13 @@ plt.close()
 print(f"\\n✅ Graphique sauvegardé: {{output_path}}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 4. RÉSUMÉ
+# 6. RÉSUMÉ FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
-print("\\n" + "=" * 50)
-print("📋 RÉSUMÉ DE L'ANALYSE")
-print("=" * 50)
+print("\\n" + "=" * 60)
+print("📋 RÉSUMÉ")
+print("=" * 60)
 print(f"📁 Fichier: {file_path}")
 print(f"📊 Dimensions: {{len(df)}} lignes × {{len(df.columns)}} colonnes")
-if numeric_cols:
-    print(f"🔢 Colonnes numériques: {{numeric_cols}}")
-if cat_cols:
-    print(f"🏷️ Colonnes catégorielles: {{cat_cols[:5]}}")
 print(f"🖼️ Graphique: {{output_path}}")
 '''
 
