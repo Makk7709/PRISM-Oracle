@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PRISM + ORACLE — Diagnostics Bundle                       ║
+║                    PRISM + EVIDENCE — Diagnostics Bundle                       ║
 ║                                                                              ║
 ║  Génère un bundle de diagnostic pour le support.                             ║
 ║  Collecte: version, config (sans secrets), logs, métriques, OS info          ║
@@ -115,8 +115,8 @@ def collect_system_info() -> Dict[str, Any]:
     return info
 
 
-def collect_oracle_version() -> Dict[str, Any]:
-    """Collecte la version Oracle."""
+def collect_evidence_version() -> Dict[str, Any]:
+    """Collecte la version Evidence."""
     version_info = {
         "version": "unknown",
         "build_date": "unknown",
@@ -165,18 +165,18 @@ def collect_config() -> Dict[str, Any]:
 
 
 def collect_env_vars() -> Dict[str, str]:
-    """Collecte les variables d'environnement Oracle (masquées)."""
-    oracle_vars = {}
+    """Collecte les variables d'environnement Evidence (masquées)."""
+    evidence_vars = {}
     
     for key, value in os.environ.items():
-        if key.startswith("ORACLE_") or key.startswith("CONSENSUS_") or key.startswith("MCP_"):
+        if key.startswith("EVIDENCE_") or key.startswith("CONSENSUS_") or key.startswith("MCP_"):
             key_lower = key.lower()
             if any(pattern in key_lower for pattern in SECRET_PATTERNS):
-                oracle_vars[key] = "***MASKED***"
+                evidence_vars[key] = "***MASKED***"
             else:
-                oracle_vars[key] = value
+                evidence_vars[key] = value
     
-    return oracle_vars
+    return evidence_vars
 
 
 def collect_health_status() -> Dict[str, Any]:
@@ -231,7 +231,7 @@ def collect_docker_info() -> Dict[str, Any]:
         
         # Container status
         result = subprocess.run(
-            ["docker", "ps", "--filter", "name=oracle", "--format", "{{json .}}"],
+            ["docker", "ps", "--filter", "name=evidence", "--format", "{{json .}}"],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
@@ -273,7 +273,7 @@ def generate_bundle(output_dir: Optional[Path] = None) -> Path:
         Path du fichier zip généré
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    bundle_name = f"oracle_diagnostics_{timestamp}"
+    bundle_name = f"evidence_diagnostics_{timestamp}"
     
     # Créer un répertoire temporaire
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -281,7 +281,7 @@ def generate_bundle(output_dir: Optional[Path] = None) -> Path:
         bundle_dir.mkdir()
         
         print("=" * 60)
-        print("ORACLE DIAGNOSTICS BUNDLE GENERATOR")
+        print("EVIDENCE DIAGNOSTICS BUNDLE GENERATOR")
         print("=" * 60)
         
         # 1. System info
@@ -293,7 +293,7 @@ def generate_bundle(output_dir: Optional[Path] = None) -> Path:
         
         # 2. Version
         print("[2/7] Collecting version info...")
-        version_info = collect_oracle_version()
+        version_info = collect_evidence_version()
         (bundle_dir / "version.json").write_text(
             json.dumps(version_info, indent=2)
         )
@@ -344,7 +344,7 @@ def generate_bundle(output_dir: Optional[Path] = None) -> Path:
         summary = {
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "bundle_name": bundle_name,
-            "oracle_version": version_info.get("version", "unknown"),
+            "evidence_version": version_info.get("version", "unknown"),
             "system": system_info.get("platform", {}).get("system", "unknown"),
             "health_ready": health.get("readiness", {}).get("ready", False),
             "files_included": [
@@ -362,17 +362,17 @@ def generate_bundle(output_dir: Optional[Path] = None) -> Path:
         )
         
         # Create README
-        readme = f"""# Oracle Diagnostics Bundle
+        readme = f"""# Evidence Diagnostics Bundle
 
 Generated: {summary['generated_at']}
-Version: {summary['oracle_version']}
+Version: {summary['evidence_version']}
 System: {summary['system']}
 
 ## Contents
 
 - `SUMMARY.json` - Bundle summary
 - `system_info.json` - OS and hardware info
-- `version.json` - Oracle version info
+- `version.json` - Evidence version info
 - `config.json` - Configuration (secrets masked)
 - `env_vars.json` - Environment variables (secrets masked)
 - `health.json` - Health check results
@@ -412,7 +412,7 @@ This bundle is safe to share with support.
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Oracle diagnostics bundle"
+        description="Generate Evidence diagnostics bundle"
     )
     parser.add_argument(
         "--output", "-o",

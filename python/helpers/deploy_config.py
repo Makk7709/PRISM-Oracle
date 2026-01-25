@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PRISM + ORACLE — Deployment Configuration                 ║
+║                    PRISM + EVIDENCE — Deployment Configuration                 ║
 ║                                                                              ║
 ║  Configuration unifiée avec validation Pydantic stricte.                     ║
 ║  Priorité: ENV > fichier config local > defaults                             ║
@@ -126,7 +126,7 @@ class DeploymentConfig(BaseModel):
     """Configuration de déploiement complète."""
     # Identification
     version: str = Field(default="1.0.0")
-    instance_id: str = Field(default="oracle-001")
+    instance_id: str = Field(default="evidence-001")
     env: DeploymentMode = Field(default=DeploymentMode.PRODUCTION)
     
     # Sous-configurations
@@ -169,7 +169,7 @@ class ConfigLoader:
     3. Valeurs par défaut
     """
     
-    ENV_PREFIX = "ORACLE_"
+    ENV_PREFIX = "EVIDENCE_"
     
     def __init__(self, config_path: Optional[Path] = None):
         self.config_path = config_path
@@ -215,9 +215,9 @@ class ConfigLoader:
         """Applique les overrides depuis les variables d'environnement."""
         env_mapping = {
             # Identification
-            'ORACLE_VERSION': ('version', str),
-            'ORACLE_INSTANCE_ID': ('instance_id', str),
-            'ORACLE_ENV': ('env', str),
+            'EVIDENCE_VERSION': ('version', str),
+            'EVIDENCE_INSTANCE_ID': ('instance_id', str),
+            'EVIDENCE_ENV': ('env', str),
             
             # Network
             'OFFLINE_MODE': ('network.offline_mode', self._parse_bool),
@@ -288,19 +288,19 @@ def get_deployment_config() -> DeploymentConfig:
     Retourne la configuration de déploiement (singleton).
     
     Recherche le fichier de config dans l'ordre:
-    1. ORACLE_CONFIG_PATH env var
-    2. /app/config/oracle.yaml
-    3. ./deploy/config/oracle.yaml
+    1. EVIDENCE_CONFIG_PATH env var
+    2. /app/config/evidence.yaml
+    3. ./deploy/config/evidence.yaml
     4. Defaults
     """
     config_path = None
     
     # Chercher le fichier de config
     search_paths = [
-        os.environ.get('ORACLE_CONFIG_PATH'),
-        '/app/config/oracle.yaml',
-        './deploy/config/oracle.yaml',
-        './config/oracle.yaml',
+        os.environ.get('EVIDENCE_CONFIG_PATH'),
+        '/app/config/evidence.yaml',
+        './deploy/config/evidence.yaml',
+        './config/evidence.yaml',
     ]
     
     for path in search_paths:
@@ -402,13 +402,13 @@ def run_boot_guards():
     # GUARD 1: CONSENSUS_SIMULATION interdit en production
     # ─────────────────────────────────────────────────────────────────────────
     
-    oracle_env = os.environ.get("ORACLE_ENV", "production").lower()
+    evidence_env = os.environ.get("EVIDENCE_ENV", "production").lower()
     consensus_simulation = os.environ.get("CONSENSUS_SIMULATION", "false").lower() == "true"
     
-    if oracle_env == "production" and consensus_simulation:
+    if evidence_env == "production" and consensus_simulation:
         errors.append(
             "CRITICAL: CONSENSUS_SIMULATION=true is FORBIDDEN in production. "
-            "Votes MUST be real. Set ORACLE_ENV=development for testing."
+            "Votes MUST be real. Set EVIDENCE_ENV=development for testing."
         )
     
     # ─────────────────────────────────────────────────────────────────────────
@@ -435,7 +435,7 @@ def run_boot_guards():
     
     consensus_enabled = os.environ.get("CONSENSUS_ENABLED", "true").lower() == "true"
     
-    if oracle_env == "production" and not consensus_enabled:
+    if evidence_env == "production" and not consensus_enabled:
         warnings.append(
             "WARNING: Running in production with CONSENSUS_ENABLED=false. "
             "Critical domains will NOT have consensus validation."
@@ -468,7 +468,7 @@ def run_boot_guards():
         raise BootGuardError(f"Boot guards failed:\n{error_msg}")
     
     logger.info(
-        f"✅ Boot guards passed: env={oracle_env}, "
+        f"✅ Boot guards passed: env={evidence_env}, "
         f"offline={offline_mode}, consensus={consensus_enabled}"
     )
     

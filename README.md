@@ -1,10 +1,10 @@
 <div align="center">
 
-# `Korev Oracle`
+# `Korev Evidence`
 
 ### Système Cognitif Autonome de Nouvelle Génération
 
-[![Version](https://img.shields.io/badge/Version-2.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Oracle)
+[![Version](https://img.shields.io/badge/Version-2.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-142%20Passed-green?style=for-the-badge)](#tests)
 
@@ -21,7 +21,7 @@
 
 ## Présentation
 
-Korev Oracle est un framework d'agent IA autonome conçu pour les professionnels exigeants. Il combine :
+Korev Evidence est un framework d'agent IA autonome conçu pour les professionnels exigeants. Il combine :
 
 - **Raisonnement Métacognitif** — Auto-évaluation et escalade intelligente
 - **Recherche Académique** — Accès à 5 bases de données scientifiques
@@ -85,7 +85,7 @@ config = get_default_config()
 # - Logs sans contenu utilisateur
 ```
 
-### 4. Interface Korev Oracle
+### 4. Interface Korev Evidence
 
 Design system personnalisé avec typographie Playfair Display :
 
@@ -99,7 +99,7 @@ Design system personnalisé avec typographie Playfair Display :
 ## Architecture
 
 ```
-korev-oracle/
+korev-evidence/
 ├── python/
 │   ├── helpers/
 │   │   ├── metacognition.py      # ReasoningEngine
@@ -135,7 +135,7 @@ korev-oracle/
 #### Windows
 
 ```batch
-# 1. Copier le dossier korev-oracle
+# 1. Copier le dossier korev-evidence
 # 2. Double-cliquer sur:
 scripts\install-windows.bat
 ```
@@ -143,7 +143,7 @@ scripts\install-windows.bat
 #### Mac / Linux
 
 ```bash
-cd korev-oracle/scripts
+cd korev-evidence/scripts
 chmod +x install-mac.sh
 ./install-mac.sh
 ```
@@ -165,7 +165,7 @@ WEB_UI_PORT=5050
 source venv/bin/activate  # Mac/Linux
 venv\Scripts\activate     # Windows
 
-# Lancer Oracle
+# Lancer Evidence
 python run_ui.py
 ```
 
@@ -173,7 +173,7 @@ python run_ui.py
 
 ## Configuration des Modèles
 
-Oracle utilise **OpenRouter** comme provider principal, donnant accès à tous les modèles :
+Evidence utilise **OpenRouter** comme provider principal, donnant accès à tous les modèles :
 
 | Modèle | Usage recommandé |
 |--------|------------------|
@@ -262,7 +262,7 @@ python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
 - **Research Tool Policy** — Sélection intelligente d'outils par intent
 - **PDF Extraction Pipeline** — Circuit breakers, timeouts stricts, reconstruction géométrique
 - **Scripts Installation** — Windows (.bat) et Mac (.sh) prêts pour clients
-- **Branding Korev Oracle** — Typographie Playfair Display, design complet
+- **Branding Korev Evidence** — Typographie Playfair Display, design complet
 
 #### Améliorations
 - Configuration simplifiée (OpenRouter uniquement requis)
@@ -272,7 +272,7 @@ python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
 
 ### v1.0.0 — Décembre 2025
 
-- Rebranding initial Korev Oracle
+- Rebranding initial Korev Evidence
 - Mode Jour/Nuit avec persistance
 - Profils métiers : Finance, Marketing, Sales
 - Support OCR pour PDF scannés
@@ -289,7 +289,7 @@ La licence MIT originale d'Agent Zero est respectée et conservée dans [legal/T
 
 <div align="center">
 
-**Korev Oracle** — Système Cognitif Autonome
+**Korev Evidence** — Système Cognitif Autonome
 
 Développé par **KOREV AI**
 

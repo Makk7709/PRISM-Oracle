@@ -1,8 +1,8 @@
-# PRISM + Oracle Deep Verification Test Suite
+# PRISM + Evidence Deep Verification Test Suite
 
 ## Vue d'ensemble
 
-Suite de tests complète pour valider le système de consensus PRISM et l'orchestration Oracle.
+Suite de tests complète pour valider le système de consensus PRISM et l'orchestration Evidence.
 
 ```
 tests/
@@ -18,7 +18,7 @@ tests/
 ├── test_prism_contract.py     # Contrat de vote strict
 ├── test_prism_timeouts.py     # Timeouts déterministes
 ├── test_prism_tally_quorum.py # Calcul tally & quorum 2/3
-├── test_oracle_prism_integration.py  # Intégration pipeline
+├── test_evidence_prism_integration.py  # Intégration pipeline
 └── README_tests.md            # Cette documentation
 ```
 
@@ -43,7 +43,7 @@ python -m pytest -q
 python tests/test_prism_contract.py
 python tests/test_prism_timeouts.py
 python tests/test_prism_tally_quorum.py
-python tests/test_oracle_prism_integration.py
+python tests/test_evidence_prism_integration.py
 python tests/e2e/test_e2e_scenarios.py
 python tests/property/test_invariants.py
 ```

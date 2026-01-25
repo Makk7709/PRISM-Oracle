@@ -1,10 +1,10 @@
-# 🎯 PROMPT DE CONTRÔLE — Deep Verification PRISM + Oracle
+# 🎯 PROMPT DE CONTRÔLE — Deep Verification PRISM + Evidence
 
 ## Statut de la suite de tests
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PRISM + ORACLE — VERIFICATION SUMMARY                     ║
+║                    PRISM + EVIDENCE — VERIFICATION SUMMARY                     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 📊 Total Tests:    96
@@ -24,7 +24,7 @@
 | **Contrat de vote strict** | ✅ | 29 tests | Schema JSON validé, types, bornes |
 | **Timeouts déterministes** | ✅ | 12 tests | Per-agent, global budget, fail-closed |
 | **Quorum 2/3** | ✅ | 16 tests | Toutes combinaisons, abstain, unavailable |
-| **Intégration Pipeline** | ✅ | 14 tests | Oracle ↔ PRISM, correlation ID |
+| **Intégration Pipeline** | ✅ | 14 tests | Evidence ↔ PRISM, correlation ID |
 | **E2E Scénarios** | ✅ | 14 tests | 6 scénarios réalistes offline |
 | **Propriétés/Invariants** | ✅ | 11 tests | Ordre, bruit, monotonicité, déterminisme |
 

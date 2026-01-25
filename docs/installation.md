@@ -1,17 +1,17 @@
 # Users installation guide for Windows, macOS and Linux
 
-Click to open a video to learn how to install Korev Oracle:
+Click to open a video to learn how to install Korev Evidence:
 
 [![Easy Installation guide](/docs/res/easy_ins_vid.png)](https://www.youtube.com/watch?v=w5v5Kjx51hs)
 
-The following user guide provides instructions for installing and running Korev Oracle using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](#in-depth-guide-for-full-binaries-installation).
+The following user guide provides instructions for installing and running Korev Evidence using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](#in-depth-guide-for-full-binaries-installation).
 
 
 ## Windows, macOS and Linux Setup Guide
 
 
 1. **Install Docker Desktop:** 
-- Docker Desktop provides the runtime environment for Korev Oracle, ensuring consistent behavior and security across platforms
+- Docker Desktop provides the runtime environment for Korev Evidence, ensuring consistent behavior and security across platforms
 - The entire framework runs within a Docker container, providing isolation and easy deployment
 - Available as a user-friendly GUI application for all major operating systems
 
@@ -56,12 +56,12 @@ The following user guide provides instructions for installing and running Korev 
 
 ![docker socket macOS](res/setup/macsocket.png)
 
-2. **Run Korev Oracle:**
+2. **Run Korev Evidence:**
 
-- Note: Korev Oracle also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-oracle:hacking image instead of korevai/korev-oracle.
+- Note: Korev Evidence also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-evidence:hacking image instead of korevai/korev-evidence.
 
-2.1. Pull the Korev Oracle Docker image:
-- Search for `korevai/korev-oracle` in Docker Desktop
+2.1. Pull the Korev Evidence Docker image:
+- Search for `korevai/korev-evidence` in Docker Desktop
 - Click the `Pull` button
 - The image will be downloaded to your machine in a few minutes
 
@@ -71,43 +71,43 @@ The following user guide provides instructions for installing and running Korev 
 > Alternatively, run the following command in your terminal:
 >
 > ```bash
-> docker pull korevai/korev-oracle
+> docker pull korevai/korev-evidence
 > ```
 
 2.2. OPTIONAL - Create a data directory for persistence:
 
 > [!CAUTION]
-> Preferred way of persisting Korev Oracle data is to use the backup and restore feature.
-> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Oracle to a newer version.
+> Preferred way of persisting Korev Evidence data is to use the backup and restore feature.
+> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Evidence to a newer version.
 
-- Choose or create a directory on your machine where you want to store Korev Oracle's data
-- This can be any location you prefer (e.g., `C:/korev-oracle-data` or `/home/user/korev-oracle-data`)
+- Choose or create a directory on your machine where you want to store Korev Evidence's data
+- This can be any location you prefer (e.g., `C:/korev-evidence-data` or `/home/user/korev-evidence-data`)
 - You can map individual subfolders of `/a0` to a local directory or the full `/a0` directory (not recommended).
-- This directory will contain all your Korev Oracle files, like the legacy root folder structure:
+- This directory will contain all your Korev Evidence files, like the legacy root folder structure:
   - `/agents` - Specialized agents with their prompts and tools
   - `/memory` - Agent's memory and learned information
   - `/knowledge` - Knowledge base
   - `/instruments` - Instruments and functions
   - `/prompts` - Prompt files
   - `.env` - Your API keys
-  - `/tmp/settings.json` - Your Korev Oracle settings
+  - `/tmp/settings.json` - Your Korev Evidence settings
 
 > [!TIP]
-> Choose a location that's easy to access and backup. All your Korev Oracle data 
+> Choose a location that's easy to access and backup. All your Korev Evidence data 
 > will be directly accessible in this directory.
 
 2.3. Run the container:
 - In Docker Desktop, go back to the "Images" tab
-- Click the `Run` button next to the `korevai/korev-oracle` image
+- Click the `Run` button next to the `korevai/korev-evidence` image
 - Open the "Optional settings" menu
 - Set the web port (80) to desired host port number in the second "Host port" field or set to `0` for automatic port assignment
 
 Optionally you can map local folders for file persistence:
 > [!CAUTION]
-> Preferred way of persisting Korev Oracle data is to use the backup and restore feature.
-> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Oracle to a newer version.
+> Preferred way of persisting Korev Evidence data is to use the backup and restore feature.
+> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Evidence to a newer version.
 - OPTIONAL: Under "Volumes", configure your mapped folders, if needed:
-  - Example host path: Your chosen directory (e.g., `C:\korev-oracle\memory`)
+  - Example host path: Your chosen directory (e.g., `C:\korev-evidence\memory`)
   - Example container path: `/a0/memory`
 
 
@@ -123,7 +123,7 @@ Optionally you can map local folders for file persistence:
 > [!TIP]
 > Alternatively, run the following command in your terminal:
 > ```bash
-> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-oracle
+> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-evidence
 > ```
 > - Replace `$PORT` with the port you want to use (e.g., `50080`)
 > - Replace `/path/to/your/data` with your chosen directory path
@@ -135,7 +135,7 @@ Optionally you can map local folders for file persistence:
 ![docker logs](res/setup/5-docker-click-to-open.png)
 
 - Open `http://localhost:<PORT>` in your browser
-- The Web UI will open. Korev Oracle is ready for configuration!
+- The Web UI will open. Korev Evidence is ready for configuration!
 
 ![docker ui](res/setup/6-docker-a0-running.png)
 
@@ -143,15 +143,15 @@ Optionally you can map local folders for file persistence:
 > You can also access the Web UI by clicking the ports right under the container ID in Docker Desktop.
 
 > [!NOTE]
-> After starting the container, you'll find all Korev Oracle files in your chosen 
+> After starting the container, you'll find all Korev Evidence files in your chosen 
 > directory. You can access and edit these files directly on your machine, and 
 > the changes will be immediately reflected in the running container.
 
-3. Configure Korev Oracle
-- Refer to the following sections for a full guide on how to configure Korev Oracle.
+3. Configure Korev Evidence
+- Refer to the following sections for a full guide on how to configure Korev Evidence.
 
 ## Settings Configuration
-Korev Oracle provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings"button with a gear icon in the sidebar.
+Korev Evidence provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings"button with a gear icon in the sidebar.
 
 ### Agent Configuration
 - **Prompts Subdirectory:** Choose the subdirectory within `/prompts` for agent behavior customization. The 'default' directory contains the standard prompts.
@@ -187,7 +187,7 @@ Korev Oracle provides a comprehensive settings interface to customize various as
 - Click `Save` to confirm your settings
 
 > [!CAUTION]
-> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using Korev Oracle.
+> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using Korev Evidence.
 
 > [!NOTE]
 > **GitHub Copilot Limitations:** GitHub Copilot models typically have smaller rate limits and context windows compared to models hosted by other providers like OpenAI, Anthropic, or Azure. Consider this when working with large conversations or high-frequency requests.
@@ -204,13 +204,13 @@ Korev Oracle provides a comprehensive settings interface to customize various as
 ### Development Settings
 - **RFC Parameters (local instances only):** configure URLs and ports for remote function calls between instances
 - **RFC Password:** Configure password for remote function calls
-Learn more about Remote Function Calls and their purpose [here](#7-configure-korev-oracle-rfc).
+Learn more about Remote Function Calls and their purpose [here](#7-configure-korev-evidence-rfc).
 
 > [!IMPORTANT]
 > Always keep your API keys and passwords secure.
 
 # Choosing Your LLMs
-The Settings page is the control center for selecting the Large Language Models (LLMs) that power Korev Oracle.  You can choose different LLMs for different roles:
+The Settings page is the control center for selecting the Large Language Models (LLMs) that power Korev Evidence.  You can choose different LLMs for different roles:
 
 | LLM Role | Description |
 | --- | --- |
@@ -259,7 +259,7 @@ ollama pull <model-name>
 
 2. A CLI message should confirm the model download on your system
 
-#### Selecting your model within Korev Oracle
+#### Selecting your model within Korev Evidence
 1. Once you've downloaded your model(s), you must select it in the Settings page of the GUI. 
 
 2. Within the Chat model, Utility model, or Embedding model section, choose Ollama as provider.
@@ -289,11 +289,11 @@ Once you've downloaded some models, you might want to check which ones you have 
 
 - Experiment with different model combinations to find the balance of performance and cost that best suits your needs. E.g., faster and lower latency LLMs will help, and you can also use `faiss_gpu` instead of `faiss_cpu` for the memory.
 
-## Using Korev Oracle on your mobile device
-Korev Oracle's Web UI is accessible from any device on your network through the Docker container:
+## Using Korev Evidence on your mobile device
+Korev Evidence's Web UI is accessible from any device on your network through the Docker container:
 
 > [!NOTE]
-> In settings, External Services tab, you can enable Cloudflare Tunnel to expose your Korev Oracle instance to the internet.
+> In settings, External Services tab, you can enable Cloudflare Tunnel to expose your Korev Evidence instance to the internet.
 > ⚠️ Do not forget to set username and password in the settings Authentication tab to secure your instance on the internet.
 
 1. The Docker container automatically exposes the Web UI on all network interfaces
@@ -310,37 +310,37 @@ Korev Oracle's Web UI is accessible from any device on your network through the 
 > - The port is automatically assigned by Docker unless you specify one
 
 > [!NOTE]
-> If you're running Korev Oracle directly on your system (legacy approach) instead of 
+> If you're running Korev Evidence directly on your system (legacy approach) instead of 
 > using Docker, you'll need to configure the host manually in `run_ui.py` to run on all interfaces using `host="0.0.0.0"`.
 
-For developers or users who need to run Korev Oracle directly on their system,see the [In-Depth Guide for Full Binaries Installation](#in-depth-guide-for-full-binaries-installation).
+For developers or users who need to run Korev Evidence directly on their system,see the [In-Depth Guide for Full Binaries Installation](#in-depth-guide-for-full-binaries-installation).
 
-# How to update Korev Oracle
+# How to update Korev Evidence
 
 > [!NOTE]
-> Since v0.9, Korev Oracle has a Backup and Restore feature, so you don't need to backup the files manually.
+> Since v0.9, Korev Evidence has a Backup and Restore feature, so you don't need to backup the files manually.
 > In Settings, Backup and Restore tab will guide you through the process.
 
-1. **If you come from the previous version of Korev Oracle:**
-- Your data is safely stored across various directories and files inside the Korev Oracle folder.
+1. **If you come from the previous version of Korev Evidence:**
+- Your data is safely stored across various directories and files inside the Korev Evidence folder.
 - To update to the new Docker runtime version, you might want to backup the following files and directories:
   - `/memory` - Agent's memory
   - `/knowledge` - Custom knowledge base (if you imported any custom knowledge files)
   - `/instruments` - Custom instruments and functions (if you created any custom)
-  - `/tmp/settings.json` - Your Korev Oracle settings
+  - `/tmp/settings.json` - Your Korev Evidence settings
   - `/tmp/chats/` - Your chat history
 - Once you have saved these files and directories, you can proceed with the Docker runtime [installation instructions above](#windows-macos-and-linux-setup-guide) setup guide.
-- Reach for the folder where you saved your data and copy it to the new Korev Oracle folder set during the installation process.
-- Korev Oracle will automatically detect your saved data and use it across memory, knowledge, instruments, prompts and settings.
+- Reach for the folder where you saved your data and copy it to the new Korev Evidence folder set during the installation process.
+- Korev Evidence will automatically detect your saved data and use it across memory, knowledge, instruments, prompts and settings.
 
 > [!IMPORTANT]
-> If you have issues loading your settings, you can try to delete the `/tmp/settings.json` file and let Korev Oracle generate a new one.
+> If you have issues loading your settings, you can try to delete the `/tmp/settings.json` file and let Korev Evidence generate a new one.
 > The same goes for chats in `/tmp/chats/`, they might be incompatible with the new version
 
 2. **Update Process (Docker Desktop)**
 - Go to Docker Desktop and stop the container from the "Containers" tab
 - Right-click and select "Remove" to remove the container
-- Go to "Images" tab and remove the `korevai/korev-oracle` image or click the three dots to pull the difference and update the Docker image.
+- Go to "Images" tab and remove the `korevai/korev-evidence` image or click the three dots to pull the difference and update the Docker image.
 
 ![docker delete image](res/setup/docker-delete-image-1.png)
 
@@ -350,31 +350,31 @@ For developers or users who need to run Korev Oracle directly on their system,se
 > [!IMPORTANT]
 > Make sure to use the same volume mount path when running the new
 > container to preserve your data. The exact path depends on where you stored
-> your Korev Oracle data directory (the chosen directory on your machine).
+> your Korev Evidence data directory (the chosen directory on your machine).
 
 > [!TIP]
 > Alternatively, run the following commands in your terminal:
 >
 > ```bash
 > # Stop the current container
-> docker stop korev-oracle
+> docker stop korev-evidence
 >
 > # Remove the container (data is safe in the folder)
-> docker rm korev-oracle
+> docker rm korev-evidence
 >
 > # Remove the old image
-> docker rmi korevai/korev-oracle
+> docker rmi korevai/korev-evidence
 >
 > # Pull the latest image
-> docker pull korevai/korev-oracle
+> docker pull korevai/korev-evidence
 >
 > # Run new container with the same volume mount
-> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-oracle
+> docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-evidence
 > ```
 
       
 ### Conclusion
-After following the instructions for your specific operating system, you should have Korev Oracle successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
+After following the instructions for your specific operating system, you should have Korev Evidence successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
 
 If you encounter any issues during the installation process, please consult the [Troubleshooting section](troubleshooting.md) of this documentation or refer to the [korev.ai](https://korev.ai) for assistance.
 

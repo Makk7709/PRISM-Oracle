@@ -1,4 +1,4 @@
-# Guide d'Installation - Korev Oracle
+# Guide d'Installation - Korev Evidence
 
 ## Prérequis
 
@@ -28,13 +28,13 @@
 1. Ouvrez le dossier "scripts"
 2. Double-cliquez sur "install-windows.bat"
 3. Attendez l'installation des dépendances
-4. Oracle s'ouvre automatiquement sur http://localhost:5050
+4. Evidence s'ouvre automatiquement sur http://localhost:5050
 ```
 
 ### Sur macOS / Linux
 
 ```bash
-cd /chemin/vers/korev-oracle/scripts
+cd /chemin/vers/korev-evidence/scripts
 chmod +x install-mac.sh
 ./install-mac.sh
 ```
@@ -61,18 +61,18 @@ DEFAULT_USER_TIMEZONE=Europe/Paris
 
 ## Lancement manuel
 
-Après l'installation initiale, pour relancer Oracle :
+Après l'installation initiale, pour relancer Evidence :
 
 ### Windows
 ```cmd
-cd korev-oracle
+cd korev-evidence
 venv\Scripts\activate
 python run_ui.py
 ```
 
 ### macOS / Linux
 ```bash
-cd korev-oracle
+cd korev-evidence
 source venv/bin/activate
 python run_ui.py
 ```
@@ -81,7 +81,7 @@ python run_ui.py
 
 ## Accès
 
-Oracle est accessible sur : **http://localhost:5050**
+Evidence est accessible sur : **http://localhost:5050**
 
 ---
 

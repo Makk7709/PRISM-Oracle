@@ -302,7 +302,7 @@ class CriticalityRouter:
         
         # Mode
         if is_production is None:
-            env = os.environ.get("ORACLE_ENV", "production").lower()
+            env = os.environ.get("EVIDENCE_ENV", "production").lower()
             self._is_production = env == "production"
         else:
             self._is_production = is_production

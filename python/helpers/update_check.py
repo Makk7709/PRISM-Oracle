@@ -7,7 +7,7 @@ async def check_version():
     current_version = git.get_version()
     anonymized_id = hashlib.sha256(runtime.get_persistent_id().encode()).hexdigest()[:20]
     
-    # Update check disabled for proprietary Korev Oracle distribution
+    # Update check disabled for proprietary Korev Evidence distribution
     # url = "https://api.korev.ai/update-check"  # TODO: Enable when Korev API is ready
     return None  # Disable update checks for now
     url = "https://api.korev.ai/korev-update-check"

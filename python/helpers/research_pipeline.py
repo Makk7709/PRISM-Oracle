@@ -1,15 +1,15 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                     ORACLE RESEARCH PIPELINE                                 ║
+║                     EVIDENCE RESEARCH PIPELINE                                 ║
 ║                                                                              ║
 ║  Pipeline de recherche complet avec :                                        ║
 ║  - Firecrawl MCP → collecte brute (web scraping)                            ║
 ║  - Playwright MCP → preuves & cas critiques                                  ║
 ║  - Tavily MCP → signaux faibles / orientation                                ║
 ║  - PRISM Consensus → arbitrage multi-LLM                                     ║
-║  - Oracle ReasoningEngine → interprétation finale                            ║
+║  - Evidence ReasoningEngine → interprétation finale                            ║
 ║                                                                              ║
-║  "Oracle ne cherche pas, Oracle instruit un dossier."                        ║
+║  "Evidence ne cherche pas, Evidence instruit un dossier."                        ║
 ║                                                                              ║
 ║  Version: 1.0.0                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -39,7 +39,7 @@ from python.helpers.consensus_contracts import (
     ResearchPipelineStep,
 )
 
-logger = logging.getLogger("oracle_pipeline")
+logger = logging.getLogger("evidence_pipeline")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -240,7 +240,7 @@ Chaque sous-tâche doit être:
 # RESEARCH PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class OracleResearchPipeline:
+class EvidenceResearchPipeline:
     """
     Pipeline de recherche complet avec consensus multi-LLM.
     
@@ -561,7 +561,7 @@ Réponds en JSON:
         
         status_text = "VALIDÉ par consensus" if approved else "NON VALIDÉ - révision recommandée"
         
-        prompt = f"""Tu es l'Oracle ReasoningEngine.
+        prompt = f"""Tu es l'Evidence ReasoningEngine.
 Génère la conclusion finale de ce dossier de recherche.
 
 ## Requête
@@ -667,19 +667,19 @@ def create_pipeline(
     mcp_handler: Any = None,
     call_llm_func: Callable = None,
     settings: Dict[str, Any] = None
-) -> OracleResearchPipeline:
+) -> EvidenceResearchPipeline:
     """
     Factory pour créer un pipeline de recherche.
     
     Args:
         mcp_handler: Handler MCP
         call_llm_func: Fonction d'appel LLM
-        settings: Settings Oracle
+        settings: Settings Evidence
         
     Returns:
-        OracleResearchPipeline configuré
+        EvidenceResearchPipeline configuré
     """
-    return OracleResearchPipeline(
+    return EvidenceResearchPipeline(
         mcp_handler=mcp_handler,
         call_llm_func=call_llm_func,
         settings=settings or {}

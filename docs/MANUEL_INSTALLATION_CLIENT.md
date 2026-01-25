@@ -1,4 +1,4 @@
-# Manuel d'Installation Korev Oracle
+# Manuel d'Installation Korev Evidence
 
 ## Guide Client - Version 2.0
 
@@ -20,9 +20,9 @@
 
 # 1. Introduction
 
-## Qu'est-ce que Korev Oracle ?
+## Qu'est-ce que Korev Evidence ?
 
-Korev Oracle est un assistant IA avancé conçu pour vous aider dans vos tâches quotidiennes. Il peut :
+Korev Evidence est un assistant IA avancé conçu pour vous aider dans vos tâches quotidiennes. Il peut :
 - Rechercher des informations scientifiques et académiques
 - Analyser des documents PDF
 - Répondre à vos questions complexes
@@ -93,14 +93,14 @@ Korev Oracle est un assistant IA avancé conçu pour vous aider dans vos tâches
 
 ---
 
-## Étape 2 : Copier les fichiers Oracle
+## Étape 2 : Copier les fichiers Evidence
 
 ### 2.1 Récupérer les fichiers
 
-Vous avez reçu un dossier nommé `korev-oracle` (sur clé USB ou par téléchargement).
+Vous avez reçu un dossier nommé `korev-evidence` (sur clé USB ou par téléchargement).
 
 1. Copiez ce dossier sur votre ordinateur
-2. **Emplacement recommandé** : `C:\Users\VotreNom\Documents\korev-oracle`
+2. **Emplacement recommandé** : `C:\Users\VotreNom\Documents\korev-evidence`
 
 > ⚠️ **Évitez** les emplacements avec des espaces ou caractères spéciaux.
 
@@ -109,7 +109,7 @@ Vous avez reçu un dossier nommé `korev-oracle` (sur clé USB ou par téléchar
 Vérifiez que le dossier contient :
 
 ```
-korev-oracle/
+korev-evidence/
 ├── scripts/
 │   └── install-windows.bat    ← Script d'installation
 ├── webui/                      ← Interface web
@@ -121,11 +121,11 @@ korev-oracle/
 
 ---
 
-## Étape 3 : Configurer Oracle
+## Étape 3 : Configurer Evidence
 
 ### 3.1 Configurer le fichier .env
 
-1. Ouvrez le dossier `korev-oracle`
+1. Ouvrez le dossier `korev-evidence`
 2. Trouvez le fichier `.env`
    
    > **Si vous ne voyez pas le fichier .env** : Dans l'Explorateur, cliquez sur "Affichage" → cochez "Éléments masqués"
@@ -146,11 +146,11 @@ API_KEY_OPENAI=sk-votre-cle-ici
 
 ### 4.1 Lancer le script
 
-1. Ouvrez le dossier `korev-oracle/scripts`
+1. Ouvrez le dossier `korev-evidence/scripts`
 2. **Double-cliquez** sur `install-windows.bat`
 3. Une fenêtre noire s'ouvre avec le processus d'installation
 4. Attendez l'installation des dépendances (5-15 minutes)
-5. Oracle s'ouvre automatiquement dans votre navigateur
+5. Evidence s'ouvre automatiquement dans votre navigateur
 
 ### 4.2 Résultat attendu
 
@@ -159,7 +159,7 @@ API_KEY_OPENAI=sk-votre-cle-ici
 ║           ✓ INSTALLATION TERMINEE                             ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                               ║
-║  Korev Oracle demarre sur:                                    ║
+║  Korev Evidence demarre sur:                                    ║
 ║  → http://localhost:5050                                      ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
@@ -195,18 +195,18 @@ brew install python@3.11
 
 ---
 
-## Étape 2 : Copier les fichiers Oracle
+## Étape 2 : Copier les fichiers Evidence
 
-1. Copiez le dossier `korev-oracle` sur votre Mac
-2. **Emplacement recommandé** : `~/Documents/korev-oracle`
+1. Copiez le dossier `korev-evidence` sur votre Mac
+2. **Emplacement recommandé** : `~/Documents/korev-evidence`
 
 ---
 
-## Étape 3 : Configurer Oracle
+## Étape 3 : Configurer Evidence
 
 ### 3.1 Afficher les fichiers cachés
 
-1. Ouvrez le dossier `korev-oracle` dans le Finder
+1. Ouvrez le dossier `korev-evidence` dans le Finder
 2. Appuyez sur **Cmd + Shift + .** (point)
 3. Le fichier `.env` apparaît
 
@@ -234,7 +234,7 @@ API_KEY_OPENAI=sk-votre-cle-ici
 ### 4.2 Lancer le script
 
 ```bash
-cd ~/Documents/korev-oracle/scripts
+cd ~/Documents/korev-evidence/scripts
 chmod +x install-mac.sh
 ./install-mac.sh
 ```
@@ -248,7 +248,7 @@ Le script affiche sa progression :
 [3/6] Installation dépendances...       ✅
 [4/6] Vérification configuration...     ✅
 [5/6] Installation Playwright...        ✅
-[6/6] Lancement de Korev Oracle...      ✅
+[6/6] Lancement de Korev Evidence...      ✅
 ```
 
 ---
@@ -257,7 +257,7 @@ Le script affiche sa progression :
 
 ## Obtenir les clés API
 
-Oracle utilise **OpenRouter** comme fournisseur principal pour accéder à tous les modèles IA.
+Evidence utilise **OpenRouter** comme fournisseur principal pour accéder à tous les modèles IA.
 
 ### Clé OpenRouter (REQUISE)
 
@@ -281,7 +281,7 @@ Pour la génération d'images avec DALL-E 3 :
 
 # 6. Premier lancement
 
-## Accéder à Oracle
+## Accéder à Evidence
 
 1. Ouvrez votre navigateur web
 2. Tapez : **http://localhost:5050**
@@ -289,8 +289,8 @@ Pour la génération d'images avec DALL-E 3 :
 
 ## Écran d'accueil
 
-Vous devriez voir l'interface **Korev Oracle** avec :
-- Le logo et le titre "Korev Oracle"
+Vous devriez voir l'interface **Korev Evidence** avec :
+- Le logo et le titre "Korev Evidence"
 - Un champ pour taper vos questions
 - Le design avec la typographie Playfair Display
 
@@ -301,33 +301,33 @@ Tapez une question :
 Bonjour, peux-tu te présenter ?
 ```
 
-Oracle devrait répondre en quelques secondes.
+Evidence devrait répondre en quelques secondes.
 
 ---
 
 # 7. Utilisation quotidienne
 
-## Démarrer Oracle
+## Démarrer Evidence
 
 ### Windows
-1. Ouvrez le dossier `korev-oracle`
+1. Ouvrez le dossier `korev-evidence`
 2. Double-cliquez sur `scripts/install-windows.bat`
 
 **Ou manuellement :**
 ```cmd
-cd korev-oracle
+cd korev-evidence
 venv\Scripts\activate
 python run_ui.py
 ```
 
 ### Mac
 ```bash
-cd ~/Documents/korev-oracle
+cd ~/Documents/korev-evidence
 source venv/bin/activate
 python run_ui.py
 ```
 
-## Arrêter Oracle
+## Arrêter Evidence
 
 - Fermez la fenêtre du terminal
 - Ou appuyez sur **Ctrl + C**
@@ -394,4 +394,4 @@ En cas de problème :
 
 *Document généré le 25 janvier 2026*
 *Version : 2.0*
-*Korev Oracle - Guide d'installation client*
+*Korev Evidence - Guide d'installation client*

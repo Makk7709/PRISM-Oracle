@@ -54,7 +54,7 @@ class ApiFilesGet(ApiHandler):
                         external_path = files.get_abs_path("tmp/uploads", filename)
                         filename = os.path.basename(external_path)
                     elif path.startswith("/korev/") or path.startswith("/a0/"):
-                        # Other internal Korev Oracle paths
+                        # Other internal Korev Evidence paths
                         relative_path = path.replace("/korev/", "").replace("/a0/", "")
                         external_path = files.get_abs_path(relative_path)
                         filename = os.path.basename(external_path)

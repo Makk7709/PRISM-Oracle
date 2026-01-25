@@ -57,7 +57,7 @@ const model = {
         window.open("https://korev.ai", "_blank");
         break;
       case "github":
-        window.open("https://github.com/Makk7709/PRISM-Oracle", "_blank");
+        window.open("https://github.com/Makk7709/PRISM-Evidence", "_blank");
         break;
     }
   },

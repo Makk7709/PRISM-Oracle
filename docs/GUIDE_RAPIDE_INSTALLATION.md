@@ -1,5 +1,5 @@
 # Guide Rapide d'Installation
-## Korev Oracle - Version condensée (1 page)
+## Korev Evidence - Version condensée (1 page)
 
 ---
 
@@ -18,8 +18,8 @@
    → Redémarrer le PC
 
 2. FICHIERS
-   → Copier le dossier korev-oracle sur votre PC
-   → Emplacement : C:\Users\VotreNom\Documents\korev-oracle
+   → Copier le dossier korev-evidence sur votre PC
+   → Emplacement : C:\Users\VotreNom\Documents\korev-evidence
 
 3. CONFIGURATION
    → Ouvrir le fichier .env avec Bloc-notes
@@ -29,7 +29,7 @@
 4. LANCEMENT
    → Double-cliquer sur scripts/install-windows.bat
    → Attendre l'installation (~10 min la 1ère fois)
-   → Oracle s'ouvre sur http://localhost:5050
+   → Evidence s'ouvre sur http://localhost:5050
 ```
 
 ---
@@ -48,8 +48,8 @@
    → Si absent : brew install python@3.11
 
 2. FICHIERS
-   → Copier le dossier korev-oracle
-   → Emplacement : ~/Documents/korev-oracle
+   → Copier le dossier korev-evidence
+   → Emplacement : ~/Documents/korev-evidence
 
 3. CONFIGURATION
    → Cmd+Shift+. pour voir fichiers cachés
@@ -58,10 +58,10 @@
      API_KEY_OPENAI=sk-votre-cle-ici
 
 4. LANCEMENT (Terminal)
-   → cd ~/Documents/korev-oracle/scripts
+   → cd ~/Documents/korev-evidence/scripts
    → chmod +x install-mac.sh
    → ./install-mac.sh
-   → Oracle s'ouvre sur http://localhost:5050
+   → Evidence s'ouvre sur http://localhost:5050
 ```
 
 ---
@@ -79,14 +79,14 @@
 
 ### Windows
 ```cmd
-cd korev-oracle
+cd korev-evidence
 venv\Scripts\activate
 python run_ui.py
 ```
 
 ### Mac/Linux
 ```bash
-cd korev-oracle
+cd korev-evidence
 source venv/bin/activate
 python run_ui.py
 ```
@@ -106,10 +106,10 @@ python run_ui.py
 
 ## 📞 Support
 
-- **URL Oracle** : http://localhost:5050
+- **URL Evidence** : http://localhost:5050
 - **Email** : support@korev.ai
 - **Documentation** : voir MANUEL_INSTALLATION_CLIENT.md
 
 ---
 
-*Korev Oracle - Guide rapide v2.0*
+*Korev Evidence - Guide rapide v2.0*

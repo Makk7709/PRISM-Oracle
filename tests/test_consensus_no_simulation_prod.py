@@ -26,7 +26,7 @@ class TestNoSimulationInProduction:
     def test_simulation_allowed_in_dev(self):
         """Simulation autorisée en development."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "development",
+            "EVIDENCE_ENV": "development",
             "CONSENSUS_SIMULATION": "true",
         }):
             # Ne doit PAS lever d'exception
@@ -36,7 +36,7 @@ class TestNoSimulationInProduction:
     def test_simulation_forbidden_in_production(self):
         """CONSENSUS_SIMULATION=true en production → SimulationError."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "production",
+            "EVIDENCE_ENV": "production",
             "CONSENSUS_SIMULATION": "true",
         }):
             with pytest.raises(SimulationError) as exc_info:
@@ -48,7 +48,7 @@ class TestNoSimulationInProduction:
     def test_verify_function_raises_in_production(self):
         """verify_no_simulation_in_production() lève une erreur en prod."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "production",
+            "EVIDENCE_ENV": "production",
             "CONSENSUS_SIMULATION": "true",
         }):
             with pytest.raises(SimulationError):
@@ -57,25 +57,25 @@ class TestNoSimulationInProduction:
     def test_simulation_disabled_by_default(self):
         """Simulation désactivée par défaut."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "production",
+            "EVIDENCE_ENV": "production",
             "CONSENSUS_SIMULATION": "false",
         }, clear=True):
             config = load_consensus_config()
             assert config.simulation_enabled is False
     
     def test_default_env_is_production(self):
-        """Sans ORACLE_ENV, on assume production."""
+        """Sans EVIDENCE_ENV, on assume production."""
         with patch.dict(os.environ, {
             "CONSENSUS_SIMULATION": "true",
         }, clear=True):
-            # ORACLE_ENV absent → default = production
+            # EVIDENCE_ENV absent → default = production
             with pytest.raises(SimulationError):
                 load_consensus_config()
     
     def test_simulation_false_works_in_production(self):
         """CONSENSUS_SIMULATION=false fonctionne en production."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "production",
+            "EVIDENCE_ENV": "production",
             "CONSENSUS_SIMULATION": "false",
         }):
             # Ne doit pas lever d'exception
@@ -85,7 +85,7 @@ class TestNoSimulationInProduction:
     def test_simulation_in_test_env(self):
         """Simulation autorisée en test."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "test",
+            "EVIDENCE_ENV": "test",
             "CONSENSUS_SIMULATION": "true",
         }):
             # test != production → autorisé
@@ -99,7 +99,7 @@ class TestSimulationErrorMessage:
     def test_error_message_is_descriptive(self):
         """Le message d'erreur explique le problème."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "production",
+            "EVIDENCE_ENV": "production",
             "CONSENSUS_SIMULATION": "true",
         }):
             try:
@@ -119,7 +119,7 @@ class TestArbiterConfigValidation:
     def test_default_arbiters_configured(self):
         """3 arbitres par défaut."""
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "development",
+            "EVIDENCE_ENV": "development",
             "CONSENSUS_SIMULATION": "false",
         }):
             config = load_consensus_config()
@@ -129,7 +129,7 @@ class TestArbiterConfigValidation:
         """Arbitres personnalisés via env."""
         custom_arbiters = '[{"provider":"custom","model":"test-model"}]'
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "development",
+            "EVIDENCE_ENV": "development",
             "CONSENSUS_ARBITERS": custom_arbiters,
         }):
             config = load_consensus_config()
@@ -139,7 +139,7 @@ class TestArbiterConfigValidation:
         """Arbitres locaux pour mode offline."""
         local_arbiters = '[{"provider":"local","model":"llama"}]'
         with patch.dict(os.environ, {
-            "ORACLE_ENV": "development",
+            "EVIDENCE_ENV": "development",
             "CONSENSUS_LOCAL_ARBITERS": local_arbiters,
             "OFFLINE_MODE": "true",
         }):

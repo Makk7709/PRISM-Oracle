@@ -1,0 +1,141 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    PRISM + EVIDENCE — Docker Compose                           ║
+# ║                                                                              ║
+# ║  Déploiement production-ready pour PC DICA                                   ║
+# ║  Mode: offline-first, audit complet, rollback supporté                       ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+version: "3.9"
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EVIDENCE BACKEND
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    image: korev/evidence-backend:${EVIDENCE_VERSION:-latest}
+    container_name: evidence-backend
+    restart: unless-stopped
+    
+    # Sécurité: bind localhost uniquement par défaut
+    ports:
+      - "${BIND_HOST:-127.0.0.1}:${BACKEND_PORT:-5050}:5050"
+    
+    # Variables d'environnement
+    env_file:
+      - .env
+    environment:
+      - EVIDENCE_ENV=production
+      - EVIDENCE_DATA_DIR=/app/data
+      - EVIDENCE_LOGS_DIR=/app/logs
+      - EVIDENCE_AUDIT_DIR=/app/audit
+      - PYTHONUNBUFFERED=1
+    
+    # Volumes persistants
+    volumes:
+      - evidence-data:/app/data
+      - evidence-logs:/app/logs
+      - evidence-audit:/app/audit
+      - ./config:/app/config:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Ressources
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-2.0}"
+          memory: "${MEMORY_LIMIT:-4G}"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+    
+    # Réseau
+    networks:
+      - evidence-net
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EVIDENCE FRONTEND (Build statique servi par Caddy)
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    image: korev/evidence-frontend:${EVIDENCE_VERSION:-latest}
+    container_name: evidence-frontend
+    restart: unless-stopped
+    
+    ports:
+      - "${BIND_HOST:-127.0.0.1}:${FRONTEND_PORT:-8080}:80"
+    
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+    
+    depends_on:
+      evidence-backend:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    
+    networks:
+      - evidence-net
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VOLUMES PERSISTANTS
+# ═══════════════════════════════════════════════════════════════════════════════
+volumes:
+  evidence-data:
+    name: evidence-data
+    labels:
+      com.korev.evidence.type: "data"
+      com.korev.evidence.backup: "true"
+  
+  evidence-logs:
+    name: evidence-logs
+    labels:
+      com.korev.evidence.type: "logs"
+      com.korev.evidence.backup: "false"
+  
+  evidence-audit:
+    name: evidence-audit
+    labels:
+      com.korev.evidence.type: "audit"
+      com.korev.evidence.backup: "true"
+      com.korev.evidence.retention: "90d"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RÉSEAU ISOLÉ
+# ═══════════════════════════════════════════════════════════════════════════════
+networks:
+  evidence-net:
+    name: evidence-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

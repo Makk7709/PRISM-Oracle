@@ -272,7 +272,7 @@ class ResearchDossier(BaseModel):
     """
     Dossier de recherche complet.
     
-    "Oracle ne cherche pas, Oracle instruit un dossier."
+    "Evidence ne cherche pas, Evidence instruit un dossier."
     """
     dossier_id: str
     query: str

@@ -1,5 +1,5 @@
 """
-Extension d'intégration du Reasoning Pipeline dans Korev Oracle.
+Extension d'intégration du Reasoning Pipeline dans Korev Evidence.
 
 Cette extension s'exécute après la construction des prompts et avant l'appel LLM.
 Elle analyse la requête utilisateur et enrichit le contexte avec:

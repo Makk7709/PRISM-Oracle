@@ -1,6 +1,6 @@
 {
-  "name": "Korev Oracle",
-  "short_name": "Korev Oracle",
+  "name": "Korev Evidence",
+  "short_name": "Korev Evidence",
   "description": "Autonomous AI agent",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#333333",
   "icons": [
     {
-      "src": "/public/korev-oracle-logo.svg",
+      "src": "/public/korev-evidence-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     },
     {
-      "src": "/public/korev-oracle-logo.svg",
+      "src": "/public/korev-evidence-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

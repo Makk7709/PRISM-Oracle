@@ -1,5 +1,5 @@
 """
-Korev Oracle — Task Planner (HTN + SMART Goals)
+Korev Evidence — Task Planner (HTN + SMART Goals)
 ================================================
 
 Planificateur hiérarchique de tâches avec:

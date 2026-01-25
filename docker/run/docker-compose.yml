@@ -1,12 +1,12 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# KOREV ORACLE - Docker Compose
+# KOREV EVIDENCE - Docker Compose
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # IMPORTANT: Cette configuration nécessite une image Docker personnalisée.
 # 
-# Pour construire l'image Korev Oracle:
-#   cd /chemin/vers/korev-oracle
-#   docker build -f DockerfileLocal -t korev-oracle:local .
+# Pour construire l'image Korev Evidence:
+#   cd /chemin/vers/korev-evidence
+#   docker build -f DockerfileLocal -t korev-evidence:local .
 #
 # Puis lancer:
 #   docker compose up -d
@@ -14,10 +14,10 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 services:
-  korev-oracle:
-    container_name: korev-oracle
+  korev-evidence:
+    container_name: korev-evidence
     # Image locale construite avec DockerfileLocal
-    image: korev-oracle:local
+    image: korev-evidence:local
     build:
       context: ../..
       dockerfile: DockerfileLocal
@@ -25,7 +25,7 @@ services:
       - ./data:/korev
       - ../../.env:/a0/.env:ro
     ports:
-      - "${ORACLE_PORT:-50080}:80"
+      - "${EVIDENCE_PORT:-50080}:80"
     environment:
       - WEB_UI_PORT=80
     restart: unless-stopped

@@ -8,7 +8,7 @@ invalidated when prompts or schemas change.
 RULES:
 - Bump PROMPT_VERSION when any system prompt or message format changes
 - Bump TOOL_SCHEMA_VERSION when tool schemas change
-- Bump ORACLE_LOGIC_VERSION when reasoning logic changes significantly
+- Bump EVIDENCE_LOGIC_VERSION when reasoning logic changes significantly
 
 Version format: "YYYY-MM-DD-x" where x is a/b/c for same-day bumps.
 """
@@ -20,7 +20,7 @@ PROMPT_VERSION = "2026-01-24-a"
 TOOL_SCHEMA_VERSION = "v1"
 
 # Bump when core reasoning logic changes (escalation rules, thresholds)
-ORACLE_LOGIC_VERSION = "v1"
+EVIDENCE_LOGIC_VERSION = "v1"
 
 
 def get_version_suffix() -> str:
@@ -41,5 +41,5 @@ def get_all_versions() -> dict:
     return {
         "prompt_version": PROMPT_VERSION,
         "tool_schema_version": TOOL_SCHEMA_VERSION,
-        "oracle_logic_version": ORACLE_LOGIC_VERSION,
+        "evidence_logic_version": EVIDENCE_LOGIC_VERSION,
     }

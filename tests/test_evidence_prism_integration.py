@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    ORACLE ↔ PRISM INTEGRATION TESTS                          ║
+║                    EVIDENCE ↔ PRISM INTEGRATION TESTS                          ║
 ║                                                                              ║
 ║  Tests d'intégration pour le pipeline complet.                               ║
 ║  Vérifie: TaskPlanner → Research → Consensus → Output.                       ║
@@ -26,7 +26,7 @@ from python.helpers.consensus_manager import (
     VoteType,
 )
 from python.helpers.research_pipeline import (
-    OracleResearchPipeline,
+    EvidenceResearchPipeline,
     TaskDecomposer,
     create_pipeline,
 )
@@ -428,7 +428,7 @@ class TestFullPipeline:
 
 def run_tests():
     """Exécute tous les tests d'intégration."""
-    print("🧪 Running Oracle ↔ PRISM Integration Tests...\n")
+    print("🧪 Running Evidence ↔ PRISM Integration Tests...\n")
     
     test_classes = [
         TestSimpleQuery,

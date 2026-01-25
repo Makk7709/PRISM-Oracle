@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Replay Harness — End-to-End Offline Testing for Korev Oracle
+Replay Harness — End-to-End Offline Testing for Korev Evidence
 
 This module provides deterministic, offline testing of the reasoning pipeline
 using fixtures instead of real LLM calls.
@@ -42,7 +42,7 @@ from python.helpers.testing import (
     with_timeout,
 )
 
-# Oracle components
+# Evidence components
 from python.helpers.metacognition import (
     Metacognition,
     MetacognitionConfig,
@@ -285,7 +285,7 @@ _scorecard = ReplayScorecard()
 @pytest.mark.replay
 class TestReplayHarness:
     """
-    Replay harness tests for Korev Oracle.
+    Replay harness tests for Korev Evidence.
     
     These tests run OFFLINE with deterministic fixtures.
     

@@ -2,7 +2,7 @@
                          THIRD-PARTY SOFTWARE NOTICES
 ================================================================================
 
-Korev Oracle incorporates open-source software components. The following notices
+Korev Evidence incorporates open-source software components. The following notices
 are provided in accordance with the respective license requirements.
 
 ================================================================================

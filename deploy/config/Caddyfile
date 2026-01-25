@@ -1,0 +1,56 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    PRISM + ORACLE — Caddyfile                                ║
+# ║                                                                              ║
+# ║  Configuration reverse proxy pour frontend                                   ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+:80 {
+    # Servir les fichiers statiques du frontend
+    root * /srv
+    file_server
+    
+    # SPA: rediriger vers index.html pour les routes client
+    try_files {path} /index.html
+    
+    # Compression
+    encode gzip zstd
+    
+    # Headers de sécurité
+    header {
+        # Empêcher le sniffing de type MIME
+        X-Content-Type-Options "nosniff"
+        
+        # Empêcher le clickjacking
+        X-Frame-Options "DENY"
+        
+        # Protection XSS
+        X-XSS-Protection "1; mode=block"
+        
+        # Politique de référent
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # CSP basique
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:5050 http://127.0.0.1:5050"
+        
+        # Pas de cache pour l'index (SPA)
+        ?index.html Cache-Control "no-cache, no-store, must-revalidate"
+    }
+    
+    # Proxy vers le backend API
+    handle /api/* {
+        reverse_proxy oracle-backend:5050
+    }
+    
+    # Health check endpoint
+    handle /health {
+        respond "OK" 200
+    }
+    
+    # Logging JSON
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}

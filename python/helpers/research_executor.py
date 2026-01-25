@@ -147,7 +147,7 @@ class MCPToolCaller(Protocol):
     """
     Protocol pour appeler les outils MCP.
     
-    Doit être implémenté par l'intégration avec Korev Oracle.
+    Doit être implémenté par l'intégration avec Korev Evidence.
     """
     
     async def call(

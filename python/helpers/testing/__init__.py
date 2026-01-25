@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testing utilities for Korev Oracle.
+Testing utilities for Korev Evidence.
 
 This module provides:
 - FakeLiteLLMProvider: Deterministic LLM responses from fixtures
@@ -46,7 +46,7 @@ from .time_provider import (
 from .versions import (
     PROMPT_VERSION,
     TOOL_SCHEMA_VERSION,
-    ORACLE_LOGIC_VERSION,
+    EVIDENCE_LOGIC_VERSION,
     get_version_suffix,
     get_all_versions,
 )
@@ -76,7 +76,7 @@ __all__ = [
     # Versions
     "PROMPT_VERSION",
     "TOOL_SCHEMA_VERSION",
-    "ORACLE_LOGIC_VERSION",
+    "EVIDENCE_LOGIC_VERSION",
     "get_version_suffix",
     "get_all_versions",
 ]

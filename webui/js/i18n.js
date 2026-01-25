@@ -1,5 +1,5 @@
 /**
- * Korev Oracle — Internationalization (i18n) System
+ * Korev Evidence — Internationalization (i18n) System
  * 
  * Supports: English (en), French (fr)
  * Default: Auto-detect from browser

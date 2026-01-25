@@ -1,0 +1,79 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    PRISM + EVIDENCE — Network Policy                           ║
+# ║                                                                              ║
+# ║  Politique réseau pour déploiement DICA                                      ║
+# ║  Mode: offline-first, allowlist strict                                       ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Mode par défaut: OFFLINE (aucun appel externe)
+default_mode: offline
+
+# Configuration mode online (si activé)
+online:
+  # Domaines autorisés (allowlist stricte)
+  allowed_domains:
+    # LLM Providers
+    - domain: "api.openai.com"
+      ports: [443]
+      description: "OpenAI API"
+    - domain: "api.anthropic.com"
+      ports: [443]
+      description: "Anthropic API"
+    - domain: "openrouter.ai"
+      ports: [443]
+      description: "OpenRouter API"
+    - domain: "generativelanguage.googleapis.com"
+      ports: [443]
+      description: "Google AI API"
+    
+    # Research Tools
+    - domain: "api.tavily.com"
+      ports: [443]
+      description: "Tavily Search"
+    - domain: "api.firecrawl.dev"
+      ports: [443]
+      description: "Firecrawl Scraping"
+    - domain: "export.arxiv.org"
+      ports: [443]
+      description: "arXiv Papers"
+    - domain: "api.semanticscholar.org"
+      ports: [443]
+      description: "Semantic Scholar"
+  
+  # Domaines explicitement bloqués
+  blocked_domains:
+    - "*.social"
+    - "*.xxx"
+    - "torrent.*"
+  
+  # Timeouts (ms)
+  timeouts:
+    connect: 5000
+    read: 30000
+    total: 60000
+  
+  # Rate limiting
+  rate_limits:
+    requests_per_minute: 60
+    requests_per_hour: 1000
+
+# Configuration locale
+local:
+  # Bind address
+  bind_address: "127.0.0.1"
+  
+  # Ports autorisés en écoute
+  allowed_ports:
+    - 5050  # Backend API
+    - 8080  # Frontend
+  
+  # Accès LAN (désactivé par défaut)
+  allow_lan: false
+  lan_subnet: "192.168.0.0/16"
+
+# Logging réseau
+logging:
+  log_all_requests: true
+  log_blocked_requests: true
+  log_file: "/app/logs/network.log"

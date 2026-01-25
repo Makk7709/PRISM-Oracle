@@ -1,0 +1,91 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    ORACLE BACKEND — Dockerfile                               ║
+# ║                                                                              ║
+# ║  Image Python optimisée pour déploiement DICA                                ║
+# ║  Multi-stage build pour réduire la taille finale                             ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 1: Builder
+# ═══════════════════════════════════════════════════════════════════════════════
+FROM python:3.11-slim as builder
+
+WORKDIR /build
+
+# Installer les dépendances de build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copier requirements
+COPY requirements.txt ./
+
+# Créer le venv et installer les dépendances
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 2: Runtime
+# ═══════════════════════════════════════════════════════════════════════════════
+FROM python:3.11-slim as runtime
+
+# Labels pour traçabilité
+LABEL org.opencontainers.image.title="Oracle Backend"
+LABEL org.opencontainers.image.description="PRISM + Oracle AI Research System"
+LABEL org.opencontainers.image.vendor="KOREV"
+LABEL org.opencontainers.image.version="${ORACLE_VERSION:-1.0.0}"
+
+# Variables d'environnement
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    ORACLE_HOME=/app
+
+WORKDIR /app
+
+# Utilisateur non-root pour sécurité
+RUN groupadd -r oracle && useradd -r -g oracle oracle && \
+    mkdir -p /app/data /app/logs /app/audit /app/config && \
+    chown -R oracle:oracle /app
+
+# Copier le venv depuis le builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copier le code source
+COPY --chown=oracle:oracle python/ ./python/
+COPY --chown=oracle:oracle prompts/ ./prompts/
+COPY --chown=oracle:oracle agents/ ./agents/
+COPY --chown=oracle:oracle conf/ ./conf/
+COPY --chown=oracle:oracle knowledge/ ./knowledge/
+COPY --chown=oracle:oracle run_ui.py ./
+COPY --chown=oracle:oracle prepare.py ./
+
+# Copier le module de déploiement
+COPY --chown=oracle:oracle deploy/config/ ./config/
+
+# Créer le fichier version
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG ORACLE_VERSION
+RUN echo "{\n  \"version\": \"${ORACLE_VERSION:-1.0.0}\",\n  \"build_date\": \"${BUILD_DATE:-unknown}\",\n  \"git_commit\": \"${GIT_COMMIT:-unknown}\"\n}" > /app/version.json
+
+# Passer à l'utilisateur non-root
+USER oracle
+
+# Port exposé
+EXPOSE 5050
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5050/healthz')" || exit 1
+
+# Point d'entrée
+ENTRYPOINT ["python"]
+CMD ["run_ui.py"]

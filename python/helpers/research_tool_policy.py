@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    RESEARCH TOOL POLICY                                      ║
 ║                                                                              ║
-║  Constrains Oracle to use the RIGHT tools for each research intent.          ║
+║  Constrains Evidence to use the RIGHT tools for each research intent.          ║
 ║  Transforms "intelligent when it wants" → "constrained to be intelligent"    ║
 ║                                                                              ║
 ║  Architecture:                                                               ║
@@ -29,7 +29,7 @@ logger = logging.getLogger("research_tool_policy")
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ResearchIntent(str, Enum):
-    """Declared research intentions that Oracle can express."""
+    """Declared research intentions that Evidence can express."""
     
     # Paper/Publication searches
     PAPER_SEARCH = "paper_search"

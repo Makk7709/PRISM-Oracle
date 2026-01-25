@@ -9,7 +9,7 @@ All Rights Reserved.
 PROPRIETARY SOFTWARE LICENSE AGREEMENT
 ================================================================================
 
-This software ("Korev Oracle") is the proprietary product of Korev AI.
+This software ("Korev Evidence") is the proprietary product of Korev AI.
 
 GRANT OF LICENSE
 ----------------
@@ -28,8 +28,8 @@ You may NOT:
 
 INTELLECTUAL PROPERTY
 ---------------------
-All intellectual property rights in Korev Oracle, including but not limited to:
-- The "Korev Oracle" name and branding
+All intellectual property rights in Korev Evidence, including but not limited to:
+- The "Korev Evidence" name and branding
 - PRISM design system (Spectral Edge, Prism Cut, Refraction Grid)
 - Specialized agent profiles (Finance, Marketing, Sales)
 - User interface designs and layouts
@@ -39,7 +39,7 @@ remain the exclusive property of Korev AI.
 
 THIRD-PARTY COMPONENTS
 ----------------------
-Korev Oracle incorporates open-source software components which are subject to
+Korev Evidence incorporates open-source software components which are subject to
 their own license terms. See THIRD_PARTY_NOTICES.txt for details.
 
 The inclusion of third-party components does not grant you any rights beyond

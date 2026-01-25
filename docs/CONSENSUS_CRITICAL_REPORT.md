@@ -303,4 +303,4 @@ Statut: PENDING
 
 ---
 
-*"Oracle ne cherche pas, Oracle instruit un dossier."*
+*"Evidence ne cherche pas, Evidence instruit un dossier."*

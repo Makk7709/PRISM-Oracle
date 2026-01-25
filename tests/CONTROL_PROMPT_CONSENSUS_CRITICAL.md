@@ -156,7 +156,7 @@ pytest tests/test_consensus_no_simulation_prod.py -v
 **Test manuel OBLIGATOIRE**:
 ```bash
 # Doit ÉCHOUER avec SimulationError
-ORACLE_ENV=production CONSENSUS_SIMULATION=true python -c \
+EVIDENCE_ENV=production CONSENSUS_SIMULATION=true python -c \
     "from python.helpers.consensus_arbiter import load_consensus_config; load_consensus_config()"
 ```
 
@@ -600,4 +600,4 @@ Result: ✅ PASS
 
 ---
 
-*"Oracle ne cherche pas, Oracle instruit un dossier."*
+*"Evidence ne cherche pas, Evidence instruit un dossier."*

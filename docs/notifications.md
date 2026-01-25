@@ -1,6 +1,6 @@
-# Korev Oracle Notifications
+# Korev Evidence Notifications
 
-Quick guide for using the notification system in Korev Oracle.
+Quick guide for using the notification system in Korev Evidence.
 
 ## Backend Usage
 

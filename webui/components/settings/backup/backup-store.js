@@ -6,7 +6,7 @@ const toast = globalThis.toast;
 const fetchApi = globalThis.fetchApi;
 
 // ⚠️ CRITICAL: The .env file contains API keys and essential configuration.
-// This file is REQUIRED for Korev Oracle to function and must be backed up.
+// This file is REQUIRED for Korev Evidence to function and must be backed up.
 
 const model = {
   // State
@@ -113,7 +113,7 @@ const model = {
         const exclude_patterns = response.default_patterns.exclude_patterns;
 
         return {
-          backup_name: `korev-oracle-backup-${timestamp.slice(0, 10)}`,
+          backup_name: `korev-evidence-backup-${timestamp.slice(0, 10)}`,
           include_hidden: false,
           include_patterns: include_patterns,
           exclude_patterns: exclude_patterns,
@@ -129,7 +129,7 @@ const model = {
 
     // Fallback patterns (will be overridden by backend on first use)
     return {
-      backup_name: `korev-oracle-backup-${timestamp.slice(0, 10)}`,
+      backup_name: `korev-evidence-backup-${timestamp.slice(0, 10)}`,
       include_hidden: false,
       include_patterns: [
         // These will be replaced with resolved absolute paths by backend
@@ -143,7 +143,7 @@ const model = {
     };
   },
 
-  // Editor Management - Following Korev Oracle ACE editor patterns
+  // Editor Management - Following Korev Evidence ACE editor patterns
   async initBackupEditor() {
     const container = document.getElementById("backup-metadata-editor");
     if (container) {
@@ -654,13 +654,13 @@ const model = {
 
     const warnings = [];
 
-    // Check Korev Oracle version compatibility
+    // Check Korev Evidence version compatibility
     // Note: Both backup and current versions are obtained via git.get_git_info()
     const backupVersion = this.backupMetadata.korev_version || this.backupMetadata.agent_zero_version;
     const currentVersion = "current"; // Retrieved from git.get_git_info() on backend
 
     if (backupVersion !== currentVersion && backupVersion !== "development") {
-      warnings.push(`Backup created with Korev Oracle ${backupVersion}, current version is ${currentVersion}`);
+      warnings.push(`Backup created with Korev Evidence ${backupVersion}, current version is ${currentVersion}`);
     }
 
     // Check backup age

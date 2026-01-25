@@ -15,7 +15,7 @@ from python.helpers.print_style import PrintStyle
 
 class BackupService:
     """
-    Core backup and restore service for Korev Oracle.
+    Core backup and restore service for Korev Evidence.
 
     Features:
     - JSON-based metadata with user-editable path specifications
@@ -27,7 +27,7 @@ class BackupService:
 
     def __init__(self):
         self.korev_version = self._get_korev_version()
-        self.korev_root = files.get_abs_path("")  # Resolved Korev Oracle root
+        self.korev_root = files.get_abs_path("")  # Resolved Korev Evidence root
 
         # Build base paths map for pattern resolution
         self.base_paths = {
@@ -42,7 +42,7 @@ class BackupService:
         include_patterns, exclude_patterns = self._parse_patterns(default_patterns)
 
         return {
-            "backup_name": f"korev-oracle-backup-{timestamp[:10]}",
+            "backup_name": f"korev-evidence-backup-{timestamp[:10]}",
             "include_hidden": False,
             "include_patterns": include_patterns,
             "exclude_patterns": exclude_patterns,
@@ -55,16 +55,16 @@ class BackupService:
     def _get_default_patterns(self) -> str:
         """Get default backup patterns with resolved absolute paths.
 
-        Only includes Korev Oracle project directory patterns.
+        Only includes Korev Evidence project directory patterns.
         """
         # Ensure paths don't have double slashes
         agent_root = self.korev_root.rstrip('/')
 
-        return f"""# Korev Oracle Knowledge (excluding defaults)
+        return f"""# Korev Evidence Knowledge (excluding defaults)
 {agent_root}/knowledge/**
 !{agent_root}/knowledge/default/**
 
-# Korev Oracle Instruments (excluding defaults)
+# Korev Evidence Instruments (excluding defaults)
 {agent_root}/instruments/**
 !{agent_root}/instruments/default/**
 
@@ -85,7 +85,7 @@ class BackupService:
 """
 
     def _get_korev_version(self) -> str:
-        """Get current Korev Oracle version"""
+        """Get current Korev Evidence version"""
         try:
             # Get version from git info (same as run_ui.py)
             gitinfo = git.get_git_info()
@@ -217,7 +217,7 @@ class BackupService:
     def _translate_patterns(self, patterns: List[str], backup_metadata: Dict[str, Any]) -> List[str]:
         """Translate patterns from backed up system to current system.
 
-        Replaces the backed up Korev Oracle root path with the current Korev Oracle root path
+        Replaces the backed up Korev Evidence root path with the current Korev Evidence root path
         in all patterns if there's an exact match at the beginning of the pattern.
 
         Args:
@@ -349,7 +349,7 @@ class BackupService:
         include_patterns: List[str],
         exclude_patterns: List[str],
         include_hidden: bool = False,
-        backup_name: str = "korev-oracle-backup"
+        backup_name: str = "korev-evidence-backup"
     ) -> str:
         """Create backup archive and return path to created file"""
 
@@ -774,7 +774,7 @@ class BackupService:
     def _translate_restore_path(self, archive_path: str, backup_metadata: Dict[str, Any]) -> str:
         """Translate file path from backed up system to current system.
 
-        Replaces the backed up Korev Oracle root path with the current Korev Oracle root path
+        Replaces the backed up Korev Evidence root path with the current Korev Evidence root path
         if there's an exact match at the beginning of the path.
 
         Args:

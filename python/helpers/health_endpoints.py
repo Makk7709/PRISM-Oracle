@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PRISM + ORACLE — Health Endpoints                         ║
+║                    PRISM + EVIDENCE — Health Endpoints                         ║
 ║                                                                              ║
 ║  Endpoints de santé pour monitoring et orchestration.                        ║
 ║  /healthz : Process alive                                                    ║
@@ -58,7 +58,7 @@ class ComponentCheck:
 
 class HealthChecker:
     """
-    Vérificateur de santé pour Oracle.
+    Vérificateur de santé pour Evidence.
     """
     
     def __init__(self):
@@ -91,7 +91,7 @@ class HealthChecker:
         """
         return HealthStatus(
             status="healthy",
-            message="Oracle is running",
+            message="Evidence is running",
             timestamp=datetime.utcnow().isoformat() + "Z",
             uptime_seconds=self.uptime_seconds,
             version=self._version
@@ -279,13 +279,13 @@ def register_health_endpoints(app):
         readiness = checker.readiness_check()
         
         lines = [
-            f'# HELP oracle_uptime_seconds Total uptime in seconds',
-            f'# TYPE oracle_uptime_seconds counter',
-            f'oracle_uptime_seconds {uptime}',
+            f'# HELP evidence_uptime_seconds Total uptime in seconds',
+            f'# TYPE evidence_uptime_seconds counter',
+            f'evidence_uptime_seconds {uptime}',
             f'',
-            f'# HELP oracle_ready Ready status (1=ready, 0=not ready)',
-            f'# TYPE oracle_ready gauge',
-            f'oracle_ready {1 if readiness.ready else 0}',
+            f'# HELP evidence_ready Ready status (1=ready, 0=not ready)',
+            f'# TYPE evidence_ready gauge',
+            f'evidence_ready {1 if readiness.ready else 0}',
         ]
         
         return '\n'.join(lines), 200, {'Content-Type': 'text/plain'}
@@ -308,7 +308,7 @@ def run_health_check() -> bool:
     checker = HealthChecker()
     
     print("=" * 60)
-    print("ORACLE HEALTH CHECK")
+    print("EVIDENCE HEALTH CHECK")
     print("=" * 60)
     
     # Health

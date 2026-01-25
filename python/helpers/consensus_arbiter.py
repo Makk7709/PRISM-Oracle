@@ -102,10 +102,10 @@ def load_consensus_config() -> ConsensusConfig:
     - CONSENSUS_LOCAL_ARBITERS: JSON list pour mode offline
     - CONSENSUS_TIMEOUT_MS: Timeout global
     - OFFLINE_MODE: Mode hors-ligne
-    - ORACLE_ENV: "production"/"development"
+    - EVIDENCE_ENV: "production"/"development"
     """
     # Vérification critique: simulation en production
-    env = os.environ.get("ORACLE_ENV", "production").lower()
+    env = os.environ.get("EVIDENCE_ENV", "production").lower()
     is_production = env == "production"
     simulation_enabled = os.environ.get("CONSENSUS_SIMULATION", "false").lower() == "true"
     
@@ -113,7 +113,7 @@ def load_consensus_config() -> ConsensusConfig:
         error_msg = (
             "CRITICAL: CONSENSUS_SIMULATION=true is FORBIDDEN in production. "
             "This is a hard fail to prevent fake consensus. "
-            "Set ORACLE_ENV=development or remove CONSENSUS_SIMULATION."
+            "Set EVIDENCE_ENV=development or remove CONSENSUS_SIMULATION."
         )
         logger.critical(error_msg)
         raise SimulationError(error_msg)
@@ -711,13 +711,13 @@ def verify_no_simulation_in_production():
     Raises:
         SimulationError si CONSENSUS_SIMULATION=true en production
     """
-    env = os.environ.get("ORACLE_ENV", "production").lower()
+    env = os.environ.get("EVIDENCE_ENV", "production").lower()
     simulation = os.environ.get("CONSENSUS_SIMULATION", "false").lower() == "true"
     
     if env == "production" and simulation:
         raise SimulationError(
             "CONSENSUS_SIMULATION=true is FORBIDDEN in production. "
-            "Votes must be real. Set ORACLE_ENV=development for testing."
+            "Votes must be real. Set EVIDENCE_ENV=development for testing."
         )
     
     if simulation:

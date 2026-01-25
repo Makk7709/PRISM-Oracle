@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    PRISM CONSENSUS INTEGRATION                               ║
 ║                                                                              ║
-║  Intégration du consensus multi-IA avec le pipeline de recherche Oracle.     ║
+║  Intégration du consensus multi-IA avec le pipeline de recherche Evidence.     ║
 ║                                                                              ║
 ║  Architecture:                                                               ║
 ║  ┌─────────────────────────────────────────────────────────────────┐        ║
@@ -18,7 +18,7 @@
 ║  │     └── ReasoningEngine ────► Décision finale consolidée        │        ║
 ║  └─────────────────────────────────────────────────────────────────┘        ║
 ║                                                                              ║
-║  "Oracle ne cherche pas, Oracle instruit un dossier."                        ║
+║  "Evidence ne cherche pas, Evidence instruit un dossier."                        ║
 ║                                                                              ║
 ║  Version: 1.0.0                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -127,7 +127,7 @@ class ArbiterLLM:
     
     async def _call_model(self, prompt: str) -> str:
         """Appelle le modèle LLM."""
-        # Cette méthode sera connectée au système de modèles d'Oracle
+        # Cette méthode sera connectée au système de modèles d'Evidence
         # Pour l'instant, structure de base
         messages = [{"role": "user", "content": prompt}]
         
@@ -149,7 +149,7 @@ class ResearchPipeline:
     """
     Pipeline de recherche avec collecte MCP et validation par consensus.
     
-    "Oracle ne cherche pas, Oracle instruit un dossier."
+    "Evidence ne cherche pas, Evidence instruit un dossier."
     """
     
     def __init__(

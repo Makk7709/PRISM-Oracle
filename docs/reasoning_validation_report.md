@@ -1,4 +1,4 @@
-# Rapport de Validation — Moteur de Raisonnement Korev Oracle
+# Rapport de Validation — Moteur de Raisonnement Korev Evidence
 
 **Date**: 2026-01-24  
 **Auteur**: Staff Engineer / Lead Architect  
@@ -286,5 +286,5 @@ Le bug P0 "escalade diluée" est corrigé:
 
 ---
 
-*Rapport généré — Audit de validation Korev Oracle v1.1.0*
+*Rapport généré — Audit de validation Korev Evidence v1.1.0*
 *Fix P0: Escalade non-diluable implémenté 2026-01-24*

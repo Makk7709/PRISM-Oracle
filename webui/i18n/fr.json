@@ -119,7 +119,7 @@
     "memory_settings": "Paramètres de mémoire",
     "memory_settings_desc": "Configurer le comportement de la mémoire",
     "tunnel": "Tunnel Flare",
-    "tunnel_desc": "Créer une URL publique sécurisée pour accéder à votre instance Korev Oracle"
+    "tunnel_desc": "Créer une URL publique sécurisée pour accéder à votre instance Korev Evidence"
   },
   "backup": {
     "title": "Sauvegarde et restauration",
@@ -172,8 +172,8 @@
     "server_log": "Journal du serveur MCP",
     "a2a_connection": "Connexion A2A",
     "connection_url": "URL de connexion A2A",
-    "mcp_server_desc": "Le serveur MCP Korev Oracle est un MCP SSE fonctionnant sur la même URL et port que l'interface Web",
-    "a2a_server_desc": "Le serveur A2A Korev Oracle permet la communication via le protocole FastA2A avec d'autres agents"
+    "mcp_server_desc": "Le serveur MCP Korev Evidence est un MCP SSE fonctionnant sur la même URL et port que l'interface Web",
+    "a2a_server_desc": "Le serveur A2A Korev Evidence permet la communication via le protocole FastA2A avec d'autres agents"
   },
   "external": {
     "title": "API externe",
@@ -186,7 +186,7 @@
   "legal": {
     "title": "Mentions légales",
     "description": "Licences et attributions des composants tiers",
-    "korev_license": "Korev Oracle",
+    "korev_license": "Korev Evidence",
     "korev_copyright": "Copyright © 2025 KOREV AI. Tous droits réservés.",
     "korev_proprietary": "Logiciel propriétaire sous licence KOREV AI.",
     "opensource_title": "Composants Open Source",

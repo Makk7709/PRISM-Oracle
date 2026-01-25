@@ -1,0 +1,58 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    ORACLE FRONTEND — Dockerfile                              ║
+# ║                                                                              ║
+# ║  Build statique servi par Caddy                                              ║
+# ║  Optimisé pour DICA (léger, sécurisé)                                        ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 1: Builder (si build JS nécessaire)
+# ═══════════════════════════════════════════════════════════════════════════════
+FROM node:18-alpine as builder
+
+WORKDIR /build
+
+# Copier le frontend
+COPY webui/ ./webui/
+
+# Si package.json existe, builder
+RUN if [ -f "webui/package.json" ]; then \
+      cd webui && npm ci && npm run build 2>/dev/null || true; \
+    fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 2: Runtime avec Caddy
+# ═══════════════════════════════════════════════════════════════════════════════
+FROM caddy:2-alpine
+
+# Labels
+LABEL org.opencontainers.image.title="Oracle Frontend"
+LABEL org.opencontainers.image.description="PRISM + Oracle Web UI"
+LABEL org.opencontainers.image.vendor="KOREV"
+
+# Copier le frontend (build ou source)
+COPY --from=builder /build/webui/ /srv/
+
+# Configuration Caddy par défaut
+RUN echo ':80 {\n\
+    root * /srv\n\
+    file_server\n\
+    try_files {path} /index.html\n\
+    encode gzip\n\
+    header {\n\
+        X-Content-Type-Options "nosniff"\n\
+        X-Frame-Options "DENY"\n\
+        X-XSS-Protection "1; mode=block"\n\
+        Referrer-Policy "strict-origin-when-cross-origin"\n\
+    }\n\
+    log {\n\
+        output stdout\n\
+        format json\n\
+    }\n\
+}' > /etc/caddy/Caddyfile
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost:80/ || exit 1

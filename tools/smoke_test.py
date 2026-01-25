@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PRISM + ORACLE — Smoke Test                               ║
+║                    PRISM + EVIDENCE — Smoke Test                               ║
 ║                                                                              ║
 ║  Test rapide de validation post-déploiement.                                 ║
 ║  Vérifie: endpoints, requêtes type, audit entries.                           ║
@@ -252,11 +252,11 @@ class SmokeTestRunner:
                 )
             
             # Check Prometheus format
-            if "oracle_uptime_seconds" not in body:
+            if "evidence_uptime_seconds" not in body:
                 return TestResult(
                     name="metrics",
                     passed=False,
-                    message="Missing oracle_uptime_seconds metric",
+                    message="Missing evidence_uptime_seconds metric",
                     duration_ms=duration
                 )
             
@@ -465,7 +465,7 @@ def print_report(report: SmokeTestReport):
     """Affiche le rapport en format lisible."""
     print()
     print("=" * 70)
-    print("ORACLE SMOKE TEST REPORT")
+    print("EVIDENCE SMOKE TEST REPORT")
     print("=" * 70)
     print(f"Timestamp: {report.timestamp}")
     print(f"Duration:  {report.duration_ms}ms")
@@ -495,7 +495,7 @@ def print_report(report: SmokeTestReport):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    parser = argparse.ArgumentParser(description="Oracle Smoke Test")
+    parser = argparse.ArgumentParser(description="Evidence Smoke Test")
     parser.add_argument(
         "--url",
         default="http://127.0.0.1:5050",

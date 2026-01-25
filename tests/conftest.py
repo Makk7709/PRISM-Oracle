@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Pytest configuration and fixtures for Korev Oracle tests.
+Pytest configuration and fixtures for Korev Evidence tests.
 
 CRITICAL: This file implements a NETWORK GUARD that prevents any real LiteLLM
 calls during tests. If a test tries to call a real LLM API, it will fail
@@ -192,7 +192,7 @@ def strict_fixtures_mode():
 def pytest_report_header(config):
     """Add custom header to pytest output."""
     lines = [
-        "Korev Oracle Test Harness:",
+        "Korev Evidence Test Harness:",
         f"  Network Guard: ACTIVE (real LiteLLM calls blocked)",
         f"  Strict Fixtures: {'ENABLED' if os.environ.get('STRICT_FIXTURES') == '1' else 'disabled'}",
         f"  Record Mode: {'ENABLED' if os.environ.get('A0_RECORD_FIXTURES') == '1' else 'disabled'}",

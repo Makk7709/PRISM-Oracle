@@ -10,7 +10,7 @@
 ║  - Traçabilité complète de toutes les décisions                              ║
 ║  - Timeout strict avec rejet automatique                                     ║
 ║                                                                              ║
-║  "Oracle ne cherche pas, Oracle instruit un dossier."                        ║
+║  "Evidence ne cherche pas, Evidence instruit un dossier."                        ║
 ║                                                                              ║
 ║  Version: 1.0.0                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝

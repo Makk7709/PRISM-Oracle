@@ -1,5 +1,5 @@
 """
-Korev Oracle — Reasoning Engine
+Korev Evidence — Reasoning Engine
 ===============================
 
 Moteur de raisonnement non-linéaire avec décomposition de tâches,
@@ -390,7 +390,7 @@ Respond ONLY with valid JSON:
 
 
 class ToolExecutor:
-    """Exécuteur utilisant les outils Oracle."""
+    """Exécuteur utilisant les outils Evidence."""
     
     def __init__(self, tool_runner: Callable):
         self._run_tool = tool_runner
@@ -400,7 +400,7 @@ class ToolExecutor:
         subtask: Subtask,
         context: ReasoningContext,
     ) -> tuple[str, float]:
-        """Exécute via un outil Oracle."""
+        """Exécute via un outil Evidence."""
         if not subtask.required_tools:
             return "No tool specified", 0.3
         

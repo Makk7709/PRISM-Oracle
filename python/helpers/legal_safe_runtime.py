@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    LEGAL-SAFE MODE — RUNTIME INTEGRATION                    ║
 ║                                                                              ║
-║  Intégration du mode Legal-Safe dans le runtime Oracle.                     ║
+║  Intégration du mode Legal-Safe dans le runtime Evidence.                     ║
 ║  Gestion du parsing, validation et post-processing des réponses.            ║
 ║                                                                              ║
 ║  Version: 1.0.0                                                              ║
