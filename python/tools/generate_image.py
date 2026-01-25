@@ -225,7 +225,7 @@ class GenerateImage(Tool):
                 "error": "OpenAI API key not configured"
             }
         
-        model = settings.get("image_gen_openai_model", "dall-e-3")
+        model = settings.get("image_gen_openai_model", "gpt-image-1")
         
         # Prepare request
         url = "https://api.openai.com/v1/images/generations"
@@ -234,16 +234,28 @@ class GenerateImage(Tool):
             "Content-Type": "application/json"
         }
         
+        # Build payload based on model
         payload = {
             "model": model,
             "prompt": prompt,
-            "n": n if model == "dall-e-2" else 1,  # DALL-E 3 only supports n=1
             "size": size,
-            "quality": quality,
         }
         
-        if style and model == "dall-e-3":
-            payload["style"] = style
+        # Model-specific parameters
+        if model == "dall-e-2":
+            payload["n"] = n  # DALL-E 2 supports multiple images
+        elif model == "dall-e-3":
+            payload["n"] = 1  # DALL-E 3 only supports n=1
+            payload["quality"] = quality
+            if style:
+                payload["style"] = style
+        elif model.startswith("gpt-image"):
+            # GPT-Image models (gpt-image-1, etc.)
+            payload["n"] = 1  # Usually only n=1 for newer models
+            payload["quality"] = quality
+            # GPT-Image models support more sizes
+            if size not in ["1024x1024", "1792x1024", "1024x1792"]:
+                payload["size"] = "1024x1024"  # Fallback to square
         
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=payload, timeout=120) as response:
