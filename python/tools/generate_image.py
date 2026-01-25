@@ -209,13 +209,14 @@ class GenerateImage(Tool):
         settings: dict
     ) -> dict[str, Any]:
         """Generate image using OpenAI DALL-E."""
-        # Get API key
+        # Get API key - try multiple sources
         api_key = settings.get("image_gen_openai_api_key")
         if not api_key:
-            # Fall back to main OpenAI key
+            # Fall back to main OpenAI key from settings
             api_key = settings.get("api_keys", {}).get("openai")
         if not api_key:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            # Fall back to environment variables (both naming conventions)
+            api_key = os.environ.get("API_KEY_OPENAI") or os.environ.get("OPENAI_API_KEY")
         
         if not api_key:
             return {
@@ -273,9 +274,11 @@ class GenerateImage(Tool):
         settings: dict
     ) -> dict[str, Any]:
         """Generate image using Google Imagen."""
+        # Get API key - try multiple sources
         api_key = settings.get("image_gen_google_api_key")
         if not api_key:
-            api_key = os.environ.get("GOOGLE_API_KEY")
+            # Fall back to environment variables (both naming conventions)
+            api_key = os.environ.get("API_KEY_GOOGLE") or os.environ.get("GOOGLE_API_KEY")
         
         if not api_key:
             return {
