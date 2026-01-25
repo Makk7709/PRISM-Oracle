@@ -144,14 +144,16 @@ def _network_guard(monkeypatch):
                 _create_forbidden_unified_call,
             )
             patched_something = True
-        # Patch BrowserCompatibleChatWrapper.unified_call  
+        # Patch BrowserCompatibleChatWrapper.unified_call (only if method exists)
         if hasattr(models, "BrowserCompatibleChatWrapper"):
-            monkeypatch.setattr(
-                models.BrowserCompatibleChatWrapper,
-                "unified_call",
-                _create_forbidden_unified_call,
-            )
-            patched_something = True
+            browser_wrapper = models.BrowserCompatibleChatWrapper
+            if hasattr(browser_wrapper, "unified_call"):
+                monkeypatch.setattr(
+                    browser_wrapper,
+                    "unified_call",
+                    _create_forbidden_unified_call,
+                )
+                patched_something = True
     except ImportError:
         pass
     

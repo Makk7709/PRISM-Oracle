@@ -116,6 +116,16 @@ class Settings(TypedDict):
 
     a2a_server_enabled: bool
 
+    # PRISM Consensus settings
+    consensus_enabled: bool
+    consensus_timeout_ms: int
+    consensus_quorum_ratio: float
+    consensus_arbiter_1: str
+    consensus_arbiter_2: str
+    consensus_arbiter_3: str
+    consensus_audit_log: bool
+    consensus_critical_patterns: str
+
     variables: str
     secrets: str
 
@@ -1338,6 +1348,123 @@ def convert_out(settings: Settings) -> SettingsOutput:
         "tab": "mcp",
     }
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PRISM CONSENSUS SECTION
+    # ═══════════════════════════════════════════════════════════════════════════
+    consensus_fields: list[SettingsField] = []
+
+    consensus_fields.append(
+        {
+            "id": "consensus_enabled",
+            "title": "Enable PRISM Consensus",
+            "description": "Activate multi-LLM consensus validation for critical decisions. When enabled, research conclusions require approval from 2/3 of arbiters.",
+            "type": "switch",
+            "value": settings["consensus_enabled"],
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_timeout_ms",
+            "title": "Consensus Timeout (ms)",
+            "description": "Maximum time to wait for arbiter votes. After timeout, decision is REJECTED (fail-closed principle).",
+            "type": "number",
+            "value": settings["consensus_timeout_ms"],
+            "min": 1000,
+            "max": 60000,
+            "step": 1000,
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_quorum_ratio",
+            "title": "Quorum Ratio",
+            "description": "Minimum approval ratio required (0.67 = 2/3 majority).",
+            "type": "number",
+            "value": settings["consensus_quorum_ratio"],
+            "min": 0.5,
+            "max": 1.0,
+            "step": 0.01,
+        }
+    )
+
+    # Model provider dropdown options
+    arbiter_model_options: list[FieldOption] = [
+        {"value": "openrouter/anthropic/claude-3.5-sonnet", "label": "Claude 3.5 Sonnet (OpenRouter)"},
+        {"value": "openrouter/anthropic/claude-3-opus", "label": "Claude 3 Opus (OpenRouter)"},
+        {"value": "openrouter/openai/gpt-4o", "label": "GPT-4o (OpenRouter)"},
+        {"value": "openrouter/openai/gpt-4-turbo", "label": "GPT-4 Turbo (OpenRouter)"},
+        {"value": "openrouter/google/gemini-pro-1.5", "label": "Gemini Pro 1.5 (OpenRouter)"},
+        {"value": "openrouter/google/gemini-flash-1.5", "label": "Gemini Flash 1.5 (OpenRouter)"},
+        {"value": "openrouter/mistralai/mistral-large", "label": "Mistral Large (OpenRouter)"},
+        {"value": "openrouter/meta-llama/llama-3.1-405b-instruct", "label": "Llama 3.1 405B (OpenRouter)"},
+        {"value": "openrouter/perplexity/llama-3.1-sonar-large-128k-online", "label": "Perplexity Sonar Large (OpenRouter)"},
+        {"value": "anthropic/claude-3.5-sonnet", "label": "Claude 3.5 Sonnet (Direct)"},
+        {"value": "openai/gpt-4o", "label": "GPT-4o (Direct)"},
+        {"value": "google/gemini-pro", "label": "Gemini Pro (Direct)"},
+    ]
+
+    consensus_fields.append(
+        {
+            "id": "consensus_arbiter_1",
+            "title": "Arbiter Model #1 (Primary)",
+            "description": "First arbiter LLM for consensus voting.",
+            "type": "select",
+            "value": settings["consensus_arbiter_1"],
+            "options": arbiter_model_options,
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_arbiter_2",
+            "title": "Arbiter Model #2 (Secondary)",
+            "description": "Second arbiter LLM for consensus voting. Choose a different provider for diversity.",
+            "type": "select",
+            "value": settings["consensus_arbiter_2"],
+            "options": arbiter_model_options,
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_arbiter_3",
+            "title": "Arbiter Model #3 (Tertiary)",
+            "description": "Third arbiter LLM for consensus voting. Choose a different provider for diversity.",
+            "type": "select",
+            "value": settings["consensus_arbiter_3"],
+            "options": arbiter_model_options,
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_audit_log",
+            "title": "Enable Audit Log",
+            "description": "Log all consensus decisions for traceability and compliance.",
+            "type": "switch",
+            "value": settings["consensus_audit_log"],
+        }
+    )
+
+    consensus_fields.append(
+        {
+            "id": "consensus_critical_patterns",
+            "title": "Critical Action Patterns",
+            "description": "Comma-separated keywords that trigger consensus validation (e.g., conclusion, recommendation, publish).",
+            "type": "text",
+            "value": settings["consensus_critical_patterns"],
+        }
+    )
+
+    consensus_section: SettingsSection = {
+        "id": "consensus",
+        "title": "PRISM Consensus",
+        "description": "Multi-LLM consensus system for validating critical research decisions. Uses 3 independent AI arbiters with 2/3 majority voting. Implements fail-closed principle: in case of doubt, reject.",
+        "fields": consensus_fields,
+        "tab": "agent",
+    }
 
     # External API section
     external_api_fields: list[SettingsField] = []
@@ -1425,6 +1552,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
             browser_model_section,
             image_gen_section,
             embed_model_section,
+            consensus_section,  # PRISM Consensus (3 arbiters)
             memory_section,
             speech_section,
             api_keys_section,
@@ -1686,6 +1814,15 @@ def get_default_settings() -> Settings:
         mcp_server_enabled=False,
         mcp_server_token=create_auth_token(),
         a2a_server_enabled=False,
+        # PRISM Consensus defaults
+        consensus_enabled=True,
+        consensus_timeout_ms=10000,
+        consensus_quorum_ratio=0.67,
+        consensus_arbiter_1="openrouter/anthropic/claude-3.5-sonnet",
+        consensus_arbiter_2="openrouter/openai/gpt-4o",
+        consensus_arbiter_3="openrouter/google/gemini-pro-1.5",
+        consensus_audit_log=True,
+        consensus_critical_patterns="conclusion,recommendation,publish,validate,approve,final,decision",
         variables="",
         secrets="",
         litellm_global_kwargs={},

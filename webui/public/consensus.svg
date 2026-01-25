@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Crystal Pyramid / Prism -->
+  <!-- Base triangle (front face) -->
+  <path d="M12 2 L22 20 L2 20 Z" fill="none" stroke="#000" stroke-width="0.6"/>
+  
+  <!-- Internal refraction lines (light through prism) -->
+  <path d="M12 2 L12 20" stroke="#000" stroke-width="0.4" opacity="0.6"/>
+  <path d="M12 8 L7 20" stroke="#000" stroke-width="0.3" opacity="0.5"/>
+  <path d="M12 8 L17 20" stroke="#000" stroke-width="0.3" opacity="0.5"/>
+  
+  <!-- 3D depth lines (right face of pyramid) -->
+  <path d="M12 2 L19 11" stroke="#000" stroke-width="0.4" opacity="0.4"/>
+  <path d="M19 11 L22 20" stroke="#000" stroke-width="0.4" opacity="0.4"/>
+  
+  <!-- Light beam entering prism -->
+  <path d="M3 6 L9 10" stroke="#000" stroke-width="0.4" opacity="0.5"/>
+  
+  <!-- Rainbow spectrum exiting (3 lines representing consensus from 3 models) -->
+  <path d="M15 12 L21 10" stroke="#000" stroke-width="0.35" opacity="0.6"/>
+  <path d="M15 13 L21 13" stroke="#000" stroke-width="0.35" opacity="0.6"/>
+  <path d="M15 14 L21 16" stroke="#000" stroke-width="0.35" opacity="0.6"/>
+  
+  <!-- Small dots for the 3 arbiters -->
+  <circle cx="21" cy="10" r="0.8" fill="#000" opacity="0.5"/>
+  <circle cx="21" cy="13" r="0.8" fill="#000" opacity="0.5"/>
+  <circle cx="21" cy="16" r="0.8" fill="#000" opacity="0.5"/>
+</svg>
