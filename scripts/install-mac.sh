@@ -123,23 +123,29 @@ if [ -f "$ENV_FILE" ]; then
         echo "   Éditez $ENV_FILE et ajoutez vos clés API"
     fi
 else
-    echo -e "${YELLOW}⚠️  Fichier .env non trouvé. Création...${NC}"
-    cat > "$ENV_FILE" << 'ENVFILE'
+    echo -e "${YELLOW}⚠️  Fichier .env non trouvé.${NC}"
+    
+    # Use .env.example if available
+    if [ -f "$PROJECT_ROOT/.env.example" ]; then
+        echo "Copie de .env.example vers .env..."
+        cp "$PROJECT_ROOT/.env.example" "$ENV_FILE"
+        echo -e "${GREEN}✅ Fichier .env créé depuis le template${NC}"
+    else
+        echo "Création du fichier .env..."
+        cat > "$ENV_FILE" << 'ENVFILE'
 # Korev Oracle Configuration
-# ==========================
-
-# Clés API (au moins une requise)
 API_KEY_OPENAI=
 API_KEY_OPENROUTER=
-API_KEY_ANTHROPIC=
-
-# Configuration
 WEB_UI_PORT=5050
-DEFAULT_USER_TIMEZONE=Europe/Paris
 ANONYMIZED_TELEMETRY=false
 ENVFILE
-    echo -e "${GREEN}✅ Fichier .env créé${NC}"
-    echo -e "${YELLOW}   ⚠️  Éditez $ENV_FILE et ajoutez vos clés API${NC}"
+        echo -e "${GREEN}✅ Fichier .env créé${NC}"
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}⚠️  IMPORTANT: Éditez .env et ajoutez vos clés API!${NC}"
+    echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
 fi
 
 #───────────────────────────────────────────────────────────────────────────────

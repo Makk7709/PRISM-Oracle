@@ -97,23 +97,26 @@ echo [4/6] Verification de la configuration...
 if exist ".env" (
     echo ✓ Fichier .env trouve
 ) else (
-    echo ⚠️  Fichier .env non trouve. Creation...
-    (
-        echo # Korev Oracle Configuration
-        echo # ==========================
-        echo.
-        echo # Cles API ^(au moins une requise^)
-        echo API_KEY_OPENAI=
-        echo API_KEY_OPENROUTER=
-        echo API_KEY_ANTHROPIC=
-        echo.
-        echo # Configuration
-        echo WEB_UI_PORT=5050
-        echo DEFAULT_USER_TIMEZONE=Europe/Paris
-        echo ANONYMIZED_TELEMETRY=false
-    ) > .env
-    echo ✓ Fichier .env cree
-    echo    ⚠️  Editez .env et ajoutez vos cles API!
+    echo ⚠️  Fichier .env non trouve.
+    if exist ".env.example" (
+        echo Copie de .env.example vers .env...
+        copy ".env.example" ".env" >nul
+        echo ✓ Fichier .env cree depuis le template
+    ) else (
+        echo Creation du fichier .env...
+        (
+            echo # Korev Oracle Configuration
+            echo API_KEY_OPENAI=
+            echo API_KEY_OPENROUTER=
+            echo WEB_UI_PORT=5050
+            echo ANONYMIZED_TELEMETRY=false
+        ) > .env
+        echo ✓ Fichier .env cree
+    )
+    echo.
+    echo    ════════════════════════════════════════════════════════
+    echo    ⚠️  IMPORTANT: Editez .env et ajoutez vos cles API!
+    echo    ════════════════════════════════════════════════════════
 )
 echo.
 
