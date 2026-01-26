@@ -461,7 +461,7 @@ MULTI_INTENT_RULES: List[MultiIntentRule] = [
 # Patterns that indicate prompt injection attempt
 # REDUCED to override/disable patterns only - no benign roleplay patterns
 INJECTION_PATTERNS: List[str] = [
-    # Override/disable instructions
+    # Override/disable instructions (English)
     r"ignore\s+all\s+instructions?",
     r"ignore\s+all\s+rules?",
     r"ignore\s+instructions",
@@ -470,6 +470,11 @@ INJECTION_PATTERNS: List[str] = [
     r"bypass\s+routing",
     r"override\s+routing",
     r"override\s+policy",
+    
+    # Override/disable instructions (French)
+    r"ignore\s+toutes?\s+(tes|les|mes)\s+r[eè]gles?",
+    r"ignore\s+toutes?\s+(tes|les|mes)\s+instructions?",
+    r"oublie\s+(tes|les|mes)\s+instructions?",
     
     # Disable specific agents
     r"don't\s+call\s+legal",
