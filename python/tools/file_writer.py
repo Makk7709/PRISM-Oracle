@@ -23,6 +23,7 @@ class FileWriter(Tool):
         content = self.args.get("content", "")
         format_type = self.args.get("format", "auto")
         title = self.args.get("title", "")
+        template = self.args.get("template", "")  # PDF template name
         
         if not filename:
             return Response(
@@ -51,7 +52,7 @@ class FileWriter(Tool):
         
         try:
             if ext == '.pdf':
-                self._write_pdf(output_path, content, title)
+                self._write_pdf(output_path, content, title, template)
             elif ext == '.csv':
                 self._write_csv(output_path, content)
             elif ext in ['.xlsx', '.xls']:
@@ -90,20 +91,33 @@ class FileWriter(Tool):
         }
         return formats.get(format_type.lower(), '.txt')
     
-    def _write_pdf(self, path: str, content: str, title: str = ""):
-        """Create professional PDF file with full Markdown support."""
+    def _write_pdf(self, path: str, content: str, title: str = "", template: str = ""):
+        """
+        Create professional PDF file with full Markdown support and templates.
+        
+        Templates disponibles:
+        - mckinsey: Rapport stratégique premium (cabinet conseil)
+        - legal: Document juridique (tribunal/greffe)
+        - scientific: Publication scientifique
+        - patent: Brevet INPI/EPO
+        - financial: Rapport financier/audit
+        - executive: Note de synthèse executive
+        - medical: Rapport médical/clinique
+        - technical: Documentation technique
+        """
         try:
             from python.helpers.pdf_generator import generate_pdf
             
-            # Use the professional PDF generator
+            # Use the professional PDF generator with template support
             generate_pdf(
                 content=content,
                 output_path=path,
                 title=title if title else None,
-                author="Korev Evidence"
+                author="Korev Evidence",
+                template_name=template if template else None
             )
             
-        except ImportError as e:
+        except Exception as e:
             # Fallback to basic reportlab if pdf_generator fails
             try:
                 from reportlab.lib.pagesizes import A4

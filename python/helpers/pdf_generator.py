@@ -1,5 +1,5 @@
 """
-Professional PDF Generator with full Markdown support.
+Professional PDF Generator with full Markdown support and Templates.
 
 Converts Markdown content to well-formatted PDFs with:
 - Headers (H1-H6)
@@ -10,6 +10,16 @@ Converts Markdown content to well-formatted PDFs with:
 - Blockquotes
 - Page numbers and headers
 - Professional styling
+
+Templates disponibles:
+- mckinsey: Rapport stratégique premium style cabinet conseil
+- legal: Document juridique style greffe/tribunal
+- scientific: Rapport scientifique/académique
+- patent: Rédaction de brevet style INPI/EPO
+- financial: Rapport financier/audit
+- executive: Note de synthèse executive
+- medical: Rapport médical/clinique
+- technical: Documentation technique
 """
 
 import re
@@ -33,31 +43,57 @@ from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+# Import templates
+from python.helpers.pdf_templates import PDFTemplate, get_template, detect_template, TEMPLATES
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STYLES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def create_styles():
-    """Create professional styles for the PDF."""
+def create_styles(template: Optional[PDFTemplate] = None):
+    """Create professional styles for the PDF based on template."""
     styles = getSampleStyleSheet()
     
-    # Colors
-    primary_color = HexColor('#1a365d')  # Dark blue
-    secondary_color = HexColor('#2c5282')
-    accent_color = HexColor('#3182ce')
-    text_color = HexColor('#2d3748')
-    light_bg = HexColor('#f7fafc')
+    # Use template colors or defaults
+    if template:
+        primary_color = HexColor(template.primary_color)
+        secondary_color = HexColor(template.secondary_color)
+        accent_color = HexColor(template.accent_color)
+        text_color = HexColor(template.text_color)
+        light_bg = HexColor(template.light_bg)
+        title_font = template.title_font
+        body_font = template.body_font
+        code_font = template.code_font
+        title_size = template.title_size
+        h1_size = template.h1_size
+        h2_size = template.h2_size
+        h3_size = template.h3_size
+        body_size = template.body_size
+    else:
+        primary_color = HexColor('#1a365d')
+        secondary_color = HexColor('#2c5282')
+        accent_color = HexColor('#3182ce')
+        text_color = HexColor('#2d3748')
+        light_bg = HexColor('#f7fafc')
+        title_font = 'Helvetica-Bold'
+        body_font = 'Helvetica'
+        code_font = 'Courier'
+        title_size = 24
+        h1_size = 18
+        h2_size = 14
+        h3_size = 12
+        body_size = 10
     
     # Title style
     styles.add(ParagraphStyle(
         name='DocTitle',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=title_size,
         textColor=primary_color,
         spaceAfter=20,
         spaceBefore=0,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
         alignment=TA_LEFT,
     ))
     
@@ -65,11 +101,11 @@ def create_styles():
     styles.add(ParagraphStyle(
         name='H1',
         parent=styles['Heading1'],
-        fontSize=18,
+        fontSize=h1_size,
         textColor=primary_color,
         spaceAfter=12,
         spaceBefore=20,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
         borderWidth=0,
         borderPadding=0,
         borderColor=accent_color,
@@ -79,45 +115,45 @@ def create_styles():
     styles.add(ParagraphStyle(
         name='H2',
         parent=styles['Heading2'],
-        fontSize=14,
+        fontSize=h2_size,
         textColor=secondary_color,
         spaceAfter=10,
         spaceBefore=16,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
     ))
     
     # H3 style
     styles.add(ParagraphStyle(
         name='H3',
         parent=styles['Heading3'],
-        fontSize=12,
+        fontSize=h3_size,
         textColor=secondary_color,
         spaceAfter=8,
         spaceBefore=12,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
     ))
     
     # H4 style
     styles.add(ParagraphStyle(
         name='H4',
         parent=styles['Heading4'],
-        fontSize=11,
+        fontSize=h3_size - 1,
         textColor=text_color,
         spaceAfter=6,
         spaceBefore=10,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
     ))
     
     # Body text
     styles.add(ParagraphStyle(
         name='Body',
         parent=styles['Normal'],
-        fontSize=10,
+        fontSize=body_size,
         textColor=text_color,
         spaceAfter=8,
         spaceBefore=0,
-        fontName='Helvetica',
-        leading=14,
+        fontName=body_font,
+        leading=body_size + 4,
         alignment=TA_JUSTIFY,
     ))
     
@@ -125,7 +161,7 @@ def create_styles():
     styles.add(ParagraphStyle(
         name='BlockQuote',
         parent=styles['Normal'],
-        fontSize=10,
+        fontSize=body_size,
         textColor=HexColor('#4a5568'),
         spaceAfter=10,
         spaceBefore=10,
@@ -134,14 +170,14 @@ def create_styles():
         borderColor=accent_color,
         borderPadding=10,
         backColor=light_bg,
-        fontName='Helvetica-Oblique',
+        fontName=body_font + '-Oblique' if 'Helvetica' in body_font else body_font,
     ))
     
     # Code block
     styles.add(ParagraphStyle(
         name='Code',
         parent=styles['Code'],
-        fontSize=9,
+        fontSize=body_size - 1,
         textColor=HexColor('#1a202c'),
         spaceAfter=10,
         spaceBefore=10,
@@ -151,39 +187,39 @@ def create_styles():
         borderWidth=1,
         borderColor=HexColor('#e2e8f0'),
         borderPadding=8,
-        fontName='Courier',
-        leading=12,
+        fontName=code_font,
+        leading=body_size + 2,
     ))
     
     # Inline code
     styles.add(ParagraphStyle(
         name='InlineCode',
         parent=styles['Normal'],
-        fontSize=9,
+        fontSize=body_size - 1,
         textColor=HexColor('#c53030'),
         backColor=HexColor('#fed7d7'),
-        fontName='Courier',
+        fontName=code_font,
     ))
     
     # List item
     styles.add(ParagraphStyle(
         name='ListItem',
         parent=styles['Normal'],
-        fontSize=10,
+        fontSize=body_size,
         textColor=text_color,
         spaceAfter=4,
         spaceBefore=2,
         leftIndent=20,
-        fontName='Helvetica',
+        fontName=body_font,
     ))
     
     # Table header
     styles.add(ParagraphStyle(
         name='TableHeader',
         parent=styles['Normal'],
-        fontSize=9,
+        fontSize=body_size - 1,
         textColor=white,
-        fontName='Helvetica-Bold',
+        fontName=title_font,
         alignment=TA_CENTER,
     ))
     
@@ -191,9 +227,9 @@ def create_styles():
     styles.add(ParagraphStyle(
         name='TableCell',
         parent=styles['Normal'],
-        fontSize=9,
+        fontSize=body_size - 1,
         textColor=text_color,
-        fontName='Helvetica',
+        fontName=body_font,
         alignment=TA_LEFT,
     ))
     
@@ -203,11 +239,36 @@ def create_styles():
         parent=styles['Normal'],
         fontSize=8,
         textColor=gray,
-        fontName='Helvetica',
+        fontName=body_font,
         alignment=TA_CENTER,
     ))
     
-    return styles
+    # Confidential notice style
+    styles.add(ParagraphStyle(
+        name='Confidential',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=HexColor('#c53030'),
+        fontName=title_font,
+        alignment=TA_CENTER,
+    ))
+    
+    # Section header for suggested sections
+    styles.add(ParagraphStyle(
+        name='SectionHeader',
+        parent=styles['Heading2'],
+        fontSize=h2_size,
+        textColor=primary_color,
+        spaceAfter=10,
+        spaceBefore=20,
+        fontName=title_font,
+        borderWidth=0,
+        borderPadding=0,
+        borderBottomWidth=1,
+        borderBottomColor=accent_color,
+    ))
+    
+    return styles, template
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -421,29 +482,82 @@ class MarkdownToPDF:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE TEMPLATES
+# PAGE CALLBACK FACTORY
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def add_page_number(canvas, doc):
-    """Add page number and header to each page."""
-    canvas.saveState()
+def create_page_callback(template: Optional[PDFTemplate] = None):
+    """Create a page callback function with template-specific styling."""
     
-    # Page number
-    page_num = canvas.getPageNumber()
-    text = f"Page {page_num}"
-    canvas.setFont('Helvetica', 8)
-    canvas.setFillColor(gray)
-    canvas.drawRightString(doc.pagesize[0] - 2*cm, 1.5*cm, text)
+    def add_page_elements(canvas, doc):
+        """Add page number, header, footer based on template."""
+        canvas.saveState()
+        
+        page_num = canvas.getPageNumber()
+        
+        # Get template settings
+        if template:
+            primary_color = HexColor(template.primary_color)
+            accent_color = HexColor(template.accent_color)
+            header_text = template.header_text
+            footer_text = template.footer_text
+            confidential = template.confidential_notice
+            show_header = template.show_header
+            show_footer = template.show_footer
+            show_page_num = template.show_page_numbers
+        else:
+            primary_color = HexColor('#1a365d')
+            accent_color = HexColor('#3182ce')
+            header_text = ""
+            footer_text = ""
+            confidential = ""
+            show_header = True
+            show_footer = True
+            show_page_num = True
+        
+        width, height = doc.pagesize
+        
+        # Header
+        if show_header:
+            # Header line
+            canvas.setStrokeColor(accent_color)
+            canvas.setLineWidth(1)
+            canvas.line(2*cm, height - 2*cm, width - 2*cm, height - 2*cm)
+            
+            # Header text (left)
+            if header_text:
+                canvas.setFont('Helvetica-Bold', 8)
+                canvas.setFillColor(primary_color)
+                canvas.drawString(2*cm, height - 1.5*cm, header_text)
+            
+            # Confidential notice (right)
+            if confidential:
+                canvas.setFont('Helvetica-Bold', 8)
+                canvas.setFillColor(HexColor('#c53030'))
+                canvas.drawRightString(width - 2*cm, height - 1.5*cm, confidential)
+        
+        # Footer
+        if show_footer:
+            # Footer line
+            canvas.setStrokeColor(HexColor('#e2e8f0'))
+            canvas.setLineWidth(0.5)
+            canvas.line(2*cm, 2*cm, width - 2*cm, 2*cm)
+            
+            # Footer text (center)
+            if footer_text:
+                text = footer_text.replace("{page}", str(page_num))
+                canvas.setFont('Helvetica', 8)
+                canvas.setFillColor(gray)
+                canvas.drawCentredString(width / 2, 1.2*cm, text)
+            
+            # Page number (right)
+            if show_page_num:
+                canvas.setFont('Helvetica', 8)
+                canvas.setFillColor(gray)
+                canvas.drawRightString(width - 2*cm, 1.2*cm, f"Page {page_num}")
+        
+        canvas.restoreState()
     
-    # Footer line
-    canvas.setStrokeColor(HexColor('#e2e8f0'))
-    canvas.setLineWidth(0.5)
-    canvas.line(2*cm, 2*cm, doc.pagesize[0] - 2*cm, 2*cm)
-    
-    # Header line (subtle)
-    canvas.line(2*cm, doc.pagesize[1] - 2*cm, doc.pagesize[0] - 2*cm, doc.pagesize[1] - 2*cm)
-    
-    canvas.restoreState()
+    return add_page_elements
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -455,35 +569,59 @@ def generate_pdf(
     output_path: str,
     title: Optional[str] = None,
     author: str = "Korev Evidence",
+    template_name: Optional[str] = None,
+    user_request: Optional[str] = None,
     pagesize = A4
 ) -> str:
     """
-    Generate a professional PDF from Markdown content.
+    Generate a professional PDF from Markdown content with template support.
     
     Args:
         content: Markdown content to convert
         output_path: Path for the output PDF
         title: Optional document title (added as first element)
         author: PDF metadata author
+        template_name: Explicit template name (mckinsey, legal, scientific, patent, etc.)
+        user_request: User's original request (for automatic template detection)
         pagesize: Page size (A4 or letter)
     
     Returns:
         Path to the generated PDF
+    
+    Templates disponibles:
+        - mckinsey: Rapport stratégique premium (cabinet conseil)
+        - legal: Document juridique (tribunal/greffe)
+        - scientific: Publication scientifique
+        - patent: Brevet INPI/EPO
+        - financial: Rapport financier/audit
+        - executive: Note de synthèse executive
+        - medical: Rapport médical/clinique
+        - technical: Documentation technique
+        - default: Document professionnel standard
     """
-    # Create document
+    # Detect or get template
+    if template_name:
+        template = get_template(template_name)
+    elif user_request:
+        detected_name = detect_template(user_request)
+        template = get_template(detected_name)
+    else:
+        template = get_template("default")
+    
+    # Create document with template margins
     doc = SimpleDocTemplate(
         output_path,
         pagesize=pagesize,
-        leftMargin=2*cm,
-        rightMargin=2*cm,
-        topMargin=2.5*cm,
-        bottomMargin=2.5*cm,
+        leftMargin=template.left_margin * cm,
+        rightMargin=template.right_margin * cm,
+        topMargin=template.top_margin * cm,
+        bottomMargin=template.bottom_margin * cm,
         title=title or "Document",
         author=author
     )
     
-    # Create styles
-    styles = create_styles()
+    # Create styles with template
+    styles, _ = create_styles(template)
     
     # Parse markdown
     parser = MarkdownToPDF(styles)
@@ -495,24 +633,29 @@ def generate_pdf(
         elements.append(HRFlowable(
             width="100%",
             thickness=2,
-            color=HexColor('#3182ce'),
+            color=HexColor(template.accent_color),
             spaceBefore=10,
             spaceAfter=20
         ))
     
-    # Add timestamp
+    # Add template info
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    elements.append(Paragraph(
-        f"<font color='#718096' size='9'>Generated: {timestamp}</font>",
-        styles['Body']
-    ))
+    template_label = f"Template: {template.display_name}" if template.name != "default" else ""
+    meta_text = f"<font color='#718096' size='9'>Generated: {timestamp}"
+    if template_label:
+        meta_text += f" | {template_label}"
+    meta_text += "</font>"
+    elements.append(Paragraph(meta_text, styles['Body']))
     elements.append(Spacer(1, 20))
     
     # Add content
     elements.extend(parser.parse(content))
     
+    # Create page callback with template
+    page_callback = create_page_callback(template)
+    
     # Build PDF
-    doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
+    doc.build(elements, onFirstPage=page_callback, onLaterPages=page_callback)
     
     return output_path
 
@@ -520,33 +663,46 @@ def generate_pdf(
 def markdown_to_pdf_bytes(
     content: str,
     title: Optional[str] = None,
-    author: str = "Korev Evidence"
+    author: str = "Korev Evidence",
+    template_name: Optional[str] = None,
+    user_request: Optional[str] = None
 ) -> bytes:
     """
-    Generate PDF as bytes (for streaming or in-memory use).
+    Generate PDF as bytes (for streaming or in-memory use) with template support.
     
     Args:
         content: Markdown content
         title: Optional document title
         author: PDF metadata author
+        template_name: Explicit template name
+        user_request: User's request for auto-detection
     
     Returns:
         PDF as bytes
     """
     buffer = BytesIO()
     
+    # Detect or get template
+    if template_name:
+        template = get_template(template_name)
+    elif user_request:
+        detected_name = detect_template(user_request)
+        template = get_template(detected_name)
+    else:
+        template = get_template("default")
+    
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        leftMargin=2*cm,
-        rightMargin=2*cm,
-        topMargin=2.5*cm,
-        bottomMargin=2.5*cm,
+        leftMargin=template.left_margin * cm,
+        rightMargin=template.right_margin * cm,
+        topMargin=template.top_margin * cm,
+        bottomMargin=template.bottom_margin * cm,
         title=title or "Document",
         author=author
     )
     
-    styles = create_styles()
+    styles, _ = create_styles(template)
     parser = MarkdownToPDF(styles)
     elements = []
     
@@ -555,13 +711,37 @@ def markdown_to_pdf_bytes(
         elements.append(HRFlowable(
             width="100%",
             thickness=2,
-            color=HexColor('#3182ce'),
+            color=HexColor(template.accent_color),
             spaceBefore=10,
             spaceAfter=20
         ))
     
     elements.extend(parser.parse(content))
     
-    doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
+    page_callback = create_page_callback(template)
+    doc.build(elements, onFirstPage=page_callback, onLaterPages=page_callback)
     
     return buffer.getvalue()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UTILITY FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def list_available_templates() -> List[dict]:
+    """List all available templates with their descriptions."""
+    return [
+        {
+            "name": name,
+            "display_name": t.display_name,
+            "description": t.description,
+            "suggested_sections": t.suggested_sections
+        }
+        for name, t in TEMPLATES.items()
+    ]
+
+
+def get_template_sections(template_name: str) -> List[str]:
+    """Get suggested sections for a template."""
+    template = get_template(template_name)
+    return template.suggested_sections

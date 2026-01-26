@@ -1,93 +1,112 @@
 ## file_writer
-Create files (PDF, CSV, Excel, text) without writing code.
+Create professional files (PDF, CSV, Excel, text) with template support.
 
 **USE THIS TOOL** when you need to:
-- Generate a PDF report or document
+- Generate a PDF report with professional formatting
+- Create documents in specific styles (McKinsey, juridique, scientifique, brevet...)
 - Create a CSV file with data
 - Create an Excel spreadsheet
 - Write any text file
 
-**Arguments:**
-- `filename` (required): Output filename (without path)
-- `content` (required): The content to write
-- `format` (optional): "pdf", "csv", "excel", "txt", "json", "md" (auto-detected from extension)
-- `title` (optional): Title for PDF documents
+---
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `filename` | ✅ | Output filename (without path) |
+| `content` | ✅ | The Markdown content to write |
+| `title` | ❌ | Document title (for PDF) |
+| `template` | ❌ | PDF template name (see below) |
+| `format` | ❌ | "pdf", "csv", "excel", "txt" (auto-detected) |
 
 **Output:** Files are saved to `tmp/generated/` with timestamp.
 
-**Examples:**
+---
 
-Create a PDF report:
+## 🎨 TEMPLATES PDF DISPONIBLES
+
+**IMPORTANT**: Choisis le template selon la demande utilisateur !
+
+| Template | Utilisation | Mots-clés utilisateur |
+|----------|-------------|----------------------|
+| `mckinsey` | Rapport stratégique premium | "McKinsey", "consulting", "stratégie", "MECE", "deck" |
+| `legal` | Document juridique formel | "juridique", "tribunal", "greffe", "avocat", "contrat" |
+| `scientific` | Publication académique | "scientifique", "recherche", "étude", "paper" |
+| `patent` | Brevet INPI/EPO | "brevet", "patent", "INPI", "invention" |
+| `financial` | Rapport financier/audit | "financier", "audit", "bilan", "DCF" |
+| `executive` | Note de synthèse | "executive", "synthèse", "direction", "brief" |
+| `medical` | Rapport médical | "médical", "clinique", "diagnostic", "patient" |
+| `technical` | Documentation technique | "technique", "API", "architecture", "doc" |
+
+### Sections suggérées par template
+
+**McKinsey**: Executive Summary → Situation Analysis → Key Findings (MECE) → Strategic Options → Recommendation → Implementation → Risks
+
+**Legal**: INTITULÉ → PARTIES → EXPOSÉ DES FAITS → DISCUSSION EN DROIT → PAR CES MOTIFS → DISPOSITIF
+
+**Scientific**: Abstract → Introduction → Methods → Results → Discussion → Conclusion → References
+
+**Patent**: TITRE → DOMAINE TECHNIQUE → ART ANTÉRIEUR → PROBLÈME → SOLUTION → AVANTAGES → REVENDICATIONS
+
+---
+
+## Exemples
+
+### Rapport McKinsey (stratégie)
 ```json
 {
-    "thoughts": ["Creating classification report as PDF"],
     "tool_name": "file_writer",
     "tool_args": {
-        "filename": "rapport_classement.pdf",
-        "title": "Rapport de Classification des Documents",
-        "content": "# Documents par Client\n\n## Client A\n- Document 1\n- Document 2\n\n## Client B\n- Document 3"
+        "filename": "strategie_acquisition.pdf",
+        "template": "mckinsey",
+        "title": "Strategic Assessment — Acquisition Target Alpha",
+        "content": "## Executive Summary\n\n> **Recommendation**: Proceed with acquisition at €50M valuation\n\n**Key insight**: Target presents 3x revenue synergy potential\n\n---\n\n## Situation Analysis\n\n### Market Position\n\n| Metric | Target | Industry Avg |\n|--------|--------|-------------|\n| Market Share | 12% | 8% |\n| Growth Rate | 25% | 15% |\n| EBITDA Margin | 18% | 12% |\n\n### MECE Decomposition\n\n**Branch 1: Synergies**\n- Cost synergies: **€5M/year**\n- Revenue synergies: **€3M/year**\n\n**Branch 2: Risks**\n- Integration complexity: Medium\n- Regulatory approval: Low risk\n\n---\n\n## Recommendation\n\n1. Proceed to due diligence phase\n2. Target closing: Q2 2026\n3. Integration PMO to be established\n\n---\n\n*Strictly Confidential*"
     }
 }
 ```
 
-Create a CSV file:
+### Document Juridique (greffe/tribunal)
 ```json
 {
-    "thoughts": ["Exporting data to CSV"],
     "tool_name": "file_writer",
     "tool_args": {
-        "filename": "export.csv",
-        "content": "Client,Code,Documents\nACME,101,5\nTechCorp,102,3"
+        "filename": "conclusions_appel.pdf",
+        "template": "legal",
+        "title": "CONCLUSIONS D'APPEL",
+        "content": "## DEVANT LA COUR D'APPEL DE PARIS\n\n---\n\n## PARTIES\n\n**APPELANT:**\nSociété ALPHA SAS\nRCS Paris 123 456 789\nReprésentée par Me Dupont, avocat au barreau de Paris\n\n**INTIMÉ:**\nSociété BETA SARL\nRCS Lyon 987 654 321\n\n---\n\n## EXPOSÉ DES FAITS\n\nPar jugement du 15 janvier 2025, le Tribunal de Commerce de Paris a...\n\n---\n\n## DISCUSSION EN DROIT\n\n### Sur la recevabilité de l'appel\n\nConformément à l'article 538 du Code de procédure civile...\n\n### Sur le fond\n\nIl résulte des pièces versées aux débats que...\n\n---\n\n## PAR CES MOTIFS\n\nIl est demandé à la Cour de:\n\n1. Déclarer l'appel recevable et bien fondé\n2. Infirmer le jugement entrepris\n3. Condamner l'intimé aux dépens"
     }
 }
 ```
 
-Create an Excel file:
+### Brevet INPI
 ```json
 {
-    "thoughts": ["Creating Excel spreadsheet"],
     "tool_name": "file_writer",
     "tool_args": {
-        "filename": "data.xlsx",
-        "content": "Name,Value,Status\nItem1,100,Active\nItem2,200,Pending"
+        "filename": "demande_brevet.pdf",
+        "template": "patent",
+        "title": "DEMANDE DE BREVET D'INVENTION",
+        "content": "## TITRE DE L'INVENTION\n\nDispositif et procédé d'analyse automatisée de documents juridiques\n\n---\n\n## DOMAINE TECHNIQUE\n\nLa présente invention concerne le domaine de l'intelligence artificielle appliquée à l'analyse documentaire, et plus particulièrement un système de traitement automatique de documents juridiques.\n\n---\n\n## ÉTAT DE LA TECHNIQUE ANTÉRIEURE\n\nLes systèmes existants présentent les limitations suivantes:\n- Temps de traitement élevé\n- Faible précision sur documents complexes\n- Absence de structuration sémantique\n\n---\n\n## PROBLÈME TECHNIQUE\n\nLe problème technique résolu par l'invention est de fournir un système capable de...\n\n---\n\n## SOLUTION TECHNIQUE\n\nL'invention propose un dispositif comprenant:\n\n1. Un module d'extraction OCR amélioré\n2. Un réseau de neurones spécialisé\n3. Un système de classification multi-niveaux\n\n---\n\n## REVENDICATIONS\n\n1. Dispositif d'analyse documentaire caractérisé en ce qu'il comprend...\n2. Procédé selon la revendication 1, caractérisé en ce que..."
     }
 }
 ```
 
-**Content format for CSV/Excel:**
+---
+
+## Content format
+
+**CSV/Excel:**
 - First line = headers
 - Following lines = data rows
 - Use commas or semicolons as separators
 
-**Content format for PDF (Full Markdown support):**
-
-Le générateur PDF supporte **tout le Markdown** :
-
-- **Headers**: `# H1`, `## H2`, `### H3`, `#### H4`
-- **Bold/Italic**: `**bold**`, `*italic*`
-- **Listes à puces**: `- item` ou `* item`
-- **Listes numérotées**: `1. item`
-- **Tableaux**: format Markdown standard
-- **Code blocks**: ` ```code``` `
-- **Blockquotes**: `> quote`
-- **Liens**: `[text](url)`
-- **Lignes horizontales**: `---`
-
-**Exemple de PDF bien formaté:**
-```json
-{
-    "tool_name": "file_writer",
-    "tool_args": {
-        "filename": "analyse_strategique.pdf",
-        "title": "Analyse Stratégique - Client XYZ",
-        "content": "## Executive Summary\n\n> **Recommandation** : Procéder à l'acquisition pour €50M\n\n## Analyse MECE\n\n### Branche 1 : Synergies\n\n- Synergie coûts : **€5M/an**\n- Synergie revenus : **€3M/an**\n\n### Branche 2 : Risques\n\n| Risque | Probabilité | Impact |\n|--------|-------------|--------|\n| Intégration | Moyen | Élevé |\n| Marché | Faible | Moyen |\n\n## Prochaines Étapes\n\n1. Due diligence approfondie\n2. Négociation finale\n3. Closing prévu Q2\n\n---\n\n*Document généré par Korev Evidence*"
-    }
-}
-```
-
-**Le PDF généré inclura :**
-- En-têtes et pieds de page professionnels
-- Numérotation des pages
-- Couleurs et styles cohérents
-- Tableaux avec alternance de couleurs
-- Mise en page soignée
+**PDF (Full Markdown):**
+- `# H1`, `## H2`, `### H3` — Headers
+- `**bold**`, `*italic*` — Formatting
+- `- item` — Bullet lists
+- `1. item` — Numbered lists
+- `| A | B |` — Tables
+- ` ```code``` ` — Code blocks
+- `> quote` — Blockquotes
+- `---` — Horizontal rules
