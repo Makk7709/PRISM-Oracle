@@ -97,7 +97,7 @@ class TestValidateRouteDecision:
         invalid_decision = RouteDecision(
             verdict=RouteVerdict.PROCEED,
             intents=[],  # Violates contract
-            confidence=0.5,
+            routing_strength=0.5,
         )
         
         errors = validate_route_decision(invalid_decision)

@@ -242,7 +242,7 @@ def decide_route(
         return RouteDecision(
             verdict=RouteVerdict.REFUSE,
             intents=intents,
-            confidence=0.0,
+            routing_strength=0.0,
             is_board_level=is_board_level,
             requires_contradictor=False,
             reasons=reasons + [f"Critical agents unavailable: {[i.value for i in unavailable_critical_intents]}"],
@@ -256,56 +256,55 @@ def decide_route(
         )
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 7: Handle injection enforcement
+    # STEP 7: Handle injection enforcement (SECURITY DECISION)
     # ─────────────────────────────────────────────────────────────────────────
     
     if injection_blocked:
-        # Check if this is an override/disable pattern for critical agents
-        override_patterns = [
-            r"don't\s*call\s*(legal|juridique)",
-            r"ne\s*pas\s*appeler\s*(legal|juridique)",
-            r"skip\s*(legal|agent)",
-            r"ignore\s*(legal|all)",
-            r"bypass\s*policy",
-            r"override\s*routing",
-        ]
-        
-        is_critical_override = any(
-            re.search(p, text_lower, re.IGNORECASE)
-            for p in override_patterns
+        # Determine if this is a HIGH-STAKES context
+        # High-stakes = board-level OR legal/medical intent detected
+        has_critical_intent = any(
+            i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL, IntentName.RESEARCHER}
+            for i in intents
         )
+        is_high_stakes = is_board_level or has_critical_intent
         
-        if is_board_level and is_critical_override:
-            # Board-level with critical override attempt → NEEDS_CLARIFICATION
-            # Ensure we have at least one intent
+        if is_high_stakes:
+            # HIGH-STAKES + INJECTION → ALWAYS NEEDS_CLARIFICATION
+            # This is a hard security rule, not a soft preference
             if not intents:
                 intents = [RouteIntent(
                     name=IntentName.MULTITASK,
                     score=0.3,
                     matched_keywords=[],
                     is_required=False,
-                    reason="fallback (injection + board-level)",
+                    reason="fallback (injection + high-stakes)",
                 )]
+            
+            clarification_msg = (
+                "⚠️ Une instruction de contournement a été détectée dans votre demande. "
+                "Pour des raisons de sécurité, veuillez reformuler sans instructions "
+                "d'override (ex: 'ignore les règles', 'ne pas appeler legal')."
+            )
             
             return RouteDecision(
                 verdict=RouteVerdict.NEEDS_CLARIFICATION,
                 intents=intents,
-                confidence=0.3,
+                routing_strength=0.3,
                 is_board_level=is_board_level,
                 requires_contradictor=False,
-                reasons=reasons + ["Board-level with injection override attempt"],
+                reasons=reasons + [f"HIGH-STAKES injection blocked: {injection_attempt[:30]}"],
                 policy_version=POLICY_VERSION,
-                clarification_prompt="Une demande de contournement a été détectée. Veuillez confirmer le périmètre de votre demande.",
-                missing_info=["confirmation_scope"],
+                clarification_prompt=clarification_msg,
+                missing_info=["reformulation_sans_override"],
                 injection_blocked=True,
                 injection_attempt=injection_attempt,
                 route_id=route_id,
                 input_hash=input_hash,
             )
         
-        # Non board-level injection: proceed but ignore override instruction
-        # The injection is logged but we route normally based on keywords
-        reasons.append("Injection ignored, routing based on actual keywords")
+        # LOW-STAKES injection: proceed but log + ignore override instruction
+        # The injection is flagged but we route normally based on keywords
+        reasons.append("Injection detected (low-stakes), routing on keywords only")
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 8: Determine verdict
@@ -338,19 +337,29 @@ def decide_route(
         reasons.append("Added MULTITASK as fallback (contract enforcement)")
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 10: Calculate overall confidence
+    # STEP 10: Calculate routing_strength (coverage score, NOT probability)
     # ─────────────────────────────────────────────────────────────────────────
     
     if intents:
-        # Weighted average of top intents
+        # Weighted average of top intents + floor boost if above threshold
         top_scores = [i.score for i in intents[:3]]
-        confidence = sum(top_scores) / len(top_scores)
+        base_strength = sum(top_scores) / len(top_scores)
+        
+        # If primary intent exceeded its policy threshold, boost floor to 0.65
+        # This prevents "low confidence" on clearly matched intents
+        primary_exceeded_threshold = any(
+            i.score >= 0.3 for i in intents[:1]  # Primary scored 3.0+ raw
+        )
+        if primary_exceeded_threshold:
+            routing_strength = max(base_strength, 0.65)
+        else:
+            routing_strength = base_strength
     else:
-        confidence = 0.0
+        routing_strength = 0.0
     
-    # Boost confidence for board-level (more intents = more thorough)
+    # Boost for board-level (more intents = better coverage)
     if is_board_level and len(intents) >= 2:
-        confidence = min(confidence * 1.1, 0.95)
+        routing_strength = min(routing_strength * 1.1, 0.95)
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 11: Determine if contradictor needed
@@ -368,7 +377,7 @@ def decide_route(
     decision = RouteDecision(
         verdict=verdict,
         intents=intents,
-        confidence=confidence,
+        routing_strength=routing_strength,
         is_board_level=is_board_level,
         requires_contradictor=requires_contradictor,
         reasons=reasons,
@@ -390,7 +399,7 @@ def decide_route(
     logger.info(
         f"[{route_id}] Route: {verdict.value} | "
         f"Intents: {[i.name.value for i in intents]} | "
-        f"Board: {is_board_level} | Conf: {confidence:.2f} | "
+        f"Board: {is_board_level} | Strength: {routing_strength:.2f} | "
         f"InjBlocked: {injection_blocked}"
     )
     

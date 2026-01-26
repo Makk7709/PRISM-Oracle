@@ -95,9 +95,12 @@ class RouteDecision:
     verdict: RouteVerdict
     intents: List[RouteIntent] = field(default_factory=list)
     
-    # Confidence
-    confidence: float = 0.0  # Overall confidence 0.0-1.0
-    confidence_level: ConfidenceLevel = ConfidenceLevel.LOW
+    # Routing strength (NOT a probability - see docs)
+    # This is a coverage score based on keyword matches, not statistical confidence
+    # Values 0.3+ indicate sufficient keyword coverage for routing
+    # Do NOT use as decision threshold - use intent scores instead
+    routing_strength: float = 0.0  # Coverage score 0.0-1.0
+    confidence_level: ConfidenceLevel = ConfidenceLevel.LOW  # Derived from routing_strength
     
     # Board-level flags
     is_board_level: bool = False  # Strategic/critical request
@@ -121,9 +124,9 @@ class RouteDecision:
     
     def __post_init__(self):
         """Set derived fields."""
-        if self.confidence >= 0.8:
+        if self.routing_strength >= 0.8:
             self.confidence_level = ConfidenceLevel.HIGH
-        elif self.confidence >= 0.5:
+        elif self.routing_strength >= 0.5:
             self.confidence_level = ConfidenceLevel.MEDIUM
         else:
             self.confidence_level = ConfidenceLevel.LOW
@@ -150,7 +153,7 @@ class RouteDecision:
         return {
             "verdict": self.verdict.value,
             "intents": [i.to_dict() for i in self.intents],
-            "confidence": round(self.confidence, 3),
+            "routing_strength": round(self.routing_strength, 3),
             "confidence_level": self.confidence_level.value,
             "is_board_level": self.is_board_level,
             "requires_contradictor": self.requires_contradictor,
@@ -173,7 +176,7 @@ class RouteDecision:
         return cls(
             verdict=RouteVerdict(data["verdict"]),
             intents=[RouteIntent.from_dict(i) for i in data.get("intents", [])],
-            confidence=data.get("confidence", 0.0),
+            routing_strength=data.get("routing_strength", data.get("confidence", 0.0)),
             is_board_level=data.get("is_board_level", False),
             requires_contradictor=data.get("requires_contradictor", False),
             reasons=data.get("reasons", []),

@@ -41,7 +41,7 @@ class TestResult:
     router_primary_intent: Optional[str] = None
     router_intents: List[str] = field(default_factory=list)
     router_board_level: bool = False
-    router_confidence: float = 0.0
+    router_strength: float = 0.0
     router_injection_blocked: bool = False
     router_route_id: str = ""
     latency_router_ms: float = 0.0
@@ -240,7 +240,7 @@ def test_on_audit() -> ValidationReport:
             result.router_primary_intent = decision.primary_intent.value if decision.primary_intent else "None"
             result.router_intents = decision.intent_names
             result.router_board_level = decision.is_board_level
-            result.router_confidence = decision.confidence
+            result.router_strength = decision.routing_strength
             result.router_injection_blocked = decision.injection_blocked
             result.router_route_id = decision.route_id
             result.router_verdict = decision.verdict.value
@@ -323,11 +323,15 @@ def test_injection() -> ValidationReport:
             # Check LEGAL_SAFE detected (all prompts have legal keywords)
             legal_detected = IntentName.LEGAL_SAFE in {i.name for i in decision.intents}
             
-            result.passed = injection_ok and legal_detected
+            # With new security rule: injection + critical (legal) → NEEDS_CLARIFICATION
+            verdict_ok = decision.verdict.value in ["needs_clarification", "proceed"]
+            
+            result.passed = injection_ok and legal_detected and verdict_ok
             
             status = "✓" if result.passed else "✗"
             print(f"{status} [{decision.route_id}] injection_blocked={injection_ok} | "
-                  f"legal_detected={legal_detected} | intents={result.router_intents}")
+                  f"legal_detected={legal_detected} | verdict={decision.verdict.value} | "
+                  f"intents={result.router_intents}")
             
             if not result.passed:
                 all_passed = False

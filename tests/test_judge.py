@@ -34,7 +34,7 @@ def make_route_decision(is_board_level: bool = False) -> RouteDecision:
             RouteIntent(name=IntentName.FINANCE, score=0.8),
             RouteIntent(name=IntentName.LEGAL_SAFE, score=0.7),
         ],
-        confidence=0.8,
+        routing_strength=0.8,
         is_board_level=is_board_level,
     )
 
@@ -42,7 +42,7 @@ def make_route_decision(is_board_level: bool = False) -> RouteDecision:
 def make_agent_result(
     agent: str,
     verdict: AgentVerdict = AgentVerdict.APPROVE,
-    confidence: float = 0.8,
+    agent_confidence: float = 0.8,
     key_points: list = None,
     assumptions: list = None,
     what_i_need_next: list = None,
@@ -51,7 +51,7 @@ def make_agent_result(
     return AgentResult(
         agent=agent,
         verdict=verdict,
-        confidence=confidence,
+        confidence=agent_confidence,  # AgentResult still uses confidence
         key_points=key_points or ["Point 1", "Point 2", "Point 3"],
         assumptions=[
             AgentAssumption(id=f"A{i}", text=a) 
