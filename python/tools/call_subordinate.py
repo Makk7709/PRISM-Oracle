@@ -107,14 +107,16 @@ class Delegation(Tool):
             router_start = time.perf_counter()
             
             try:
-                # Décision sur message canonicalisé (même texte pour tous les composants)
-                route_decision = decide_route(message)  # decide_route canonicalise en interne
+                # INVARIANT: canonical_message est la seule source de vérité
+                # Router, metrics, logs, criticality voient TOUS le même texte
+                route_decision = decide_route(canonical_message)
                 
                 router_latency_ms = (time.perf_counter() - router_start) * 1000
                 
-                # Log la décision pour audit
+                # Log la décision pour audit (avec input_hash pour traçabilité)
                 logger.info(
                     f"[ROUTER_V2] {route_decision.route_id} | "
+                    f"hash={route_decision.input_hash} | "
                     f"Verdict: {route_decision.verdict.value} | "
                     f"Intents: {route_decision.intent_names} | "
                     f"BoardLevel: {route_decision.is_board_level} | "
@@ -173,6 +175,15 @@ class Delegation(Tool):
                 # ENFORCEMENT SOFT: Bloquer et retourner clarification
                 # ─────────────────────────────────────────────────────────────────
                 if execution_blocked:
+                    # Log explicite pour debug futur: "pourquoi l'agent n'a pas répondu"
+                    logger.warning(
+                        f"[ROUTER_V2] EXECUTION_ABORTED_BY_ROUTER | "
+                        f"route_id={route_decision.route_id} | "
+                        f"hash={route_decision.input_hash} | "
+                        f"verdict={route_decision.verdict.value} | "
+                        f"llm_profile={agent_profile} | "
+                        f"reason=high_stakes_enforcement"
+                    )
                     return Response(
                         message=route_decision.clarification_prompt or 
                             "Votre demande nécessite une clarification avant traitement.",
