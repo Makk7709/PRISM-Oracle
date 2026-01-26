@@ -113,10 +113,10 @@ class FileWriter(Tool):
         - technical_doc: Documentation technique
         - standard: Document professionnel polyvalent
         
-        Legacy mappings (pour compatibilité):
-        - mckinsey -> consulting_premium
-        - legal -> legal_formal
-        - scientific -> scientific_academic
+        Templates KOREV Evidence:
+        - consulting_premium: Rapport stratégique premium
+        - legal_formal: Document juridique
+        - scientific_academic: Publication académique
         - patent -> patent_ip
         - financial -> financial_audit
         - executive -> executive_brief

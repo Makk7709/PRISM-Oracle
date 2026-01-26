@@ -1,15 +1,15 @@
 """
-Professional PDF Templates System
+Professional PDF Templates System — KOREV Evidence
 
 Templates disponibles:
-- mckinsey: Rapport stratégique premium style cabinet conseil
-- legal: Document juridique style greffe/tribunal
-- scientific: Rapport scientifique/académique
-- patent: Rédaction de brevet style INPI/EPO
-- financial: Rapport financier/audit
-- executive: Note de synthèse executive
-- medical: Rapport médical/clinique
-- technical: Documentation technique
+- consulting_premium: Rapport stratégique premium KOREV Evidence
+- legal_formal: Document juridique style greffe/tribunal
+- scientific_academic: Rapport scientifique/académique
+- patent_ip: Rédaction de brevet style INPI/EPO
+- financial_audit: Rapport financier/audit
+- executive_brief: Note de synthèse executive
+- medical_clinical: Rapport médical/clinique
+- technical_doc: Documentation technique
 
 Chaque template définit:
 - Styles (fonts, couleurs, espacements)
@@ -89,15 +89,15 @@ class PDFTemplate:
 TEMPLATES: Dict[str, PDFTemplate] = {
     
     # ─────────────────────────────────────────────────────────────────────────────
-    # McKINSEY - Premium Strategic Report
+    # CONSULTING PREMIUM - KOREV Evidence Strategic Report
     # ─────────────────────────────────────────────────────────────────────────────
-    "mckinsey": PDFTemplate(
-        name="mckinsey",
-        display_name="McKinsey & Company Style",
-        description="Rapport stratégique premium - style cabinet de conseil",
+    "consulting_premium": PDFTemplate(
+        name="consulting_premium",
+        display_name="KOREV Evidence Premium",
+        description="Rapport stratégique premium - KOREV Evidence",
         
-        # McKinsey blue palette
-        primary_color="#003B5C",      # McKinsey dark blue
+        # Professional blue palette
+        primary_color="#003B5C",      # Deep navy
         secondary_color="#00629B",    # Medium blue
         accent_color="#0091DA",       # Bright blue
         text_color="#1D1D1D",         # Near black
@@ -288,7 +288,7 @@ TEMPLATES: Dict[str, PDFTemplate] = {
     "financial": PDFTemplate(
         name="financial",
         display_name="Rapport Financier/Audit",
-        description="Format rapport financier - style Big Four",
+        description="Format rapport financier professionnel - KOREV Evidence",
         
         # Professional finance colors
         primary_color="#1E3A5F",       # Navy blue
@@ -497,48 +497,48 @@ TEMPLATES: Dict[str, PDFTemplate] = {
 
 # Keywords for automatic template detection
 TEMPLATE_KEYWORDS = {
-    "mckinsey": [
-        "mckinsey", "mck", "consulting", "cabinet conseil", "stratégie", 
+    "consulting_premium": [
+        "consulting", "cabinet conseil", "stratégie", "stratégique",
         "strategic", "premium", "mece", "issue tree", "deck", "slide",
-        "recommandation stratégique", "business case"
+        "recommandation stratégique", "business case", "due diligence"
     ],
-    "legal": [
+    "legal_formal": [
         "juridique", "legal", "tribunal", "greffe", "avocat", "lawyer",
         "assignation", "conclusions", "plaidoirie", "jugement", "arrêt",
         "contrat", "cession", "statuts", "procès", "litige", "contentieux",
         "droit", "loi", "code civil", "code commerce"
     ],
-    "scientific": [
+    "scientific_academic": [
         "scientifique", "scientific", "research", "recherche", "paper",
         "publication", "académique", "academic", "study", "étude",
         "methodology", "méthodologie", "peer review", "nature", "science",
         "experiment", "hypothesis", "abstract"
     ],
-    "patent": [
+    "patent_ip": [
         "brevet", "patent", "inpi", "epo", "wipo", "invention",
         "revendication", "claim", "prior art", "art antérieur",
-        "propriété intellectuelle", "intellectual property", "ip"
+        "propriété intellectuelle", "intellectual property"
     ],
-    "financial": [
+    "financial_audit": [
         "financier", "financial", "audit", "comptable", "accounting",
         "bilan", "balance", "compte résultat", "p&l", "income statement",
         "cash flow", "trésorerie", "ratio", "dcf", "valorisation",
-        "big four", "pwc", "deloitte", "ey", "kpmg"
+        "commissaire aux comptes", "expert comptable"
     ],
-    "executive": [
+    "executive_brief": [
         "executive", "synthèse", "summary", "brief", "note",
         "direction", "board", "comité", "decision", "décision",
         "ceo", "cfo", "dg", "directeur"
     ],
-    "medical": [
+    "medical_clinical": [
         "médical", "medical", "clinique", "clinical", "patient",
         "diagnostic", "traitement", "treatment", "ordonnance",
         "prescription", "consultation", "examen", "pathologie",
         "syndrome", "hôpital", "hospital"
     ],
-    "technical": [
-        "technique", "technical", "documentation", "doc", "api",
-        "architecture", "system", "système", "code", "développement",
+    "technical_doc": [
+        "technique", "technical", "documentation technique", "api",
+        "architecture", "system", "système", "développement",
         "development", "spec", "spécification", "rfc", "readme"
     ]
 }
@@ -552,7 +552,7 @@ def detect_template(user_request: str) -> str:
         user_request: The user's prompt/request text
         
     Returns:
-        Template name (e.g., "mckinsey", "legal", etc.)
+        Template name (e.g., "consulting_premium", "legal_formal", etc.)
     """
     request_lower = user_request.lower()
     
@@ -592,20 +592,20 @@ def list_templates() -> List[Dict]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 TEMPLATE_SELECTION_PROMPT = """
-## Templates de Documents Disponibles
+## Templates de Documents Disponibles — KOREV Evidence
 
 Tu peux créer des documents professionnels selon différents standards :
 
 | Template | Utilisation | Mots-clés |
 |----------|-------------|-----------|
-| `mckinsey` | Rapport stratégique premium | stratégie, consulting, MECE, recommandation |
-| `legal` | Document juridique formel | juridique, tribunal, greffe, contrat, avocat |
-| `scientific` | Publication scientifique | recherche, étude, méthodologie, abstract |
-| `patent` | Brevet INPI/EPO | brevet, invention, revendication, IP |
-| `financial` | Rapport financier/audit | financier, bilan, audit, DCF, valorisation |
-| `executive` | Note de synthèse | executive, synthèse, direction, décision |
-| `medical` | Rapport médical | médical, clinique, diagnostic, patient |
-| `technical` | Documentation technique | technique, API, architecture, système |
+| `consulting_premium` | Rapport stratégique premium | stratégie, consulting, MECE, recommandation |
+| `legal_formal` | Document juridique formel | juridique, tribunal, greffe, contrat, avocat |
+| `scientific_academic` | Publication scientifique | recherche, étude, méthodologie, abstract |
+| `patent_ip` | Brevet INPI/EPO | brevet, invention, revendication, IP |
+| `financial_audit` | Rapport financier/audit | financier, bilan, audit, DCF, valorisation |
+| `executive_brief` | Note de synthèse | executive, synthèse, direction, décision |
+| `medical_clinical` | Rapport médical | médical, clinique, diagnostic, patient |
+| `technical_doc` | Documentation technique | technique, API, architecture, système |
 
 ### Usage
 
@@ -616,7 +616,7 @@ Ajoute le paramètre `template` à l'outil `file_writer` :
     "tool_name": "file_writer",
     "tool_args": {
         "filename": "rapport.pdf",
-        "template": "mckinsey",
+        "template": "consulting_premium",
         "title": "Analyse Stratégique",
         "content": "## Executive Summary\\n..."
     }
@@ -625,6 +625,6 @@ Ajoute le paramètre `template` à l'outil `file_writer` :
 
 ### Détection Automatique
 
-Si l'utilisateur mentionne un style (ex: "dossier juridique", "rapport McKinsey"),
+Si l'utilisateur mentionne un style (ex: "dossier juridique", "rapport stratégique"),
 détecte automatiquement le template approprié.
 """

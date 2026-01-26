@@ -12,9 +12,9 @@ Converts Markdown content to well-formatted PDFs with:
 - Professional styling
 
 Templates disponibles:
-- mckinsey: Rapport stratégique premium style cabinet conseil
-- legal: Document juridique style greffe/tribunal
-- scientific: Rapport scientifique/académique
+- consulting_premium: Rapport stratégique premium KOREV Evidence
+- legal_formal: Document juridique style greffe/tribunal
+- scientific_academic: Rapport scientifique/académique
 - patent: Rédaction de brevet style INPI/EPO
 - financial: Rapport financier/audit
 - executive: Note de synthèse executive
@@ -709,7 +709,7 @@ def generate_pdf(
         output_path: Path for the output PDF
         title: Optional document title (added as first element)
         author: PDF metadata author
-        template_name: Explicit template name (mckinsey, legal, scientific, patent, etc.)
+        template_name: Explicit template name (consulting_premium, legal_formal, scientific_academic, patent_ip, etc.)
         user_request: User's original request (for automatic template detection)
         pagesize: Page size (A4 or letter)
     
@@ -717,9 +717,9 @@ def generate_pdf(
         Path to the generated PDF
     
     Templates disponibles:
-        - mckinsey: Rapport stratégique premium (cabinet conseil)
-        - legal: Document juridique (tribunal/greffe)
-        - scientific: Publication scientifique
+        - consulting_premium: Rapport stratégique premium KOREV Evidence
+        - legal_formal: Document juridique (tribunal/greffe)
+        - scientific_academic: Publication scientifique
         - patent: Brevet INPI/EPO
         - financial: Rapport financier/audit
         - executive: Note de synthèse executive
