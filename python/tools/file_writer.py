@@ -123,9 +123,11 @@ class FileWriter(Tool):
         - medical -> medical_clinical
         - technical -> technical_doc
         """
-        # Template mapping for backwards compatibility
+        # Template mapping for backwards compatibility (legacy names)
         template_map = {
-            "mckinsey": "consulting_premium",
+            "strategy": "consulting_premium",
+            "strategic": "consulting_premium",
+            "consulting": "consulting_premium",
             "legal": "legal_formal",
             "scientific": "scientific_academic",
             "patent": "patent_ip",

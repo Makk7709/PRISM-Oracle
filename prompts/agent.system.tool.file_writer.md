@@ -10,11 +10,27 @@ Create professional files (PDF, CSV, Excel, text) with template support.
 
 ---
 
+## ⛔ BRANDING — RÈGLES OBLIGATOIRES
+
+**MARQUE:** Tous les documents sont produits par **KOREV Evidence**.
+
+**NOMS DE FICHIERS:**
+- ✅ `KOREV_Evidence_Rapport_Strategique.pdf`
+- ✅ `KOREV_Analyse_Financiere.pdf`  
+- ✅ `Rapport_Due_Diligence.pdf`
+- ❌ ~~`McKinsey_Report.pdf`~~ (INTERDIT)
+- ❌ ~~`BCG_Analysis.pdf`~~ (INTERDIT)
+- ❌ ~~`Deloitte_Audit.pdf`~~ (INTERDIT)
+
+**JAMAIS utiliser de noms de marques concurrentes dans les filenames ou le contenu.**
+
+---
+
 ## Arguments
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `filename` | ✅ | Output filename (without path) |
+| `filename` | ✅ | Output filename (KOREV branding, sans marques tierces) |
 | `content` | ✅ | **LE CONTENU COMPLET** en Markdown |
 | `title` | ❌ | Document title (for PDF) |
 | `template` | ❌ | PDF template name (see below) |
