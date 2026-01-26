@@ -9,12 +9,18 @@
 ║  - Strict evidence mode pour ces profils                                     ║
 ║  - Résultat validé par PRISM avant retour                                    ║
 ║                                                                              ║
+║  FEATURE FLAG: DETERMINISTIC_ROUTER_V2=1                                     ║
+║  - Active le routage déterministe (policy-driven)                            ║
+║  - Logging des décisions de routage pour audit                               ║
+║  - Fallback sur comportement existant si désactivé                           ║
+║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import logging
+import os
 import uuid
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from agent import Agent, UserMessage
 from python.helpers.tool import Tool, Response
@@ -30,6 +36,22 @@ from python.helpers.criticality_router import (
 )
 from python.helpers.consensus_manager import DecisionType, ConsensusStatus
 
+# Import deterministic router (feature flag controlled)
+try:
+    from python.helpers.router import (
+        decide_route,
+        RouteDecision,
+        RouteVerdict,
+        IntentName,
+        is_deterministic_router_enabled,
+    )
+    DETERMINISTIC_ROUTER_AVAILABLE = True
+except ImportError:
+    DETERMINISTIC_ROUTER_AVAILABLE = False
+    
+    def is_deterministic_router_enabled():
+        return False
+
 logger = logging.getLogger("delegation_tool")
 
 
@@ -44,12 +66,56 @@ class Delegation(Tool):
         
         Si le profil de l'agent est critique (legal_safe, researcher),
         le consensus PRISM est automatiquement activé sur le résultat.
+        
+        Feature Flag: DETERMINISTIC_ROUTER_V2=1
+        - Active le routage déterministe en parallèle pour audit
+        - Log les décisions de routage sans modifier le comportement existant
         """
         # Générer un correlation ID pour traçabilité
         correlation_id = str(uuid.uuid4())
         
         # Récupérer le profil demandé
         agent_profile = kwargs.get("profile", "")
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # DETERMINISTIC ROUTER (Feature Flag: DETERMINISTIC_ROUTER_V2=1)
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        route_decision: Optional["RouteDecision"] = None
+        
+        if DETERMINISTIC_ROUTER_AVAILABLE and is_deterministic_router_enabled():
+            try:
+                route_decision = decide_route(message)
+                
+                # Log la décision pour audit
+                logger.info(
+                    f"[ROUTER_V2] {route_decision.route_id} | "
+                    f"Verdict: {route_decision.verdict.value} | "
+                    f"Intents: {route_decision.intent_names} | "
+                    f"BoardLevel: {route_decision.is_board_level} | "
+                    f"LLM profile: {agent_profile}"
+                )
+                
+                # Vérifier si le profil LLM est cohérent avec la décision du router
+                if route_decision.verdict == RouteVerdict.PROCEED:
+                    self._audit_profile_consistency(
+                        agent_profile, route_decision, correlation_id
+                    )
+                
+                # Si injection détectée, logger un warning
+                if route_decision.injection_blocked:
+                    logger.warning(
+                        f"[ROUTER_V2] {route_decision.route_id} | "
+                        f"INJECTION DETECTED: {route_decision.injection_attempt[:50]}"
+                    )
+                    
+            except Exception as e:
+                logger.error(f"[ROUTER_V2] Error in deterministic router: {e}")
+                # Continue avec le comportement existant
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # CRITICALITY ASSESSMENT (Comportement existant)
+        # ═══════════════════════════════════════════════════════════════════════
         
         # Évaluer la criticité
         router = get_criticality_router()
@@ -88,6 +154,10 @@ class Delegation(Tool):
             
             # Stocker les métadonnées de consensus sur l'agent
             sub.set_data("_consensus_assessment", assessment.to_dict())
+            
+            # Stocker la décision du router v2 si disponible
+            if route_decision is not None:
+                sub.set_data("_route_decision_v2", route_decision.to_dict())
 
         # Récupérer le subordonné
         subordinate: Agent = self.agent.get_data(Agent.DATA_NAME_SUBORDINATE)
@@ -248,6 +318,53 @@ Par précaution, la réponse de l'agent subordonné n'est pas transmise.
 
 - Correlation ID: `{correlation_id}`
 """
+
+    def _audit_profile_consistency(
+        self,
+        llm_profile: str,
+        route_decision: "RouteDecision",
+        correlation_id: str,
+    ) -> None:
+        """
+        Audit de cohérence entre le profil choisi par le LLM et la décision du router.
+        
+        Cette fonction est pour l'observabilité uniquement - elle ne modifie pas
+        le comportement existant. Les divergences sont loggées pour analyse.
+        """
+        if not llm_profile or not route_decision.intents:
+            return
+        
+        # Mapper les noms d'intent vers les profils d'agent
+        intent_to_profile = {
+            "finance": "finance",
+            "sales": "sales",
+            "legal_safe": "legal_safe",
+            "medical": "medical",
+            "developer": "developer",
+            "researcher": "researcher",
+            "marketing": "marketing",
+            "multitask": "default",
+        }
+        
+        # Vérifier si le profil LLM est dans les intents détectés
+        router_profiles = [
+            intent_to_profile.get(i.name.value, i.name.value)
+            for i in route_decision.intents
+        ]
+        
+        if llm_profile not in router_profiles:
+            # Divergence détectée
+            logger.warning(
+                f"[ROUTER_V2_AUDIT] {correlation_id} | "
+                f"DIVERGENCE: LLM chose '{llm_profile}', "
+                f"Router detected {router_profiles} | "
+                f"BoardLevel: {route_decision.is_board_level}"
+            )
+        else:
+            logger.debug(
+                f"[ROUTER_V2_AUDIT] {correlation_id} | "
+                f"CONSISTENT: LLM '{llm_profile}' matches router"
+            )
 
     def get_log_object(self):
         return self.agent.context.log.log(

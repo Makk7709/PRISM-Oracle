@@ -85,8 +85,20 @@ except ImportError:
 
 
 def is_deterministic_router_enabled() -> bool:
-    """Check if deterministic router is enabled via feature flag."""
-    return os.environ.get("DETERMINISTIC_ROUTER", "0") == "1"
+    """
+    Check if deterministic router is enabled via feature flag.
+    
+    Environment variables (any of these enables the router):
+    - DETERMINISTIC_ROUTER_V2=1
+    - DETERMINISTIC_ROUTER=1
+    
+    Returns:
+        True if deterministic routing is enabled, False otherwise.
+    """
+    return (
+        os.environ.get("DETERMINISTIC_ROUTER_V2", "0") == "1" or
+        os.environ.get("DETERMINISTIC_ROUTER", "0") == "1"
+    )
 
 
 __all__ = [
