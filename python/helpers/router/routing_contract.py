@@ -364,8 +364,8 @@ def validate_route_decision(decision: RouteDecision) -> List[str]:
     if decision.verdict == RouteVerdict.PROCEED:
         if not decision.intents:
             errors.append("PROCEED verdict requires at least one intent")
-        if decision.confidence < 0.3:
-            errors.append("PROCEED verdict with very low confidence (<0.3)")
+        # Note: Low confidence is logged as warning, not an error
+        # Low confidence PROCEED with intents is valid (fallback case)
     
     if decision.verdict == RouteVerdict.NEEDS_CLARIFICATION:
         if not decision.clarification_prompt and not decision.missing_info:

@@ -9,6 +9,11 @@ This policy defines:
 - Required intent combinations
 
 NO LLM JUDGMENT. Pure code-driven policy.
+
+VERSION NOTES:
+- v1.1.0: Fixed acquisition collision (marketing vs M&A)
+- v1.1.0: Finance->Legal rule now requires board-level
+- v1.1.0: Injection patterns reduced to override-only
 """
 
 from dataclasses import dataclass, field
@@ -55,7 +60,7 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.FINANCE: IntentPolicy(
         name=IntentName.FINANCE,
-        min_score_threshold=2.5,  # Lowered for better coverage
+        min_score_threshold=2.5,
         keywords=[
             # High weight - very specific
             Keyword("dcf", weight=5.0, use_boundary=False),
@@ -129,9 +134,8 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
             Keyword("lead", weight=2.0),
             Keyword("conversion", weight=2.5),
             Keyword("taux de conversion", weight=3.5),
-            Keyword("négociation", weight=3.5),
         ],
-        blockers=["patient", "medical", "juridique", "tribunal"],
+        blockers=["patient", "medical"],  # Removed juridique/tribunal - can have commercial+legal
     ),
     
     # ─────────────────────────────────────────────────────────────────────────────
@@ -175,6 +179,10 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
             Keyword("statuts", weight=2.5),
             Keyword("non-concurrence", weight=4.0),
             Keyword("non concurrence", weight=4.0),
+            Keyword("loi française", weight=4.0, use_boundary=False),
+            Keyword("loi sur", weight=3.0, use_boundary=False),
+            Keyword("contractuel", weight=3.0),
+            Keyword("contractuelles", weight=3.0),
         ],
     ),
     
@@ -243,22 +251,22 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
             Keyword("script", weight=2.5),
             Keyword("function", weight=2.0),
             Keyword("class", weight=2.0),
-            Keyword("module", weight=2.0),
+            Keyword("module", weight=2.5),
             Keyword("refactor", weight=3.5),
             Keyword("refactoring", weight=3.5),
             Keyword("test", weight=2.0),
             Keyword("ci/cd", weight=3.5, use_boundary=False),
-            Keyword("module", weight=2.5),
         ],
     ),
     
     # ─────────────────────────────────────────────────────────────────────────────
     # RESEARCHER
     # ─────────────────────────────────────────────────────────────────────────────
+    # TODO P1: Recalibrate is_critical for RESEARCHER - may cause over-blocking
     IntentName.RESEARCHER: IntentPolicy(
         name=IntentName.RESEARCHER,
         min_score_threshold=3.0,
-        is_critical=True,
+        is_critical=True,  # TODO P1: Review if this should remain critical
         keywords=[
             # High weight
             Keyword("recherche", weight=3.5),
@@ -304,7 +312,14 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
             Keyword("linkedin", weight=3.0),
             Keyword("audience", weight=3.0),
             Keyword("engagement", weight=3.0),
-            Keyword("acquisition", weight=2.5),  # Can be M&A too
+            # Marketing acquisition (NOT M&A)
+            Keyword("user acquisition", weight=4.0, use_boundary=False),
+            Keyword("customer acquisition", weight=4.0, use_boundary=False),
+            Keyword("acquisition seo", weight=4.0, use_boundary=False),
+            Keyword("acquisition client", weight=3.5, use_boundary=False),
+            Keyword("acquisition utilisateurs", weight=4.0, use_boundary=False),
+            Keyword("acquisition utilisateur", weight=4.0, use_boundary=False),
+            Keyword("growth hacking", weight=4.0, use_boundary=False),
             Keyword("growth", weight=2.5),
             Keyword("croissance", weight=2.5),
         ],
@@ -334,6 +349,8 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Keywords that trigger board-level mode (strategic decisions)
+# NOTE: "acquisition" alone removed - too ambiguous (marketing vs M&A)
+# Use specific M&A phrases instead
 BOARD_LEVEL_KEYWORDS: List[Keyword] = [
     # Strategic
     Keyword("stratégie", weight=4.0),
@@ -341,40 +358,52 @@ BOARD_LEVEL_KEYWORDS: List[Keyword] = [
     Keyword("stratégique", weight=4.0),
     Keyword("strategic", weight=4.0),
     
-    # High-stakes decisions
-    Keyword("acquisition", weight=4.0),
-    Keyword("merger", weight=4.0),
-    Keyword("fusion", weight=4.0),
-    Keyword("ipo", weight=5.0, use_boundary=False),
+    # M&A specific (NOT generic "acquisition")
+    # Use use_boundary=False for phrases with apostrophes/special chars
+    Keyword("acquisition d'entreprise", weight=6.0, use_boundary=False),
+    Keyword("acquisition d'une entreprise", weight=6.0, use_boundary=False),
+    Keyword("acquisition d'une société", weight=6.0, use_boundary=False),
+    Keyword("company acquisition", weight=6.0, use_boundary=False),
+    Keyword("buyout", weight=6.0),
+    Keyword("takeover", weight=6.0),
+    Keyword("term sheet", weight=6.0, use_boundary=False),
+    Keyword("letter of intent", weight=5.0, use_boundary=False),
+    Keyword("fusion-acquisition", weight=6.0, use_boundary=False),
+    Keyword("merger", weight=5.0),
+    Keyword("fusion", weight=5.0),
+    Keyword("m&a", weight=6.0, use_boundary=False),
+    Keyword("lbo", weight=6.0, use_boundary=False),
+    Keyword("ipo", weight=6.0, use_boundary=False),
+    
+    # Fundraising
     Keyword("levée de fonds", weight=4.0),
     Keyword("fundraising", weight=4.0),
     Keyword("série a", weight=4.0),
     Keyword("series a", weight=4.0),
+    Keyword("série b", weight=4.0),
+    Keyword("series b", weight=4.0),
     
     # Board/Comex
     Keyword("board", weight=3.5),
     Keyword("comité", weight=3.0),
     Keyword("comex", weight=4.0),
-    Keyword("direction", weight=3.0),
-    Keyword("roadmap", weight=3.0),
+    Keyword("direction générale", weight=4.0),
+    Keyword("executive committee", weight=4.0),
+    Keyword("roadmap stratégique", weight=4.0),
     
     # Critical decisions
-    Keyword("recommandation", weight=3.0),
-    Keyword("recommendation", weight=3.0),
-    Keyword("décision", weight=2.5),
-    Keyword("decision", weight=2.5),
+    Keyword("recommandation stratégique", weight=4.0),
+    Keyword("strategic recommendation", weight=4.0),
     Keyword("décision critique", weight=5.0),
     Keyword("critical decision", weight=5.0),
     Keyword("investissement majeur", weight=4.0),
     Keyword("major investment", weight=4.0),
-    Keyword("investissement", weight=2.0),
-    Keyword("investment", weight=2.0),
     
     # Risk
     Keyword("risque majeur", weight=4.0),
     Keyword("major risk", weight=4.0),
-    Keyword("critical", weight=3.0),
-    Keyword("critique", weight=3.0),
+    Keyword("risque stratégique", weight=4.0),
+    Keyword("strategic risk", weight=4.0),
 ]
 
 # Score threshold for board-level activation
@@ -399,23 +428,28 @@ class MultiIntentRule:
     add_intent: IntentName       # Add this intent
     condition: str = "all"       # "all" or "any"
     reason: str = ""
+    require_board_level: bool = False  # If True, only apply when is_board_level
 
 
 MULTI_INTENT_RULES: List[MultiIntentRule] = [
     # Finance + Legal => might need Sales for commercial context
+    # This rule does NOT require board-level
     MultiIntentRule(
         if_intents={IntentName.FINANCE, IntentName.LEGAL_SAFE},
         add_intent=IntentName.SALES,
         condition="all",
         reason="Finance+Legal often involves commercial negotiation",
+        require_board_level=False,
     ),
     
-    # Any board-level with Finance => add Legal for compliance check
+    # Finance => add Legal ONLY for board-level decisions
+    # This prevents over-routing legal for simple finance queries
     MultiIntentRule(
         if_intents={IntentName.FINANCE},
         add_intent=IntentName.LEGAL_SAFE,
         condition="all",
-        reason="Financial decisions require legal review",
+        reason="Board-level financial decisions require legal review",
+        require_board_level=True,  # CRITICAL: Only apply when board-level
     ),
 ]
 
@@ -425,33 +459,51 @@ MULTI_INTENT_RULES: List[MultiIntentRule] = [
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Patterns that indicate prompt injection attempt
+# REDUCED to override/disable patterns only - no benign roleplay patterns
 INJECTION_PATTERNS: List[str] = [
-    r"ignore.*rules?",
-    r"ignore.*instructions?",
-    r"ignore\s+all",
-    r"forget.*previous",
-    r"forget.*your.*instructions",
-    r"bypass.*policy",
-    r"don't.*call.*legal",
-    r"ne.*pas.*appeler",
-    r"skip.*agent",
-    r"skip.*legal",
-    r"route.*to.*hacker",
-    r"direct.*to.*developer",
-    r"override.*routing",
-    r"system.*prompt",
-    r"you.*are.*now",
-    r"act.*as.*if",
-    r"pretend.*you",
-    r"just.*do.*what.*i.*say",
+    # Override/disable instructions
+    r"ignore\s+all\s+instructions?",
+    r"ignore\s+all\s+rules?",
+    r"ignore\s+instructions",
+    r"ignore\s+previous\s+instructions?",
+    r"bypass\s+policy",
+    r"bypass\s+routing",
+    r"override\s+routing",
+    r"override\s+policy",
+    
+    # Disable specific agents
+    r"don't\s+call\s+legal",
+    r"do\s+not\s+call\s+legal",
+    r"ne\s+pas\s+appeler\s+legal",
+    r"ne\s+pas\s+appeler\s+juridique",
+    r"skip\s+legal",
+    r"skip\s+agent",
+    r"désactiver\s+legal",
+    r"disable\s+legal",
+    
+    # Forget/reset instructions
+    r"forget\s+your\s+instructions",
+    r"forget\s+previous\s+instructions",
+    r"reset\s+your\s+instructions",
+    
+    # Explicit attack patterns
+    r"route\s+to\s+hacker",
+    r"just\s+do\s+what\s+i\s+say",
 ]
+
+# NOTE: The following patterns are NOT injection (benign roleplay):
+# - "act as my lawyer" -> legitimate legal request
+# - "pretend you are an expert" -> role instruction
+# - "you are now a consultant" -> persona instruction
+# - "system prompt" -> could be legitimate discussion
+# These are moved out of INJECTION_PATTERNS to avoid false positives.
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # POLICY VERSION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-POLICY_VERSION = "1.0.0"
+POLICY_VERSION = "1.1.0"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

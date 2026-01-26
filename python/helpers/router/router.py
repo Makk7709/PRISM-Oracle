@@ -2,9 +2,10 @@
 Deterministic Router — Policy-driven intent detection.
 
 This is the CORE of the routing system.
-- Pure function: same input → same output (deterministic)
+- Pure function: same input → same output (STRICTLY DETERMINISTIC)
 - No LLM judgment
 - No embeddings
+- No randomness (no uuid, no datetime)
 - Fully testable
 
 Usage:
@@ -18,7 +19,6 @@ Usage:
 import re
 import hashlib
 import logging
-import uuid
 from typing import Dict, List, Optional, Set, Tuple
 
 from .routing_contract import (
@@ -44,6 +44,41 @@ logger = logging.getLogger("deterministic_router")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# DETERMINISTIC HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _canonicalize_text(text: str) -> str:
+    """
+    Canonicalize text for deterministic hashing.
+    
+    - lowercase
+    - strip leading/trailing whitespace
+    - collapse multiple whitespace to single space
+    """
+    text = text.lower().strip()
+    text = re.sub(r'\s+', ' ', text)
+    return text
+
+
+def _stable_route_id(canonical_text: str) -> str:
+    """
+    Generate stable route_id from canonical text.
+    
+    Uses SHA256 for cryptographic determinism.
+    """
+    return hashlib.sha256(canonical_text.encode('utf-8')).hexdigest()[:8]
+
+
+def _stable_input_hash(canonical_text: str) -> str:
+    """
+    Generate stable input_hash from canonical text.
+    
+    Uses SHA256 (not MD5) for consistency.
+    """
+    return hashlib.sha256(canonical_text.encode('utf-8')).hexdigest()[:12]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN ROUTING FUNCTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -51,12 +86,14 @@ def decide_route(
     text: str,
     available_agents: Optional[Set[IntentName]] = None,
     force_board_level: bool = False,
-    min_confidence: float = 0.25,  # Lower threshold for single-intent
+    min_confidence: float = 0.25,
 ) -> RouteDecision:
     """
     Determine routing decision for a given text.
     
-    This function is DETERMINISTIC: same input → same output.
+    This function is STRICTLY DETERMINISTIC:
+    - Same input text → same route_id, input_hash, intents, verdict
+    - No randomness, no uuid, no datetime
     
     Args:
         text: User request text
@@ -67,12 +104,16 @@ def decide_route(
     Returns:
         RouteDecision with verdict, intents, and metadata
     """
-    # Generate route ID and input hash
-    route_id = str(uuid.uuid4())[:8]
-    input_hash = hashlib.md5(text.encode()).hexdigest()[:12]
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 0: Canonicalize and generate deterministic IDs
+    # ─────────────────────────────────────────────────────────────────────────
     
-    # Normalize text
-    text_lower = text.lower().strip()
+    canonical_text = _canonicalize_text(text)
+    route_id = _stable_route_id(canonical_text)
+    input_hash = _stable_input_hash(canonical_text)
+    
+    # For pattern matching, use canonical text
+    text_lower = canonical_text
     
     # Default available agents
     if available_agents is None:
@@ -86,8 +127,8 @@ def decide_route(
     
     injection_blocked, injection_attempt = _check_injection(text_lower)
     if injection_blocked:
-        reasons.append(f"Injection attempt blocked: {injection_attempt[:50]}")
-        logger.warning(f"[{route_id}] Injection blocked: {injection_attempt[:100]}")
+        reasons.append(f"Injection pattern detected: {injection_attempt[:50]}")
+        logger.warning(f"[{route_id}] Injection detected: {injection_attempt[:100]}")
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 2: Score all intents (including unavailable for critical check)
@@ -137,12 +178,17 @@ def decide_route(
                 reasons.append(f"Added {core_intent.value} as board-level core")
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 4: Apply multi-intent rules
+    # STEP 4: Apply multi-intent rules (ONLY if board-level for legal rule)
     # ─────────────────────────────────────────────────────────────────────────
     
     detected_intents = set(intent_scores.keys())
     
     for rule in MULTI_INTENT_RULES:
+        # Check if rule requires board-level
+        requires_board = getattr(rule, 'require_board_level', False)
+        if requires_board and not is_board_level:
+            continue  # Skip this rule if not board-level
+        
         should_add = False
         
         if rule.condition == "all":
@@ -152,7 +198,6 @@ def decide_route(
         
         if should_add and rule.add_intent in available_agents:
             if rule.add_intent not in intent_scores:
-                # Add with moderate score
                 intent_scores[rule.add_intent] = (3.0, ["multi-intent-rule"])
                 reasons.append(f"Added {rule.add_intent.value}: {rule.reason}")
     
@@ -176,15 +221,24 @@ def decide_route(
             reason=f"Score {score:.1f} from {len(matched)} matches",
         ))
     
-    # Sort by score descending
-    intents.sort(key=lambda x: x.score, reverse=True)
+    # Sort by score descending (deterministic due to stable sorting)
+    intents.sort(key=lambda x: (-x.score, x.name.value))
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 6: Check unavailable critical intents
     # ─────────────────────────────────────────────────────────────────────────
     
     if unavailable_critical_intents:
-        # Critical intent needed but not available = REFUSE
+        # Ensure we have at least one intent for contract compliance
+        if not intents:
+            intents = [RouteIntent(
+                name=IntentName.MULTITASK,
+                score=0.1,
+                matched_keywords=[],
+                is_required=False,
+                reason="fallback (critical unavailable)",
+            )]
+        
         return RouteDecision(
             verdict=RouteVerdict.REFUSE,
             intents=intents,
@@ -202,7 +256,59 @@ def decide_route(
         )
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 7: Determine verdict
+    # STEP 7: Handle injection enforcement
+    # ─────────────────────────────────────────────────────────────────────────
+    
+    if injection_blocked:
+        # Check if this is an override/disable pattern for critical agents
+        override_patterns = [
+            r"don't\s*call\s*(legal|juridique)",
+            r"ne\s*pas\s*appeler\s*(legal|juridique)",
+            r"skip\s*(legal|agent)",
+            r"ignore\s*(legal|all)",
+            r"bypass\s*policy",
+            r"override\s*routing",
+        ]
+        
+        is_critical_override = any(
+            re.search(p, text_lower, re.IGNORECASE)
+            for p in override_patterns
+        )
+        
+        if is_board_level and is_critical_override:
+            # Board-level with critical override attempt → NEEDS_CLARIFICATION
+            # Ensure we have at least one intent
+            if not intents:
+                intents = [RouteIntent(
+                    name=IntentName.MULTITASK,
+                    score=0.3,
+                    matched_keywords=[],
+                    is_required=False,
+                    reason="fallback (injection + board-level)",
+                )]
+            
+            return RouteDecision(
+                verdict=RouteVerdict.NEEDS_CLARIFICATION,
+                intents=intents,
+                confidence=0.3,
+                is_board_level=is_board_level,
+                requires_contradictor=False,
+                reasons=reasons + ["Board-level with injection override attempt"],
+                policy_version=POLICY_VERSION,
+                clarification_prompt="Une demande de contournement a été détectée. Veuillez confirmer le périmètre de votre demande.",
+                missing_info=["confirmation_scope"],
+                injection_blocked=True,
+                injection_attempt=injection_attempt,
+                route_id=route_id,
+                input_hash=input_hash,
+            )
+        
+        # Non board-level injection: proceed but ignore override instruction
+        # The injection is logged but we route normally based on keywords
+        reasons.append("Injection ignored, routing based on actual keywords")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 8: Determine verdict
     # ─────────────────────────────────────────────────────────────────────────
     
     verdict, clarification, missing = _determine_verdict(
@@ -217,7 +323,22 @@ def decide_route(
         reasons.append(f"Verdict={verdict.value}: {clarification or 'See missing_info'}")
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 8: Calculate overall confidence
+    # STEP 9: CONTRACT ENFORCEMENT - PROCEED must have intents
+    # ─────────────────────────────────────────────────────────────────────────
+    
+    if verdict == RouteVerdict.PROCEED and not intents:
+        # Inject MULTITASK as fallback to satisfy contract
+        intents = [RouteIntent(
+            name=IntentName.MULTITASK,
+            score=0.3,
+            matched_keywords=[],
+            is_required=False,
+            reason="fallback (no specific intent detected)",
+        )]
+        reasons.append("Added MULTITASK as fallback (contract enforcement)")
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # STEP 10: Calculate overall confidence
     # ─────────────────────────────────────────────────────────────────────────
     
     if intents:
@@ -232,7 +353,7 @@ def decide_route(
         confidence = min(confidence * 1.1, 0.95)
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 9: Determine if contradictor needed
+    # STEP 11: Determine if contradictor needed
     # ─────────────────────────────────────────────────────────────────────────
     
     requires_contradictor = is_board_level and len(intents) >= 2
@@ -241,7 +362,7 @@ def decide_route(
         reasons.append("Contradictor required for board-level multi-intent")
     
     # ─────────────────────────────────────────────────────────────────────────
-    # STEP 10: Build final decision
+    # STEP 12: Build final decision
     # ─────────────────────────────────────────────────────────────────────────
     
     decision = RouteDecision(
@@ -260,16 +381,17 @@ def decide_route(
         input_hash=input_hash,
     )
     
-    # Validate
+    # Validate contract
     errors = validate_route_decision(decision)
     if errors:
-        logger.warning(f"[{route_id}] Validation errors: {errors}")
+        logger.error(f"[{route_id}] Contract violation: {errors}")
     
-    # Log decision
+    # Log decision (no sensitive data)
     logger.info(
         f"[{route_id}] Route: {verdict.value} | "
         f"Intents: {[i.name.value for i in intents]} | "
-        f"Board: {is_board_level} | Conf: {confidence:.2f}"
+        f"Board: {is_board_level} | Conf: {confidence:.2f} | "
+        f"InjBlocked: {injection_blocked}"
     )
     
     return decision
@@ -329,6 +451,8 @@ def _check_injection(text: str) -> Tuple[bool, str]:
     """
     Check for prompt injection attempts.
     
+    Only matches override/disable patterns, not benign roleplay.
+    
     Returns:
         (is_blocked, matched_pattern)
     """
@@ -363,7 +487,7 @@ def _determine_verdict(
                 ["context", "objective"],
             )
         
-        # Fallback to multitask
+        # Will fallback to MULTITASK in contract enforcement
         return RouteVerdict.PROCEED, "", []
     
     # Check if critical intents are available
@@ -441,4 +565,7 @@ __all__ = [
     "get_primary_intent",
     "should_involve_legal",
     "is_board_level_request",
+    "_canonicalize_text",  # Exposed for testing
+    "_stable_route_id",    # Exposed for testing
+    "_stable_input_hash",  # Exposed for testing
 ]

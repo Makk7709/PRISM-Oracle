@@ -67,6 +67,9 @@ from .router import (
     get_primary_intent,
     should_involve_legal,
     is_board_level_request,
+    _canonicalize_text,
+    _stable_route_id,
+    _stable_input_hash,
 )
 
 # Judge (when available)
@@ -119,4 +122,8 @@ __all__ = [
     "get_primary_intent",
     "should_involve_legal",
     "is_board_level_request",
+    # Testing helpers
+    "_canonicalize_text",
+    "_stable_route_id",
+    "_stable_input_hash",
 ]
