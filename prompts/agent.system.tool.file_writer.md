@@ -59,7 +59,35 @@ Create an Excel file:
 - Following lines = data rows
 - Use commas or semicolons as separators
 
-**Content format for PDF:**
-- Use markdown-style headers: # Title, ## Section, ### Subsection
-- Separate paragraphs with blank lines
-- Line breaks within paragraphs are preserved
+**Content format for PDF (Full Markdown support):**
+
+Le générateur PDF supporte **tout le Markdown** :
+
+- **Headers**: `# H1`, `## H2`, `### H3`, `#### H4`
+- **Bold/Italic**: `**bold**`, `*italic*`
+- **Listes à puces**: `- item` ou `* item`
+- **Listes numérotées**: `1. item`
+- **Tableaux**: format Markdown standard
+- **Code blocks**: ` ```code``` `
+- **Blockquotes**: `> quote`
+- **Liens**: `[text](url)`
+- **Lignes horizontales**: `---`
+
+**Exemple de PDF bien formaté:**
+```json
+{
+    "tool_name": "file_writer",
+    "tool_args": {
+        "filename": "analyse_strategique.pdf",
+        "title": "Analyse Stratégique - Client XYZ",
+        "content": "## Executive Summary\n\n> **Recommandation** : Procéder à l'acquisition pour €50M\n\n## Analyse MECE\n\n### Branche 1 : Synergies\n\n- Synergie coûts : **€5M/an**\n- Synergie revenus : **€3M/an**\n\n### Branche 2 : Risques\n\n| Risque | Probabilité | Impact |\n|--------|-------------|--------|\n| Intégration | Moyen | Élevé |\n| Marché | Faible | Moyen |\n\n## Prochaines Étapes\n\n1. Due diligence approfondie\n2. Négociation finale\n3. Closing prévu Q2\n\n---\n\n*Document généré par Korev Evidence*"
+    }
+}
+```
+
+**Le PDF généré inclura :**
+- En-têtes et pieds de page professionnels
+- Numérotation des pages
+- Couleurs et styles cohérents
+- Tableaux avec alternance de couleurs
+- Mise en page soignée

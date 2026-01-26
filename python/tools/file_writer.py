@@ -91,47 +91,55 @@ class FileWriter(Tool):
         return formats.get(format_type.lower(), '.txt')
     
     def _write_pdf(self, path: str, content: str, title: str = ""):
-        """Create PDF file."""
+        """Create professional PDF file with full Markdown support."""
         try:
-            from reportlab.lib.pagesizes import letter, A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-            from reportlab.lib.units import inch
+            from python.helpers.pdf_generator import generate_pdf
             
-            doc = SimpleDocTemplate(path, pagesize=A4)
-            styles = getSampleStyleSheet()
-            story = []
+            # Use the professional PDF generator
+            generate_pdf(
+                content=content,
+                output_path=path,
+                title=title if title else None,
+                author="Korev Evidence"
+            )
             
-            # Add title if provided
-            if title:
-                title_style = ParagraphStyle(
-                    'Title',
-                    parent=styles['Heading1'],
-                    fontSize=18,
-                    spaceAfter=30
-                )
-                story.append(Paragraph(title, title_style))
-            
-            # Add content paragraphs
-            for para in content.split('\n\n'):
-                if para.strip():
-                    # Handle markdown-style headers
-                    if para.startswith('# '):
-                        story.append(Paragraph(para[2:], styles['Heading1']))
-                    elif para.startswith('## '):
-                        story.append(Paragraph(para[3:], styles['Heading2']))
-                    elif para.startswith('### '):
-                        story.append(Paragraph(para[4:], styles['Heading3']))
-                    else:
-                        story.append(Paragraph(para.replace('\n', '<br/>'), styles['Normal']))
-                    story.append(Spacer(1, 12))
-            
-            doc.build(story)
-            
-        except ImportError:
-            # Fallback to simple text-based PDF
-            self._write_text(path.replace('.pdf', '.txt'), content)
-            raise Exception("reportlab not installed. Created .txt instead. Install with: pip install reportlab")
+        except ImportError as e:
+            # Fallback to basic reportlab if pdf_generator fails
+            try:
+                from reportlab.lib.pagesizes import A4
+                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+                
+                doc = SimpleDocTemplate(path, pagesize=A4)
+                styles = getSampleStyleSheet()
+                story = []
+                
+                if title:
+                    title_style = ParagraphStyle(
+                        'Title',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        spaceAfter=30
+                    )
+                    story.append(Paragraph(title, title_style))
+                
+                for para in content.split('\n\n'):
+                    if para.strip():
+                        if para.startswith('# '):
+                            story.append(Paragraph(para[2:], styles['Heading1']))
+                        elif para.startswith('## '):
+                            story.append(Paragraph(para[3:], styles['Heading2']))
+                        elif para.startswith('### '):
+                            story.append(Paragraph(para[4:], styles['Heading3']))
+                        else:
+                            story.append(Paragraph(para.replace('\n', '<br/>'), styles['Normal']))
+                        story.append(Spacer(1, 12))
+                
+                doc.build(story)
+                
+            except ImportError:
+                self._write_text(path.replace('.pdf', '.txt'), content)
+                raise Exception("reportlab not installed. Created .txt instead.")
     
     def _write_csv(self, path: str, content: str):
         """Create CSV file."""
