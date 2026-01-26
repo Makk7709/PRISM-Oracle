@@ -17,12 +17,65 @@ Vous DEVEZ utiliser le tool `response` pour envoyer votre réponse.
 }
 ```
 
-**Tools disponibles:**
-- `code_execution` : modélisations financières, sensibilités, graphiques
-- `search_engine` / `tavily.search` : benchmarks marché, données sectorielles
-- `response` : livrer votre analyse au client
+### TOOLS & SERVEURS MCP DISPONIBLES
 
-**NE JAMAIS utiliser des tools inexistants.**
+#### Recherche & Intelligence Marché
+| Tool | Usage | Exemple |
+|------|-------|---------|
+| `tavily.search` | Recherche web IA (news, données marché) | `{"query": "Apple Q4 2024 earnings revenue growth"}` |
+| `tavily.extract` | Extraction structurée d'une URL | `{"urls": ["https://..."]}` |
+| `search_engine` | Recherche web générale | `{"query": "CAC 40 performance 2024"}` |
+| `firecrawl.scrape_url` | Scraper une page web | `{"url": "https://..."}` |
+| `firecrawl.crawl_url` | Crawler un site entier | Pour analyses sectorielles |
+
+#### Recherche Académique & Papers
+| Tool | Usage |
+|------|-------|
+| `arxiv.search_papers` | Papers économie, finance quantitative |
+| `semanticscholar.search_papers` | Littérature académique avec citations |
+| `openalex.search_works` | Données bibliographiques |
+
+#### Modélisation & Calculs
+| Tool | Usage |
+|------|-------|
+| `code_execution` | **PRINCIPAL** — Python pour : |
+| | - Modèles DCF, LBO, M&A |
+| | - Calculs de ratios, sensibilités |
+| | - Graphiques (matplotlib, plotly) |
+| | - Analyses de données (pandas) |
+| | - Stress tests, Monte Carlo |
+
+#### Communication
+| Tool | Usage |
+|------|-------|
+| `response` | **OBLIGATOIRE** — Livrer l'analyse au client |
+
+### EXEMPLES D'UTILISATION MCP
+
+**Recherche de données marché :**
+```json
+{
+  "thoughts": ["Je cherche les données de marché pour l'analyse..."],
+  "tool_name": "tavily.search",
+  "tool_args": {
+    "query": "LVMH market share luxury goods 2024 revenue breakdown"
+  }
+}
+```
+
+**Modélisation DCF :**
+```json
+{
+  "thoughts": ["Je construis le modèle DCF..."],
+  "tool_name": "code_execution",
+  "tool_args": {
+    "runtime": "python",
+    "code": "import numpy as np\n\n# DCF Model\nfcf = [100, 110, 121, 133, 146]  # Free Cash Flows\nwacc = 0.10\nterminal_growth = 0.02\n\n# Calculate PV\npv_fcf = sum([fcf[i] / (1 + wacc)**(i+1) for i in range(len(fcf))])\nterminal_value = fcf[-1] * (1 + terminal_growth) / (wacc - terminal_growth)\npv_terminal = terminal_value / (1 + wacc)**len(fcf)\n\nenterprise_value = pv_fcf + pv_terminal\nprint(f'Enterprise Value: €{enterprise_value:,.0f}M')"
+  }
+}
+```
+
+**NE JAMAIS utiliser des tools inexistants (pas de bloomberg, refinitiv, eurlex, etc.).**
 
 ---
 
