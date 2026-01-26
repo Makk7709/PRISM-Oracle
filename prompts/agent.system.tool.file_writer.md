@@ -15,12 +15,32 @@ Create professional files (PDF, CSV, Excel, text) with template support.
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `filename` | ✅ | Output filename (without path) |
-| `content` | ✅ | The Markdown content to write |
+| `content` | ✅ | **LE CONTENU COMPLET** en Markdown |
 | `title` | ❌ | Document title (for PDF) |
 | `template` | ❌ | PDF template name (see below) |
 | `format` | ❌ | "pdf", "csv", "excel", "txt" (auto-detected) |
 
 **Output:** Files are saved to `tmp/generated/` with timestamp.
+
+---
+
+## ⚠️ RÈGLE CRITIQUE — CONTENU COMPLET
+
+**OBLIGATOIRE:** Le paramètre `content` DOIT contenir **L'INTÉGRALITÉ** du document.
+
+❌ **NE PAS FAIRE:**
+- Résumer le contenu
+- Mettre "voir ci-dessus"
+- Tronquer l'analyse
+- Référencer d'autres messages
+
+✅ **FAIRE:**
+- Inclure TOUTES les sections
+- Inclure TOUS les détails de l'analyse
+- Inclure TOUTES les données et tableaux
+- Reproduire l'intégralité de ce qui doit apparaître dans le PDF
+
+**Le PDF doit être un document autonome et complet.**
 
 ---
 
@@ -53,7 +73,10 @@ Create professional files (PDF, CSV, Excel, text) with template support.
 
 ## Exemples
 
-### Rapport McKinsey (stratégie)
+### Rapport McKinsey (stratégie) — EXEMPLE COMPLET
+
+**IMPORTANT:** Remarquez que `content` contient TOUT le rapport, pas un résumé !
+
 ```json
 {
     "tool_name": "file_writer",
@@ -61,7 +84,7 @@ Create professional files (PDF, CSV, Excel, text) with template support.
         "filename": "strategie_acquisition.pdf",
         "template": "mckinsey",
         "title": "Strategic Assessment — Acquisition Target Alpha",
-        "content": "## Executive Summary\n\n> **Recommendation**: Proceed with acquisition at €50M valuation\n\n**Key insight**: Target presents 3x revenue synergy potential\n\n---\n\n## Situation Analysis\n\n### Market Position\n\n| Metric | Target | Industry Avg |\n|--------|--------|-------------|\n| Market Share | 12% | 8% |\n| Growth Rate | 25% | 15% |\n| EBITDA Margin | 18% | 12% |\n\n### MECE Decomposition\n\n**Branch 1: Synergies**\n- Cost synergies: **€5M/year**\n- Revenue synergies: **€3M/year**\n\n**Branch 2: Risks**\n- Integration complexity: Medium\n- Regulatory approval: Low risk\n\n---\n\n## Recommendation\n\n1. Proceed to due diligence phase\n2. Target closing: Q2 2026\n3. Integration PMO to be established\n\n---\n\n*Strictly Confidential*"
+        "content": "## Executive Summary\n\n> **Recommendation**: Proceed with acquisition at €50M valuation\n\n**Key insight**: Target presents 3x revenue synergy potential with minimal integration risk.\n\n### Key Findings\n\n1. **Market position strong** — 12% share vs 8% industry average\n2. **Growth trajectory excellent** — 25% YoY vs 15% market\n3. **Margins superior** — 18% EBITDA vs 12% peers\n\n---\n\n## Situation Analysis\n\n### 1. Market Position\n\n| Metric | Target | Industry Avg | Delta |\n|--------|--------|-------------|-------|\n| Market Share | 12% | 8% | +4pp |\n| Growth Rate | 25% | 15% | +10pp |\n| EBITDA Margin | 18% | 12% | +6pp |\n| Customer NPS | 72 | 45 | +27 |\n\n### 2. MECE Decomposition\n\n#### Branch 1: Value Creation Levers\n\n**Cost Synergies (€5M/year)**\n- Procurement consolidation: €2M\n- IT systems integration: €1.5M\n- Back-office optimization: €1.5M\n\n**Revenue Synergies (€3M/year)**\n- Cross-selling to customer base: €2M\n- Geographic expansion: €1M\n\n#### Branch 2: Risk Assessment\n\n| Risk Category | Probability | Impact | Mitigation |\n|--------------|-------------|--------|------------|\n| Integration complexity | Medium | High | Dedicated PMO, 18-month timeline |\n| Key talent retention | Medium | Medium | Retention packages, clear career paths |\n| Regulatory approval | Low | High | Pre-filing engagement |\n| Customer churn | Low | Medium | Communication plan, SLA guarantees |\n\n---\n\n## Financial Analysis\n\n### Valuation\n\n- **Enterprise Value**: €50M\n- **EV/EBITDA**: 8.5x (vs peer median 10x)\n- **EV/Revenue**: 2.1x (vs peer median 2.5x)\n\n### Synergy-Adjusted Returns\n\n- **Base case IRR**: 22%\n- **Upside case IRR**: 28%\n- **Downside case IRR**: 15%\n\n---\n\n## Recommendation\n\n### Proceed with Acquisition\n\n**Rationale:**\n1. Strategic fit with core business\n2. Attractive valuation (15-20% discount to peers)\n3. Clear synergy roadmap\n4. Manageable integration risk\n\n### Next Steps\n\n1. **Week 1-2**: Launch confirmatory due diligence\n2. **Week 3-4**: Finalize purchase agreement\n3. **Week 5-6**: Regulatory filings\n4. **Q2 2026**: Target closing\n\n---\n\n## Appendix\n\n### A. Detailed Financial Projections\n\n[5-year P&L model details...]\n\n### B. Integration Timeline\n\n[Gantt chart details...]\n\n---\n\n*Strictly Confidential — For Internal Use Only*"
     }
 }
 ```
