@@ -1,0 +1,69 @@
+{
+    "mcpServers": {
+        "biomcp": {
+            "name": "BioMCP All-in-One",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/biomcp",
+            "args": ["run"],
+            "description": "23+ tools: PubMed, ClinicalTrials, Genomics, Variants, OpenFDA"
+        },
+        "pubmed": {
+            "name": "PubMed Biomedical",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/pubmed-mcp-server",
+            "args": [],
+            "env": {
+                "NCBI_API_KEY": "${NCBI_API_KEY}"
+            },
+            "description": "Dedicated PubMed search with advanced filtering"
+        },
+        "openfda": {
+            "name": "OpenFDA Drug Safety",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/openfda-mcp-server",
+            "args": [],
+            "env": {
+                "OPENFDA_API_KEY": "${OPENFDA_API_KEY}"
+            },
+            "description": "FDA adverse events (FAERS), drug labels, device reports"
+        },
+        "semanticscholar": {
+            "name": "Semantic Scholar",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/semanticscholar/server.py"],
+            "description": "Academic papers with citation network"
+        },
+        "arxiv": {
+            "name": "Arxiv Preprints",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.local/bin/uvx",
+            "args": ["arxiv-mcp-server"],
+            "description": "Scientific preprints (q-bio, cs, stat)"
+        },
+        "tavily": {
+            "name": "Tavily AI Search",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "tavily-mcp"],
+            "env": {
+                "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+            },
+            "description": "Web search for recent news, guidelines, regulatory updates"
+        },
+        "fetch": {
+            "name": "Web Fetch",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.local/bin/uvx",
+            "args": ["mcp-server-fetch"],
+            "description": "Fetch web pages for regulatory documents, FDA guidance"
+        },
+        "filesystem": {
+            "name": "Filesystem",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/Users/aminemohamed/Desktop"],
+            "description": "Local file access for reports"
+        }
+    }
+}

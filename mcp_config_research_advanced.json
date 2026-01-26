@@ -1,0 +1,67 @@
+{
+    "mcpServers": {
+        "fetch": {
+            "name": "Web Fetch",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.local/bin/uvx",
+            "args": ["mcp-server-fetch"]
+        },
+        "arxiv": {
+            "name": "Arxiv Papers",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.local/bin/uvx",
+            "args": ["arxiv-mcp-server"]
+        },
+        "pubmed": {
+            "name": "PubMed Biomedical",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/pubmed-mcp-server",
+            "args": [],
+            "env": {
+                "NCBI_API_KEY": "${NCBI_API_KEY}"
+            }
+        },
+        "semanticscholar": {
+            "name": "Semantic Scholar",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Evidence/KOREV_Evidence/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Evidence/KOREV_Evidence/mcp_servers/semanticscholar/server.py"]
+        },
+        "openalex": {
+            "name": "OpenAlex Academic",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Evidence/KOREV_Evidence/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Evidence/KOREV_Evidence/mcp_servers/openalex/server_mcp.py"]
+        },
+        "firecrawl": {
+            "name": "Firecrawl Web Scraper",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "firecrawl-mcp"],
+            "env": {
+                "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+            }
+        },
+        "tavily": {
+            "name": "Tavily AI Search",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "tavily-mcp"],
+            "env": {
+                "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+            }
+        },
+        "playwright": {
+            "name": "Playwright Browser",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "@playwright/mcp"]
+        },
+        "filesystem": {
+            "name": "Filesystem",
+            "type": "stdio",
+            "command": "/Users/aminemohamed/.nvm/versions/node/v18.20.8/bin/npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/Users/aminemohamed/Desktop"]
+        }
+    }
+}

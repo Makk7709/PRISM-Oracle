@@ -1,0 +1,42 @@
+{
+    "mcpServers": {
+        "fetch": {
+            "name": "Web Fetch",
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["mcp-server-fetch"],
+            "description": "Récupère et analyse le contenu de pages web"
+        },
+        "arxiv": {
+            "name": "Arxiv Papers",
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["arxiv-mcp-server"],
+            "description": "Recherche et télécharge des papiers académiques depuis Arxiv"
+        },
+        "brave-search": {
+            "name": "Brave Search",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@kwp-lab/mcp-brave-search"],
+            "env": {
+                "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+            },
+            "description": "Recherche web avancée via Brave Search API"
+        },
+        "filesystem": {
+            "name": "Filesystem",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/Users/aminemohamed/Desktop"],
+            "description": "Accès en lecture/écriture aux fichiers du bureau"
+        },
+        "puppeteer": {
+            "name": "Puppeteer Browser",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-puppeteer@0.6.2"],
+            "description": "Automatisation de navigateur pour scraping et screenshots"
+        }
+    }
+}
