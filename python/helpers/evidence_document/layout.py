@@ -81,11 +81,13 @@ class CoverPage(Flowable):
             canvas.line(0, self.height * 0.6, self.width, self.height * 0.6)
         
         # Titre principal
+        title_font = self.template.title_font
+        title_size = 28
         canvas.setFillColor(primary)
-        canvas.setFont(self.template.title_font, 28)
+        canvas.setFont(title_font, title_size)
         
-        # Word wrap du titre
-        title_lines = self._wrap_text(self.title, self.width - 1*cm, 28)
+        # Word wrap du titre avec mesure réelle
+        title_lines = self._wrap_text(self.title, self.width - 1*cm, title_font, title_size)
         y_pos = self.height * 0.7
         for line in title_lines:
             canvas.drawString(0, y_pos, line)
@@ -129,28 +131,43 @@ class CoverPage(Flowable):
         
         canvas.restoreState()
     
-    def _wrap_text(self, text: str, max_width: float, font_size: int) -> List[str]:
-        """Wrap text to fit within width."""
+    def _wrap_text(self, text: str, max_width: float, font_name: str, font_size: int) -> List[str]:
+        """
+        Wrap text to fit within width using actual font metrics.
+        
+        Uses pdfmetrics.stringWidth for accurate measurement.
+        """
+        from reportlab.pdfbase import pdfmetrics
+        
         words = text.split()
         lines = []
         current_line = []
-        
-        # Approximation: ~0.5 * font_size per character
-        chars_per_line = int(max_width / (font_size * 0.5))
+        current_width = 0
+        space_width = pdfmetrics.stringWidth(' ', font_name, font_size)
         
         for word in words:
-            test_line = ' '.join(current_line + [word])
-            if len(test_line) <= chars_per_line:
-                current_line.append(word)
+            word_width = pdfmetrics.stringWidth(word, font_name, font_size)
+            
+            # Check if word fits on current line
+            if current_line:
+                test_width = current_width + space_width + word_width
             else:
+                test_width = word_width
+            
+            if test_width <= max_width:
+                current_line.append(word)
+                current_width = test_width
+            else:
+                # Start new line
                 if current_line:
                     lines.append(' '.join(current_line))
                 current_line = [word]
+                current_width = word_width
         
         if current_line:
             lines.append(' '.join(current_line))
         
-        return lines
+        return lines if lines else [text[:50] + "..."]  # Fallback for very long words
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -583,19 +600,12 @@ def _sanitize_text(text: str) -> str:
     return text
 
 
-def format_inline(text: str) -> str:
-    """Convert inline formatting to ReportLab XML."""
-    import re
-    
-    text = _sanitize_text(text)
-    
-    # Bold
-    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
-    
-    # Italic
-    text = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', text)
-    
-    # Inline code
-    text = re.sub(r'`([^`]+)`', r'<font name="Courier" color="#c53030">\1</font>', text)
-    
-    return text
+# NOTE: format_inline() has been REMOVED.
+# All text formatting now goes through renderer.py:spans_to_rl_xml()
+# which uses TextSpan for safe, deterministic formatting.
+# 
+# If you need inline formatting:
+#   1. Use TextSpan in your AST: Paragraph(content=[TextSpan(text="bold", bold=True)])
+#   2. Or use plain text: Paragraph(content="plain text")
+#
+# NEVER use regex-based markdown parsing for board-level documents.

@@ -468,59 +468,171 @@ TEMPLATES: Dict[str, Template] = {
 # TEMPLATE DETECTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Mots-clés pour détection automatique (sans marques)
-TEMPLATE_KEYWORDS: Dict[str, List[str]] = {
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE DETECTION WITH WORD BOUNDARIES AND WEIGHTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import re
+from dataclasses import dataclass
+
+
+@dataclass
+class Keyword:
+    """Keyword with weight for template detection."""
+    word: str
+    weight: int = 1
+    use_boundary: bool = True  # Use \b word boundaries
+
+
+# Keywords avec pondération et word boundaries
+TEMPLATE_KEYWORDS: Dict[str, List[Keyword]] = {
     "consulting_premium": [
-        "consulting", "stratégie", "stratégique", "strategic", "strategy",
-        "cabinet conseil", "recommandation stratégique", "rapport stratégique",
-        "business case", "due diligence", "m&a", "fusion",
-        "acquisition", "transformation", "restructuration", "conseil"
+        # High weight - very specific
+        Keyword("rapport stratégique", weight=5),
+        Keyword("cabinet conseil", weight=5),
+        Keyword("recommandation stratégique", weight=5),
+        Keyword("due diligence", weight=4),
+        Keyword("m&a", weight=4, use_boundary=False),  # M&A is special
+        Keyword("business case", weight=4),
+        # Medium weight
+        Keyword("stratégie", weight=3),
+        Keyword("stratégique", weight=3),
+        Keyword("strategic", weight=3),
+        Keyword("consulting", weight=3),
+        Keyword("acquisition", weight=2),
+        Keyword("fusion", weight=2),
+        Keyword("transformation", weight=2),
+        Keyword("restructuration", weight=2),
+        # Low weight
+        Keyword("conseil", weight=1),
+        Keyword("strategy", weight=1),
     ],
     "legal_formal": [
-        "juridique", "legal", "tribunal", "greffe", "avocat",
-        "assignation", "conclusions", "plaidoirie", "jugement",
-        "contrat", "cession", "statuts", "procès", "litige",
-        "contentieux", "droit", "loi", "code civil"
+        # High weight - very specific legal terms
+        Keyword("assignation", weight=5),
+        Keyword("greffe", weight=5),
+        Keyword("tribunal", weight=4),
+        Keyword("plaidoirie", weight=4),
+        Keyword("conclusions", weight=4),
+        Keyword("jugement", weight=3),
+        Keyword("contentieux", weight=3),
+        # Medium weight
+        Keyword("juridique", weight=3),
+        Keyword("avocat", weight=3),
+        Keyword("litige", weight=2),
+        Keyword("contrat", weight=2),
+        Keyword("cession", weight=2),
+        Keyword("statuts", weight=2),
+        # Low weight
+        Keyword("droit", weight=1),
+        Keyword("legal", weight=1),
+        Keyword("loi", weight=1),
     ],
     "scientific_academic": [
-        "scientifique", "scientific", "research", "recherche",
-        "publication", "académique", "academic", "study", "étude",
-        "methodology", "méthodologie", "peer review", "experiment",
-        "hypothesis", "abstract", "paper"
+        # High weight
+        Keyword("publication scientifique", weight=5),
+        Keyword("peer review", weight=5),
+        Keyword("abstract", weight=4),
+        Keyword("methodology", weight=4),
+        Keyword("méthodologie", weight=4),
+        # Medium weight
+        Keyword("scientifique", weight=3),
+        Keyword("académique", weight=3),
+        Keyword("research", weight=3),
+        Keyword("recherche", weight=3),
+        Keyword("hypothesis", weight=2),
+        Keyword("experiment", weight=2),
+        # Low weight  
+        Keyword("étude", weight=1),
+        Keyword("paper", weight=1),
     ],
     "patent_ip": [
-        "brevet", "patent", "invention", "revendication", "claim",
-        "prior art", "art antérieur", "propriété intellectuelle",
-        "intellectual property", "ip", "dépôt", "déposant"
+        # High weight - very specific
+        Keyword("revendication", weight=5),
+        Keyword("brevet", weight=5),
+        Keyword("patent", weight=5),
+        Keyword("art antérieur", weight=4),
+        Keyword("prior art", weight=4),
+        Keyword("propriété intellectuelle", weight=4),
+        # Medium weight
+        Keyword("invention", weight=3),
+        Keyword("déposant", weight=3),
+        Keyword("dépôt", weight=2),
+        # Low weight - "ip" is too generic without boundary
+        Keyword("intellectual property", weight=2),
     ],
     "financial_audit": [
-        "financier", "financière", "financial", "audit", "comptable", "accounting",
-        "bilan", "balance", "compte résultat", "p&l", "income statement",
-        "cash flow", "trésorerie", "ratio", "dcf", "valorisation",
-        "commissaire aux comptes", "expert comptable"
+        # High weight
+        Keyword("commissaire aux comptes", weight=5),
+        Keyword("expert comptable", weight=5),
+        Keyword("audit", weight=4),
+        Keyword("dcf", weight=4, use_boundary=False),  # DCF acronym
+        Keyword("compte résultat", weight=4),
+        # Medium weight
+        Keyword("financier", weight=3),
+        Keyword("financière", weight=3),
+        Keyword("comptable", weight=3),
+        Keyword("bilan", weight=3),
+        Keyword("valorisation", weight=3),
+        Keyword("cash flow", weight=2),
+        Keyword("trésorerie", weight=2),
+        # Low weight
+        Keyword("ratio", weight=1),
+        Keyword("p&l", weight=2, use_boundary=False),
     ],
     "executive_brief": [
-        "executive", "synthèse", "summary", "brief", "note",
-        "direction", "board", "comité", "decision", "décision",
-        "ceo", "cfo", "dg", "directeur", "présentation"
+        # High weight
+        Keyword("note de synthèse", weight=5),
+        Keyword("executive summary", weight=5),
+        Keyword("note executive", weight=5),
+        Keyword("executive brief", weight=4),
+        # Medium weight
+        Keyword("synthèse", weight=3),
+        Keyword("direction", weight=3),
+        Keyword("board", weight=2),
+        Keyword("décision", weight=2),
+        # Low weight
+        Keyword("brief", weight=1),
+        Keyword("note", weight=1),
     ],
     "medical_clinical": [
-        "médical", "medical", "clinique", "clinical", "patient",
-        "diagnostic", "traitement", "treatment", "ordonnance",
-        "prescription", "consultation", "examen", "pathologie",
-        "syndrome", "hôpital", "hospital"
+        # High weight
+        Keyword("diagnostic", weight=4),
+        Keyword("clinique", weight=4),
+        Keyword("patient", weight=4),
+        Keyword("ordonnance", weight=4),
+        Keyword("prescription", weight=4),
+        # Medium weight
+        Keyword("médical", weight=3),
+        Keyword("traitement", weight=3),
+        Keyword("pathologie", weight=3),
+        Keyword("consultation", weight=2),
+        Keyword("examen", weight=2),
+        # Low weight
+        Keyword("hôpital", weight=1),
+        Keyword("hospital", weight=1),
     ],
     "technical_doc": [
-        "technique", "technical", "documentation technique", "api",
-        "architecture", "système", "code source", "développement",
-        "development", "spécification technique", "readme", "sdk"
+        # High weight
+        Keyword("documentation technique", weight=5),
+        Keyword("spécification technique", weight=5),
+        Keyword("api", weight=4, use_boundary=False),  # API acronym
+        Keyword("sdk", weight=4, use_boundary=False),  # SDK acronym
+        # Medium weight
+        Keyword("architecture", weight=3),
+        Keyword("développement", weight=3),
+        Keyword("readme", weight=3),
+        Keyword("technique", weight=2),
+        # Low weight
+        Keyword("système", weight=1),
+        Keyword("code", weight=1),
     ]
 }
 
 
 def detect_template(user_request: str) -> str:
     """
-    Détecte le template approprié depuis la demande utilisateur.
+    Détecte le template approprié avec pondération et word boundaries.
     
     Args:
         user_request: Texte de la demande
@@ -530,14 +642,29 @@ def detect_template(user_request: str) -> str:
     """
     request_lower = user_request.lower()
     
-    scores: Dict[str, int] = {}
+    scores: Dict[str, float] = {}
+    
     for template_name, keywords in TEMPLATE_KEYWORDS.items():
-        score = sum(1 for kw in keywords if kw in request_lower)
+        score = 0.0
+        
+        for kw in keywords:
+            if kw.use_boundary:
+                # Use word boundary regex
+                pattern = r'\b' + re.escape(kw.word) + r'\b'
+                if re.search(pattern, request_lower):
+                    score += kw.weight
+            else:
+                # Simple substring match
+                if kw.word in request_lower:
+                    score += kw.weight
+        
         if score > 0:
             scores[template_name] = score
     
     if scores:
+        # Return highest scoring template
         return max(scores.keys(), key=lambda k: scores[k])
+    
     return "standard"
 
 
