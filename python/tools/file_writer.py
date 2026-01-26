@@ -51,6 +51,13 @@ class FileWriter(Tool):
         output_path = os.path.join(output_dir, final_filename)
         
         try:
+            # Log content info for debugging
+            content_lines = content.count('\n') + 1 if content else 0
+            content_chars = len(content) if content else 0
+            PrintStyle(font_color="cyan").print(
+                f"[FileWriter] Processing: {content_chars} chars, {content_lines} lines, template={template or 'default'}"
+            )
+            
             if ext == '.pdf':
                 self._write_pdf(output_path, content, title, template)
             elif ext == '.csv':
@@ -108,6 +115,10 @@ class FileWriter(Tool):
         try:
             from python.helpers.pdf_generator import generate_pdf
             
+            PrintStyle(font_color="cyan").print(
+                f"[FileWriter] PDF content preview: {content[:200] if content else 'EMPTY'}..."
+            )
+            
             # Use the professional PDF generator with template support
             generate_pdf(
                 content=content,
@@ -117,7 +128,10 @@ class FileWriter(Tool):
                 template_name=template if template else None
             )
             
+            PrintStyle(font_color="green").print(f"[FileWriter] PDF generated successfully")
+            
         except Exception as e:
+            PrintStyle(font_color="red").print(f"[FileWriter] PDF generation error: {e}")
             # Fallback to basic reportlab if pdf_generator fails
             try:
                 from reportlab.lib.pagesizes import A4
