@@ -3,9 +3,15 @@ Evidence Document System — Professional document generation.
 
 Architecture:
 - ast.py: Document AST (structured representation)
-- templates.py: Template definitions (sans marques)
+- templates.py: Template definitions (KOREV Evidence)
 - layout.py: Layout engine (ReportLab rendering)
 - renderer.py: Main renderer (AST -> PDF)
+- fonts.py: TTF font registration (Unicode support)
+
+Typography:
+- DejaVu Sans: Primary sans-serif (full Unicode)
+- DejaVu Serif: Serif for legal/academic
+- DejaVu Mono: Monospace for code
 
 Usage:
     from python.helpers.evidence_document import Document, render_to_pdf
@@ -16,6 +22,13 @@ Usage:
     
     pdf_bytes = render_to_pdf(doc)
 """
+
+# Auto-register TTF fonts on import
+try:
+    from .fonts import register_fonts
+    register_fonts()
+except ImportError:
+    pass  # Fonts will fall back to Helvetica
 
 from .ast import (
     Document,

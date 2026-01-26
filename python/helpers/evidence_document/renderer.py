@@ -7,6 +7,7 @@ Features:
 - Safe text rendering via TextSpan (no regex)
 - Proper callouts via Table (stable across environments)
 - Observable errors with logging
+- TTF fonts with full Unicode support
 """
 
 import logging
@@ -24,6 +25,14 @@ from reportlab.platypus import (
     Table, TableStyle
 )
 from reportlab.pdfbase import pdfmetrics
+
+# Register TTF fonts for Unicode support
+try:
+    from .fonts import register_fonts, FONTS
+    register_fonts()
+    DEFAULT_CODE_FONT = FONTS.get("code", "DejaVuMono")
+except ImportError:
+    DEFAULT_CODE_FONT = "Courier"
 
 from .ast import (
     Document, DocumentElement, ConfidentialityLevel,
@@ -73,13 +82,16 @@ def sanitize_text(text: str) -> str:
     return text
 
 
-def spans_to_rl_xml(spans: List[TextSpan], code_font: str = "Courier") -> str:
+def spans_to_rl_xml(spans: List[TextSpan], code_font: str = None) -> str:
     """
     Convert TextSpan list to ReportLab XML.
     
     This is the SINGLE source of truth for inline formatting.
     No regex, deterministic, 100% safe.
     """
+    if code_font is None:
+        code_font = DEFAULT_CODE_FONT
+    
     parts = []
     
     for span in spans:

@@ -1,5 +1,5 @@
 """
-Evidence Document Templates — Sans marques commerciales.
+Evidence Document Templates — KOREV Evidence.
 
 Templates disponibles:
 - standard: Document professionnel polyvalent
@@ -11,10 +11,29 @@ Templates disponibles:
 - executive_brief: Note de synthèse direction
 - medical_clinical: Rapport médical
 - technical_doc: Documentation technique
+
+Polices TTF avec support Unicode complet:
+- DejaVu Sans: Corps de texte, titres
+- DejaVu Serif: Alternative serif pour legal/academic
+- DejaVu Mono: Code blocks
 """
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+
+# Import font registration (auto-registers on import)
+try:
+    from .fonts import register_fonts, FONTS
+    register_fonts()
+    # Use TTF fonts with full Unicode support
+    DEFAULT_TITLE_FONT = "DejaVu-Bold"
+    DEFAULT_BODY_FONT = "DejaVu"
+    DEFAULT_CODE_FONT = "DejaVuMono"
+except ImportError:
+    # Fallback to built-in fonts
+    DEFAULT_TITLE_FONT = "Helvetica-Bold"
+    DEFAULT_BODY_FONT = "Helvetica"
+    DEFAULT_CODE_FONT = "Courier"
 
 
 @dataclass
@@ -34,10 +53,10 @@ class Template:
     light_bg: str = "#f7fafc"
     header_bg: str = "#2c5282"
     
-    # Typographie
-    title_font: str = "Helvetica-Bold"
-    body_font: str = "Helvetica"
-    code_font: str = "Courier"
+    # Typographie (TTF avec Unicode complet)
+    title_font: str = DEFAULT_TITLE_FONT
+    body_font: str = DEFAULT_BODY_FONT
+    code_font: str = DEFAULT_CODE_FONT
     
     # Tailles (pt)
     title_size: int = 24
@@ -117,9 +136,10 @@ TEMPLATES: Dict[str, Template] = {
         light_bg="#F5F7FA",
         header_bg="#003B5C",
         
-        # Typographie soignée
-        title_font="Helvetica-Bold",
-        body_font="Helvetica",
+        # Typographie soignée (TTF Unicode)
+        title_font=DEFAULT_TITLE_FONT,
+        body_font=DEFAULT_BODY_FONT,
+        code_font=DEFAULT_CODE_FONT,
         title_size=28,
         h1_size=20,
         h2_size=16,
@@ -166,8 +186,10 @@ TEMPLATES: Dict[str, Template] = {
         light_bg="#FAFAFA",
         header_bg="#1A1A2E",
         
-        title_font="Helvetica-Bold",
-        body_font="Helvetica",
+        # Typographie serif pour documents formels
+        title_font="DejaVuSerif-Bold",
+        body_font="DejaVuSerif",
+        code_font=DEFAULT_CODE_FONT,
         title_size=16,
         h1_size=14,
         h2_size=12,
@@ -212,6 +234,10 @@ TEMPLATES: Dict[str, Template] = {
         light_bg="#F8F9FA",
         header_bg="#2C3E50",
         
+        # Typographie serif pour académique
+        title_font="DejaVuSerif-Bold",
+        body_font="DejaVuSerif",
+        code_font=DEFAULT_CODE_FONT,
         title_size=20,
         h1_size=14,
         h2_size=12,

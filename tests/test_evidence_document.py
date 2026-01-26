@@ -215,10 +215,11 @@ class TestSpanRendering:
         assert xml == "<i>italic</i>"
     
     def test_code_span(self):
-        """Code span renders with Courier font."""
+        """Code span renders with monospace font."""
         spans = [TextSpan(text="code", code=True)]
         xml = spans_to_rl_xml(spans)
-        assert 'name="Courier"' in xml
+        # Should use DejaVuMono (TTF) or Courier (fallback)
+        assert 'name="DejaVuMono"' in xml or 'name="Courier"' in xml
         assert 'color="#c53030"' in xml
     
     def test_nested_formatting(self):
