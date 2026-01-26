@@ -44,6 +44,9 @@ try:
         RouteVerdict,
         IntentName,
         is_deterministic_router_enabled,
+        get_enforcement_level,
+        _canonicalize_text,  # Shared canonicalization
+        RouterMetrics,
     )
     DETERMINISTIC_ROUTER_AVAILABLE = True
 except ImportError:
@@ -51,6 +54,12 @@ except ImportError:
     
     def is_deterministic_router_enabled():
         return False
+    
+    def get_enforcement_level():
+        return 0
+    
+    def _canonicalize_text(text: str) -> str:
+        return text.lower().strip()
 
 logger = logging.getLogger("delegation_tool")
 
@@ -80,12 +89,28 @@ class Delegation(Tool):
         # ═══════════════════════════════════════════════════════════════════════
         # DETERMINISTIC ROUTER (Feature Flag: DETERMINISTIC_ROUTER_V2=1)
         # ═══════════════════════════════════════════════════════════════════════
+        # 
+        # CANONICALIZATION: _canonicalize_text() est appelée ICI et passée au router.
+        # Le même texte canonicalisé doit être utilisé pour criticality.
+        # 
+        # MODES:
+        #   - Audit (actuel): Log + métriques, exécution LLM inchangée
+        #   - Enforcement soft (DETERMINISTIC_ROUTER_V2=2): Bloque si router dit REFUSE/CLARIFY sur high-stakes
+        #   - Enforcement hard (DETERMINISTIC_ROUTER_V2=3): Remplace entièrement le routing LLM
+        # ═══════════════════════════════════════════════════════════════════════
         
         route_decision: Optional["RouteDecision"] = None
+        canonical_message = _canonicalize_text(message) if DETERMINISTIC_ROUTER_AVAILABLE else message
         
         if DETERMINISTIC_ROUTER_AVAILABLE and is_deterministic_router_enabled():
+            import time
+            router_start = time.perf_counter()
+            
             try:
-                route_decision = decide_route(message)
+                # Décision sur message canonicalisé (même texte pour tous les composants)
+                route_decision = decide_route(message)  # decide_route canonicalise en interne
+                
+                router_latency_ms = (time.perf_counter() - router_start) * 1000
                 
                 # Log la décision pour audit
                 logger.info(
@@ -93,14 +118,49 @@ class Delegation(Tool):
                     f"Verdict: {route_decision.verdict.value} | "
                     f"Intents: {route_decision.intent_names} | "
                     f"BoardLevel: {route_decision.is_board_level} | "
-                    f"LLM profile: {agent_profile}"
+                    f"Strength: {route_decision.routing_strength:.2f} | "
+                    f"LLM profile: {agent_profile} | "
+                    f"Latency: {router_latency_ms:.2f}ms"
                 )
                 
-                # Vérifier si le profil LLM est cohérent avec la décision du router
-                if route_decision.verdict == RouteVerdict.PROCEED:
-                    self._audit_profile_consistency(
-                        agent_profile, route_decision, correlation_id
+                # ─────────────────────────────────────────────────────────────────
+                # MÉTRIQUES (exploitables pour audit)
+                # ─────────────────────────────────────────────────────────────────
+                metrics = RouterMetrics.get_instance()
+                
+                # Déterminer si l'exécution sera bloquée (enforcement mode)
+                enforcement_level = get_enforcement_level()
+                router_would_block = route_decision.verdict in (
+                    RouteVerdict.NEEDS_CLARIFICATION, 
+                    RouteVerdict.REFUSE
+                )
+                
+                # Enforcement soft (level 2): bloquer si high-stakes
+                execution_blocked = False
+                if enforcement_level >= 2 and router_would_block:
+                    is_high_stakes = (
+                        route_decision.is_board_level or
+                        any(i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL} 
+                            for i in route_decision.intents)
                     )
+                    if is_high_stakes:
+                        execution_blocked = True
+                        logger.warning(
+                            f"[ROUTER_V2] ENFORCEMENT_SOFT | {route_decision.route_id} | "
+                            f"Blocking execution: {route_decision.verdict.value}"
+                        )
+                
+                # Enregistrer métriques
+                metrics.record_decision(
+                    route_id=route_decision.route_id,
+                    input_hash=route_decision.input_hash,
+                    router_verdict=route_decision.verdict.value,
+                    router_intents=route_decision.intent_names,
+                    is_board_level=route_decision.is_board_level,
+                    llm_profile=agent_profile,
+                    latency_ms=router_latency_ms,
+                    execution_blocked=execution_blocked,
+                )
                 
                 # Si injection détectée, logger un warning
                 if route_decision.injection_blocked:
@@ -108,10 +168,26 @@ class Delegation(Tool):
                         f"[ROUTER_V2] {route_decision.route_id} | "
                         f"INJECTION DETECTED: {route_decision.injection_attempt[:50]}"
                     )
+                
+                # ─────────────────────────────────────────────────────────────────
+                # ENFORCEMENT SOFT: Bloquer et retourner clarification
+                # ─────────────────────────────────────────────────────────────────
+                if execution_blocked:
+                    return Response(
+                        message=route_decision.clarification_prompt or 
+                            "Votre demande nécessite une clarification avant traitement.",
+                        break_loop=False,
+                    )
                     
             except Exception as e:
-                logger.error(f"[ROUTER_V2] Error in deterministic router: {e}")
-                # Continue avec le comportement existant
+                # Erreur avec rate-limiting (pas de spam)
+                if DETERMINISTIC_ROUTER_AVAILABLE:
+                    metrics = RouterMetrics.get_instance()
+                    input_hash = route_decision.input_hash if route_decision else "unknown"
+                    metrics.record_error(e, input_hash)
+                else:
+                    logger.error(f"[ROUTER_V2] Error: {e}")
+                # Continue avec le comportement existant (fallback déterministe)
         
         # ═══════════════════════════════════════════════════════════════════════
         # CRITICALITY ASSESSMENT (Comportement existant)

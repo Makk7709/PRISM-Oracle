@@ -83,27 +83,52 @@ except ImportError:
     # Judge not yet implemented
     pass
 
+# Metrics
+from .metrics import RouterMetrics, RouterStats, DivergenceSample
+
 
 def is_deterministic_router_enabled() -> bool:
     """
     Check if deterministic router is enabled via feature flag.
     
-    Environment variables (any of these enables the router):
-    - DETERMINISTIC_ROUTER_V2=1
-    - DETERMINISTIC_ROUTER=1
+    Levels:
+        0 = OFF (default)
+        1 = Audit-only (log + metrics, no behavioral change)
+        2 = Enforcement soft (block high-stakes if router says REFUSE/CLARIFY)
+        3 = Enforcement hard (replace LLM routing entirely)
+    
+    Environment variables:
+    - DETERMINISTIC_ROUTER_V2=1|2|3
+    - DETERMINISTIC_ROUTER=1 (legacy, maps to level 1)
     
     Returns:
-        True if deterministic routing is enabled, False otherwise.
+        True if deterministic routing is enabled (level >= 1), False otherwise.
     """
-    return (
-        os.environ.get("DETERMINISTIC_ROUTER_V2", "0") == "1" or
-        os.environ.get("DETERMINISTIC_ROUTER", "0") == "1"
-    )
+    level = os.environ.get("DETERMINISTIC_ROUTER_V2", "0")
+    return level in ("1", "2", "3") or os.environ.get("DETERMINISTIC_ROUTER", "0") == "1"
+
+
+def get_enforcement_level() -> int:
+    """
+    Get the current enforcement level (0-3).
+    
+    Returns:
+        0: OFF
+        1: Audit-only
+        2: Enforcement soft
+        3: Enforcement hard
+    """
+    try:
+        level = int(os.environ.get("DETERMINISTIC_ROUTER_V2", "0"))
+        return min(max(level, 0), 3)  # Clamp to 0-3
+    except ValueError:
+        return 0
 
 
 __all__ = [
     # Feature flag
     "is_deterministic_router_enabled",
+    "get_enforcement_level",
     # Contracts
     "RouteVerdict",
     "IntentName",
@@ -134,6 +159,10 @@ __all__ = [
     "get_primary_intent",
     "should_involve_legal",
     "is_board_level_request",
+    # Metrics
+    "RouterMetrics",
+    "RouterStats",
+    "DivergenceSample",
     # Testing helpers
     "_canonicalize_text",
     "_stable_route_id",
