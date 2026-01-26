@@ -1,6 +1,6 @@
 # Research MCP Strategy Guide
 
-You have access to specialized MCP servers for academic research, patents, and legal documents. This guide helps you choose the right source and strategy.
+You have access to specialized MCP servers for academic research. This guide helps you choose the right source and strategy.
 
 ## 🎯 Quick Decision Matrix
 
@@ -9,11 +9,14 @@ You have access to specialized MCP servers for academic research, patents, and l
 | Latest preprints/papers | **arxiv** | semanticscholar | arXiv has newest, unreviewed papers |
 | Citation analysis | **semanticscholar** | openalex | Best citation network data |
 | Author profile/h-index | **openalex** | semanticscholar | Rich author metrics |
-| DOI metadata | **crossref** | - | Authoritative DOI registry |
-| EU law/regulations | **eurlex** | - | Official EU legal database |
-| EU case law (CJEU) | **eurlex** | - | Only source for EU jurisprudence |
+| Web search/general info | **tavily** | firecrawl | AI-powered web search |
+| Web scraping | **firecrawl** | - | Extract content from URLs |
+| EU law/regulations | **tavily** (search) | code_execution (scrape) | Search legal databases via web |
 
-> ⚠️ **PATENTS: NOT AVAILABLE** - espacenet and lens servers require API keys not configured in this instance. Do NOT attempt patent searches.
+> ⚠️ **NOT AVAILABLE in this instance:**
+> - **eurlex** - EUR-Lex MCP not configured (use tavily to search EUR-Lex website)
+> - **crossref** - CrossRef MCP not configured
+> - **espacenet/lens** - Patent servers require API keys not configured
 
 ## 📚 Server Specializations
 
@@ -35,22 +38,29 @@ You have access to specialized MCP servers for academic research, patents, and l
 **Limitation:** Some delay in indexing new papers
 **When to use first:** "find author X at institution Y", "h-index of Z", "researcher profile"
 
-### crossref
-**Best for:** DOI resolution, official publication metadata, journal info
-**Unique:** Authoritative metadata, publisher information
-**Limitation:** Only indexed works with DOIs
-**When to use first:** "what is DOI 10.xxxx", "publication details for this DOI"
+### tavily
+**Best for:** General web search, current information, legal research via web
+**Unique:** AI-powered search with relevance ranking
+**Limitation:** Requires TAVILY_API_KEY in .env
+**When to use first:** "search for X", "find information about Y", "EU law on Z"
 
-### eurlex
-**Best for:** EU legislation, directives, regulations, CJEU judgments
-**Unique:** CELEX identifiers, amendment tracking, EuroVoc subjects
-**Limitation:** EU law only
-**When to use first:** "GDPR article X", "EU regulation on Y", "Schrems case", "directive about Z"
+### firecrawl
+**Best for:** Web scraping, extracting content from specific URLs
+**Unique:** Clean text extraction from web pages
+**Limitation:** Requires FIRECRAWL_API_KEY in .env
+**When to use first:** "extract content from URL", "scrape this page"
 
-### ⛔ lens (DISABLED - requires API key)
+### ⛔ crossref (NOT CONFIGURED)
+DOI metadata - NOT AVAILABLE in this instance. Use tavily to search.
+
+### ⛔ eurlex (NOT CONFIGURED)
+EU legislation database - NOT AVAILABLE in this instance. 
+**WORKAROUND:** Use `tavily.search` with query like "site:eur-lex.europa.eu GDPR article 6"
+
+### ⛔ lens (NOT CONFIGURED)
 Patent + scholarly search - NOT AVAILABLE in this instance.
 
-### ⛔ espacenet (DISABLED - requires API key)
+### ⛔ espacenet (NOT CONFIGURED)
 European patents - NOT AVAILABLE in this instance.
 
 ## 🔄 Multi-Source Search Strategies
@@ -79,21 +89,22 @@ European patents - NOT AVAILABLE in this instance.
 4. crossref → Verify DOIs and publication metadata
 ```
 
-### Strategy 4: EU Legal Research
+### Strategy 4: EU Legal Research (without eurlex MCP)
 ```
-1. eurlex.search_eu_legislation → Find relevant laws
-2. eurlex.get_document_citations → Find citing/cited docs
-3. eurlex.get_legislation_timeline → Track amendments
-4. eurlex.search_eu_case_law → Related judgments
+1. tavily.search "site:eur-lex.europa.eu [topic]" → Find EU legislation
+2. tavily.search "[directive/regulation name] consolidated version" → Get current text
+3. firecrawl.scrape_url [eur-lex URL] → Extract full document if needed
+4. code_execution (Python) → Parse and analyze legal text
 ```
+> Note: eurlex MCP is not configured. Use web search as workaround.
 
 ### Strategy 5: Verify/Cross-Reference
 ```
 When a source returns partial info:
 - Paper found but no citations? → Check semanticscholar
 - Author found but no recent work? → Check arxiv
-- DOI mentioned but no details? → Check crossref
-- EU law reference? → Always verify with eurlex
+- DOI mentioned but no details? → Use tavily to search DOI
+- EU law reference? → Use tavily with "site:eur-lex.europa.eu"
 ```
 
 ## ⚠️ Important Rules
@@ -101,11 +112,13 @@ When a source returns partial info:
 1. **Never assume one source is complete** - Cross-reference for important queries
 2. **Check dates** - arXiv is newest, others may lag by days/weeks
 3. **For citations, prefer semanticscholar** - Most accurate citation network
-4. **For EU law, only use eurlex** - It's the official source
-5. **DOI lookups → crossref first** - It's the DOI registry
-6. **⛔ NO PATENT SEARCHES** - espacenet/lens are DISABLED in this instance
+4. **For EU law** - Use `tavily.search` with "site:eur-lex.europa.eu" (eurlex MCP not configured)
+5. **For general web info** - Use `tavily.search` first
+6. **⛔ NO PATENT SEARCHES** - espacenet/lens are NOT CONFIGURED in this instance
 
 ## 🏷️ CELEX Number Guide (EUR-Lex)
+
+> Note: Use CELEX numbers when searching via tavily for better precision.
 
 Format: `SECTOR + YEAR + TYPE + NUMBER`
 
@@ -125,11 +138,13 @@ Examples:
 - `32016R0679` → GDPR (Sector 3, Year 2016, Regulation, Number 679)
 - `62018CJ0311` → Schrems II (Sector 6, Year 2018, CJ judgment, Case 311)
 
+**Search example:** `tavily.search "32016R0679 site:eur-lex.europa.eu"`
+
 ## 💡 Pro Tips
 
 1. **Use arxiv for CS/ML/AI** - It's where researchers publish first
 2. **Use semanticscholar for "influential" papers** - Has unique influence metrics
 3. **Use openalex for author disambiguation** - Best at "which John Smith?"
-4. **Use crossref to verify** - Trust it for DOI/publication metadata
-5. **Use eurlex with CELEX when known** - Faster than keyword search
+4. **Use tavily for general search** - AI-powered web search
+5. **For EU law, use tavily + site:eur-lex.europa.eu** - Workaround since eurlex MCP not configured
 6. **Combine sources** - No single source has everything
