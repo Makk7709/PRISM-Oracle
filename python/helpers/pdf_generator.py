@@ -276,26 +276,63 @@ def create_styles(template: Optional[PDFTemplate] = None):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class MarkdownToPDF:
-    """Convert Markdown to PDF elements."""
+    """Convert Markdown to PDF elements with robust error handling."""
     
-    def __init__(self, styles):
+    def __init__(self, styles, template: Optional[PDFTemplate] = None):
         self.styles = styles
+        self.template = template
         self.elements = []
         
-    def convert_inline(self, text: str) -> str:
-        """Convert inline markdown (bold, italic, code, links)."""
-        # Escape XML characters first
+    def sanitize_text(self, text: str) -> str:
+        """Sanitize text for ReportLab XML parsing."""
+        if not text:
+            return ""
+        
+        # Remove problematic Unicode characters that ReportLab can't handle
+        # Keep common emojis but replace others
+        import unicodedata
+        
+        result = []
+        for char in text:
+            try:
+                # Check if character is printable
+                cat = unicodedata.category(char)
+                if cat.startswith('C') and char not in '\n\t':
+                    # Control character - skip
+                    continue
+                result.append(char)
+            except:
+                continue
+        
+        text = ''.join(result)
+        
+        # Escape XML special characters
         text = text.replace('&', '&amp;')
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
         
-        # Bold: **text** or __text__
-        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-        text = re.sub(r'__(.+?)__', r'<b>\1</b>', text)
+        # Fix common problematic patterns
+        text = text.replace('\x00', '')  # Null bytes
+        text = text.replace('\r\n', '\n')  # Windows line endings
+        text = text.replace('\r', '\n')
         
-        # Italic: *text* or _text_
-        text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
-        text = re.sub(r'(?<![_\w])_(.+?)_(?![_\w])', r'<i>\1</i>', text)
+        return text
+        
+    def convert_inline(self, text: str) -> str:
+        """Convert inline markdown (bold, italic, code, links)."""
+        if not text:
+            return ""
+        
+        # Sanitize first
+        text = self.sanitize_text(text)
+        
+        # Bold: **text** or __text__
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
+        text = re.sub(r'__(.+?)__', r'<b>\1</b>', text, flags=re.DOTALL)
+        
+        # Italic: *text* or _text_ (be careful not to break bold)
+        text = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', text)
+        text = re.sub(r'(?<!_)_([^_]+?)_(?!_)', r'<i>\1</i>', text)
         
         # Inline code: `code`
         text = re.sub(r'`([^`]+)`', r'<font name="Courier" color="#c53030">\1</font>', text)
@@ -304,179 +341,270 @@ class MarkdownToPDF:
         text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'<font color="#3182ce"><u>\1</u></font>', text)
         
         # Strikethrough: ~~text~~
-        text = re.sub(r'~~(.+?)~~', r'<strike>\1</strike>', text)
+        text = re.sub(r'~~(.+?)~~', r'<strike>\1</strike>', text, flags=re.DOTALL)
         
         return text
     
-    def parse_table(self, lines: List[str]) -> Optional[Table]:
+    def safe_paragraph(self, text: str, style) -> Optional[Paragraph]:
+        """Create a Paragraph with error handling."""
+        try:
+            if not text or not text.strip():
+                return None
+            return Paragraph(text, style)
+        except Exception as e:
+            # Fallback: strip all formatting and use plain text
+            try:
+                plain_text = re.sub(r'<[^>]+>', '', text)
+                plain_text = self.sanitize_text(plain_text)
+                if plain_text.strip():
+                    return Paragraph(plain_text, style)
+            except:
+                pass
+            return None
+    
+    def parse_table(self, lines: List[str], template: Optional[PDFTemplate] = None) -> Optional[Table]:
         """Parse markdown table into ReportLab Table."""
-        if len(lines) < 2:
+        try:
+            if len(lines) < 2:
+                return None
+            
+            # Parse header
+            header_line = lines[0].strip()
+            if not header_line.startswith('|'):
+                return None
+            
+            headers = [self.sanitize_text(cell.strip()) for cell in header_line.split('|')[1:-1]]
+            if not headers:
+                return None
+            
+            # Skip separator line (line[1])
+            # Parse rows
+            data = [headers]
+            for line in lines[2:]:
+                if line.strip().startswith('|'):
+                    cells = [self.sanitize_text(cell.strip()) for cell in line.strip().split('|')[1:-1]]
+                    # Pad cells to match header count
+                    while len(cells) < len(headers):
+                        cells.append('')
+                    if cells:
+                        data.append(cells[:len(headers)])  # Trim excess columns
+            
+            if len(data) < 1:
+                return None
+            
+            # Get colors from template
+            if template:
+                header_bg = HexColor(template.header_bg)
+                light_bg = HexColor(template.light_bg)
+                text_color = HexColor(template.text_color)
+            else:
+                header_bg = HexColor('#2c5282')
+                light_bg = HexColor('#f7fafc')
+                text_color = HexColor('#2d3748')
+            
+            # Create table with styles
+            table = Table(data, repeatRows=1)
+            
+            # Style the table
+            style = TableStyle([
+                # Header style
+                ('BACKGROUND', (0, 0), (-1, 0), header_bg),
+                ('TEXTCOLOR', (0, 0), (-1, 0), white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                
+                # Body style
+                ('BACKGROUND', (0, 1), (-1, -1), white),
+                ('TEXTCOLOR', (0, 1), (-1, -1), text_color),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+                ('TOPPADDING', (0, 1), (-1, -1), 6),
+                
+                # Alternating row colors
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [white, light_bg]),
+                
+                # Grid
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e2e8f0')),
+                ('BOX', (0, 0), (-1, -1), 1, HexColor('#cbd5e0')),
+                
+                # Padding
+                ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                
+                # Word wrap
+                ('WORDWRAP', (0, 0), (-1, -1), True),
+            ])
+            
+            table.setStyle(style)
+            return table
+        except Exception as e:
+            # Table parsing failed - return None
             return None
-        
-        # Parse header
-        header_line = lines[0].strip()
-        if not header_line.startswith('|'):
-            return None
-        
-        headers = [cell.strip() for cell in header_line.split('|')[1:-1]]
-        
-        # Skip separator line
-        # Parse rows
-        data = [headers]
-        for line in lines[2:]:
-            if line.strip().startswith('|'):
-                cells = [cell.strip() for cell in line.strip().split('|')[1:-1]]
-                if cells:
-                    data.append(cells)
-        
-        if not data:
-            return None
-        
-        # Create table with styles
-        table = Table(data, repeatRows=1)
-        
-        # Style the table
-        style = TableStyle([
-            # Header style
-            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#2c5282')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('TOPPADDING', (0, 0), (-1, 0), 8),
-            
-            # Body style
-            ('BACKGROUND', (0, 1), (-1, -1), white),
-            ('TEXTCOLOR', (0, 1), (-1, -1), HexColor('#2d3748')),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-            ('TOPPADDING', (0, 1), (-1, -1), 6),
-            
-            # Alternating row colors
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [white, HexColor('#f7fafc')]),
-            
-            # Grid
-            ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#e2e8f0')),
-            ('BOX', (0, 0), (-1, -1), 1, HexColor('#cbd5e0')),
-            
-            # Padding
-            ('LEFTPADDING', (0, 0), (-1, -1), 8),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ])
-        
-        table.setStyle(style)
-        return table
     
     def parse(self, markdown: str) -> List:
-        """Parse markdown content into PDF elements."""
+        """Parse markdown content into PDF elements with robust error handling."""
         self.elements = []
+        
+        if not markdown:
+            return self.elements
+        
+        # Normalize line endings
+        markdown = markdown.replace('\r\n', '\n').replace('\r', '\n')
         lines = markdown.split('\n')
         i = 0
         
         while i < len(lines):
-            line = lines[i]
-            
-            # Skip empty lines
-            if not line.strip():
+            try:
+                line = lines[i]
+                
+                # Skip empty lines but add small spacing
+                if not line.strip():
+                    i += 1
+                    continue
+                
+                # Code block (```)
+                if line.strip().startswith('```'):
+                    code_lines = []
+                    i += 1
+                    while i < len(lines) and not lines[i].strip().startswith('```'):
+                        code_lines.append(lines[i])
+                        i += 1
+                    code_text = '\n'.join(code_lines)
+                    if code_text.strip():
+                        try:
+                            # Sanitize code for display
+                            safe_code = self.sanitize_text(code_text)
+                            self.elements.append(Preformatted(safe_code, self.styles['Code']))
+                            self.elements.append(Spacer(1, 6))
+                        except:
+                            # Fallback: add as plain paragraph
+                            para = self.safe_paragraph(code_text, self.styles['Body'])
+                            if para:
+                                self.elements.append(para)
+                    i += 1
+                    continue
+                
+                # Table detection
+                if line.strip().startswith('|') and i + 1 < len(lines):
+                    table_lines = []
+                    while i < len(lines) and lines[i].strip().startswith('|'):
+                        table_lines.append(lines[i])
+                        i += 1
+                    table = self.parse_table(table_lines, self.template)
+                    if table:
+                        self.elements.append(Spacer(1, 6))
+                        self.elements.append(table)
+                        self.elements.append(Spacer(1, 10))
+                    continue
+                
+                # Headers
+                if line.startswith('######'):
+                    text = self.convert_inline(line[6:].strip())
+                    para = self.safe_paragraph(text, self.styles['H4'])
+                    if para:
+                        self.elements.append(para)
+                elif line.startswith('#####'):
+                    text = self.convert_inline(line[5:].strip())
+                    para = self.safe_paragraph(text, self.styles['H4'])
+                    if para:
+                        self.elements.append(para)
+                elif line.startswith('####'):
+                    text = self.convert_inline(line[4:].strip())
+                    para = self.safe_paragraph(text, self.styles['H4'])
+                    if para:
+                        self.elements.append(para)
+                elif line.startswith('###'):
+                    text = self.convert_inline(line[3:].strip())
+                    para = self.safe_paragraph(text, self.styles['H3'])
+                    if para:
+                        self.elements.append(para)
+                elif line.startswith('##'):
+                    text = self.convert_inline(line[2:].strip())
+                    para = self.safe_paragraph(text, self.styles['H2'])
+                    if para:
+                        self.elements.append(para)
+                elif line.startswith('#'):
+                    text = self.convert_inline(line[1:].strip())
+                    para = self.safe_paragraph(text, self.styles['H1'])
+                    if para:
+                        self.elements.append(para)
+                
+                # Blockquote
+                elif line.strip().startswith('>'):
+                    quote_text = line.strip()[1:].strip()
+                    text = self.convert_inline(quote_text)
+                    para = self.safe_paragraph(text, self.styles['BlockQuote'])
+                    if para:
+                        self.elements.append(para)
+                
+                # Horizontal rule
+                elif line.strip() in ['---', '***', '___']:
+                    self.elements.append(HRFlowable(
+                        width="100%",
+                        thickness=1,
+                        color=HexColor('#e2e8f0'),
+                        spaceBefore=10,
+                        spaceAfter=10
+                    ))
+                
+                # Bullet list
+                elif line.strip().startswith('- ') or line.strip().startswith('* '):
+                    list_items = []
+                    while i < len(lines) and (lines[i].strip().startswith('- ') or lines[i].strip().startswith('* ')):
+                        item_text = lines[i].strip()[2:]
+                        text = self.convert_inline(item_text)
+                        para = self.safe_paragraph(text, self.styles['ListItem'])
+                        if para:
+                            list_items.append(ListItem(para, bulletColor=HexColor('#3182ce')))
+                        i += 1
+                    if list_items:
+                        try:
+                            self.elements.append(ListFlowable(list_items, bulletType='bullet', start='•'))
+                        except:
+                            # Fallback: add items as regular paragraphs with bullet
+                            for item in list_items:
+                                self.elements.append(item.value)
+                        self.elements.append(Spacer(1, 6))
+                    continue
+                
+                # Numbered list
+                elif re.match(r'^\d+\.\s', line.strip()):
+                    list_items = []
+                    while i < len(lines) and re.match(r'^\d+\.\s', lines[i].strip()):
+                        item_text = re.sub(r'^\d+\.\s', '', lines[i].strip())
+                        text = self.convert_inline(item_text)
+                        para = self.safe_paragraph(text, self.styles['ListItem'])
+                        if para:
+                            list_items.append(ListItem(para))
+                        i += 1
+                    if list_items:
+                        try:
+                            self.elements.append(ListFlowable(list_items, bulletType='1'))
+                        except:
+                            # Fallback
+                            for idx, item in enumerate(list_items, 1):
+                                self.elements.append(item.value)
+                        self.elements.append(Spacer(1, 6))
+                    continue
+                
+                # Regular paragraph
+                else:
+                    text = self.convert_inline(line.strip())
+                    para = self.safe_paragraph(text, self.styles['Body'])
+                    if para:
+                        self.elements.append(para)
+                
+                i += 1
+                
+            except Exception as e:
+                # Log error but continue processing
                 i += 1
                 continue
-            
-            # Code block (```)
-            if line.strip().startswith('```'):
-                code_lines = []
-                i += 1
-                while i < len(lines) and not lines[i].strip().startswith('```'):
-                    code_lines.append(lines[i])
-                    i += 1
-                code_text = '\n'.join(code_lines)
-                self.elements.append(Preformatted(code_text, self.styles['Code']))
-                self.elements.append(Spacer(1, 6))
-                i += 1
-                continue
-            
-            # Table detection
-            if line.strip().startswith('|') and i + 1 < len(lines):
-                table_lines = []
-                while i < len(lines) and lines[i].strip().startswith('|'):
-                    table_lines.append(lines[i])
-                    i += 1
-                table = self.parse_table(table_lines)
-                if table:
-                    self.elements.append(Spacer(1, 6))
-                    self.elements.append(table)
-                    self.elements.append(Spacer(1, 10))
-                continue
-            
-            # Headers
-            if line.startswith('######'):
-                text = self.convert_inline(line[6:].strip())
-                self.elements.append(Paragraph(text, self.styles['H4']))
-            elif line.startswith('#####'):
-                text = self.convert_inline(line[5:].strip())
-                self.elements.append(Paragraph(text, self.styles['H4']))
-            elif line.startswith('####'):
-                text = self.convert_inline(line[4:].strip())
-                self.elements.append(Paragraph(text, self.styles['H4']))
-            elif line.startswith('###'):
-                text = self.convert_inline(line[3:].strip())
-                self.elements.append(Paragraph(text, self.styles['H3']))
-            elif line.startswith('##'):
-                text = self.convert_inline(line[2:].strip())
-                self.elements.append(Paragraph(text, self.styles['H2']))
-            elif line.startswith('#'):
-                text = self.convert_inline(line[1:].strip())
-                self.elements.append(Paragraph(text, self.styles['H1']))
-            
-            # Blockquote
-            elif line.strip().startswith('>'):
-                quote_text = line.strip()[1:].strip()
-                text = self.convert_inline(quote_text)
-                self.elements.append(Paragraph(text, self.styles['BlockQuote']))
-            
-            # Horizontal rule
-            elif line.strip() in ['---', '***', '___']:
-                self.elements.append(HRFlowable(
-                    width="100%",
-                    thickness=1,
-                    color=HexColor('#e2e8f0'),
-                    spaceBefore=10,
-                    spaceAfter=10
-                ))
-            
-            # Bullet list
-            elif line.strip().startswith('- ') or line.strip().startswith('* '):
-                list_items = []
-                while i < len(lines) and (lines[i].strip().startswith('- ') or lines[i].strip().startswith('* ')):
-                    item_text = lines[i].strip()[2:]
-                    text = self.convert_inline(item_text)
-                    list_items.append(ListItem(Paragraph(text, self.styles['ListItem']), bulletColor=HexColor('#3182ce')))
-                    i += 1
-                self.elements.append(ListFlowable(list_items, bulletType='bullet', start='•'))
-                self.elements.append(Spacer(1, 6))
-                continue
-            
-            # Numbered list
-            elif re.match(r'^\d+\.\s', line.strip()):
-                list_items = []
-                while i < len(lines) and re.match(r'^\d+\.\s', lines[i].strip()):
-                    item_text = re.sub(r'^\d+\.\s', '', lines[i].strip())
-                    text = self.convert_inline(item_text)
-                    list_items.append(ListItem(Paragraph(text, self.styles['ListItem'])))
-                    i += 1
-                self.elements.append(ListFlowable(list_items, bulletType='1'))
-                self.elements.append(Spacer(1, 6))
-                continue
-            
-            # Regular paragraph
-            else:
-                text = self.convert_inline(line.strip())
-                if text:
-                    self.elements.append(Paragraph(text, self.styles['Body']))
-            
-            i += 1
         
         return self.elements
 
@@ -623,13 +751,16 @@ def generate_pdf(
     # Create styles with template
     styles, _ = create_styles(template)
     
-    # Parse markdown
-    parser = MarkdownToPDF(styles)
+    # Parse markdown with template
+    parser = MarkdownToPDF(styles, template)
     elements = []
     
     # Add title if provided
     if title:
-        elements.append(Paragraph(title, styles['DocTitle']))
+        try:
+            elements.append(Paragraph(parser.sanitize_text(title), styles['DocTitle']))
+        except:
+            elements.append(Paragraph(title, styles['DocTitle']))
         elements.append(HRFlowable(
             width="100%",
             thickness=2,
@@ -703,11 +834,14 @@ def markdown_to_pdf_bytes(
     )
     
     styles, _ = create_styles(template)
-    parser = MarkdownToPDF(styles)
+    parser = MarkdownToPDF(styles, template)
     elements = []
     
     if title:
-        elements.append(Paragraph(title, styles['DocTitle']))
+        try:
+            elements.append(Paragraph(parser.sanitize_text(title), styles['DocTitle']))
+        except:
+            elements.append(Paragraph(title, styles['DocTitle']))
         elements.append(HRFlowable(
             width="100%",
             thickness=2,
