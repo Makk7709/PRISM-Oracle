@@ -375,6 +375,36 @@ BOARD_LEVEL_KEYWORDS: List[Keyword] = [
     Keyword("lbo", weight=6.0, use_boundary=False),
     Keyword("ipo", weight=6.0, use_boundary=False),
     
+    # Due diligence (strategic process, not generic research)
+    Keyword("due diligence", weight=5.0, use_boundary=False),
+    Keyword("due dil", weight=4.0, use_boundary=False),  # Common abbrev
+    
+    # Shareholder agreements / governance
+    Keyword("pacte d'actionnaires", weight=5.0, use_boundary=False),
+    Keyword("shareholders agreement", weight=5.0, use_boundary=False),
+    Keyword("shareholder agreement", weight=5.0, use_boundary=False),
+    Keyword("governance board", weight=4.0, use_boundary=False),
+    
+    # Joint ventures
+    Keyword("joint venture", weight=5.0, use_boundary=False),
+    Keyword("joint-venture", weight=5.0, use_boundary=False),
+    Keyword("jv agreement", weight=4.0, use_boundary=False),
+    
+    # Asset sales / divestitures
+    Keyword("cession de filiale", weight=5.0, use_boundary=False),
+    Keyword("cession filiale", weight=5.0, use_boundary=False),
+    Keyword("cession d'actifs", weight=5.0, use_boundary=False),
+    Keyword("asset sale", weight=4.0, use_boundary=False),
+    Keyword("divestiture", weight=5.0),
+    Keyword("carve-out", weight=5.0, use_boundary=False),
+    Keyword("spin-off", weight=5.0, use_boundary=False),
+    
+    # Restructuring (with governance context)
+    Keyword("restructuration plan", weight=4.0, use_boundary=False),
+    Keyword("plan de restructuration", weight=5.0, use_boundary=False),
+    Keyword("restructuration stratégique", weight=5.0, use_boundary=False),
+    Keyword("pse", weight=4.0),  # Plan de Sauvegarde de l'Emploi
+    
     # Fundraising
     Keyword("levée de fonds", weight=4.0),
     Keyword("fundraising", weight=4.0),

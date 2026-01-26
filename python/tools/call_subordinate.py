@@ -140,16 +140,43 @@ class Delegation(Tool):
                 # Enforcement soft (level 2): bloquer si high-stakes
                 execution_blocked = False
                 if enforcement_level >= 2 and router_would_block:
-                    is_high_stakes = (
-                        route_decision.is_board_level or
-                        any(i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL} 
+                    # HIGH-STAKES DEFINITION (3 critères, OR):
+                    # 1. Board-level explicite (keywords stratégiques déclenchés)
+                    # 2. Intent critique (legal/medical) présent
+                    # 3. Signal stratégique implicite: routing_strength >= 0.65 + finance/legal
+                    
+                    has_critical_intent = any(
+                        i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL} 
+                        for i in route_decision.intents
+                    )
+                    
+                    has_strategic_signal = (
+                        route_decision.routing_strength >= 0.65 and
+                        any(i.name in {IntentName.FINANCE, IntentName.LEGAL_SAFE} 
                             for i in route_decision.intents)
                     )
+                    
+                    is_high_stakes = (
+                        route_decision.is_board_level or
+                        has_critical_intent or
+                        has_strategic_signal
+                    )
+                    
                     if is_high_stakes:
                         execution_blocked = True
+                        # Log avec raison précise
+                        reason = []
+                        if route_decision.is_board_level:
+                            reason.append("board_level")
+                        if has_critical_intent:
+                            reason.append("critical_intent")
+                        if has_strategic_signal:
+                            reason.append("strategic_signal")
+                        
                         logger.warning(
                             f"[ROUTER_V2] ENFORCEMENT_SOFT | {route_decision.route_id} | "
-                            f"Blocking execution: {route_decision.verdict.value}"
+                            f"Blocking: {route_decision.verdict.value} | "
+                            f"reason={'+'.join(reason)}"
                         )
                 
                 # Enregistrer métriques

@@ -261,12 +261,21 @@ def decide_route(
     
     if injection_blocked:
         # Determine if this is a HIGH-STAKES context
-        # High-stakes = board-level OR legal/medical intent detected
+        # High-stakes = board-level OR critical intent OR strategic signal
         has_critical_intent = any(
             i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL, IntentName.RESEARCHER}
             for i in intents
         )
-        is_high_stakes = is_board_level or has_critical_intent
+        
+        # Strategic signal: high routing_strength + finance/legal
+        # This catches due diligence, cession, JV even without board-level trigger
+        top_score = intents[0].score if intents else 0.0
+        has_strategic_signal = (
+            top_score >= 0.3 and  # Normalized 0.3 = raw 3.0+
+            any(i.name in {IntentName.FINANCE, IntentName.LEGAL_SAFE} for i in intents)
+        )
+        
+        is_high_stakes = is_board_level or has_critical_intent or has_strategic_signal
         
         if is_high_stakes:
             # HIGH-STAKES + INJECTION → ALWAYS NEEDS_CLARIFICATION
