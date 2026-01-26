@@ -100,74 +100,88 @@ class FileWriter(Tool):
     
     def _write_pdf(self, path: str, content: str, title: str = "", template: str = ""):
         """
-        Create professional PDF file with full Markdown support and templates.
+        Create professional PDF file using Evidence Document System.
         
-        Templates disponibles:
-        - mckinsey: Rapport stratégique premium (cabinet conseil)
-        - legal: Document juridique (tribunal/greffe)
-        - scientific: Publication scientifique
-        - patent: Brevet INPI/EPO
-        - financial: Rapport financier/audit
-        - executive: Note de synthèse executive
-        - medical: Rapport médical/clinique
-        - technical: Documentation technique
+        Templates disponibles (sans marques):
+        - consulting_premium: Rapport stratégique haut de gamme
+        - legal_formal: Document juridique (tribunal/greffe)
+        - scientific_academic: Publication scientifique
+        - patent_ip: Brevet / Propriété intellectuelle
+        - financial_audit: Rapport financier/audit
+        - executive_brief: Note de synthèse executive
+        - medical_clinical: Rapport médical/clinique
+        - technical_doc: Documentation technique
+        - standard: Document professionnel polyvalent
+        
+        Legacy mappings (pour compatibilité):
+        - mckinsey -> consulting_premium
+        - legal -> legal_formal
+        - scientific -> scientific_academic
+        - patent -> patent_ip
+        - financial -> financial_audit
+        - executive -> executive_brief
+        - medical -> medical_clinical
+        - technical -> technical_doc
         """
+        # Template mapping for backwards compatibility
+        template_map = {
+            "mckinsey": "consulting_premium",
+            "legal": "legal_formal",
+            "scientific": "scientific_academic",
+            "patent": "patent_ip",
+            "financial": "financial_audit",
+            "executive": "executive_brief",
+            "medical": "medical_clinical",
+            "technical": "technical_doc",
+        }
+        
+        # Normalize template name
+        normalized_template = template_map.get(template, template) if template else ""
+        
         try:
-            from python.helpers.pdf_generator import generate_pdf
+            from python.helpers.evidence_document import parse_markdown, render_to_file
             
             PrintStyle(font_color="cyan").print(
-                f"[FileWriter] PDF content preview: {content[:200] if content else 'EMPTY'}..."
+                f"[FileWriter] PDF content: {len(content)} chars, template={normalized_template or 'auto'}"
             )
             
-            # Use the professional PDF generator with template support
-            generate_pdf(
+            # Parse markdown to Document AST
+            doc = parse_markdown(
                 content=content,
-                output_path=path,
                 title=title if title else None,
-                author="Korev Evidence",
-                template_name=template if template else None
+                template=normalized_template if normalized_template else None,
+                author="Korev Evidence"
             )
             
-            PrintStyle(font_color="green").print(f"[FileWriter] PDF generated successfully")
+            # Render to file
+            render_to_file(doc, path)
+            
+            PrintStyle(font_color="green").print(
+                f"[FileWriter] PDF generated: {doc.template} template, {len(doc.elements)} elements"
+            )
             
         except Exception as e:
-            PrintStyle(font_color="red").print(f"[FileWriter] PDF generation error: {e}")
-            # Fallback to basic reportlab if pdf_generator fails
+            PrintStyle(font_color="yellow").print(f"[FileWriter] New system failed: {e}, trying legacy...")
+            
+            # Fallback to legacy pdf_generator
             try:
-                from reportlab.lib.pagesizes import A4
-                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+                from python.helpers.pdf_generator import generate_pdf
                 
-                doc = SimpleDocTemplate(path, pagesize=A4)
-                styles = getSampleStyleSheet()
-                story = []
+                generate_pdf(
+                    content=content,
+                    output_path=path,
+                    title=title if title else None,
+                    author="Korev Evidence",
+                    template_name=normalized_template if normalized_template else None
+                )
                 
-                if title:
-                    title_style = ParagraphStyle(
-                        'Title',
-                        parent=styles['Heading1'],
-                        fontSize=18,
-                        spaceAfter=30
-                    )
-                    story.append(Paragraph(title, title_style))
+                PrintStyle(font_color="green").print(f"[FileWriter] PDF generated (legacy)")
                 
-                for para in content.split('\n\n'):
-                    if para.strip():
-                        if para.startswith('# '):
-                            story.append(Paragraph(para[2:], styles['Heading1']))
-                        elif para.startswith('## '):
-                            story.append(Paragraph(para[3:], styles['Heading2']))
-                        elif para.startswith('### '):
-                            story.append(Paragraph(para[4:], styles['Heading3']))
-                        else:
-                            story.append(Paragraph(para.replace('\n', '<br/>'), styles['Normal']))
-                        story.append(Spacer(1, 12))
-                
-                doc.build(story)
-                
-            except ImportError:
+            except Exception as e2:
+                PrintStyle(font_color="red").print(f"[FileWriter] PDF error: {e2}")
+                # Final fallback
                 self._write_text(path.replace('.pdf', '.txt'), content)
-                raise Exception("reportlab not installed. Created .txt instead.")
+                raise Exception(f"PDF generation failed. Created .txt instead. Error: {e2}")
     
     def _write_csv(self, path: str, content: str):
         """Create CSV file."""
