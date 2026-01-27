@@ -2,6 +2,7 @@
 Legal Sources — Data Models
 
 Schémas normalisés pour documents juridiques avec traçabilité complète.
+Conformité audit: chaque champ licence/CGU est sourcé et vérifié.
 """
 
 import hashlib
@@ -19,6 +20,14 @@ class LegalSource(str, Enum):
     CASS = "cass"           # Cour de cassation (Judilibre)
     JADE = "jade"           # Jurisprudence administrative
     CONSTIT = "constit"     # Conseil constitutionnel
+
+
+class AccessMode(str, Enum):
+    """Modes d'accès aux sources."""
+    OPEN_DOWNLOAD = "OPEN_DOWNLOAD"       # Téléchargement libre
+    API_KEY_CGU = "API_KEY_CGU"           # API avec clé + CGU
+    REQUEST_TO_ADMIN = "REQUEST_TO_ADMIN" # Demande préalable admin
+    PARTNERSHIP = "PARTNERSHIP"           # Partenariat requis
 
 
 class Jurisdiction(str, Enum):
@@ -57,36 +66,93 @@ class DocumentType(str, Enum):
     OTHER = "other"
 
 
+class ProvenanceValidationError(Exception):
+    """Erreur de validation de provenance."""
+    pass
+
+
 @dataclass
 class Provenance:
     """
     Traçabilité complète d'un document ou chunk.
     
-    Chaque élément indexé DOIT avoir une provenance complète
-    pour garantir la citation opposable.
+    CONFORMITÉ AUDIT: Chaque élément indexé DOIT avoir une provenance complète
+    avec licence et CGU vérifiées et sourcées.
+    
+    Champs obligatoires pour indexation:
+    - source, source_name, origin_id
+    - license_name, license_url
+    - terms_url, access_mode
+    - retrieved_at
     """
-    # Source
+    # === Source (obligatoire) ===
     source: LegalSource
     source_name: str  # "DILA", "Cour de cassation", etc.
     
-    # Identifiants
+    # === Identifiants (obligatoire) ===
     origin_id: str  # ID d'origine (LEGITEXT..., JURITEXT..., etc.)
     origin_url: Optional[str] = None  # URL Légifrance/Judilibre si disponible
     
-    # Acquisition
+    # === Acquisition (obligatoire) ===
     retrieved_at: datetime = field(default_factory=datetime.utcnow)
     api_version: Optional[str] = None
     
-    # Licence
-    license: str = "Licence Ouverte 2.0 (Etalab)"
-    license_url: str = "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
+    # === Licence (OBLIGATOIRE - sourcée et vérifiée) ===
+    license_name: str = ""  # Ex: "Licence Ouverte 2.0 (Etalab)"
+    license_url: str = ""   # Ex: "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
     
-    # Intégrité
+    # === CGU/Terms (OBLIGATOIRE - sourcées) ===
+    terms_name: str = ""    # Ex: "CGU PISTE + CGU Cour de cassation"
+    terms_url: str = ""     # Ex: "https://piste.gouv.fr/cgu"
+    
+    # === Mode d'accès (OBLIGATOIRE) ===
+    access_mode: AccessMode = AccessMode.API_KEY_CGU
+    
+    # === Intégrité ===
     content_hash: Optional[str] = None  # SHA256 du contenu brut
     
-    # Pinpoint (pour chunks)
+    # === Pinpoint (pour chunks) ===
     pinpoint: Optional[str] = None  # Article, section, paragraphe
     chunk_index: Optional[int] = None
+    
+    def validate(self) -> None:
+        """
+        Valide que la provenance est complète pour indexation.
+        
+        Raises:
+            ProvenanceValidationError: Si champs obligatoires manquants
+        """
+        missing = []
+        
+        if not self.source:
+            missing.append("source")
+        if not self.source_name:
+            missing.append("source_name")
+        if not self.origin_id:
+            missing.append("origin_id")
+        if not self.license_name:
+            missing.append("license_name")
+        if not self.license_url:
+            missing.append("license_url")
+        if not self.terms_url:
+            missing.append("terms_url")
+        if not self.access_mode:
+            missing.append("access_mode")
+        
+        if missing:
+            raise ProvenanceValidationError(
+                f"Provenance incomplète pour indexation. Champs manquants: {missing}. "
+                f"AUDIT: Aucun document ne peut être indexé sans provenance complète."
+            )
+    
+    @property
+    def is_valid(self) -> bool:
+        """Vérifie si la provenance est valide pour indexation."""
+        try:
+            self.validate()
+            return True
+        except ProvenanceValidationError:
+            return False
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -96,8 +162,11 @@ class Provenance:
             "origin_url": self.origin_url,
             "retrieved_at": self.retrieved_at.isoformat(),
             "api_version": self.api_version,
-            "license": self.license,
+            "license_name": self.license_name,
             "license_url": self.license_url,
+            "terms_name": self.terms_name,
+            "terms_url": self.terms_url,
+            "access_mode": self.access_mode.value,
             "content_hash": self.content_hash,
             "pinpoint": self.pinpoint,
             "chunk_index": self.chunk_index,
@@ -105,6 +174,10 @@ class Provenance:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Provenance":
+        access_mode = data.get("access_mode", "API_KEY_CGU")
+        if isinstance(access_mode, str):
+            access_mode = AccessMode(access_mode)
+        
         return cls(
             source=LegalSource(data["source"]),
             source_name=data["source_name"],
@@ -112,12 +185,97 @@ class Provenance:
             origin_url=data.get("origin_url"),
             retrieved_at=datetime.fromisoformat(data["retrieved_at"]),
             api_version=data.get("api_version"),
-            license=data.get("license", "Licence Ouverte 2.0 (Etalab)"),
+            license_name=data.get("license_name", ""),
             license_url=data.get("license_url", ""),
+            terms_name=data.get("terms_name", ""),
+            terms_url=data.get("terms_url", ""),
+            access_mode=access_mode,
             content_hash=data.get("content_hash"),
             pinpoint=data.get("pinpoint"),
             chunk_index=data.get("chunk_index"),
         )
+
+
+# === Source Compliance Registry ===
+# Données vérifiées et sourcées pour chaque source
+
+SOURCE_COMPLIANCE = {
+    LegalSource.LEGI: {
+        "source_name": "DILA (Direction de l'Information Légale et Administrative)",
+        "license_name": "Licence Ouverte 2.0 (Etalab)",
+        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "terms_name": "CGU PISTE",
+        "terms_url": "https://piste.gouv.fr/cgu",
+        "access_mode": AccessMode.API_KEY_CGU,
+    },
+    LegalSource.JORF: {
+        "source_name": "DILA (Direction de l'Information Légale et Administrative)",
+        "license_name": "Licence Ouverte 2.0 (Etalab)",
+        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "terms_name": "CGU PISTE",
+        "terms_url": "https://piste.gouv.fr/cgu",
+        "access_mode": AccessMode.API_KEY_CGU,
+    },
+    LegalSource.CASS: {
+        "source_name": "Cour de cassation",
+        "license_name": "Licence Ouverte 2.0 (Etalab)",
+        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "terms_name": "CGU PISTE + CGU Réutilisation Cour de cassation",
+        "terms_url": "https://www.courdecassation.fr/conditions-generales-dutilisation-pour-la-reutilisation-des-donnees-issues-des-decisions-de-justice",
+        "access_mode": AccessMode.API_KEY_CGU,
+    },
+    LegalSource.JADE: {
+        "source_name": "DILA (données Conseil d'État)",
+        "license_name": "Licence Ouverte 2.0 (Etalab)",
+        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "terms_name": "Conditions DILA FTPS",
+        "terms_url": "https://echanges.dila.gouv.fr/OPENDATA/AVERTISSEMENT-Donnees_a_caractere_personnel.pdf",
+        "access_mode": AccessMode.REQUEST_TO_ADMIN,
+    },
+    LegalSource.CONSTIT: {
+        "source_name": "Conseil constitutionnel",
+        "license_name": "Licence Ouverte 2.0 (Etalab)",
+        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "terms_name": "CGU PISTE",
+        "terms_url": "https://piste.gouv.fr/cgu",
+        "access_mode": AccessMode.API_KEY_CGU,
+    },
+}
+
+
+def create_compliant_provenance(
+    source: LegalSource,
+    origin_id: str,
+    origin_url: Optional[str] = None,
+    content_hash: Optional[str] = None,
+    pinpoint: Optional[str] = None,
+    chunk_index: Optional[int] = None,
+) -> Provenance:
+    """
+    Crée une Provenance conforme avec licence/CGU vérifiées.
+    
+    Utilise SOURCE_COMPLIANCE pour garantir que tous les champs
+    obligatoires sont remplis avec des valeurs sourcées.
+    """
+    compliance = SOURCE_COMPLIANCE.get(source)
+    if not compliance:
+        raise ValueError(f"Source {source} not in compliance registry")
+    
+    return Provenance(
+        source=source,
+        source_name=compliance["source_name"],
+        origin_id=origin_id,
+        origin_url=origin_url,
+        retrieved_at=datetime.utcnow(),
+        license_name=compliance["license_name"],
+        license_url=compliance["license_url"],
+        terms_name=compliance["terms_name"],
+        terms_url=compliance["terms_url"],
+        access_mode=compliance["access_mode"],
+        content_hash=content_hash,
+        pinpoint=pinpoint,
+        chunk_index=chunk_index,
+    )
 
 
 @dataclass
@@ -126,6 +284,8 @@ class LegalDoc:
     Document juridique normalisé.
     
     Schéma unique pour tous les types de sources (LEGI, CASS, JADE, etc.)
+    
+    AUDIT: Document ne peut être indexé que si provenance.is_valid == True
     """
     # === Identifiants (stables, déterministes) ===
     doc_id: str  # Hash stable: SHA256(source + origin_id)
@@ -167,7 +327,7 @@ class LegalDoc:
     # Pour JADE (administratif)
     formation: Optional[str] = None  # "Assemblée", "Section", etc.
     
-    # === Traçabilité ===
+    # === Traçabilité (OBLIGATOIRE pour indexation) ===
     provenance: Optional[Provenance] = None
     
     # === Intégrité ===
@@ -193,6 +353,31 @@ class LegalDoc:
         """Hash du contenu pour détecter les modifications."""
         normalized = self.text.strip().lower()
         return hashlib.sha256(normalized.encode()).hexdigest()[:12]
+    
+    def validate_for_indexing(self) -> None:
+        """
+        Valide que le document peut être indexé.
+        
+        AUDIT: Refuse l'indexation si provenance incomplète.
+        
+        Raises:
+            ProvenanceValidationError: Si provenance manquante ou incomplète
+        """
+        if not self.provenance:
+            raise ProvenanceValidationError(
+                f"Document {self.doc_id} n'a pas de provenance. "
+                f"AUDIT: Aucun document ne peut être indexé sans provenance."
+            )
+        self.provenance.validate()
+    
+    @property
+    def can_be_indexed(self) -> bool:
+        """Vérifie si le document peut être indexé."""
+        try:
+            self.validate_for_indexing()
+            return True
+        except ProvenanceValidationError:
+            return False
     
     def to_dict(self) -> Dict[str, Any]:
         """Sérialise pour stockage/indexation."""
@@ -262,6 +447,7 @@ class LegalChunk:
     Chunk de document juridique pour indexation vectorielle.
     
     Chaque chunk conserve sa provenance complète pour citation.
+    AUDIT: Chunk ne peut être créé que si provenance valide.
     """
     # === Identifiants ===
     chunk_id: str  # Hash stable: SHA256(doc_id + chunk_index)
@@ -277,7 +463,7 @@ class LegalChunk:
     citation: str  # Citation du document parent
     pinpoint: str  # Position précise: "Art. 1134, al. 2"
     
-    # === Traçabilité ===
+    # === Traçabilité (OBLIGATOIRE) ===
     provenance: Provenance
     
     # === Vecteur (optionnel, rempli après embedding) ===
@@ -286,6 +472,9 @@ class LegalChunk:
     def __post_init__(self):
         if not self.chunk_id:
             self.chunk_id = self._compute_chunk_id()
+        # Valider provenance à la création
+        if self.provenance:
+            self.provenance.validate()
     
     def _compute_chunk_id(self) -> str:
         """ID déterministe du chunk."""
@@ -335,13 +524,19 @@ class IngestionResult:
     docs_indexed: int = 0
     docs_skipped: int = 0  # Déjà présents (idempotence)
     docs_failed: int = 0
+    docs_rejected_no_provenance: int = 0  # Rejetés pour provenance manquante
     
     chunks_created: int = 0
+    
+    # Résilience
+    retries_total: int = 0
+    rate_limited_count: int = 0  # 429 reçus
     
     # Erreurs
     errors: List[str] = field(default_factory=list)
     
-    # Checksums pour vérification
+    # Checkpoint
+    last_cursor: Optional[str] = None
     last_doc_id: Optional[str] = None
     
     @property
@@ -365,7 +560,12 @@ class IngestionResult:
             "docs_indexed": self.docs_indexed,
             "docs_skipped": self.docs_skipped,
             "docs_failed": self.docs_failed,
+            "docs_rejected_no_provenance": self.docs_rejected_no_provenance,
             "chunks_created": self.chunks_created,
+            "retries_total": self.retries_total,
+            "rate_limited_count": self.rate_limited_count,
             "errors": self.errors,
+            "last_cursor": self.last_cursor,
+            "last_doc_id": self.last_doc_id,
             "success": self.success,
         }

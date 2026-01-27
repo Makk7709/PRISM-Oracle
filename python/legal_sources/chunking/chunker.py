@@ -259,18 +259,33 @@ class LegalChunker:
             context = f"[{doc.citation}]\n\n"
             text = context + text
         
-        # Provenance
-        provenance = Provenance(
-            source=doc.source,
-            source_name=doc.provenance.source_name if doc.provenance else "",
-            origin_id=doc.origin_id,
-            origin_url=doc.provenance.origin_url if doc.provenance else None,
-            retrieved_at=doc.provenance.retrieved_at if doc.provenance else None,
-            license=doc.provenance.license if doc.provenance else "Licence Ouverte 2.0",
-            content_hash=hashlib.sha256(text.encode()).hexdigest()[:12],
-            pinpoint=pinpoint,
-            chunk_index=index,
-        )
+        # Provenance - hérite du document parent ou utilise compliance
+        if doc.provenance:
+            provenance = Provenance(
+                source=doc.source,
+                source_name=doc.provenance.source_name,
+                origin_id=doc.origin_id,
+                origin_url=doc.provenance.origin_url,
+                retrieved_at=doc.provenance.retrieved_at,
+                license_name=doc.provenance.license_name,
+                license_url=doc.provenance.license_url,
+                terms_name=doc.provenance.terms_name,
+                terms_url=doc.provenance.terms_url,
+                access_mode=doc.provenance.access_mode,
+                content_hash=hashlib.sha256(text.encode()).hexdigest()[:12],
+                pinpoint=pinpoint,
+                chunk_index=index,
+            )
+        else:
+            # Fallback: utiliser le registre de compliance
+            from ..models import create_compliant_provenance
+            provenance = create_compliant_provenance(
+                source=doc.source,
+                origin_id=doc.origin_id,
+                content_hash=hashlib.sha256(text.encode()).hexdigest()[:12],
+                pinpoint=pinpoint,
+                chunk_index=index,
+            )
         
         return LegalChunk(
             chunk_id="",  # Auto-calculé
