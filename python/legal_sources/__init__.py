@@ -4,6 +4,19 @@ Legal Sources — Open Data Juridique France (Enterprise Edition)
 Package d'ingestion des sources juridiques françaises en open data.
 Conformité audit: licences et CGU vérifiées et sourcées.
 
+┌─────────────────────────────────────────────────────────────────────────┐
+│  AVERTISSEMENT IMPORTANT                                                │
+│                                                                         │
+│  Ce module garantit la PROVENANCE et la TRAÇABILITÉ des sources,        │
+│  pas l'exhaustivité ni l'interprétation juridique.                      │
+│                                                                         │
+│  Le droit opposable n'est authentifié que sur les sites officiels:      │
+│  - legifrance.gouv.fr                                                   │
+│  - courdecassation.fr                                                   │
+│  - conseil-etat.fr                                                      │
+│  - conseil-constitutionnel.fr                                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
 Sources supportées:
 - LEGI: Codes, lois, règlements consolidés (Licence Ouverte 2.0)
 - JORF: Journal Officiel (Licence Ouverte 2.0)

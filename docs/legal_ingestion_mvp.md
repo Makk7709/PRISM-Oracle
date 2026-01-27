@@ -2,6 +2,14 @@
 
 Guide complet pour l'ingestion des données juridiques françaises dans Korev Evidence.
 
+**Version**: `legal_sources@v1.0-enterprise`
+
+> **AVERTISSEMENT IMPORTANT**
+> 
+> **Ce module garantit la provenance et la traçabilité des sources, pas l'exhaustivité ni l'interprétation juridique.**
+>
+> Le droit opposable n'est authentifié que sur les sites officiels.
+
 ## Prérequis
 
 ### Environnement

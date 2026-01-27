@@ -5,7 +5,14 @@
 Ce document recense les sources officielles de données juridiques françaises, avec **URLs et licences vérifiées**.
 
 **Dernière mise à jour**: 27 janvier 2026  
-**Statut**: Production-ready avec traçabilité audit
+**Statut**: Production-ready avec traçabilité audit  
+**Version**: `legal_sources@v1.0-enterprise`
+
+> **AVERTISSEMENT IMPORTANT**
+> 
+> **Ce module garantit la provenance et la traçabilité des sources, pas l'exhaustivité ni l'interprétation juridique.**
+>
+> Le droit opposable n'est authentifié que sur les sites officiels (legifrance.gouv.fr, courdecassation.fr, conseil-etat.fr, conseil-constitutionnel.fr).
 
 > **Note**: Toutes les licences et CGU listées sont **vérifiées et sourcées**. Aucune affirmation implicite.
 
