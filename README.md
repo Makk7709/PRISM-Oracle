@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/Version-2.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-142%20Passed-green?style=for-the-badge)](#tests)
+[![Tests](https://img.shields.io/badge/Tests-346%20Passed-green?style=for-the-badge)](#tests)
 
 **Un assistant IA enterprise-grade avec raisonnement avancé, recherche académique intégrée et extraction de documents intelligente.**
 
@@ -85,7 +85,26 @@ config = get_default_config()
 # - Logs sans contenu utilisateur
 ```
 
-### 4. Interface Korev Evidence
+### 4. Deterministic Router v2
+
+Routage multi-intent policy-driven sans jugement LLM :
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Intent** | Détection simultanée finance + legal + sales |
+| **Board-Level** | 40+ keywords M&A, IPO, LBO, COMEX |
+| **Anti-Injection** | Patterns FR + EN, blocage high-stakes |
+| **Observability** | Métriques divergence, latency, would_block |
+
+**Modes d'activation :**
+```bash
+DETERMINISTIC_ROUTER_V2=1  # Audit-only (logs, pas de changement)
+DETERMINISTIC_ROUTER_V2=2  # Enforcement soft (bloque high-stakes)
+```
+
+**High-stakes = board_level OU legal/medical OU (strength≥0.65 + finance/legal)**
+
+### 5. Interface Korev Evidence
 
 Design system personnalisé avec typographie Playfair Display :
 
@@ -105,6 +124,12 @@ korev-evidence/
 │   │   ├── metacognition.py      # ReasoningEngine
 │   │   ├── research_tool_policy.py # Politique outils recherche
 │   │   ├── research_executor.py   # Exécution avec fallback
+│   │   ├── router/               # Deterministic Router v2
+│   │   │   ├── router.py         # Moteur de routage
+│   │   │   ├── policy.py         # Keywords, thresholds, rules
+│   │   │   ├── routing_contract.py # Contrats stricts
+│   │   │   ├── metrics.py        # Observabilité
+│   │   │   └── judge.py          # Détection contradictions
 │   │   └── pdf_extraction/        # Pipeline PDF
 │   │       ├── config.py          # Configuration centralisée
 │   │       ├── pipeline.py        # Extraction avec timeouts
@@ -114,10 +139,11 @@ korev-evidence/
 ├── prompts/                       # System prompts personnalisables
 ├── conf/
 │   └── model_providers.yaml       # Configuration LLM providers
-├── tests/                         # 142 tests unitaires
+├── tests/                         # 346 tests unitaires
 └── scripts/
     ├── install-windows.bat        # Installation Windows
-    └── install-mac.sh             # Installation Mac/Linux
+    ├── install-mac.sh             # Installation Mac/Linux
+    └── router_prod_validation.py  # Validation production Router
 ```
 
 ---
@@ -188,7 +214,7 @@ Evidence utilise **OpenRouter** comme provider principal, donnant accès à tous
 
 ## Tests
 
-142 tests unitaires couvrant les composants critiques :
+346 tests unitaires couvrant les composants critiques :
 
 ```bash
 # Lancer tous les tests
@@ -197,13 +223,16 @@ python -m pytest tests/ -v
 # Tests spécifiques
 python -m pytest tests/test_metacognition_policy.py      # 42 tests
 python -m pytest tests/test_research_tool_policy.py      # 27 tests
-python -m pytest tests/test_research_executor.py         # 30 tests
-python -m pytest tests/test_pdf_extraction_config.py     # 18 tests
-python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
+python -m pytest tests/test_router*.py                   # 204 tests (Router v2)
+python -m pytest tests/test_pdf_extraction*.py           # 43 tests
+
+# Validation production (pas pytest)
+PYTHONPATH=. DETERMINISTIC_ROUTER_V2=2 python scripts/router_prod_validation.py
 ```
 
 | Suite | Tests | Couverture |
 |-------|-------|------------|
+| **Deterministic Router v2** | 204 | Multi-intent, injection, board-level, determinism |
 | Metacognition Policy | 42 | Escalade, monotonie, no-PII |
 | Research Tool Policy | 27 | Intent detection, validation |
 | Research Executor | 30 | Fallback, logging, integration |
@@ -254,6 +283,24 @@ python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
 
 ## Changelog
 
+### v2.1.0 — Janvier 2026
+
+#### Nouveautés
+- **Deterministic Router v2** — Routage policy-driven sans LLM judgment
+  - Multi-intent detection (finance + legal + sales simultanés)
+  - 40+ keywords board-level (M&A, IPO, LBO, COMEX, due diligence)
+  - Anti-injection FR + EN avec blocage high-stakes
+  - Métriques: divergence_rate, would_block, latency
+  - Enforcement soft: `DETERMINISTIC_ROUTER_V2=2`
+- **204 tests Router** — Determinism, contract safety, injection, board-level
+- **Production Reality Tests** — 4 tests réalité (enforcement, non-régression, volume, thread-safety)
+
+#### Améliorations
+- High-stakes élargi: board_level OR critical_intent OR strategic_signal
+- Canonicalization unique partagée (router/metrics/logs)
+- Error rate-limiting (60s cooldown)
+- Log EXECUTION_ABORTED_BY_ROUTER explicite
+
 ### v2.0.0 — Janvier 2026
 
 #### Nouveautés
@@ -266,7 +313,7 @@ python -m pytest tests/test_pdf_extraction_pipeline_timeouts.py  # 25 tests
 
 #### Améliorations
 - Configuration simplifiée (OpenRouter uniquement requis)
-- 142 tests unitaires couvrant les invariants critiques
+- 346 tests unitaires couvrant les invariants critiques
 - Logs sécurisés sans données utilisateur (No-PII)
 - Documentation client complète (FR)
 
