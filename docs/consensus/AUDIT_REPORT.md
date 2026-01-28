@@ -24,6 +24,15 @@ Commands executed (evidence)
 6) `pytest tests/test_observability_logs.py -v`
    - Result: PASS (3 passed, 2 warnings) in 3.72s
 
+7) `pytest tests/test_output_contract_envelope.py -v`
+   - Result: PASS (2 passed, 2 warnings) in 7.02s
+
+8) `pytest tests/test_ui_no_thoughts_leak.py -v`
+   - Result: PASS (2 passed, 2 warnings) in 5.65s
+
+9) `pytest tests/test_identity_branding.py -v`
+   - Result: PASS (1 passed, 2 warnings) in 6.18s
+
 Warnings observed
 -----------------
 - PytestConfigWarning: unknown options `timeout`, `timeout_method` in pytest.ini
@@ -63,6 +72,12 @@ I7. Observabilité — PASS (schema-level)
 I8. Backward Compatibility — PASS
 - Evidence: `tests/test_consensus_entrypoint_delegation.py`
   - legacy entrypoints still importable and delegate.
+
+Output Channel & Branding Checks — PASS
+---------------------------------------
+- UI does not render internal fields: `tests/test_ui_no_thoughts_leak.py`
+- Envelope validation requires non-empty `text`: `tests/test_output_contract_envelope.py`
+- Identity branding enforced in prompts: `tests/test_identity_branding.py`
 
 Code/behavior changes (diff summary)
 ------------------------------------

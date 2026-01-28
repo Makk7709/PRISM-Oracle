@@ -12,6 +12,7 @@
 
 import logging
 from python.helpers.tool import Tool, Response
+from python.helpers.response_contract import validate_response_envelope
 
 logger = logging.getLogger("response_tool")
 
@@ -25,15 +26,19 @@ class ResponseTool(Tool):
         SIMPLIFIED: Retourne directement la réponse sans gate pour le moment.
         """
         # Extraire le texte de réponse
-        text = self.args.get("text") or self.args.get("message", "")
+        text = self.args.get("text") or self.args.get("answer") or self.args.get("message", "")
+        envelope = validate_response_envelope(
+            {"text": text},
+            fallback_text="Réponse indisponible (erreur de format).",
+        )
         
         # ═══════════════════════════════════════════════════════════════════════
         # SIMPLIFIED: Retourner directement la réponse
         # ═══════════════════════════════════════════════════════════════════════
         # Le gate complexe causait des blocages silencieux. On bypass pour l'instant.
         
-        logger.info(f"Response tool: returning message directly (length={len(text)})")
-        return Response(message=text, break_loop=True)
+        logger.info(f"Response tool: returning message directly (length={len(envelope.text)})")
+        return Response(message=envelope.text, break_loop=True)
         
         # ═══════════════════════════════════════════════════════════════════════
         # GATE CODE DISABLED TEMPORARILY

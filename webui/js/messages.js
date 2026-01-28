@@ -354,6 +354,9 @@ export function drawMessageResponse(
   temp,
   kvps = null
 ) {
+  if (!content || content.trim().length === 0) {
+    content = "Réponse indisponible.";
+  }
   _drawMessage(
     messageContainer,
     heading,
@@ -691,6 +694,7 @@ export function drawMessageError(
 
 function drawKvps(container, kvps, latex) {
   if (kvps) {
+    kvps = sanitizeKvps(kvps);
     const table = document.createElement("table");
     table.classList.add("msg-kvps");
     for (let [key, value] of Object.entries(kvps)) {
@@ -764,6 +768,7 @@ function drawKvps(container, kvps, latex) {
 
 function drawKvpsIncremental(container, kvps, latex) {
   if (kvps) {
+    kvps = sanitizeKvps(kvps);
     // Find existing table or create new one
     let table = container.querySelector(".msg-kvps");
     if (!table) {
@@ -885,6 +890,26 @@ function drawKvpsIncremental(container, kvps, latex) {
       existingTable.remove();
     }
   }
+}
+
+const INTERNAL_KVPS = new Set([
+  "thoughts",
+  "debug",
+  "trace",
+  "router_decision",
+  "tool_calls",
+  "internal",
+  "reasoning",
+]);
+
+function sanitizeKvps(kvps) {
+  const filtered = {};
+  for (const [key, value] of Object.entries(kvps)) {
+    if (!INTERNAL_KVPS.has(key)) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
 }
 
 function convertToTitleCase(str) {
