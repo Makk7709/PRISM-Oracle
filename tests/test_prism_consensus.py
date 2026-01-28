@@ -155,7 +155,7 @@ class TestConsensusManager:
         await asyncio.sleep(0.3)
         
         status = quick_manager.get_proposal_status(proposal_id)
-        assert status["status"] == ConsensusStatus.TIMEOUT
+        assert status["status"] == ConsensusStatus.INFRA_FAILURE
     
     @pytest.mark.asyncio
     async def test_fail_closed_no_quorum(self, consensus_manager):
@@ -170,7 +170,13 @@ class TestConsensusManager:
         # Only 2 effective votes (approve + reject), neither reaches 2/3 quorum
         consensus_manager.submit_vote(proposal_id, "arbiter_1", VoteType.APPROVE)
         consensus_manager.submit_vote(proposal_id, "arbiter_2", VoteType.REJECT)
-        consensus_manager.submit_vote(proposal_id, "arbiter_3", VoteType.UNAVAILABLE)
+        consensus_manager.submit_vote(
+            proposal_id,
+            "arbiter_3",
+            None,
+            available=False,
+            availability_reason="timeout",
+        )
         
         await asyncio.sleep(0.2)
         

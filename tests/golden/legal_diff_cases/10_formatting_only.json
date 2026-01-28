@@ -1,0 +1,12 @@
+{
+  "case_id": "10_formatting_only",
+  "description": "Changements de formatage uniquement (espaces, alinéas)",
+  "before": "Article 1.Le contrat est valable.\nArticle 2.Les parties sont liées.",
+  "after": "Article 1. Le contrat est valable.\nArticle 2. Les parties sont liées.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": false,
+    "comment": "Ajout d'espaces après les points ne devrait pas créer de changement substantiel"
+  }
+}

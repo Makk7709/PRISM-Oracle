@@ -15,7 +15,10 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
+import sys
+from pathlib import Path
 import pytest
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from python.helpers.consensus_manager import (
     ConsensusStatus,
     VoteType,
@@ -23,6 +26,10 @@ from python.helpers.consensus_manager import (
     DecisionProposal,
     DecisionType,
 )
+
+
+def add_unavailable(proposal: DecisionProposal, provider: str, reason: str = "unavailable") -> None:
+    proposal.add_vote(provider, None, reason, available=False, availability_reason=reason)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -113,9 +120,9 @@ class TestCanonicalConsensusScenarios:
         we must NOT claim they rejected. No evaluation happened.
         """
         proposal = self._create_proposal()
-        proposal.add_vote("arbiter_1", VoteType.UNAVAILABLE, "timeout")
-        proposal.add_vote("arbiter_2", VoteType.UNAVAILABLE, "error")
-        proposal.add_vote("arbiter_3", VoteType.UNAVAILABLE, "connection failed")
+        add_unavailable(proposal, "arbiter_1", "timeout")
+        add_unavailable(proposal, "arbiter_2", "error")
+        add_unavailable(proposal, "arbiter_3", "connection failed")
         
         consensus_reached = proposal.check_consensus()
         
@@ -137,8 +144,8 @@ class TestCanonicalConsensusScenarios:
         """
         proposal = self._create_proposal(min_effective=2)
         proposal.add_vote("arbiter_1", VoteType.APPROVE, "looks good")
-        proposal.add_vote("arbiter_2", VoteType.UNAVAILABLE, "timeout")
-        proposal.add_vote("arbiter_3", VoteType.UNAVAILABLE, "error")
+        add_unavailable(proposal, "arbiter_2", "timeout")
+        add_unavailable(proposal, "arbiter_3", "error")
         
         consensus_reached = proposal.check_consensus()
         
@@ -161,7 +168,7 @@ class TestCanonicalConsensusScenarios:
         proposal = self._create_proposal(min_effective=2)
         proposal.add_vote("arbiter_1", VoteType.APPROVE, "approved")
         proposal.add_vote("arbiter_2", VoteType.APPROVE, "looks safe")
-        proposal.add_vote("arbiter_3", VoteType.UNAVAILABLE, "timeout")
+        add_unavailable(proposal, "arbiter_3", "timeout")
         
         consensus_reached = proposal.check_consensus()
         
@@ -182,7 +189,7 @@ class TestCanonicalConsensusScenarios:
         proposal = self._create_proposal(min_effective=2)
         proposal.add_vote("arbiter_1", VoteType.REJECT, "risky action")
         proposal.add_vote("arbiter_2", VoteType.REJECT, "unsafe content")
-        proposal.add_vote("arbiter_3", VoteType.UNAVAILABLE, "timeout")
+        add_unavailable(proposal, "arbiter_3", "timeout")
         
         consensus_reached = proposal.check_consensus()
         
@@ -223,7 +230,7 @@ class TestCanonicalConsensusScenarios:
         proposal = self._create_proposal(min_effective=2)
         proposal.add_vote("arbiter_1", VoteType.APPROVE, "approve")
         proposal.add_vote("arbiter_2", VoteType.ABSTAIN, "not sure")
-        proposal.add_vote("arbiter_3", VoteType.UNAVAILABLE, "timeout")
+        add_unavailable(proposal, "arbiter_3", "timeout")
         
         consensus_reached = proposal.check_consensus()
         
@@ -259,23 +266,26 @@ class TestConsensusInvariants:
         # All possible scenarios with 0 rejections
         scenarios = [
             # All unavailable
-            [(VoteType.UNAVAILABLE,) * 3],
+            [(None,) * 3],
             # Mix of approve and unavailable
-            [(VoteType.APPROVE, VoteType.UNAVAILABLE, VoteType.UNAVAILABLE)],
-            [(VoteType.APPROVE, VoteType.APPROVE, VoteType.UNAVAILABLE)],
+            [(VoteType.APPROVE, None, None)],
+            [(VoteType.APPROVE, VoteType.APPROVE, None)],
             # All approve
             [(VoteType.APPROVE, VoteType.APPROVE, VoteType.APPROVE)],
             # Mix with abstain
-            [(VoteType.APPROVE, VoteType.ABSTAIN, VoteType.UNAVAILABLE)],
+            [(VoteType.APPROVE, VoteType.ABSTAIN, None)],
             [(VoteType.ABSTAIN, VoteType.ABSTAIN, VoteType.ABSTAIN)],
-            [(VoteType.ABSTAIN, VoteType.UNAVAILABLE, VoteType.UNAVAILABLE)],
+            [(VoteType.ABSTAIN, None, None)],
         ]
         
         for scenario in scenarios:
             votes = scenario[0]
             proposal = self._create_proposal()
             for i, vote in enumerate(votes):
-                proposal.add_vote(f"arbiter_{i}", vote, f"vote_{i}")
+                if vote is None:
+                    add_unavailable(proposal, f"arbiter_{i}", "unavailable")
+                else:
+                    proposal.add_vote(f"arbiter_{i}", vote, f"vote_{i}")
             
             proposal.check_consensus()
             count = proposal.get_vote_count()
@@ -292,14 +302,14 @@ class TestConsensusInvariants:
         """
         scenarios = [
             # All unavailable
-            [(VoteType.UNAVAILABLE,) * 3],
+            [(None,) * 3],
             # Mix of reject and unavailable
-            [(VoteType.REJECT, VoteType.UNAVAILABLE, VoteType.UNAVAILABLE)],
-            [(VoteType.REJECT, VoteType.REJECT, VoteType.UNAVAILABLE)],
+            [(VoteType.REJECT, None, None)],
+            [(VoteType.REJECT, VoteType.REJECT, None)],
             # All reject
             [(VoteType.REJECT, VoteType.REJECT, VoteType.REJECT)],
             # Mix with abstain
-            [(VoteType.REJECT, VoteType.ABSTAIN, VoteType.UNAVAILABLE)],
+            [(VoteType.REJECT, VoteType.ABSTAIN, None)],
             [(VoteType.ABSTAIN, VoteType.ABSTAIN, VoteType.ABSTAIN)],
         ]
         
@@ -307,7 +317,10 @@ class TestConsensusInvariants:
             votes = scenario[0]
             proposal = self._create_proposal()
             for i, vote in enumerate(votes):
-                proposal.add_vote(f"arbiter_{i}", vote, f"vote_{i}")
+                if vote is None:
+                    add_unavailable(proposal, f"arbiter_{i}", "unavailable")
+                else:
+                    proposal.add_vote(f"arbiter_{i}", vote, f"vote_{i}")
             
             proposal.check_consensus()
             count = proposal.get_vote_count()
@@ -337,7 +350,7 @@ class TestConsensusInvariants:
         # 1 approve + 9 unavailable
         proposal.add_vote("arbiter_0", VoteType.APPROVE, "approve")
         for i in range(1, 10):
-            proposal.add_vote(f"arbiter_{i}", VoteType.UNAVAILABLE, "unavailable")
+            add_unavailable(proposal, f"arbiter_{i}", "unavailable")
         
         proposal.check_consensus()
         
@@ -349,7 +362,7 @@ class TestConsensusInvariants:
         """
         INVARIANT: Zero effective votes = INFRA_FAILURE, NEVER REJECTED.
         
-        This is the core fix for the "0/0/TIMEOUT → REJECTED" bug.
+        This is the core fix for the "0/0/INFRA_FAILURE → REJECTED" bug.
         """
         for total in [1, 2, 3, 5, 10]:
             proposal = DecisionProposal(
@@ -364,7 +377,7 @@ class TestConsensusInvariants:
             
             # All unavailable
             for i in range(total):
-                proposal.add_vote(f"arbiter_{i}", VoteType.UNAVAILABLE, "unavailable")
+                add_unavailable(proposal, f"arbiter_{i}", "unavailable")
             
             proposal.check_consensus()
             
@@ -412,7 +425,7 @@ class TestQuorumCalculation:
         )
         proposal.add_vote("a1", VoteType.APPROVE, "")
         proposal.add_vote("a2", VoteType.APPROVE, "")
-        proposal.add_vote("a3", VoteType.UNAVAILABLE, "")
+        add_unavailable(proposal, "a3", "")
         
         proposal.check_consensus()
         assert proposal.status == ConsensusStatus.APPROVED
@@ -430,7 +443,7 @@ class TestQuorumCalculation:
         )
         proposal.add_vote("a1", VoteType.APPROVE, "")
         proposal.add_vote("a2", VoteType.REJECT, "")
-        proposal.add_vote("a3", VoteType.UNAVAILABLE, "")
+        add_unavailable(proposal, "a3", "")
         
         proposal.check_consensus()
         # 2 effective votes, need ceil(2/3*2)=2 for quorum

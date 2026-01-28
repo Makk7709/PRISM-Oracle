@@ -25,6 +25,16 @@ from tests.harness.fixtures import TALLY_TEST_CASES
 from tests.harness.assertions import assert_quorum_2_3
 
 
+def submit_unavailable(manager: ConsensusManager, proposal_id: str, provider: str) -> None:
+    manager.submit_vote(
+        proposal_id,
+        provider,
+        None,
+        available=False,
+        availability_reason="unavailable",
+    )
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST: QUORUM CALCULATION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -196,8 +206,8 @@ class TestAbstainUnavailable:
             # 1 approve, 2 unavailable
             # Only 1 effective vote, min_effective_votes=2 required
             manager.submit_vote(proposal_id, "a1", VoteType.APPROVE)
-            manager.submit_vote(proposal_id, "a2", VoteType.UNAVAILABLE)
-            manager.submit_vote(proposal_id, "a3", VoteType.UNAVAILABLE)
+            submit_unavailable(manager, proposal_id, "a2")
+            submit_unavailable(manager, proposal_id, "a3")
             
             await asyncio.sleep(0.1)
             
@@ -321,7 +331,7 @@ class TestParametrizedTally:
             
             # Calculate expected using our helper
             if timeouts == total:
-                calculated = "TIMEOUT"
+                calculated = "INFRA_FAILURE"
             else:
                 calculated = assert_quorum_2_3(approves, rejects, total)
             
@@ -329,7 +339,7 @@ class TestParametrizedTally:
             # NO_CONSENSUS and REJECTED are both "fail" states
             if expected in ["NO_CONSENSUS", "REJECTED"] and calculated in ["NO_CONSENSUS", "REJECTED"]:
                 pass  # OK - both are "fail" states
-            elif expected == "TIMEOUT" and calculated == "TIMEOUT":
+            elif expected == "INFRA_FAILURE" and calculated == "INFRA_FAILURE":
                 pass  # OK
             elif expected == calculated:
                 pass  # OK
@@ -358,8 +368,8 @@ class TestCriticalFlag:
             
             # Only 1 approve
             manager.submit_vote(proposal_id, "a1", VoteType.APPROVE)
-            manager.submit_vote(proposal_id, "a2", VoteType.UNAVAILABLE)
-            manager.submit_vote(proposal_id, "a3", VoteType.UNAVAILABLE)
+            submit_unavailable(manager, proposal_id, "a2")
+            submit_unavailable(manager, proposal_id, "a3")
             
             await asyncio.sleep(0.1)
             

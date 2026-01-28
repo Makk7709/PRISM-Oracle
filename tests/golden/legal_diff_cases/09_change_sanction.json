@@ -1,0 +1,15 @@
+{
+  "case_id": "09_change_sanction",
+  "description": "Ajout/renforcement de sanction (aggravation)",
+  "before": "Article 1. Le non-respect entraîne un rappel à l'ordre.",
+  "after": "Article 1. Le non-respect entraîne une sanction immédiate et une amende.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": true,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_have_change_type": ["modify"],
+    "must_contain_signals": ["+sanction", "+immédiat", "+amende"],
+    "must_have_topic": ["sanction"]
+  }
+}

@@ -158,7 +158,8 @@ class ConsensusMCPWrapper:
         server: str,
         tool: str,
         params: Dict[str, Any],
-        trace: bool = True
+        trace: bool = True,
+        correlation_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Collecte des données via MCP avec traçabilité.
@@ -184,6 +185,8 @@ class ConsensusMCPWrapper:
             "data": None,
             "error": None
         }
+        if correlation_id:
+            result["correlation_id"] = correlation_id
         
         try:
             # Appeler le MCP
@@ -203,33 +206,45 @@ class ConsensusMCPWrapper:
         if trace:
             self.collection_log.append(result)
         
+        logger.info(json.dumps({
+            "event": "adapter_collect",
+            "correlation_id": correlation_id,
+            "server": server,
+            "tool": tool,
+            "success": result["success"],
+            "duration_ms": result["duration_ms"],
+        }, ensure_ascii=False))
+        
         return result
     
-    async def search_web(self, query: str, limit: int = 10) -> Dict[str, Any]:
+    async def search_web(self, query: str, limit: int = 10, correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """Recherche web via Tavily ou Firecrawl."""
         # Essayer Tavily d'abord (meilleur pour les signaux faibles)
         result = await self.collect(
             "tavily", "search",
-            {"query": query, "max_results": limit}
+            {"query": query, "max_results": limit},
+            correlation_id=correlation_id,
         )
         
         if not result["success"]:
             # Fallback sur Firecrawl
             result = await self.collect(
                 "firecrawl", "search",
-                {"query": query, "limit": limit}
+                {"query": query, "limit": limit},
+                correlation_id=correlation_id,
             )
         
         return result
     
-    async def scrape_url(self, url: str) -> Dict[str, Any]:
+    async def scrape_url(self, url: str, correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """Scrape une URL via Firecrawl."""
         return await self.collect(
             "firecrawl", "scrape",
-            {"url": url, "formats": ["markdown"]}
+            {"url": url, "formats": ["markdown"]},
+            correlation_id=correlation_id,
         )
     
-    async def search_papers(self, query: str, sources: List[str] = None) -> List[Dict[str, Any]]:
+    async def search_papers(self, query: str, sources: List[str] = None, correlation_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Recherche académique multi-sources.
         
@@ -247,17 +262,17 @@ class ConsensusMCPWrapper:
         
         for source in sources:
             if source == "arxiv":
-                tasks.append(self.collect("arxiv", "search", {"query": query}))
+                tasks.append(self.collect("arxiv", "search", {"query": query}, correlation_id=correlation_id))
             elif source == "semanticscholar":
-                tasks.append(self.collect("semanticscholar", "search_papers", {"query": query}))
+                tasks.append(self.collect("semanticscholar", "search_papers", {"query": query}, correlation_id=correlation_id))
             elif source == "openalex":
-                tasks.append(self.collect("openalex", "search_works", {"query": query}))
+                tasks.append(self.collect("openalex", "search_works", {"query": query}, correlation_id=correlation_id))
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         return [r for r in results if isinstance(r, dict)]
     
-    async def get_evidence(self, url: str, screenshot: bool = False) -> Dict[str, Any]:
+    async def get_evidence(self, url: str, screenshot: bool = False, correlation_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Collecte de preuves via Playwright.
         
@@ -271,14 +286,16 @@ class ConsensusMCPWrapper:
         # Navigate to page
         result = await self.collect(
             "playwright", "navigate",
-            {"url": url}
+            {"url": url},
+            correlation_id=correlation_id,
         )
         
         if screenshot and result["success"]:
             # Take screenshot as evidence
             ss_result = await self.collect(
                 "playwright", "screenshot",
-                {"path": f"/tmp/evidence_{hash(url)}.png"}
+                {"path": f"/tmp/evidence_{hash(url)}.png"},
+                correlation_id=correlation_id,
             )
             result["screenshot"] = ss_result
         
@@ -378,21 +395,24 @@ async def research_with_consensus(
         DecisionType, VoteType, generate_decision_hash
     )
     
+    import uuid
+
     # 1. Initialiser le wrapper MCP
     mcp = ConsensusMCPWrapper(mcp_handler)
     aggregator = ResearchDataAggregator()
+    correlation_id = str(uuid.uuid4())
     
     # 2. Collecter les données
     logger.info(f"🔍 Recherche: {query[:50]}...")
     
     # Web search
-    web_result = await mcp.search_web(query)
+    web_result = await mcp.search_web(query, correlation_id=correlation_id)
     if web_result["success"]:
         aggregator.add_data("web", web_result["data"])
     
     # Academic search
     if sources is None or any(s in ["arxiv", "semanticscholar", "openalex"] for s in sources):
-        paper_results = await mcp.search_papers(query)
+        paper_results = await mcp.search_papers(query, correlation_id=correlation_id)
         for result in paper_results:
             if result.get("success"):
                 aggregator.add_data(result["server"], result["data"])
@@ -401,38 +421,27 @@ async def research_with_consensus(
     structured = aggregator.structure_for_consensus()
     summary = aggregator.generate_summary()
     
-    # 4. Soumettre au consensus
-    decision_hash = generate_decision_hash(summary, structured)
-    
-    proposal_id = await consensus_manager.propose(
-        decision_hash,
-        {"query": query, "data": structured, "summary": summary},
-        DecisionType.RESEARCH_VALIDATION
+    # 4. Soumettre au consensus via engine (no simulated votes)
+    from python.consensus.engine import run_consensus
+
+    decision = await run_consensus(
+        evidence_pack=structured,
+        policy={
+            "action": summary,
+            "context": {"query": query, "summary": summary},
+            "decision_type": DecisionType.RESEARCH_VALIDATION,
+            "correlation_id": correlation_id,
+        },
     )
-    
-    # 5. Collecter les votes (simulés si pas de LLM)
-    arbiters = ["arbiter_1", "arbiter_2", "arbiter_3"]
-    
-    for arbiter in arbiters:
-        if call_llm_func:
-            # TODO: Implémenter l'appel réel au LLM arbitre
-            vote = VoteType.APPROVE
-            reasoning = "Vote automatique basé sur données"
-        else:
-            # Vote simulé basé sur le nombre de données
-            vote = VoteType.APPROVE if structured["data_points"] >= 3 else VoteType.REJECT
-            reasoning = f"Vote simulé: {structured['data_points']} data points"
-        
-        consensus_manager.submit_vote(proposal_id, arbiter, vote, reasoning)
-    
-    # 6. Attendre le résultat
-    status = await consensus_manager.wait_for_consensus(proposal_id, 5000)
-    
+
     return {
         "query": query,
-        "proposal_id": proposal_id,
-        "approved": status and status["status"].value == "APPROVED",
-        "status": status,
+        "proposal_id": decision.proposal_id,
+        "approved": decision.approved,
+        "status": decision.status.value,
+        "decision_time_ms": decision.decision_time_ms,
         "data": structured,
-        "collection_log": mcp.get_collection_log()
+        "collection_log": mcp.get_collection_log(),
+        "correlation_id": correlation_id,
+        "warnings": decision.warnings,
     }

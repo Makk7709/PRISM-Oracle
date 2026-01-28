@@ -141,7 +141,14 @@ def assert_contract_valid(response: str) -> Dict[str, Any]:
 # CONSENSUS RESULT ASSERTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-VALID_CONSENSUS_STATUS = {"PENDING", "APPROVED", "REJECTED", "TIMEOUT", "NO_CONSENSUS"}
+VALID_CONSENSUS_STATUS = {
+    "PENDING",
+    "APPROVED",
+    "REJECTED",
+    "NO_CONSENSUS",
+    "INFRA_FAILURE",
+    "SKIPPED",
+}
 
 
 def assert_consensus_result(
@@ -156,7 +163,7 @@ def assert_consensus_result(
     Schema attendu:
     {
         "proposal_id": str (UUID),
-        "status": str (APPROVED|REJECTED|TIMEOUT|NO_CONSENSUS),
+        "status": str (APPROVED|REJECTED|NO_CONSENSUS|INFRA_FAILURE|SKIPPED),
         "votes": {"approvals": int, "rejections": int, ...},
         "decision_time_ms": int (optionnel)
     }

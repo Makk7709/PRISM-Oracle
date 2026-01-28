@@ -63,7 +63,7 @@ async def test_adversarial_timing():
     Un attaquant tente de soumettre un vote APPROVE
     exactement au moment du timeout pour contourner le fail-closed.
     
-    Expected: Vote rejeté, status = TIMEOUT (pas APPROVED)
+Expected: Vote rejeté, status = INFRA_FAILURE (pas APPROVED)
     """
     manager = ConsensusManager(timeout_ms=100)
     proposal_id = await manager.propose(...)
@@ -77,8 +77,8 @@ async def test_adversarial_timing():
     await asyncio.sleep(0.01)
     status = manager.get_proposal_status(proposal_id)
     
-    # MUST be TIMEOUT, not APPROVED
-    assert status["status"] == ConsensusStatus.TIMEOUT
+# MUST be INFRA_FAILURE, not APPROVED
+assert status["status"] == ConsensusStatus.INFRA_FAILURE
 ```
 
 ### Test Killer #2: Byzantine Arbiter

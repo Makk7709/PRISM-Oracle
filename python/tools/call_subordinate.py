@@ -1,13 +1,16 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    DELEGATION TOOL — Consensus-Aware                         ║
+║                    DELEGATION TOOL — Collaborative Consensus                 ║
 ║                                                                              ║
 ║  Outil de délégation vers agents subordonnés.                                ║
 ║                                                                              ║
-║  RÈGLES CONSENSUS:                                                           ║
-║  - Profils legal_safe, researcher → consensus OBLIGATOIRE                    ║
-║  - Strict evidence mode pour ces profils                                     ║
-║  - Résultat validé par PRISM avant retour                                    ║
+║  CONSENSUS COLLABORATIF (3 rounds):                                          ║
+║  - Round 1: 3 LLMs analysent indépendamment les claims                       ║
+║  - Round 2: Débat - LLMs voient les analyses des autres                      ║
+║  - Round 3: Synthèse et verdict final                                        ║
+║                                                                              ║
+║  Focus: Détection d'hallucinations, pas juste "sécurité"                     ║
+║  Durée: ~30-40 secondes pour un débat complet                                ║
 ║                                                                              ║
 ║  FEATURE FLAG: DETERMINISTIC_ROUTER_V2=1                                     ║
 ║  - Active le routage déterministe (policy-driven)                            ║
@@ -20,10 +23,16 @@
 import logging
 import os
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
+
+# Type hints pour éviter import circulaire
+if TYPE_CHECKING:
+    from python.helpers.collaborative_consensus import CollaborativeConsensusResult
+    from python.helpers.consensus_manager import ConsensusResult
 
 from agent import Agent, UserMessage
 from python.helpers.tool import Tool, Response
+from python.helpers.print_style import PrintStyle
 from initialize import initialize_agent
 from python.extensions.hist_add_tool_result import _90_save_tool_call_file as save_tool_call_file
 
@@ -279,9 +288,45 @@ class Delegation(Tool):
 
         # Exécuter le monologue du subordonné
         result = await subordinate.monologue()
+        
+        PrintStyle(font_color="yellow").print(
+            f"🔍 AUDIT: subordinate.monologue() returned result (len={len(result) if result else 0}): "
+            f"'{str(result)[:200]}...'" if result else "EMPTY/NONE"
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # CHECK IF SUBORDINATE USED PIPELINE SHORT-CIRCUIT
+        # Si le subordonné a utilisé le pipeline, la réponse est finale.
+        # On signal à l'agent principal de terminer (break_loop=True)
+        # ═══════════════════════════════════════════════════════════════════════
+        pipeline_was_used = subordinate.get_data("_pipeline_was_used")
+        adversarial_dossier_id = subordinate.get_data("_adversarial_dossier_id")
+        
+        if pipeline_was_used:
+            PrintStyle(font_color="cyan", bold=True).print(
+                f"🔒 SUBORDINATE: Pipeline response - signaling main agent to break loop (result_len={len(result) if result else 0})"
+            )
+            
+            # If adversarial pipeline was used, it already includes PRISM consensus
+            # Skip the legacy Collaborative Debate to avoid double-validation
+            if adversarial_dossier_id:
+                PrintStyle(font_color="green", bold=True).print(
+                    f"✅ ADVERSARIAL PIPELINE detected (dossier={adversarial_dossier_id[:8]}) - "
+                    f"Skipping legacy Collaborative Debate (consensus already done in pipeline)"
+                )
+                # Mark as validated and skip consensus check
+                self.agent.set_data("_pipeline_validated_response", True)
+                self.agent.set_data("_consensus_result", {
+                    "approved": True,
+                    "source": "adversarial_pipeline",
+                    "dossier_id": adversarial_dossier_id,
+                    "correlation_id": correlation_id,
+                })
+                
+                return Response(message=result, break_loop=True, additional=None)
 
         # ═══════════════════════════════════════════════════════════════════════
-        # VALIDATION CONSENSUS SI REQUIS
+        # VALIDATION CONSENSUS SI REQUIS (LEGACY - only if not adversarial)
         # ═══════════════════════════════════════════════════════════════════════
         
         if assessment.requires_consensus:
@@ -299,7 +344,26 @@ class Delegation(Tool):
             if hint:
                 additional = {"hint": hint}
 
-        return Response(message=result, break_loop=False, additional=additional)
+        # Si le pipeline a été utilisé, on termine le loop principal
+        # pour éviter que l'agent principal génère du contenu LLM supplémentaire
+        should_break = pipeline_was_used is True
+        
+        # CRITICAL: Si le pipeline a été utilisé et validé par consensus,
+        # on doit le signaler à l'agent principal pour bypasser le gate
+        if pipeline_was_used:
+            # Marquer que la réponse vient d'un pipeline déjà validé
+            self.agent.set_data("_pipeline_validated_response", True)
+            # Stocker un résultat de consensus "virtuel" pour le gate
+            self.agent.set_data("_consensus_result", {
+                "approved": True,
+                "source": "subordinate_pipeline",
+                "correlation_id": correlation_id,
+            })
+            PrintStyle(font_color="green", bold=True).print(
+                f"🔒 Setting _pipeline_validated_response=True for main agent gate bypass"
+            )
+        
+        return Response(message=result, break_loop=should_break, additional=additional)
     
     async def _validate_with_consensus(
         self,
@@ -309,49 +373,54 @@ class Delegation(Tool):
         correlation_id: str,
     ) -> str:
         """
-        Valide le résultat du subordonné via consensus PRISM.
+        Valide le résultat du subordonné via DÉBAT COLLABORATIF.
+        
+        Nouveau système (remplace l'ancien vote simple):
+        - Round 1: 3 LLMs analysent indépendamment les claims
+        - Round 2: Les LLMs débattent en voyant les analyses des autres
+        - Round 3: Synthèse et verdict final
+        
+        Focus: Détection d'hallucinations, pas juste "sécurité"
         
         Si le consensus échoue, retourne une réponse fail-closed.
         """
         try:
-            from python.helpers.consensus_arbiter import (
-                seek_consensus,
-                ConsensusResult,
+            from python.helpers.collaborative_consensus import (
+                run_collaborative_consensus,
+                DebateVerdict,
             )
             
-            # Préparer le contexte pour les arbitres
-            context = {
-                "original_query": message[:1000],
-                "agent_profile": assessment.agent_profile,
-                "domain": assessment.domain.value,
-                "subordinate_response": result[:3000],  # Tronquer pour arbitres
-                "strict_evidence_mode": assessment.strict_evidence_mode,
-            }
+            logger.info(
+                f"🎭 Starting COLLABORATIVE DEBATE for [{correlation_id}]"
+            )
             
-            # Chercher le consensus
-            consensus_result = await seek_consensus(
-                action=f"Validate response from {assessment.agent_profile} agent",
-                context=context,
-                decision_type=DecisionType.RESEARCH_VALIDATION,
+            # Lancer le débat collaboratif (3 rounds, ~30-40s)
+            debate_result = await run_collaborative_consensus(
+                response=result,
+                question=message,
                 correlation_id=correlation_id,
             )
             
-            if consensus_result.approved:
+            if debate_result.approved:
                 logger.info(
-                    f"✅ Consensus APPROVED for delegation [{correlation_id}]"
+                    f"✅ Collaborative Debate APPROVED [{correlation_id}] "
+                    f"(verdict={debate_result.verdict.value}, confidence={debate_result.confidence:.0%})"
                 )
-                # Ajouter un badge de validation
-                return self._add_consensus_badge(result, consensus_result, "APPROVED")
+                # Ajouter un badge de validation détaillé
+                return self._add_collaborative_badge(result, debate_result)
             else:
                 logger.warning(
-                    f"❌ Consensus REJECTED for delegation [{correlation_id}]"
+                    f"❌ Collaborative Debate REJECTED [{correlation_id}] "
+                    f"(verdict={debate_result.verdict.value}, flagged_claims={debate_result.flagged_claims})"
                 )
-                return self._create_fail_closed_response(
-                    message, assessment, consensus_result, correlation_id
+                return self._create_debate_fail_response(
+                    message, assessment, debate_result, correlation_id
                 )
                 
         except Exception as e:
-            logger.error(f"Consensus validation failed: {e}")
+            logger.error(f"Collaborative debate failed: {e}")
+            import traceback
+            traceback.print_exc()
             # En cas d'erreur, fail-closed
             return self._create_error_response(message, assessment, str(e), correlation_id)
     
@@ -361,7 +430,7 @@ class Delegation(Tool):
         consensus_result: "ConsensusResult",
         status: str,
     ) -> str:
-        """Ajoute un badge de validation consensus au résultat."""
+        """Ajoute un badge de validation consensus au résultat (legacy)."""
         badge = (
             f"\n\n---\n"
             f"✅ **Consensus Validation**: {status}\n"
@@ -369,6 +438,38 @@ class Delegation(Tool):
             f"- Decision time: {consensus_result.decision_time_ms}ms\n"
         )
         return result + badge
+    
+    def _add_collaborative_badge(
+        self,
+        result: str,
+        debate_result: "CollaborativeConsensusResult",
+    ) -> str:
+        """Ajoute un badge de validation du débat collaboratif."""
+        # Construire le badge détaillé
+        badge_lines = [
+            "\n\n---",
+            f"✅ **Débat Collaboratif**: {debate_result.verdict.value.upper()}",
+            f"- Confiance: {debate_result.confidence:.0%}",
+            f"- Claims analysés: {debate_result.total_claims}",
+            f"- Claims vérifiés: {debate_result.verified_claims}",
+            f"- Durée: {debate_result.total_duration_ms}ms (3 rounds)",
+        ]
+        
+        # Ajouter les points de consensus si présents
+        if debate_result.round3_synthesis.consensus_points:
+            badge_lines.append("\n**Points de consensus:**")
+            for point in debate_result.round3_synthesis.consensus_points[:3]:
+                badge_lines.append(f"  ✓ {point}")
+        
+        # Ajouter les réserves si verdict avec caveats
+        if debate_result.verdict.value == "approved_with_caveats":
+            badge_lines.append("\n**Réserves:**")
+            if debate_result.round3_synthesis.disagreement_points:
+                for point in debate_result.round3_synthesis.disagreement_points[:2]:
+                    badge_lines.append(f"  ⚠ {point}")
+            badge_lines.append(f"\n*{debate_result.round3_synthesis.recommended_action}*")
+        
+        return result + "\n".join(badge_lines)
     
     def _create_fail_closed_response(
         self,
@@ -403,6 +504,64 @@ Par principe de précaution (fail-closed), la réponse originale n'est pas trans
 - Decision time: {consensus_result.decision_time_ms}ms
 
 *Ce système applique le principe "fail-closed": en cas de doute, aucune affirmation non validée n'est faite.*
+"""
+
+    def _create_debate_fail_response(
+        self,
+        message: str,
+        assessment: CriticalityAssessment,
+        debate_result: "CollaborativeConsensusResult",
+        correlation_id: str,
+    ) -> str:
+        """Crée une réponse fail-closed quand le débat collaboratif détecte des hallucinations."""
+        
+        # Construire la liste des claims flaggés
+        flagged_claims_text = ""
+        if debate_result.round3_synthesis.flagged_claims:
+            flagged_claims_text = "\n### Claims flaggés (potentielles hallucinations)\n"
+            for claim_id, reason in debate_result.round3_synthesis.flagged_claims:
+                flagged_claims_text += f"- **{claim_id}**: {reason}\n"
+        
+        # Construire les points de désaccord
+        disagreements_text = ""
+        if debate_result.round3_synthesis.disagreement_points:
+            disagreements_text = "\n### Points de désaccord entre les experts\n"
+            for point in debate_result.round3_synthesis.disagreement_points:
+                disagreements_text += f"- {point}\n"
+        
+        return f"""## ⚠️ Débat Collaboratif — Hallucinations Potentielles Détectées
+
+**Verdict**: {debate_result.verdict.value.upper()}
+**Confiance**: {debate_result.confidence:.0%}
+**Domaine**: {assessment.domain.value}
+**Agent**: {assessment.agent_profile}
+
+### Ce que cela signifie
+
+Trois experts IA ont analysé et débattu la réponse proposée.
+Le débat a identifié des **problèmes de fiabilité** qui empêchent la validation.
+
+### Analyse du débat
+
+- **Claims analysés**: {debate_result.total_claims}
+- **Claims vérifiés**: {debate_result.verified_claims}
+- **Claims flaggés**: {debate_result.flagged_claims}
+- **Durée du débat**: {debate_result.total_duration_ms}ms (3 rounds)
+{flagged_claims_text}{disagreements_text}
+### Recommandation
+
+{debate_result.round3_synthesis.recommended_action}
+
+### Raisonnement
+
+{debate_result.round3_synthesis.reasoning}
+
+### Informations de traçabilité
+
+- Correlation ID: `{correlation_id}`
+- Debate ID: `{debate_result.debate_id}`
+
+*Ce système applique le principe "fail-closed": les réponses contenant des hallucinations potentielles ne sont pas transmises.*
 """
     
     def _create_error_response(

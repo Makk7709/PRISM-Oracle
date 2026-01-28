@@ -1,0 +1,14 @@
+{
+  "case_id": "12_prolongation_delai",
+  "description": "Prolongation de délai (assouplissement)",
+  "before": "Article 1. Le délai de recours est de 15 jours.",
+  "after": "Article 1. Le délai de recours peut être prolongé jusqu'à 30 jours.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": true,
+    "min_segments": 1,
+    "must_contain_signals": ["+prolongé", "+peut"],
+    "must_have_topic": ["délai"]
+  }
+}

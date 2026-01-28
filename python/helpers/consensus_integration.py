@@ -82,10 +82,10 @@ class ArbiterLLM:
         self.call_llm = call_llm_func
     
     async def request_vote(
-        self, 
-        action: str, 
+        self,
+        action: str,
         context: Dict[str, Any]
-    ) -> Tuple[VoteType, str, float, List[str]]:
+    ) -> Tuple[Optional[VoteType], str, float, List[str]]:
         """
         Demande un vote à cet arbitre.
         
@@ -118,12 +118,12 @@ class ArbiterLLM:
             
         except asyncio.TimeoutError:
             logger.warning(f"⏰ Timeout pour arbitre {self.config.name}")
-            return (VoteType.UNAVAILABLE, "Timeout", 0.0, [])
+            return (None, "Timeout", 0.0, [])
             
         except Exception as e:
             # FAIL-CLOSED : Erreur = UNAVAILABLE
             logger.error(f"❌ Erreur arbitre {self.config.name}: {e}")
-            return (VoteType.UNAVAILABLE, f"Error: {str(e)}", 0.0, [])
+            return (None, f"Error: {str(e)}", 0.0, [])
     
     async def _call_model(self, prompt: str) -> str:
         """Appelle le modèle LLM."""
@@ -366,9 +366,9 @@ class ResearchPipeline:
         Returns:
             Tuple (approved, result_details)
         """
-        logger.info("🔒 Validation par consensus...")
-        
-        # Préparer le contexte
+        logger.info("🔒 Validation par consensus (engine)...")
+        from python.consensus.engine import run_consensus
+
         full_context = {
             "dossier_id": dossier.dossier_id,
             "query": dossier.query,
@@ -376,44 +376,32 @@ class ResearchPipeline:
             "firecrawl_count": len(dossier.firecrawl_data),
             "playwright_count": len(dossier.playwright_data),
             "tavily_count": len(dossier.tavily_data),
-            **(context or {})
+            **(context or {}),
         }
-        
-        # Générer hash de décision
-        decision_hash = generate_decision_hash(conclusion, full_context)
-        
-        # Créer la proposition
-        proposal_id = await self.consensus.propose(
-            decision_hash,
-            {"conclusion": conclusion, "context": full_context},
-            DecisionType.RESEARCH_VALIDATION
+
+        decision = await run_consensus(
+            evidence_pack={"dossier_id": dossier.dossier_id, "data": dossier.get_all_data()},
+            policy={
+                "action": conclusion,
+                "context": full_context,
+                "decision_type": DecisionType.RESEARCH_VALIDATION,
+                "correlation_id": dossier.dossier_id,
+            },
         )
-        
-        dossier.consensus_proposals.append(proposal_id)
-        
-        # Collecter les votes des arbitres en parallèle
-        vote_tasks = [
-            self._collect_arbiter_vote(arbiter, proposal_id, conclusion, full_context)
-            for arbiter in self.arbiters
-        ]
-        
-        await asyncio.gather(*vote_tasks, return_exceptions=True)
-        
-        # Attendre la finalisation
-        status = await self.consensus.wait_for_consensus(proposal_id, 5000)
-        
-        # Stocker le résultat
+
         result = {
-            "proposal_id": proposal_id,
-            "approved": status["status"] == ConsensusStatus.APPROVED if status else False,
-            "status": status["status"].value if status else "TIMEOUT",
-            "votes": status["votes"] if status else {},
-            "decision_hash": decision_hash
+            "proposal_id": decision.proposal_id,
+            "approved": decision.approved,
+            "status": decision.status.value,
+            "votes": {k: v.__dict__ for k, v in decision.votes.items()},
+            "decision_hash": decision.decision_hash,
+            "decision_time_ms": decision.decision_time_ms,
+            "warnings": decision.warnings,
         }
-        
+
         dossier.consensus_results.append(result)
-        
-        return result["approved"], result
+
+        return decision.approved, result
     
     async def _collect_arbiter_vote(
         self,

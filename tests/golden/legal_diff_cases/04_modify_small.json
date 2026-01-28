@@ -1,0 +1,12 @@
+{
+  "case_id": "04_modify_small",
+  "description": "Petite reformulation neutre (pas de signal normatif)",
+  "before": "Article 1. Le délai de réponse est de trente jours calendaires.",
+  "after": "Article 1. Le délai de réponse est de 30 jours calendaires.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": false,
+    "comment": "Changement mineur de format (lettres vs chiffres), peut être ignoré si ratio > 0.85"
+  }
+}

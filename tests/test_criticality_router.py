@@ -9,8 +9,12 @@ Coverage:
 """
 
 import os
+import sys
+from pathlib import Path
 import pytest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from python.helpers.criticality_router import (
     CriticalityRouter,
@@ -44,34 +48,33 @@ def prod_router():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestAgentProfileConsensus:
-    """Vérifie que legal_safe et researcher requièrent TOUJOURS consensus."""
+    """Vérifie que legal_safe et researcher respectent L1/L3."""
     
-    def test_legal_safe_always_requires_consensus(self, router):
-        """legal_safe → consensus obligatoire, même query banale."""
+    def test_legal_safe_level1_bypasses_consensus(self, router):
+        """legal_safe + L1 -> no consensus."""
         assessment = router.assess(
-            query="What time is it?",
+            query="What is a contract?",
             agent_profile="legal_safe",
         )
-        assert assessment.requires_consensus is True
-        assert assessment.strict_evidence_mode is True
+        assert assessment.requires_consensus is False
+        assert assessment.strict_evidence_mode is False
         assert assessment.domain == CriticalDomain.LEGAL
     
-    def test_researcher_always_requires_consensus(self, router):
-        """researcher → consensus obligatoire."""
+    def test_researcher_level1_bypasses_consensus(self, router):
+        """researcher + L1 -> no consensus."""
         assessment = router.assess(
-            query="Hello world",
+            query="Define hypothesis testing",
             agent_profile="researcher",
         )
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
         assert assessment.domain == CriticalDomain.SCIENTIFIC
     
     def test_legal_safe_cannot_bypass(self, prod_router):
-        """legal_safe ne peut JAMAIS bypasser en prod."""
+        """Debug bypass not allowed in prod."""
         assessment = prod_router.assess(
-            query="Simple question",
+            query="Define contract",
             agent_profile="legal_safe",
         )
-        assert assessment.requires_consensus is True
         assert assessment.can_bypass is False
     
     def test_default_profile_no_consensus_for_simple_query(self, router):
@@ -96,49 +99,49 @@ class TestDomainDetection:
     """Vérifie la détection de domaines critiques."""
     
     def test_legal_domain_detected_english(self, router):
-        """Détection domaine LEGAL en anglais."""
+        """Domain detected without forcing consensus."""
         assessment = router.assess(
-            query="Is this contract legally binding?",
+            query="Explain what makes a contract binding.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.LEGAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_legal_domain_detected_french(self, router):
-        """Détection domaine LEGAL en français."""
+        """Domain detected without forcing consensus."""
         assessment = router.assess(
-            query="Ce contrat est-il juridiquement valide?",
+            query="Explique la validite juridique d'un contrat.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.LEGAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_medical_domain_detected(self, router):
-        """Détection domaine MEDICAL."""
+        """Domain detected without forcing consensus."""
         assessment = router.assess(
-            query="What are the symptoms of diabetes?",
+            query="Explain symptoms of diabetes.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.MEDICAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_scientific_domain_detected(self, router):
-        """Détection domaine SCIENTIFIC."""
+        """Domain detected without forcing consensus."""
         assessment = router.assess(
-            query="What does the peer-reviewed research say about climate change?",
+            query="Summarize peer-reviewed research on climate change.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.SCIENTIFIC
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_finance_high_risk_detected(self, router):
-        """Détection FINANCE_HIGH_RISK."""
+        """Domain detected without forcing consensus."""
         assessment = router.assess(
-            query="Should I invest in cryptocurrency?",
+            query="Explain crypto investment risks.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.FINANCE_HIGH_RISK
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_default_domain_for_simple_query(self, router):
         """Query simple → DEFAULT."""
@@ -234,7 +237,7 @@ class TestStrictEvidenceMode:
     def test_legal_strict_evidence(self, router):
         """LEGAL → strict evidence mode."""
         assessment = router.assess(
-            query="Legal contract question",
+            query="Dois-je signer ce contrat?",
             agent_profile="default",
         )
         assert assessment.strict_evidence_mode is True
@@ -242,7 +245,7 @@ class TestStrictEvidenceMode:
     def test_medical_strict_evidence(self, router):
         """MEDICAL → strict evidence mode."""
         assessment = router.assess(
-            query="Medical diagnosis question",
+            query="Dois-je consulter pour ces symptomes?",
             agent_profile="default",
         )
         assert assessment.strict_evidence_mode is True
@@ -250,7 +253,7 @@ class TestStrictEvidenceMode:
     def test_scientific_strict_evidence(self, router):
         """SCIENTIFIC → strict evidence mode."""
         assessment = router.assess(
-            query="Scientific research question",
+            query="Should I publish this research finding?",
             agent_profile="default",
         )
         assert assessment.strict_evidence_mode is True
@@ -265,6 +268,58 @@ class TestStrictEvidenceMode:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# T6: LEVEL 1 DEFINITIONS (NO CONSENSUS)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@pytest.mark.parametrize("query", [
+    "Qu'est-ce qu'un contrat synallagmatique?",
+    "Définition d'un accord de confidentialité",
+    "Que signifie 'faute lourde'?",
+    "What is a medical diagnosis?",
+    "Define risk management",
+    "What is a balance sheet?",
+    "C'est quoi un taux d'interet?",
+    "Explain the difference between tort and contract",
+    "Qu'appelle-t-on jurisprudence?",
+    "Define GDPR",
+    "What is an insurance premium?",
+    "Explain how vaccines work",
+    "Define inflation",
+    "What is a mortgage?",
+    "Qu'est-ce qu'une clause pénale?",
+    "Explique la difference entre civil et penal",
+    "What is an audit?",
+    "Define market volatility",
+    "C'est quoi une ordonnance médicale?",
+    "Que signifie 'due diligence'?",
+])
+def test_level1_definitions_bypass_consensus(router, query):
+    assessment = router.assess(query=query, agent_profile="default")
+    assert assessment.requires_consensus is False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# T7: LEVEL 3 ACTIONABLE (CONSENSUS REQUIRED)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@pytest.mark.parametrize("query", [
+    "Dois-je signer ce contrat de travail?",
+    "Can I sue my employer for wrongful dismissal?",
+    "Should I appeal this court decision?",
+    "Je dois contester une mise en demeure, que faire?",
+    "Should I invest all my savings in crypto?",
+    "Peux-tu diagnostiquer mes symptomes et dire si je dois consulter?",
+    "Faut-il publier ces conclusions maintenant?",
+    "Quelle decision dois-je prendre pour ce litige?",
+    "Puis-je contester cette facture medicale?",
+    "Is it safe to approve this security change in production?",
+])
+def test_level3_actionables_require_consensus(router, query):
+    assessment = router.assess(query=query, agent_profile="default")
+    assert assessment.requires_consensus is True
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # T6: CONVENIENCE METHODS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -273,7 +328,8 @@ class TestConvenienceMethods:
     
     def test_should_require_consensus(self, router):
         """should_require_consensus() retourne bool."""
-        assert router.should_require_consensus("Legal question", "legal_safe") is True
+        assert router.should_require_consensus("Legal question", "legal_safe") is False
+        assert router.should_require_consensus("Dois-je signer ce contrat?", "legal_safe") is True
         assert router.should_require_consensus("Hello", "default") is False
     
     def test_detect_domain(self, router):
@@ -303,7 +359,7 @@ class TestSingleton:
     def test_assess_criticality_function(self):
         """assess_criticality() est un raccourci fonctionnel."""
         assessment = assess_criticality(
-            query="Legal question",
+            query="Dois-je signer ce contrat?",
             agent_profile="legal_safe",
         )
         assert isinstance(assessment, CriticalityAssessment)

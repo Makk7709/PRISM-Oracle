@@ -24,7 +24,6 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
 from collections import defaultdict
 
@@ -32,36 +31,14 @@ logger = logging.getLogger("prism_consensus")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ENUMS
+# ENUMS (single source of truth)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class DecisionType(str, Enum):
-    """Types de décisions critiques."""
-    SECURITY = "security"
-    CRITICAL = "critical"
-    SELF_IMPROVEMENT = "self_improvement"
-    SYSTEM_MODIFICATION = "system_modification"
-    DATA_ACCESS = "data_access"
-    RESEARCH_VALIDATION = "research_validation"
-
-
-class VoteType(str, Enum):
-    """Types de votes."""
-    APPROVE = "approve"
-    REJECT = "reject"
-    ABSTAIN = "abstain"
-    UNAVAILABLE = "unavailable"
-
-
-class ConsensusStatus(str, Enum):
-    """Statuts de consensus."""
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
-    TIMEOUT = "TIMEOUT"
-    # New statuses for proper fail-closed semantics
-    NO_CONSENSUS = "NO_CONSENSUS"      # Not enough effective votes to decide
-    INFRA_FAILURE = "INFRA_FAILURE"    # Zero effective votes (all UNAVAILABLE)
+from python.helpers.consensus_contracts import (
+    DecisionTypeEnum as DecisionType,
+    VoteVerdictEnum as VoteType,
+    ConsensusStatusEnum as ConsensusStatus,
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -72,11 +49,13 @@ class ConsensusStatus(str, Enum):
 class Vote:
     """Représente un vote d'un arbitre."""
     provider: str
-    vote: VoteType
+    vote: Optional[VoteType]
     reasoning: str
     confidence: float
     timestamp: float
     risks_identified: List[str] = field(default_factory=list)
+    available: bool = True
+    availability_reason: Optional[str] = None
 
 
 @dataclass
@@ -91,10 +70,10 @@ class VoteCount:
     @property
     def effective_votes(self) -> int:
         """
-        Number of effective votes (excluding UNAVAILABLE).
+        Number of effective votes (excluding unavailable).
         
         INVARIANT: Only approve/reject/abstain count as effective votes.
-        UNAVAILABLE is an infrastructure signal, NOT a vote.
+        Unavailable is an infrastructure signal, NOT a vote.
         """
         return self.approvals + self.rejections + self.abstentions
     
@@ -118,30 +97,42 @@ class DecisionProposal:
     min_effective_votes: int = 2  # Minimum effective votes required for any verdict
     timeout_task: Optional[asyncio.Task] = None
     
-    def add_vote(self, provider: str, vote: VoteType, reasoning: str = "", 
-                 confidence: float = 0.0, risks: List[str] = None):
+    def add_vote(
+        self,
+        provider: str,
+        vote: Optional[VoteType],
+        reasoning: str = "",
+        confidence: float = 0.0,
+        risks: List[str] = None,
+        available: bool = True,
+        availability_reason: Optional[str] = None,
+    ):
         """Ajoute un vote à la proposition."""
+        if vote is None and available:
+            available = False
         self.votes[provider] = Vote(
             provider=provider,
             vote=vote,
             reasoning=reasoning,
             confidence=confidence,
             timestamp=time.time(),
-            risks_identified=risks or []
+            risks_identified=risks or [],
+            available=available,
+            availability_reason=availability_reason,
         )
     
     def get_vote_count(self) -> VoteCount:
         """Calcule le comptage des votes."""
         count = VoteCount()
         for vote in self.votes.values():
-            if vote.vote == VoteType.APPROVE:
+            if not vote.available:
+                count.unavailable += 1
+            elif vote.vote == VoteType.APPROVE:
                 count.approvals += 1
             elif vote.vote == VoteType.REJECT:
                 count.rejections += 1
             elif vote.vote == VoteType.ABSTAIN:
                 count.abstentions += 1
-            elif vote.vote == VoteType.UNAVAILABLE:
-                count.unavailable += 1
             count.total += 1
         return count
     
@@ -150,7 +141,7 @@ class DecisionProposal:
         Vérifie si le consensus est atteint.
         
         INVARIANTS (non-négociables):
-        1. UNAVAILABLE ≠ vote. Ne compte jamais dans le quorum.
+        1. Unavailable != vote. Ne compte jamais dans le quorum.
         2. Aucun vote effectif ⇒ aucun verdict juridique (INFRA_FAILURE).
         3. Le quorum se calcule sur les votes effectifs uniquement.
         4. Fail-closed ≠ mensonge : bloquer sans inventer une décision.
@@ -359,10 +350,12 @@ class ConsensusManager:
         self,
         proposal_id: str,
         provider: str,
-        vote: Union[VoteType, bool, str],
+        vote: Union[VoteType, bool, str, None],
         reasoning: str = "",
         confidence: float = 0.0,
-        risks: List[str] = None
+        risks: List[str] = None,
+        available: Optional[bool] = None,
+        availability_reason: Optional[str] = None,
     ) -> bool:
         """
         Soumet un vote pour une proposition.
@@ -384,20 +377,33 @@ class ConsensusManager:
         
         # Normaliser le vote
         normalized_vote = self._normalize_vote(vote)
+        if available is None:
+            available = normalized_vote is not None
         
         # Ajouter le vote
-        proposal.add_vote(provider, normalized_vote, reasoning, confidence, risks)
+        proposal.add_vote(
+            provider,
+            normalized_vote,
+            reasoning,
+            confidence,
+            risks,
+            available=available,
+            availability_reason=availability_reason,
+        )
         
         # Émettre événement
         self._emit("vote_submitted", {
             "proposal_id": proposal_id,
             "provider": provider,
-            "vote": normalized_vote.value,
+            "vote": normalized_vote.value if normalized_vote else "unavailable",
             "reasoning": reasoning,
             "timestamp": time.time()
         })
         
-        logger.info(f"🗳️  Vote de {provider}: {normalized_vote.value}")
+        logger.info(
+            f"🗳️  Vote de {provider}: "
+            f"{normalized_vote.value if normalized_vote else 'unavailable'}"
+        )
         
         # Vérifier si consensus atteint
         if proposal.check_consensus():
@@ -405,8 +411,8 @@ class ConsensusManager:
         
         return True
     
-    def _normalize_vote(self, vote: Union[VoteType, bool, str]) -> VoteType:
-        """Normalise un vote vers VoteType."""
+    def _normalize_vote(self, vote: Union[VoteType, bool, str, None]) -> Optional[VoteType]:
+        """Normalise un vote vers VoteType (None = unavailable)."""
         if isinstance(vote, VoteType):
             return vote
         if vote is True or vote == "approve":
@@ -415,9 +421,9 @@ class ConsensusManager:
             return VoteType.REJECT
         if vote == "abstain":
             return VoteType.ABSTAIN
-        if vote == "unavailable":
-            return VoteType.UNAVAILABLE
-        return VoteType.UNAVAILABLE  # Fail-closed
+        if vote == "unavailable" or vote == "timeout":
+            return None
+        return None
     
     async def _handle_timeout(self, proposal_id: str):
         """Gère le timeout d'une proposition."""
@@ -427,13 +433,17 @@ class ConsensusManager:
         if not proposal or proposal.status != ConsensusStatus.PENDING:
             return
         
-        # TIMEOUT = REJECTED (fail-closed)
-        proposal.status = ConsensusStatus.TIMEOUT
+        # Timeout: if no effective votes, infra failure; else no consensus
+        count = proposal.get_vote_count()
+        if count.effective_votes == 0:
+            proposal.status = ConsensusStatus.INFRA_FAILURE
+        else:
+            proposal.status = ConsensusStatus.NO_CONSENSUS
         self.metrics["timeout_proposals"] += 1
         
         self._emit("consensus_timeout", {
             "proposal_id": proposal_id,
-            "status": ConsensusStatus.TIMEOUT.value,
+            "status": proposal.status.value,
             "decision_hash": proposal.decision_hash,
             "votes": proposal.get_vote_count().__dict__
         })

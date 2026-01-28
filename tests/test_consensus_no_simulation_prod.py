@@ -5,8 +5,12 @@ T4: CONSENSUS_SIMULATION=true en production → HARD FAIL
 """
 
 import os
+import sys
+from pathlib import Path
 import pytest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from python.helpers.consensus_arbiter import (
     SimulationError,
@@ -14,6 +18,9 @@ from python.helpers.consensus_arbiter import (
     verify_no_simulation_in_production,
     ConsensusConfig,
 )
+from python.consensus.engine import _ensure_real_votes_or_raise, ConsensusDecision
+from python.helpers.consensus_manager import VoteCount
+from python.helpers.consensus_contracts import ConsensusStatusEnum
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -146,3 +153,22 @@ class TestArbiterConfigValidation:
             config = load_consensus_config()
             assert len(config.local_arbiters) > 0
             assert config.offline_mode is True
+
+
+class TestNoApprovalWithoutRealVotes:
+    """Guard: no approval without real votes in production."""
+    
+    def test_engine_guard_raises_in_production(self):
+        decision = ConsensusDecision(
+            proposal_id="test",
+            decision_hash="hash",
+            status=ConsensusStatusEnum.APPROVED,
+            approved=True,
+            votes={},
+            vote_count=VoteCount(),
+            decision_time_ms=0,
+            correlation_id="corr",
+            warnings=[],
+        )
+        with pytest.raises(RuntimeError):
+            _ensure_real_votes_or_raise(decision=decision, is_production=True)

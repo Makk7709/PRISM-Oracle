@@ -22,46 +22,45 @@ from python.helpers.criticality_router import (
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestMultitaskLegalSafeConsensus:
-    """Vérifie que multitask → legal_safe force le consensus."""
+    """Vérifie que legal_safe respecte L1/L3 routing."""
     
     @pytest.fixture
     def router(self):
         return CriticalityRouter(is_production=True)
     
-    def test_legal_safe_always_requires_consensus(self, router):
-        """legal_safe requiert TOUJOURS consensus."""
+    def test_legal_safe_level1_bypasses_consensus(self, router):
+        """legal_safe + L1 simple -> no consensus."""
         assessment = router.assess(
-            query="Any query at all",
+            query="Qu'est-ce qu'un contrat synallagmatique?",
+            agent_profile="legal_safe",
+        )
+        assert assessment.requires_consensus is False
+        assert assessment.can_bypass is True
+    
+    def test_legal_safe_level3_requires_consensus(self, router):
+        """legal_safe + L3 action -> consensus required."""
+        assessment = router.assess(
+            query="Dois-je signer ce contrat de travail?",
             agent_profile="legal_safe",
         )
         assert assessment.requires_consensus is True
-        assert assessment.can_bypass is False
-    
-    def test_legal_safe_strict_evidence_mode(self, router):
-        """legal_safe active strict evidence mode."""
-        assessment = router.assess(
-            query="Simple question",
-            agent_profile="legal_safe",
-        )
         assert assessment.strict_evidence_mode is True
     
     def test_legal_safe_domain_is_legal(self, router):
-        """legal_safe → domain LEGAL."""
+        """legal_safe → domain LEGAL even without consensus."""
         assessment = router.assess(
-            query="Random query",
+            query="Definition d'une clause penale",
             agent_profile="legal_safe",
         )
         assert assessment.domain == CriticalDomain.LEGAL
     
     def test_legal_safe_cannot_bypass_in_production(self, router):
-        """legal_safe ne peut jamais bypass en production."""
+        """L1 bypass is still allowed but no debug bypass in prod."""
         assessment = router.assess(
             query="Test",
             agent_profile="legal_safe",
             force_consensus=False,  # Tenter de désactiver
         )
-        # Doit toujours être True pour legal_safe
-        assert assessment.requires_consensus is True
         assert assessment.can_bypass is False
 
 
@@ -70,38 +69,39 @@ class TestMultitaskLegalSafeConsensus:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestMultitaskResearcherConsensus:
-    """Vérifie que multitask → researcher force le consensus."""
+    """Vérifie que researcher respecte L1/L3 routing."""
     
     @pytest.fixture
     def router(self):
         return CriticalityRouter(is_production=True)
     
-    def test_researcher_always_requires_consensus(self, router):
-        """researcher requiert TOUJOURS consensus."""
+    def test_researcher_level1_bypasses_consensus(self, router):
+        """researcher + L1 simple -> no consensus."""
         assessment = router.assess(
-            query="Any query",
+            query="What is a neural network?",
+            agent_profile="researcher",
+        )
+        assert assessment.requires_consensus is False
+    
+    def test_researcher_level3_requires_consensus(self, router):
+        """researcher + L3 action -> consensus required."""
+        assessment = router.assess(
+            query="Should I publish this clinical finding?",
             agent_profile="researcher",
         )
         assert assessment.requires_consensus is True
-    
-    def test_researcher_domain_is_scientific(self, router):
-        """researcher → domain SCIENTIFIC."""
-        assessment = router.assess(
-            query="Random query",
-            agent_profile="researcher",
-        )
         assert assessment.domain == CriticalDomain.SCIENTIFIC
     
     def test_researcher_strict_evidence_mode(self, router):
-        """researcher active strict evidence mode."""
+        """researcher L3 -> strict evidence mode."""
         assessment = router.assess(
-            query="Test",
+            query="We should publish this study, do you recommend?",
             agent_profile="researcher",
         )
         assert assessment.strict_evidence_mode is True
     
     def test_researcher_cannot_bypass(self, router):
-        """researcher ne peut pas bypass."""
+        """researcher cannot debug bypass in prod."""
         assessment = router.assess(
             query="Test",
             agent_profile="researcher",
@@ -114,56 +114,56 @@ class TestMultitaskResearcherConsensus:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestDomainDetectionTriggersConsensus:
-    """Vérifie que la détection de domaine critique force le consensus."""
+    """Vérifie que le domaine n'entraine pas le consensus sans L3."""
     
     @pytest.fixture
     def router(self):
         return CriticalityRouter(is_production=False)
     
-    def test_medical_query_triggers_consensus(self, router):
-        """Query médicale → consensus même avec agent=default."""
+    def test_medical_query_no_consensus_for_l2(self, router):
+        """Query medical L2 -> no consensus."""
         assessment = router.assess(
-            query="What medication should I take for my headache?",
+            query="Explain common headache medications.",
             agent_profile="default",  # Pas un agent critique
         )
         assert assessment.domain == CriticalDomain.MEDICAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
-    def test_legal_query_triggers_consensus(self, router):
-        """Query juridique → consensus même avec agent=default."""
+    def test_legal_query_no_consensus_for_l2(self, router):
+        """Query legal L2 -> no consensus."""
         assessment = router.assess(
-            query="Is this contract legally enforceable?",
+            query="Explain what makes a contract enforceable.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.LEGAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
-    def test_scientific_query_triggers_consensus(self, router):
-        """Query scientifique → consensus même avec agent=default."""
+    def test_scientific_query_no_consensus_for_l2(self, router):
+        """Query scientific L2 -> no consensus."""
         assessment = router.assess(
-            query="What does peer-reviewed research say about this hypothesis?",
+            query="Summarize peer-reviewed research on this hypothesis.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.SCIENTIFIC
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_french_medical_detected(self, router):
-        """Détection fonctionne en français."""
+        """Detection works in French (no consensus for L2)."""
         assessment = router.assess(
-            query="Quel traitement médical me recommandez-vous?",
+            query="Explique les traitements medicaux courants.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.MEDICAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
     
     def test_french_legal_detected(self, router):
-        """Détection juridique en français."""
+        """Detection works in French (no consensus for L2)."""
         assessment = router.assess(
-            query="Ce contrat est-il juridiquement valide?",
+            query="Explique la validite d'un contrat.",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.LEGAL
-        assert assessment.requires_consensus is True
+        assert assessment.requires_consensus is False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

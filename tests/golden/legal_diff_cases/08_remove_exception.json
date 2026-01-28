@@ -1,0 +1,14 @@
+{
+  "case_id": "08_remove_exception",
+  "description": "Suppression d'une exception (aggravation)",
+  "before": "Article 1. La déclaration est obligatoire.\nArticle 2. Les associations sont exemptées de cette obligation.",
+  "after": "Article 1. La déclaration est obligatoire.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": true,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_have_change_type": ["remove"],
+    "comment": "Suppression d'exemption = aggravation (mot relaxant retiré)"
+  }
+}

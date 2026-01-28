@@ -1,0 +1,15 @@
+{
+  "case_id": "06_modify_minimum",
+  "description": "Ajout d'un minimum obligatoire (aggravation - seuil contraint)",
+  "before": "Article 1. Le délai de préavis est libre.",
+  "after": "Article 1. Le délai de préavis minimum obligatoire est de 30 jours.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": true,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_contain_signals": ["+minimum"],
+    "must_have_topic": ["délai"],
+    "comment": "Substantial change needed to exceed 0.85 ratio threshold"
+  }
+}

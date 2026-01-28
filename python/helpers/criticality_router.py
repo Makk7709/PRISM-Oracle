@@ -18,6 +18,8 @@
 import logging
 import os
 import re
+import hashlib
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -49,13 +51,14 @@ class DecisionTypeForDomain(str, Enum):
     SECURITY_DECISION = "security_decision"
     RESEARCH_VALIDATION = "research_validation"
     CRITICAL = "critical"
+    INFORMATIONAL = "informational"  # Pour questions triviales/non-critiques
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # AGENT PROFILES REQUIRING CONSENSUS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Ces profils OBLIGENT le consensus - AUCUNE EXCEPTION
+# Ces profils OBLIGENT le consensus - SAUF pour questions triviales
 CONSENSUS_REQUIRED_PROFILES: Set[str] = {
     "legal_safe",
     "researcher",
@@ -63,6 +66,173 @@ CONSENSUS_REQUIRED_PROFILES: Set[str] = {
     # Ajouter ici les futurs profils critiques
     # "scientific",
 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEVEL 1 — SIMPLE REQUESTS (BYPASS CONSENSUS ENTIRELY)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Ces patterns identifient des requêtes SIMPLES qui ne nécessitent JAMAIS
+# de consensus, même pour les profils critiques (legal_safe, medical, etc.)
+# 
+# IMPORTANT: Une définition reste une définition, même si elle porte sur
+# un concept juridique ou médical. "Qu'est-ce qu'un contrat synallagmatique?"
+# est une DÉFINITION (Level 1), pas une analyse juridique (Level 2/3).
+
+LEVEL1_SIMPLE_PATTERNS: List[str] = [
+    # ─────────────────────────────────────────────────────────────────────────
+    # DÉFINITIONS (même sur sujets juridiques/médicaux/financiers)
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:qu['']?est[- ]?ce\s+qu(?:e|'un|'une))\s+",  # "Qu'est-ce qu'un/que..."
+    r"c['']?est\s+quoi\s+",  # "C'est quoi un/une..."
+    r"d[ée]fini(?:tion|r|s|ssez)\s+",  # "Définition de..." / "Définis..."
+    r"(?:que\s+)?signifie\s+",  # "Que signifie..."
+    r"(?:quel(?:le)?\s+est\s+)?(?:la\s+)?d[ée]finition\s+",
+    r"^qu['']?appelle[- ]?t[- ]?on\s+",  # "Qu'appelle-t-on..."
+    r"^(?:what\s+is|what's)\s+(?:a|an|the)\s+",  # "What is a..."
+    r"^define\s+",  # "Define..."
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # EXPLICATIONS (culture générale, vulgarisation)
+    # ─────────────────────────────────────────────────────────────────────────
+    r"explique[rz]?\s+(?:moi\s+)?(?:ce\s+qu['']?(?:est|on)|comment|pourquoi|la\s+diff[ée]rence)",
+    r"(?:peux[- ]tu\s+)?expliquer?\s+",
+    r"(?:comment\s+)?(?:ça\s+)?(?:marche|fonctionne)\s+",  # "Comment ça marche..."
+    r"diff[ée]rence\s+entre\s+",  # "Différence entre X et Y"
+    r"(?:quelle?\s+(?:est\s+)?la\s+)?diff[ée]rence\s+(?:entre|de)\s+",
+    r"^(?:explain|tell\s+me\s+about)\s+",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # RÉSUMÉS / SYNTHÈSES
+    # ─────────────────────────────────────────────────────────────────────────
+    r"r[ée]sume[rz]?\s+",  # "Résume ce texte"
+    r"(?:fais?[- ]?(?:moi\s+)?)?(?:un\s+)?r[ée]sum[ée]\s+",
+    r"synth[ée]tise[rz]?\s+",
+    r"(?:fais?[- ]?(?:moi\s+)?)?(?:une\s+)?synth[èe]se\s+",
+    r"^(?:summarize|sum\s+up|tldr)\s+",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # TRADUCTIONS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"tradui(?:s|re|sez)\s+",  # "Traduis en anglais"
+    r"(?:en\s+)?(?:anglais|français|espagnol|allemand|italien)",
+    r"^translate\s+",
+    r"how\s+do\s+you\s+say\s+",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # MÉTÉO
+    # ─────────────────────────────────────────────────────────────────────────
+    r"m[ée]t[ée]o",
+    r"(?:quel\s+)?temps\s+(?:fait[- ]?il|qu'il\s+fait)",
+    r"pr[ée]visions?\s+",
+    r"temp[ée]rature",
+    r"weather",
+    r"forecast",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # HEURE / DATE
+    # ─────────────────────────────────────────────────────────────────────────
+    r"quelle?\s+heure",
+    r"(?:quel(?:le)?|on\s+est)\s+(?:jour|date)",
+    r"what\s+(?:time|day|date)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # CALCULS / CONVERSIONS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"combien\s+(?:font?|fait|co[uû]te)",
+    r"calcule?r?\s+",
+    r"\d+\s*[\+\-\*\/x×÷%]\s*\d+",
+    r"(?:convertir?|conversion)\s+",
+    r"\d+\s*(?:€|\$|%)\s+(?:de|sur)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # SALUTATIONS / SMALL TALK
+    # ─────────────────────────────────────────────────────────────────────────
+    r"^(?:bonjour|bonsoir|salut|hello|hi|hey|coucou|yo)\s*[!?.,]*$",
+    r"^(?:merci|thanks|thank\s+you|ok|d['']accord|parfait|super)\s*[!?.,]*$",
+    r"^(?:comment\s+(?:vas?[- ]?tu|allez[- ]?vous|ça\s+va))\s*[?]*$",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # RECHERCHES WEB BASIQUES
+    # ─────────────────────────────────────────────────────────────────────────
+    r"cherche[rz]?\s+(?:sur\s+)?",
+    r"trouve[rz]?\s+(?:l['']?adresse|le\s+num[ée]ro|le\s+site|des?\s+infos?)",
+    r"search\s+(?:for|on)\s+",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # LISTES / ÉNUMÉRATIONS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:liste|donne)[rz]?\s+(?:moi\s+)?(?:\d+|les|des)\s+",  # "Liste 5 exemples de..."
+    r"(?:cite|nomme)[rz]?\s+(?:moi\s+)?(?:\d+|des|quelques)\s+",
+    r"^(?:list|give\s+me)\s+",
+]
+
+# Alias pour rétro-compatibilité
+TRIVIAL_QUESTION_PATTERNS = LEVEL1_SIMPLE_PATTERNS
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEVEL 3 — CRITICAL REQUESTS (REQUIRE CONSENSUS)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Ces patterns identifient des requêtes CRITIQUES qui nécessitent vraiment
+# le pipeline lourd (consensus multi-agents, contradiction, audit).
+# 
+# IMPORTANT: Le consensus ne doit se déclencher QUE si ces patterns sont
+# détectés, pas simplement parce qu'un mot juridique/médical est présent.
+
+LEVEL3_CRITICAL_PATTERNS: List[str] = [
+    # ─────────────────────────────────────────────────────────────────────────
+    # CAS RÉELS / SITUATIONS PERSONNELLES
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:mon|ma|mes|notre|nos)\s+(?:cas|situation|problème|litige|employeur|patron|médecin|avocat)",
+    r"(?:j['']?ai|nous\s+avons)\s+(?:signé|reçu|été|un\s+litige|un\s+problème)",
+    r"(?:je\s+dois|nous\s+devons)\s+(?:décider|choisir|signer|porter\s+plainte)",
+    r"(?:je\s+suis|nous\s+sommes)\s+(?:licencié|poursuivi|assigné|en\s+litige|accusé)",
+    r"que\s+(?:puis[- ]?je|pouvons[- ]?nous)\s+(?:faire|réclamer|exiger)",
+    r"(?:quels?\s+)?(?:recours|droits?|options?)\s+(?:ai[- ]?je|avons[- ]?nous)",
+    r"(?:puis[- ]?je|peut[- ]?on)\s+(?:annuler|résilier|contester|attaquer|poursuivre)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # DÉCISIONS À PRENDRE
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:dois[- ]?je|devons[- ]?nous|faut[- ]?il)\s+(?:signer|accepter|refuser|contester)",
+    r"(?:je\s+dois|nous\s+devons)\s+(?:contester|attaquer|poursuivre|signer|annuler|résilier)",
+    r"(?:should\s+i|should\s+we|do\s+i)\s+(?:invest|investing|buy|sell|trade)",
+    r"(?:dois[- ]?je|faut[- ]?il)\s+(?:investir|placer|acheter|vendre|trader)",
+    r"(?:est[- ]?ce\s+que\s+)?je\s+(?:risque|peux\s+être\s+poursuivi)",
+    r"(?:quelle?\s+)?(?:décision|stratégie|action)\s+(?:prendre|adopter|recommande)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # CONTENTIEUX / LITIGES
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:en\s+)?(?:cas\s+de\s+)?(?:litige|contentieux|procès|assignation)",
+    r"(?:porter|déposer)\s+(?:plainte|réclamation)",
+    r"(?:mise\s+en\s+demeure|injonction|sommation)\s+(?:reçue?|envoyée?)",
+    r"(?:tribunal|prud['']?hommes?|justice)\s+(?:saisir|aller)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # RESPONSABILITÉ / RISQUES RÉELS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:ma|notre)\s+(?:responsabilité|faute|obligation)",
+    r"(?:risque|risques?)\s+(?:encouru|légal|pénal|financier)",
+    r"(?:dommages|préjudice|indemnisation)\s+(?:réclamer|obtenir|demander)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # CAS MÉDICAUX RÉELS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:mon|ma)\s+(?:patient|patiente|médecin|docteur|diagnostic)",
+    r"(?:j['']?ai|je\s+présente)\s+(?:les\s+)?symptômes?\s+(?:suivants?|de)",
+    r"(?:quel\s+)?traitement\s+(?:pour\s+)?(?:mon|ma|moi)",
+    r"(?:dois[- ]?je|faut[- ]?il)\s+(?:consulter|aller\s+aux\s+urgences)",
+    
+    # ─────────────────────────────────────────────────────────────────────────
+    # INDICATEURS ANGLAIS
+    # ─────────────────────────────────────────────────────────────────────────
+    r"(?:my|our)\s+(?:case|situation|problem|dispute|employer|lawyer)",
+    r"(?:i|we)\s+(?:have\s+been|was|were)\s+(?:fired|sued|charged)",
+    r"(?:can|should)\s+(?:i|we)\s+(?:sue|appeal|contest|cancel)",
+    r"what\s+(?:are\s+)?my\s+(?:rights|options|recourse)",
+]
 
 # Profils qui peuvent bypasser le consensus (dev/test uniquement)
 DEBUG_BYPASS_PROFILES: Set[str] = {
@@ -111,12 +281,13 @@ DOMAIN_PATTERNS: Dict[CriticalDomain, List[str]] = {
         r"\b(surgery|procedure|therapy|intervention)\b",
         # French
         r"\b(médical|diagnostic|traitement|prescription|médicament)\b",
-        r"\b(symptômes?|maladie|pathologie|trouble|syndrome)\b",
+        r"\b(symptômes?|symptomes?|sympt[oô]mes?|maladie|pathologie|trouble|syndrome)\b",
         r"\b(médecin|docteur|infirmier|santé|hôpital|clinique)\b",
         r"\b(posologie|effets secondaires|contre.?indications?)\b",
         r"\b(chirurgie|intervention|thérapie)\b",
         # French additions - Pièges réalistes
         r"\b(ordonnance)\b",
+        r"\b(consulter|consultation|urgence|urgences)\b",
         r"\b(bilan sanguin|analyse|prise de sang)\b",
         r"\b(diagnostic différentiel)\b",
         r"\b(interactions? médicamenteuses?)\b",
@@ -155,13 +326,13 @@ DOMAIN_PATTERNS: Dict[CriticalDomain, List[str]] = {
     
     CriticalDomain.FINANCE_HIGH_RISK: [
         # High-risk financial actions
-        r"\b(invest|investment advice|portfolio|stocks?|bonds?|securities)\b",
-        r"\b(trading|forex|cryptocurrency|bitcoin|ethereum)\b",
+        r"\b(invest|investment|investment advice|investing|portfolio|stocks?|bonds?|securities)\b",
+        r"\b(trading|forex|cryptocurrency|crypto|bitcoin|ethereum)\b",
         r"\b(loan|mortgage|debt|credit|bankruptcy)\b",
         r"\b(tax advice|fiscal|impôts|déclaration fiscale)\b",
         r"\b(retirement|pension|401k|ira)\b",
         # French
-        r"\b(investir|conseil en investissement|portefeuille|actions?|obligations?)\b",
+        r"\b(investir|investissement|conseil en investissement|portefeuille|actions?|obligations?)\b",
         r"\b(trading|cryptomonnaie|bitcoin)\b",
         r"\b(prêt|hypothèque|dette|crédit|faillite)\b",
         r"\b(retraite|pension|épargne)\b",
@@ -199,7 +370,7 @@ CRITICAL_ACTION_PATTERNS: List[str] = [
     r"\b(sue|poursuivre|file.?complaint|porter plainte)\b",
     
     # Actions financières à risque
-    r"\b(buy|acheter|sell|vendre|trade|échanger)\b",
+    r"\b(buy|acheter|sell|vendre|trade|échanger|invest|investir|placer)\b",
     r"\b(transfer|transférer|wire|virement)\b",
 ]
 
@@ -335,89 +506,136 @@ class CriticalityRouter:
         task_metadata = task_metadata or {}
         reasons = []
         matched_patterns = []
-        
-        # ─────────────────────────────────────────────────────────────────────
-        # RÈGLE 1: Profil agent critique → TOUJOURS consensus
-        # ─────────────────────────────────────────────────────────────────────
-        
         profile_lower = agent_profile.lower().strip()
-        if profile_lower in CONSENSUS_REQUIRED_PROFILES:
-            reasons.append(f"Agent profile '{profile_lower}' requires mandatory consensus")
-            
-            # Déterminer le domaine basé sur le profil
-            if "legal" in profile_lower:
-                domain = CriticalDomain.LEGAL
-                decision_type = DecisionTypeForDomain.LEGAL_DECISION
-            elif "research" in profile_lower:
-                domain = CriticalDomain.SCIENTIFIC
-                decision_type = DecisionTypeForDomain.RESEARCH_VALIDATION
-            else:
-                domain = CriticalDomain.DEFAULT
-                decision_type = DecisionTypeForDomain.CRITICAL
-            
-            return CriticalityAssessment(
-                requires_consensus=True,
-                strict_evidence_mode=True,
-                domain=domain,
-                decision_type=decision_type,
-                confidence=1.0,
-                reasons=reasons,
-                matched_patterns=[],
-                agent_profile=agent_profile,
-                can_bypass=False,  # JAMAIS de bypass pour ces profils
-            )
-        
-        # ─────────────────────────────────────────────────────────────────────
-        # RÈGLE 2: Détection de domaine critique
-        # ─────────────────────────────────────────────────────────────────────
-        
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
+
+        profile_domain_map = {
+            "legal_safe": CriticalDomain.LEGAL,
+            "researcher": CriticalDomain.SCIENTIFIC,
+            "medical": CriticalDomain.MEDICAL,
+        }
+
+        # Detect domain first (for metadata), allow profile override
         detected_domain, domain_confidence, domain_matches = self._detect_domain(query)
-        matched_patterns.extend(domain_matches)
+        if profile_lower in profile_domain_map:
+            detected_domain = profile_domain_map[profile_lower]
+            domain_confidence = max(domain_confidence, 0.9)
+            domain_matches = domain_matches + [f"profile:{profile_lower}"]
         
-        if detected_domain != CriticalDomain.DEFAULT:
-            reasons.append(f"Critical domain detected: {detected_domain.value}")
+        # ═══════════════════════════════════════════════════════════════════════
+        # CLASSIFICATION À 3 NIVEAUX
+        # ═══════════════════════════════════════════════════════════════════════
+        #
+        # LEVEL 1 — SIMPLE: définition, résumé, explication, météo, traduction
+        #           → JAMAIS de consensus, réponse directe
+        #
+        # LEVEL 2 — PROFESSIONNEL: analyse, comparaison, conseil
+        #           → PAS de consensus par défaut, réponse structurée
+        #
+        # LEVEL 3 — CRITIQUE: cas réel, décision à prendre, litige, responsabilité
+        #           → SEUL niveau qui déclenche le consensus
+        #
+        # ═══════════════════════════════════════════════════════════════════════
         
         # ─────────────────────────────────────────────────────────────────────
-        # RÈGLE 3: Détection d'action critique
+        # RÈGLE 0: Requêtes LEVEL 1 (simples) → JAMAIS de consensus
         # ─────────────────────────────────────────────────────────────────────
+        # Définitions, résumés, explications, météo, traduction, calculs...
+        # Même si ça contient des mots juridiques/médicaux!
+        
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
+        if self._is_level1_simple(query) and force_consensus is not True:
+            logger.info(f"LEVEL 1 (simple) detected, bypassing consensus: '{query[:50]}...'")
+            if detected_domain != CriticalDomain.DEFAULT:
+                reasons.append(f"Domain context: {detected_domain.value}")
+                matched_patterns.extend(domain_matches)
+            assessment = CriticalityAssessment(
+                requires_consensus=False,
+                strict_evidence_mode=False,
+                domain=detected_domain,
+                decision_type=DecisionTypeForDomain.INFORMATIONAL,
+                confidence=0.1 if detected_domain == CriticalDomain.DEFAULT else 0.3,
+                reasons=["LEVEL 1 - Simple request (definition/summary/explanation)"] + reasons,
+                matched_patterns=matched_patterns,
+                agent_profile=agent_profile,
+                can_bypass=(
+                    not self._is_production and
+                    profile_lower in DEBUG_BYPASS_PROFILES and
+                    force_consensus is not True
+                ),
+                query_hash=query_hash,
+            )
+            logger.info(json.dumps({
+                "event": "router_decision",
+                "correlation_id": query_hash,
+                "query_hash": query_hash,
+                "requires_consensus": assessment.requires_consensus,
+                "domain": assessment.domain.value,
+                "decision_type": assessment.decision_type.value,
+                "reasons": assessment.reasons[:5],
+            }))
+            return assessment
+        
+        # ─────────────────────────────────────────────────────────────────────
+        # RÈGLE 1: Requêtes LEVEL 3 (critiques) → consensus REQUIS
+        # ─────────────────────────────────────────────────────────────────────
+        # Cas réels, décisions à prendre, litiges, responsabilité...
         
         has_critical_action, action_matches = self._detect_critical_action(query)
-        matched_patterns.extend(action_matches)
-        
         if has_critical_action:
-            reasons.append("Critical action pattern detected")
+            matched_patterns.extend(action_matches)
+            reasons.append("Critical action detected")
+
+        is_level3 = self._is_level3_critical(query) or has_critical_action
+        
+        if is_level3:
+            reasons.append("LEVEL 3 - Critical request (real case/decision/liability)")
         
         # ─────────────────────────────────────────────────────────────────────
-        # RÈGLE 4: Force consensus si demandé explicitement
+        # RÈGLE 2: Détection de domaine (pour enrichissement, pas pour consensus)
+        # ─────────────────────────────────────────────────────────────────────
+        # La présence d'un domaine critique NE DÉCLENCHE PLUS le consensus.
+        # Elle sert uniquement à enrichir la réponse avec des métadonnées.
+        
+        matched_patterns.extend(domain_matches)
+
+        if detected_domain != CriticalDomain.DEFAULT:
+            reasons.append(f"Domain context: {detected_domain.value}")
+        
+        # ─────────────────────────────────────────────────────────────────────
+        # RÈGLE 3: Force consensus si demandé explicitement
         # ─────────────────────────────────────────────────────────────────────
         
         if force_consensus is True:
             reasons.append("Consensus forced by caller")
+            is_level3 = True
         
         # ─────────────────────────────────────────────────────────────────────
         # DÉCISION FINALE
         # ─────────────────────────────────────────────────────────────────────
+        # Consensus UNIQUEMENT pour:
+        # - LEVEL 3 (cas réels, décisions critiques)
+        # - force_consensus=True (explicite)
         
         requires_consensus = (
             force_consensus is True or
-            detected_domain != CriticalDomain.DEFAULT or
-            has_critical_action
+            is_level3
         )
         
-        # Strict evidence mode pour domaines critiques
-        strict_evidence = detected_domain in {
+        # Strict evidence mode pour LEVEL 3 + domaines critiques
+        strict_evidence = is_level3 and detected_domain in {
             CriticalDomain.LEGAL,
             CriticalDomain.MEDICAL,
             CriticalDomain.SCIENTIFIC,
         }
         
         # Decision type
-        decision_type = self._get_decision_type(detected_domain, has_critical_action)
+        decision_type = self._get_decision_type(detected_domain, is_level3)
         
         # Calcul de confiance
-        confidence = domain_confidence if detected_domain != CriticalDomain.DEFAULT else 0.5
-        if has_critical_action:
-            confidence = max(confidence, 0.7)
+        confidence = domain_confidence if detected_domain != CriticalDomain.DEFAULT else 0.3
+        if is_level3:
+            confidence = max(confidence, 0.8)  # Level 3 = haute criticité
         
         # Bypass possible ?
         can_bypass = (
@@ -429,7 +647,7 @@ class CriticalityRouter:
         if can_bypass and not requires_consensus:
             can_bypass = False  # Pas besoin de bypass si pas de consensus requis
         
-        return CriticalityAssessment(
+        assessment = CriticalityAssessment(
             requires_consensus=requires_consensus,
             strict_evidence_mode=strict_evidence,
             domain=detected_domain,
@@ -440,7 +658,20 @@ class CriticalityRouter:
             agent_profile=agent_profile,
             can_bypass=can_bypass,
             bypass_reason="Debug profile in non-production" if can_bypass else None,
+            query_hash=query_hash,
         )
+        
+        logger.info(json.dumps({
+            "event": "router_decision",
+            "correlation_id": query_hash,
+            "query_hash": query_hash,
+            "requires_consensus": assessment.requires_consensus,
+            "domain": assessment.domain.value,
+            "decision_type": assessment.decision_type.value,
+            "reasons": assessment.reasons[:5],
+        }))
+        
+        return assessment
     
     # ─────────────────────────────────────────────────────────────────────────
     # CONVENIENCE METHODS
@@ -496,6 +727,74 @@ class CriticalityRouter:
     # ─────────────────────────────────────────────────────────────────────────
     # INTERNAL METHODS
     # ─────────────────────────────────────────────────────────────────────────
+    
+    def _is_level1_simple(self, query: str) -> bool:
+        """
+        Détecte si une requête est LEVEL 1 (simple): définition, résumé, 
+        explication, culture générale, météo, traduction, calcul.
+        
+        Les requêtes LEVEL 1 ne nécessitent JAMAIS de consensus,
+        même pour les profils critiques (legal_safe, medical, etc.).
+        
+        IMPORTANT: Une définition reste une définition, même si elle porte
+        sur un concept juridique. "Qu'est-ce qu'un contrat synallagmatique?"
+        est une DÉFINITION (Level 1), pas une analyse juridique (Level 3).
+        
+        Args:
+            query: Texte de la requête
+            
+        Returns:
+            True si requête simple (Level 1), False sinon
+        """
+        query_lower = query.lower().strip()
+        
+        # Vérifier les patterns Level 1
+        for pattern in LEVEL1_SIMPLE_PATTERNS:
+            try:
+                if re.search(pattern, query_lower, re.IGNORECASE):
+                    logger.debug(f"Level 1 pattern matched: {pattern}")
+                    return True
+            except re.error:
+                continue
+        
+        # Heuristiques additionnelles
+        
+        # Émojis seuls ou réponses simples
+        if query_lower in ["👋", "🙂", "😊", "👍", "ok", "oui", "non", "yes", "no"]:
+            return True
+        
+        return False
+    
+    def _is_level3_critical(self, query: str) -> bool:
+        """
+        Détecte si une requête est LEVEL 3 (critique): cas réel, décision
+        à prendre, litige, responsabilité, impact légal/financier/médical.
+        
+        SEULES les requêtes Level 3 déclenchent le consensus multi-agents.
+        
+        Args:
+            query: Texte de la requête
+            
+        Returns:
+            True si requête critique (Level 3), False sinon
+        """
+        query_lower = query.lower().strip()
+        
+        # Vérifier les patterns Level 3
+        for pattern in LEVEL3_CRITICAL_PATTERNS:
+            try:
+                if re.search(pattern, query_lower, re.IGNORECASE):
+                    logger.debug(f"Level 3 critical pattern matched: {pattern}")
+                    return True
+            except re.error:
+                continue
+        
+        return False
+    
+    # Alias pour rétro-compatibilité
+    def _is_trivial_question(self, query: str) -> bool:
+        """Alias pour rétro-compatibilité."""
+        return self._is_level1_simple(query)
     
     def _detect_domain(
         self,

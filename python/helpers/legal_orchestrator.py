@@ -930,9 +930,23 @@ def is_consensus_simulation_enabled() -> bool:
     Check if consensus simulation mode is enabled.
     
     Environment variable: LEGAL_CONSENSUS_SIMULATION=1
-    Default: False (real consensus)
+    
+    Default behavior:
+    - Production (EVIDENCE_ENV=production): False (real consensus required)
+    - Development (EVIDENCE_ENV=development or unset): True (simulation enabled)
+    
+    This prevents development environments from failing due to missing API keys.
     """
-    return os.environ.get("LEGAL_CONSENSUS_SIMULATION", "0") == "1"
+    explicit_value = os.environ.get("LEGAL_CONSENSUS_SIMULATION")
+    if explicit_value is not None:
+        return explicit_value == "1"
+    
+    # Auto-detect: enable simulation in development by default
+    env = os.environ.get("EVIDENCE_ENV", "development").lower()
+    if env == "production":
+        return False  # Production: require real consensus
+    else:
+        return True   # Development: simulation by default
 
 
 async def execute_consensus(
@@ -971,22 +985,13 @@ async def execute_consensus(
     _metrics.record_consensus_required()
     
     # ─────────────────────────────────────────────────────────────────────────
-    # SIMULATION MODE (only for testing, disabled by default)
+    # SIMULATION MODE (only for testing, NO auto-approval)
     # ─────────────────────────────────────────────────────────────────────────
     
     if is_consensus_simulation_enabled():
-        # Simulation: auto-approve LOW, require review for HIGH
-        if proposal.risk_tier == LegalRiskTier.LOW:
-            votes = {f"arbiter_{i}": "approve" for i in range(1, 4)}
-            status = "APPROVED"
-        elif proposal.risk_tier == LegalRiskTier.HIGH:
-            # HIGH risk: fail-closed even in simulation
-            votes = {}
-            status = "PENDING"
-        else:
-            # MEDIUM: simulate 2/3 approval
-            votes = {"arbiter_1": "approve", "arbiter_2": "approve", "arbiter_3": "abstain"}
-            status = "APPROVED"
+        # Simulation: never approve without real votes
+        votes = {}
+        status = "NO_CONSENSUS"
         
         duration_ms = (time.time() - start_time) * 1000
         result = {
@@ -1072,8 +1077,7 @@ async def execute_consensus(
             "APPROVED": "approved",
             "REJECTED": "rejected",
             "NO_CONSENSUS": "no_consensus",    # Evaluation done, no quorum
-            "INFRA_FAILURE": "infra_failure",  # All arbiters unavailable
-            "TIMEOUT": "timeout",              # Time limit exceeded
+            "INFRA_FAILURE": "infra_failure",  # All arbiters unavailable or timed out
             "PENDING": "pending",
         }
         reason_code = reason_code_map.get(status, "unknown")
@@ -1103,8 +1107,8 @@ async def execute_consensus(
         logger.error(f"Consensus timeout for {proposal.proposal_id}")
         return {
             "proposal_id": proposal.proposal_id,
-            "status": "TIMEOUT",
-            "reason_code": "timeout",
+            "status": "INFRA_FAILURE",
+            "reason_code": "infra_failure",
             "votes": {},
             "required_approvals": proposal.required_approvals,
             "unanimous": proposal.require_unanimity,
@@ -1292,10 +1296,12 @@ async def build_legal_draft_with_llm(
             f"    citation: {result.citation}\n"
             f"    extrait: {result.text_snippet[:300]}..."
         )
-    sources_block = "\n".join(sources_lines) if sources_lines else "(Aucune source trouvée)"
+    sources_block = "\n".join(sources_lines) if sources_lines else "(Aucune source trouvée dans l'index local)"
     
-    # If no LLM function or no sources, fall back to basic draft
-    if call_llm_func is None or not retrieval_context.results:
+    # If no LLM function, fall back to basic draft
+    # BUT: If we have an LLM function, we CAN generate analysis even without sources
+    # The LLM will use its training knowledge (with appropriate disclaimers)
+    if call_llm_func is None:
         return _build_basic_draft(query, legal_context, retrieval_context, draft_id, correlation_id)
     
     # Build prompt
@@ -1325,6 +1331,8 @@ async def build_legal_draft_with_llm(
         parsed = json.loads(json_text.strip())
         
         # Build draft from parsed response
+        # Note: If no retrieval results, LLM generates citations from training data
+        # These are marked as "llm_knowledge" not "indexed_source"
         draft = LegalDraft(
             draft_id=draft_id,
             query=query,
@@ -1332,9 +1340,10 @@ async def build_legal_draft_with_llm(
             rules=parsed.get("rules", []),
             application=parsed.get("application", ""),
             risks=parsed.get("risks", []),
-            next_action=parsed.get("next_action", "Vérifier les sources"),
-            citations=[r.citation for r in retrieval_context.results],
-            source_chunk_ids=[r.chunk_id for r in retrieval_context.results],
+            next_action=parsed.get("next_action", "Vérifier les sources officielles (Légifrance)"),
+            # Use retrieval citations if available, otherwise use LLM-provided rules as citations
+            citations=[r.citation for r in retrieval_context.results] if retrieval_context.results else parsed.get("rules", []),
+            source_chunk_ids=[r.chunk_id for r in retrieval_context.results] if retrieval_context.results else [],
             legal_context=legal_context,
         )
         

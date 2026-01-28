@@ -1,0 +1,13 @@
+{
+  "case_id": "02_add_paragraph",
+  "description": "Ajout d'un paragraphe neutre",
+  "before": "Article 1. Le contrat est valable.\nArticle 2. Les parties sont liées.",
+  "after": "Article 1. Le contrat est valable.\nArticle 2. Les parties sont liées.\nArticle 3. Le présent article précise les modalités.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_have_change_type": ["add"]
+  }
+}

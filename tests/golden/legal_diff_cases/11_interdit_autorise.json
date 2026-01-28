@@ -1,0 +1,15 @@
+{
+  "case_id": "11_interdit_autorise",
+  "description": "Changement interdit→autorisé (assouplissement majeur)",
+  "before": "Article 1. La sous-traitance est strictement interdite.",
+  "after": "Article 1. La sous-traitance est désormais autorisée sous conditions.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": true,
+    "min_segments": 1,
+    "must_have_change_type": ["modify"],
+    "must_contain_signals": ["-interdit", "+autorisé"],
+    "comment": "Lexicon uses base forms: interdit (not interdite), autorisé (not autorisée)"
+  }
+}

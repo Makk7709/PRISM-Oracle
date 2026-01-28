@@ -1,0 +1,182 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# P3.4: LEGAL PIPELINE CI GATES
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Two separate jobs:
+# A) FAST GATE (PR) — invariants + unit tests (no external index)
+# B) NIGHTLY FULL — includes FTS5 index + E2E retrieval
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Legal Pipeline CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'python/helpers/legal_*.py'
+      - 'python/extensions/legal_safe_mode/**'
+      - 'python/legal_sources/**'
+      - 'tests/test_legal_*.py'
+      - 'tests/fixtures/legal_*.py'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'python/helpers/legal_*.py'
+      - 'python/extensions/legal_safe_mode/**'
+      - 'python/legal_sources/**'
+      - 'tests/test_legal_*.py'
+      - 'tests/fixtures/legal_*.py'
+  schedule:
+    # Nightly at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      run_nightly:
+        description: 'Run nightly tests'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  LEGAL_PIPELINE_ENABLED: '1'
+  LEGAL_CONSENSUS_SIMULATION: '1'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # A) FAST GATE — PR/Push
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  fast-gate:
+    name: Fast Gate (PR)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run Fast Gate Tests
+        env:
+          CI_NIGHTLY: '0'
+          LEGAL_USE_FTS5_INDEX: '0'  # No index in fast gate
+        run: |
+          python -m pytest tests/test_legal_pipeline.py tests/test_legal_orchestrator.py tests/test_legal_runtime_idempotence.py \
+            -v --tb=short \
+            --ignore-glob='*nightly*' \
+            -k 'not nightly'
+      
+      - name: Verify P0.7 Invariants
+        run: |
+          python -c "
+          from tests.test_legal_pipeline import TestPremiumGateInvariants
+          print('P0.7 invariants module loaded successfully')
+          "
+      
+      - name: Check No Print Statements
+        run: |
+          # P3: No prints allowed in production code
+          grep -r 'print(' python/helpers/legal_*.py python/extensions/legal_safe_mode/*.py || echo "No print statements found"
+          # Fail if print statements found (excluding comments)
+          ! grep -r '^[^#]*print(' python/helpers/legal_orchestrator.py python/helpers/legal_rendering.py
+  
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # B) NIGHTLY FULL — Scheduled
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  nightly-full:
+    name: Nightly Full (with Index)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.run_nightly == 'true'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Build Legal Index
+        run: |
+          python scripts/build_legal_index_test.py --output data/legal_index
+      
+      - name: Run Nightly Tests (ALL)
+        env:
+          CI_NIGHTLY: '1'
+          LEGAL_USE_FTS5_INDEX: '1'
+          LEGAL_INDEX_PATH: 'data/legal_index'
+        run: |
+          python -m pytest tests/test_legal_pipeline.py tests/test_legal_orchestrator.py tests/test_legal_runtime_idempotence.py \
+            -v --tb=short
+      
+      - name: Verify Index Required
+        env:
+          CI_NIGHTLY: '1'
+        run: |
+          # P3.4: In nightly, index MUST be available
+          python -c "
+          import os
+          os.environ['CI_NIGHTLY'] = '1'
+          from python.helpers.legal_orchestrator import LEGAL_INDEX_AVAILABLE
+          assert LEGAL_INDEX_AVAILABLE, 'FTS5 index must be available in nightly'
+          print('Index verification passed')
+          "
+      
+      - name: Run E2E Retrieval Test
+        env:
+          CI_NIGHTLY: '1'
+          LEGAL_INDEX_PATH: 'data/legal_index'
+        run: |
+          python -c "
+          import asyncio
+          from python.helpers.legal_orchestrator import run_legal_pipeline
+          
+          async def test_e2e():
+              output = await run_legal_pipeline(
+                  query='Quelles sont les conditions de validité d\\'un contrat en droit français ?',
+                  correlation_id='nightly_e2e_001',
+              )
+              print(f'E2E Result: mode={output.mode.value}, audit={output.audit_bundle_id}')
+              assert output.audit_bundle_id is not None
+              print('E2E test passed')
+          
+          asyncio.run(test_e2e())
+          "
+      
+      - name: Upload Metrics
+        if: always()
+        run: |
+          python -c "
+          from python.helpers.legal_orchestrator import get_legal_pipeline_metrics
+          import json
+          metrics = get_legal_pipeline_metrics().to_dict()
+          print(json.dumps(metrics, indent=2))
+          " > metrics_report.json
+          cat metrics_report.json
+      
+      - name: Archive Metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legal-pipeline-metrics
+          path: metrics_report.json
+          retention-days: 30

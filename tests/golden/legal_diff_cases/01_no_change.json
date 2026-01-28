@@ -1,0 +1,13 @@
+{
+  "case_id": "01_no_change",
+  "description": "Textes identiques — aucune modification",
+  "before": "Article 1. Le contrat est valable pour une durée indéterminée.\nArticle 2. Les parties peuvent résilier à tout moment.",
+  "after": "Article 1. Le contrat est valable pour une durée indéterminée.\nArticle 2. Les parties peuvent résilier à tout moment.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": false,
+    "min_segments": 0,
+    "max_segments": 0
+  }
+}

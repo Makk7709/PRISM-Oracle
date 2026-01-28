@@ -1,0 +1,12 @@
+{
+  "case_id": "13_mixed_signals",
+  "description": "Signaux mixtes aggravation+assouplissement (le plus fort gagne)",
+  "before": "Article 1. L'entreprise peut déclarer ses activités.",
+  "after": "Article 1. L'entreprise doit obligatoirement déclarer ses activités mais peut demander un report.",
+  "expected": {
+    "diff_status": "available",
+    "comment": "Aggravation (+doit, +obligatoirement) vs Assouplissement (+peut, +report). Aggravation gagne si score supérieur.",
+    "min_segments": 1,
+    "must_have_change_type": ["modify"]
+  }
+}

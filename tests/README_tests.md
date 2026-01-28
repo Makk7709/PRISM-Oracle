@@ -126,7 +126,7 @@ injector.configure("provider_name", FaultConfig(
 ```
 
 Types de fautes:
-- `TIMEOUT` : Délai dépassé
+- `INFRA_FAILURE` : Délai dépassé ou infra indisponible
 - `SCHEMA_FAIL` : Réponse invalide
 - `NETWORK_ERROR` : Erreur réseau
 - `RATE_LIMIT` : Limite atteinte

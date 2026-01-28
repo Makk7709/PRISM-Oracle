@@ -82,7 +82,7 @@ class TestPerAgentTimeout:
             
             status = manager.get_proposal_status(proposal_id)
             assert status is not None
-            assert status["status"] == ConsensusStatus.TIMEOUT
+            assert status["status"] == ConsensusStatus.INFRA_FAILURE
         
         asyncio.get_event_loop().run_until_complete(run())
     
@@ -104,8 +104,8 @@ class TestPerAgentTimeout:
             await asyncio.sleep(0.3)
             
             status = manager.get_proposal_status(proposal_id)
-            # Should be TIMEOUT since no quorum reached
-            assert status["status"] in [ConsensusStatus.TIMEOUT, ConsensusStatus.REJECTED]
+            # Should be NO_CONSENSUS or INFRA_FAILURE since no quorum reached
+            assert status["status"] in [ConsensusStatus.NO_CONSENSUS, ConsensusStatus.INFRA_FAILURE]
         
         asyncio.get_event_loop().run_until_complete(run())
 
@@ -166,7 +166,7 @@ class TestGlobalBudget:
             elapsed = (time.time() - start) * 1000
             
             status = manager.get_proposal_status(proposal_id)
-            assert status["status"] == ConsensusStatus.TIMEOUT
+            assert status["status"] == ConsensusStatus.INFRA_FAILURE
             
             # Verify it didn't take much longer than budget
             # Allow 50ms margin for processing
@@ -176,7 +176,7 @@ class TestGlobalBudget:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TEST: TIMEOUT PRODUCES REJECT (FAIL-CLOSED)
+# TEST: TIMEOUT PRODUCES INFRA_FAILURE/NO_CONSENSUS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestTimeoutFailClosed:
@@ -201,7 +201,7 @@ class TestTimeoutFailClosed:
             # CRITICAL: Timeout must NEVER be APPROVED
             assert status["status"] != ConsensusStatus.APPROVED, \
                 "SECURITY VIOLATION: Timeout resulted in APPROVED!"
-            assert status["status"] == ConsensusStatus.TIMEOUT
+            assert status["status"] == ConsensusStatus.INFRA_FAILURE
         
         asyncio.get_event_loop().run_until_complete(run())
     
@@ -285,7 +285,7 @@ class TestCancellation:
             s2 = manager.get_proposal_status(p2)
             
             assert s1["status"] == ConsensusStatus.APPROVED
-            assert s2["status"] == ConsensusStatus.TIMEOUT
+            assert s2["status"] == ConsensusStatus.INFRA_FAILURE
         
         asyncio.get_event_loop().run_until_complete(run())
 

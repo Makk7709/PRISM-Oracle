@@ -1,0 +1,16 @@
+{
+  "case_id": "05_modify_semantic_must",
+  "description": "Changement sémantique peut→doit (aggravation)",
+  "before": "Article 1. L'entreprise peut fournir un justificatif.",
+  "after": "Article 1. L'entreprise doit obligatoirement fournir un justificatif.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": true,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_have_change_type": ["modify"],
+    "must_contain_signals": ["+doit", "+obligatoire"],
+    "must_have_qualification": "aggravating",
+    "comment": "Lexicon has 'obligatoire' (base form), not 'obligatoirement'"
+  }
+}

@@ -7,7 +7,7 @@
 ║  RÈGLES CRITIQUES:                                                           ║
 ║  1. CONSENSUS_SIMULATION=false en production (hard fail si true)             ║
 ║  2. Chaque arbitre DOIT retourner un vote structuré                          ║
-║  3. Timeout = UNAVAILABLE (pas REJECT par défaut côté arbitre)               ║
+║  3. Timeout = unavailable (pas REJECT par défaut côté arbitre)               ║
 ║  4. Fail-closed au niveau consensus global                                   ║
 ║                                                                              ║
 ║  Les votes simulés sont INTERDITS en production.                             ║
@@ -50,6 +50,7 @@ from python.helpers.consensus_manager import (
 # 3. Make import errors explicit and traceable
 
 from python.helpers import llm_provider as _llm_provider
+from python.helpers.print_style import PrintStyle
 
 # Boot validation: ensures we fail early if providers are misconfigured
 _LLM_PROVIDER_AVAILABLE = _llm_provider.is_provider_available()
@@ -114,22 +115,104 @@ class ConsensusConfig:
     fail_on_no_arbiters: bool = True
 
 
+def _parse_arbiter_string(arbiter_str: str, priority: int = 0, timeout_ms: int = 5000) -> ArbiterConfig:
+    """
+    Parse une chaîne arbiter du format UI en ArbiterConfig.
+    
+    Format UI: "openrouter/anthropic/claude-3.5-sonnet"
+    → provider="openrouter", model="anthropic/claude-3.5-sonnet"
+    
+    Format: "ollama/mistral-large" 
+    → provider="ollama", model="mistral-large"
+    """
+    parts = arbiter_str.split("/", 1)
+    if len(parts) == 2:
+        provider = parts[0]
+        model = parts[1]
+    else:
+        # Fallback: assume openrouter
+        provider = "openrouter"
+        model = arbiter_str
+    
+    return ArbiterConfig(
+        provider=provider,
+        model=model,
+        priority=priority,
+        timeout_ms=timeout_ms,
+    )
+
+
 def load_consensus_config() -> ConsensusConfig:
     """
-    Charge la configuration depuis l'environnement.
+    Charge la configuration depuis les settings UI ou l'environnement.
     
-    Variables d'environnement:
-    - CONSENSUS_SIMULATION: "true"/"false" (default: false)
-    - CONSENSUS_ARBITERS: JSON list de providers
-    - CONSENSUS_LOCAL_ARBITERS: JSON list pour mode offline
-    - CONSENSUS_TIMEOUT_MS: Timeout global
-    - OFFLINE_MODE: Mode hors-ligne
+    PRIORITÉ:
+    1. Settings UI (PRISM Consensus panel)
+    2. Variables d'environnement (fallback)
+    3. Valeurs par défaut
+    
+    Variables d'environnement (override):
+    - CONSENSUS_SIMULATION: "true"/"false" (force simulation mode)
     - EVIDENCE_ENV: "production"/"development"
     """
-    # Vérification critique: simulation en production
     env = os.environ.get("EVIDENCE_ENV", "production").lower()
     is_production = env == "production"
-    simulation_enabled = os.environ.get("CONSENSUS_SIMULATION", "false").lower() == "true"
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # LOAD FROM SETTINGS UI (Priority source)
+    # ═══════════════════════════════════════════════════════════════════════════
+    arbiters = []
+    timeout_ms = 10000
+    quorum_ratio = 0.67
+    consensus_enabled = True
+    
+    try:
+        from python.helpers import settings as _settings
+        ui_settings = _settings.get_settings()
+        
+        # Check if consensus is enabled in UI
+        consensus_enabled = ui_settings.get("consensus_enabled", True)
+        
+        # Load timeout and quorum from UI
+        timeout_ms = int(ui_settings.get("consensus_timeout_ms", 10000))
+        quorum_ratio = float(ui_settings.get("consensus_quorum_ratio", 0.67))
+        
+        # Load arbiters from UI (format: "openrouter/provider/model")
+        arbiter_1_str = ui_settings.get("consensus_arbiter_1", "")
+        arbiter_2_str = ui_settings.get("consensus_arbiter_2", "")
+        arbiter_3_str = ui_settings.get("consensus_arbiter_3", "")
+        
+        # Each arbiter gets the full timeout (they run in parallel)
+        # 10s is usually enough for OpenRouter but can be slow
+        per_arbiter_timeout = max(timeout_ms, 15000)  # Minimum 15 seconds
+        
+        if arbiter_1_str:
+            arbiters.append(_parse_arbiter_string(arbiter_1_str, priority=0, timeout_ms=per_arbiter_timeout))
+        if arbiter_2_str:
+            arbiters.append(_parse_arbiter_string(arbiter_2_str, priority=1, timeout_ms=per_arbiter_timeout))
+        if arbiter_3_str:
+            arbiters.append(_parse_arbiter_string(arbiter_3_str, priority=2, timeout_ms=per_arbiter_timeout))
+        
+        if arbiters:
+            logger.info(
+                f"Loaded consensus config from UI: "
+                f"{len(arbiters)} arbiters, timeout={timeout_ms}ms, quorum={quorum_ratio}"
+            )
+            for a in arbiters:
+                logger.info(f"  Arbiter: {a.provider}/{a.model}")
+        
+    except Exception as e:
+        logger.warning(f"Could not load UI settings, using env/defaults: {e}")
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SIMULATION MODE DETECTION
+    # ═══════════════════════════════════════════════════════════════════════════
+    explicit_simulation = os.environ.get("CONSENSUS_SIMULATION")
+    if explicit_simulation is not None:
+        simulation_enabled = explicit_simulation.lower() in ("true", "1")
+    else:
+        # Default: simulation OFF - we want real consensus calls
+        simulation_enabled = False
     
     if is_production and simulation_enabled:
         error_msg = (
@@ -140,28 +223,50 @@ def load_consensus_config() -> ConsensusConfig:
         logger.critical(error_msg)
         raise SimulationError(error_msg)
     
-    # Charger les arbitres
-    arbiters_json = os.environ.get("CONSENSUS_ARBITERS", "[]")
-    try:
-        arbiters_raw = json.loads(arbiters_json)
-        arbiters = [
-            ArbiterConfig(
-                provider=a.get("provider", "unknown"),
-                model=a.get("model", "unknown"),
-                timeout_ms=a.get("timeout_ms", 3000),
-                priority=a.get("priority", 0),
-            )
-            for a in arbiters_raw
-        ]
-    except json.JSONDecodeError:
-        arbiters = []
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FALLBACK: Environment variables or defaults
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Explicit env override (wins over UI if provided)
+    arbiters_json = os.environ.get("CONSENSUS_ARBITERS")
+    if arbiters_json:
+        try:
+            arbiters_raw = json.loads(arbiters_json)
+            arbiters = [
+                ArbiterConfig(
+                    provider=a.get("provider", "unknown"),
+                    model=a.get("model", "unknown"),
+                    timeout_ms=a.get("timeout_ms", 5000),
+                    priority=a.get("priority", 0),
+                )
+                for a in arbiters_raw
+            ]
+        except json.JSONDecodeError:
+            logger.warning("CONSENSUS_ARBITERS invalid JSON; ignoring override")
     
-    # Arbitres par défaut si non configurés
     if not arbiters:
+        # Try environment variable fallback
+        arbiters_json = os.environ.get("CONSENSUS_ARBITERS", "[]")
+        try:
+            arbiters_raw = json.loads(arbiters_json)
+            arbiters = [
+                ArbiterConfig(
+                    provider=a.get("provider", "unknown"),
+                    model=a.get("model", "unknown"),
+                    timeout_ms=a.get("timeout_ms", 5000),
+                    priority=a.get("priority", 0),
+                )
+                for a in arbiters_raw
+            ]
+        except json.JSONDecodeError:
+            pass
+    
+    # Ultimate fallback: OpenRouter defaults
+    if not arbiters:
+        logger.warning("No arbiters configured, using OpenRouter defaults")
         arbiters = [
-            ArbiterConfig(provider="openai", model="gpt-4o", priority=0),
-            ArbiterConfig(provider="anthropic", model="claude-3-5-sonnet", priority=1),
-            ArbiterConfig(provider="google", model="gemini-1.5-pro", priority=2),
+            ArbiterConfig(provider="openrouter", model="anthropic/claude-3.5-sonnet", priority=0),
+            ArbiterConfig(provider="openrouter", model="openai/gpt-4o", priority=1),
+            ArbiterConfig(provider="openrouter", model="google/gemini-pro-1.5", priority=2),
         ]
     
     # Arbitres locaux (pour mode offline)
@@ -182,10 +287,11 @@ def load_consensus_config() -> ConsensusConfig:
     return ConsensusConfig(
         arbiters=arbiters,
         local_arbiters=local_arbiters,
-        global_timeout_ms=int(os.environ.get("CONSENSUS_TIMEOUT_MS", "10000")),
-        per_arbiter_timeout_ms=int(os.environ.get("CONSENSUS_PER_ARBITER_TIMEOUT_MS", "3000")),
+        global_timeout_ms=timeout_ms,
+        per_arbiter_timeout_ms=timeout_ms // 2,
         simulation_enabled=simulation_enabled,
         total_providers=len(arbiters) if arbiters else 3,
+        quorum_ratio=quorum_ratio,
         offline_mode=os.environ.get("OFFLINE_MODE", "false").lower() == "true",
         fail_on_no_arbiters=True,
     )
@@ -203,11 +309,13 @@ class ArbiterVote:
     model: str
     
     # Vote
-    vote_type: VoteType
+    vote_type: Optional[VoteType]
     approve: bool
     reasoning: str
     confidence: float  # 0.0-1.0
     risks_identified: List[str] = field(default_factory=list)
+    available: bool = True
+    availability_reason: Optional[str] = None
     
     # Métriques
     latency_ms: int = 0
@@ -231,6 +339,8 @@ class ArbiterVote:
             confidence=self.confidence,
             timestamp=time.time(),
             risks_identified=self.risks_identified,
+            available=self.available,
+            availability_reason=self.availability_reason,
         )
     
     def to_audit_dict(self) -> Dict[str, Any]:
@@ -239,7 +349,7 @@ class ArbiterVote:
             "arbiter_id": self.arbiter_id,
             "provider": self.provider,
             "model": self.model,
-            "vote": self.vote_type.value,
+            "vote": self.vote_type.value if self.vote_type else "unavailable",
             "approve": self.approve,
             "confidence": self.confidence,
             "latency_ms": self.latency_ms,
@@ -284,9 +394,19 @@ class ArbiterCaller:
         arbiter_id = f"{arbiter.provider}:{arbiter.model}"
         start_time = time.time()
         
+        PrintStyle(font_color="cyan").print(
+            f"🔍 call_arbiter: Starting for {arbiter_id}..."
+        )
+        
         try:
             # Construire le prompt
+            PrintStyle(font_color="cyan").print(
+                f"🔍 call_arbiter: Building prompt..."
+            )
             prompt = build_vote_prompt(action, context)
+            PrintStyle(font_color="cyan").print(
+                f"🔍 call_arbiter: Prompt built, length={len(prompt)}"
+            )
             
             # Appeler le LLM
             response = await self._call_llm(
@@ -318,25 +438,36 @@ class ArbiterCaller:
                 arbiter_id=arbiter_id,
                 provider=arbiter.provider,
                 model=arbiter.model,
-                vote_type=VoteType.UNAVAILABLE,
+                vote_type=None,
                 approve=False,
                 reasoning="Timeout waiting for arbiter response",
                 confidence=0.0,
                 latency_ms=arbiter.timeout_ms,
+                available=False,
+                availability_reason="timeout",
                 is_valid=False,
                 validation_error="timeout",
             )
             
         except Exception as e:
+            import traceback
+            PrintStyle(font_color="red", bold=True).print(
+                f"❌ call_arbiter EXCEPTION for {arbiter_id}: {type(e).__name__}: {str(e)[:200]}"
+            )
+            PrintStyle(font_color="red").print(
+                f"   Traceback: {traceback.format_exc()[:500]}"
+            )
             return ArbiterVote(
                 arbiter_id=arbiter_id,
                 provider=arbiter.provider,
                 model=arbiter.model,
-                vote_type=VoteType.UNAVAILABLE,
+                vote_type=None,
                 approve=False,
                 reasoning=f"Error calling arbiter: {str(e)[:100]}",
                 confidence=0.0,
                 latency_ms=int((time.time() - start_time) * 1000),
+                available=False,
+                availability_reason="error",
                 is_valid=False,
                 validation_error=str(e)[:200],
             )
@@ -353,34 +484,61 @@ class ArbiterCaller:
         Uses module-level imported llm_provider for stability.
         Fails fast if provider unavailable (no silent fallback).
         """
+        arbiter_name = f"{arbiter.provider}/{arbiter.model}"
+        PrintStyle(font_color="cyan").print(
+            f"🔍 _call_llm: Starting call to {arbiter_name}, timeout={timeout_ms}ms"
+        )
+        
         # Check if provider is available (already validated at boot in prod)
         if not _LLM_PROVIDER_AVAILABLE:
+            PrintStyle(font_color="red").print(
+                f"❌ _call_llm: LLM provider NOT available!"
+            )
             if self.config.simulation_enabled:
                 logger.warning(
                     f"LLM provider unavailable, using simulation for "
-                    f"{arbiter.provider}/{arbiter.model}"
+                    f"{arbiter_name}"
                 )
                 return self._generate_simulated_vote(prompt)
             
             raise ArbiterUnavailableError(
                 f"LLM provider layer unavailable. "
-                f"Cannot call arbiter {arbiter.provider}/{arbiter.model}. "
+                f"Cannot call arbiter {arbiter_name}. "
                 f"Set CONSENSUS_SIMULATION=true for testing without LLMs."
             )
         
-        # Get provider wrapper (validated at module import)
-        provider = _llm_provider.get_provider(arbiter.provider, arbiter.model)
-        
-        response = await asyncio.wait_for(
-            provider.generate(
-                prompt=prompt,
-                temperature=arbiter.temperature,
-                max_tokens=arbiter.max_tokens,
-            ),
-            timeout=timeout_ms / 1000,
-        )
-        
-        return response
+        try:
+            # Get provider wrapper (validated at module import)
+            provider = _llm_provider.get_provider(arbiter.provider, arbiter.model)
+            
+            PrintStyle(font_color="cyan").print(
+                f"🔍 _call_llm: Provider created, calling generate() for {arbiter_name}..."
+            )
+            
+            response = await asyncio.wait_for(
+                provider.generate(
+                    prompt=prompt,
+                    temperature=arbiter.temperature,
+                    max_tokens=arbiter.max_tokens,
+                ),
+                timeout=timeout_ms / 1000,
+            )
+            
+            PrintStyle(font_color="green").print(
+                f"✅ _call_llm: Got response from {arbiter_name}: {response[:50]}..."
+            )
+            
+            return response
+        except asyncio.TimeoutError:
+            PrintStyle(font_color="red").print(
+                f"⏱️ _call_llm: TIMEOUT after {timeout_ms}ms for {arbiter_name}"
+            )
+            raise
+        except Exception as e:
+            PrintStyle(font_color="red").print(
+                f"❌ _call_llm: ERROR calling {arbiter_name}: {type(e).__name__}: {e}"
+            )
+            raise
     
     def _generate_simulated_vote(self, prompt: str) -> str:
         """
@@ -465,106 +623,28 @@ class ConsensusOrchestrator:
         Returns:
             ConsensusResult
         """
-        correlation_id = correlation_id or str(uuid.uuid4())
-        start_time = time.time()
-        
-        # Sélectionner les arbitres
-        arbiters = self._select_arbiters()
-        
-        if not arbiters:
-            return self._create_no_arbiter_result(
-                action, context, decision_type, correlation_id
-            )
-        
-        # Créer la proposition
-        decision_hash = generate_decision_hash(action, context)
-        proposal_id = await self.manager.propose(
-            decision_hash,
-            {
+        from python.consensus.engine import run_consensus as run_consensus_v2
+
+        decision = await run_consensus_v2(
+            evidence_pack=evidence_pack,
+            policy={
                 "action": action,
                 "context": context,
-                "evidence_pack": evidence_pack,
+                "decision_type": decision_type,
                 "correlation_id": correlation_id,
             },
-            decision_type,
         )
-        
-        # Appeler les arbitres en parallèle
-        tasks = [
-            self.caller.call_arbiter(arbiter, action, context)
-            for arbiter in arbiters
-        ]
-        
-        votes = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Soumettre les votes
-        arbiter_votes: List[ArbiterVote] = []
-        for i, vote_result in enumerate(votes):
-            if isinstance(vote_result, Exception):
-                vote_result = ArbiterVote(
-                    arbiter_id=f"{arbiters[i].provider}:{arbiters[i].model}",
-                    provider=arbiters[i].provider,
-                    model=arbiters[i].model,
-                    vote_type=VoteType.UNAVAILABLE,
-                    approve=False,
-                    reasoning=f"Exception: {str(vote_result)[:100]}",
-                    confidence=0.0,
-                    is_valid=False,
-                    validation_error=str(vote_result),
-                )
-            
-            arbiter_votes.append(vote_result)
-            
-            # Soumettre au manager
-            self.manager.submit_vote(
-                proposal_id=proposal_id,
-                provider=vote_result.provider + "/" + vote_result.model,
-                vote=vote_result.vote_type,
-                reasoning=vote_result.reasoning,
-                confidence=vote_result.confidence,
-                risks=vote_result.risks_identified,
-            )
-        
-        # Attendre le résultat
-        status = await self.manager.wait_for_consensus(
-            proposal_id,
-            max_wait_ms=self.config.global_timeout_ms,
-        )
-        
-        # Calculer le temps de décision
-        decision_time_ms = int((time.time() - start_time) * 1000)
-        
-        # Construire le résultat
-        proposal = self.manager.recent_proposals.get(proposal_id)
-        if not proposal:
-            # Fallback si pas dans recent (ne devrait pas arriver)
-            final_status = ConsensusStatus.TIMEOUT
-            approved = False
-        else:
-            final_status = proposal.status
-            approved = final_status == ConsensusStatus.APPROVED
-        
-        result = ConsensusResult(
-            proposal_id=proposal_id,
-            approved=approved,
-            status=final_status,
-            votes={v.provider: v.to_vote() for v in arbiter_votes},
-            vote_count=self._count_votes(arbiter_votes),
-            decision_hash=decision_hash,
-            decision_time_ms=decision_time_ms,
+
+        return ConsensusResult(
+            proposal_id=decision.proposal_id,
+            approved=decision.approved,
+            status=decision.status,
+            votes=decision.votes,
+            vote_count=decision.vote_count,
+            decision_hash=decision.decision_hash,
+            decision_time_ms=decision.decision_time_ms,
             timestamp=time.time(),
         )
-        
-        # Audit
-        self._log_audit(
-            correlation_id=correlation_id,
-            action=action,
-            decision_type=decision_type,
-            result=result,
-            arbiter_votes=arbiter_votes,
-        )
-        
-        return result
     
     def _select_arbiters(self) -> List[ArbiterConfig]:
         """Sélectionne les arbitres disponibles."""
@@ -583,14 +663,14 @@ class ConsensusOrchestrator:
         """Compte les votes."""
         count = VoteCount()
         for vote in votes:
-            if vote.vote_type == VoteType.APPROVE:
+            if not vote.available:
+                count.unavailable += 1
+            elif vote.vote_type == VoteType.APPROVE:
                 count.approvals += 1
             elif vote.vote_type == VoteType.REJECT:
                 count.rejections += 1
             elif vote.vote_type == VoteType.ABSTAIN:
                 count.abstentions += 1
-            else:
-                count.unavailable += 1
             count.total += 1
         return count
     
@@ -603,19 +683,19 @@ class ConsensusOrchestrator:
     ) -> ConsensusResult:
         """Crée un résultat quand aucun arbitre n'est disponible."""
         if self.config.fail_on_no_arbiters:
-            # Fail-closed: pas d'arbitre = pas d'approbation
-            status = ConsensusStatus.REJECTED
+            # Infra failure: no arbiter -> no decision
+            status = ConsensusStatus.INFRA_FAILURE
             approved = False
             logger.warning(
-                f"No arbiters available for consensus, fail-closed applied "
+                f"No arbiters available for consensus, infra_failure applied "
                 f"(correlation_id={correlation_id})"
             )
         else:
-            # Mode dégradé (non recommandé)
-            status = ConsensusStatus.APPROVED
-            approved = True
+            # Mode dégradé désactivé: jamais auto-approve
+            status = ConsensusStatus.INFRA_FAILURE
+            approved = False
             logger.warning(
-                f"No arbiters available, degraded mode (auto-approve) "
+                f"No arbiters available, degraded auto-approve disabled "
                 f"(correlation_id={correlation_id})"
             )
         
@@ -683,6 +763,19 @@ class ConsensusOrchestrator:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _orchestrator_instance: Optional[ConsensusOrchestrator] = None
+
+
+def reset_consensus_orchestrator() -> None:
+    """
+    Reset the singleton orchestrator to force reload of configuration.
+    
+    Use this after changing environment variables or configuration
+    without restarting the application.
+    """
+    global _orchestrator_instance
+    if _orchestrator_instance is not None:
+        logger.info("🔄 Resetting ConsensusOrchestrator singleton")
+    _orchestrator_instance = None
 
 
 def get_consensus_orchestrator() -> ConsensusOrchestrator:

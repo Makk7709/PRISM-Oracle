@@ -49,7 +49,13 @@ from python.helpers.evidence import (
     EvidenceValidationResult,
     DOMAIN_EVIDENCE_REQUIREMENTS,
     validate_evidence_for_consensus,
-    create_fail_closed_response,
+)
+from python.helpers.consensus_contracts import (
+    ResponseEnvelopeSchema,
+    ConsensusSummarySchema,
+    ReliabilityTierSchema,
+    ReliabilityTierEnum,
+    ConsensusStatusEnum,
 )
 
 from python.helpers.consensus_arbiter import (
@@ -105,6 +111,7 @@ class ResearchConclusion:
     success: bool
     approved: bool
     conclusion_text: str
+    response_envelope: Optional[ResponseEnvelopeSchema] = None
     
     # Preuves
     evidence_pack: Optional[EvidencePack] = None
@@ -270,23 +277,53 @@ class ResearchConsensusPipeline:
         })
         
         # ═══════════════════════════════════════════════════════════════════════
-        # ÉTAPE 3: Vérifier si preuves suffisantes (fail-closed)
+        # ÉTAPE 3: Vérifier si preuves suffisantes (fail-soft)
         # ═══════════════════════════════════════════════════════════════════════
         
         if strict_mode and not evidence_valid:
-            # Fail-closed: pas assez de preuves
-            fail_message = create_fail_closed_response(
-                query, assessment.domain, evidence_pack
-            )
-            
             total_duration_ms = int((time.time() - start_time) * 1000)
+            answer = (
+                "Evidence is insufficient to provide a high-confidence answer. "
+                "Below is a cautious response with explicit unknowns and next steps."
+            )
+            envelope = ResponseEnvelopeSchema(
+                answer=answer,
+                reliability_tiers=[
+                    ReliabilityTierSchema(
+                        tier=ReliabilityTierEnum.LOW,
+                        claims=[],
+                        rationale="Insufficient evidence for strict mode.",
+                        sources=[],
+                    )
+                ],
+                unknowns=[evidence_pack.get_missing_evidence_message()],
+                recommended_next_steps=[
+                    "Collect additional primary sources",
+                    "Clarify the question and constraints",
+                    "Consult a domain expert if decisions are time-critical",
+                ],
+                consensus=ConsensusSummarySchema(
+                    status=ConsensusStatusEnum.SKIPPED,
+                    quorum="2/3",
+                    votes_summary={
+                        "approvals": 0,
+                        "rejections": 0,
+                        "abstentions": 0,
+                        "unavailable": 0,
+                        "total": 0,
+                    },
+                    warnings=["insufficient_evidence"],
+                ),
+                debug_trace={"correlation_id": correlation_id},
+            )
             
             conclusion = ResearchConclusion(
                 correlation_id=correlation_id,
                 query=query,
-                success=False,
+                success=True,
                 approved=False,
-                conclusion_text=fail_message,
+                conclusion_text=answer,
+                response_envelope=envelope,
                 evidence_pack=evidence_pack,
                 evidence_valid=False,
                 consensus_result=None,
@@ -355,7 +392,7 @@ class ResearchConsensusPipeline:
                 
             except Exception as e:
                 logger.error(f"Consensus failed: {e}")
-                approved = False  # Fail-closed
+                approved = False
                 audit_trail.append({
                     "step": "consensus_error",
                     "timestamp": time.time(),
@@ -372,19 +409,80 @@ class ResearchConsensusPipeline:
             )
             success = True
         else:
-            final_conclusion = self._format_rejected_conclusion(
-                query, assessment, consensus_result, correlation_id
+            final_conclusion = (
+                "Consensus was not reached. The response below is a cautious draft "
+                "with low reliability and explicit unknowns.\n\n"
+                + draft_conclusion
             )
-            success = False
+            success = True
         
         total_duration_ms = int((time.time() - start_time) * 1000)
         
+        # Build a fail-soft envelope for critical paths
+        response_envelope = None
+        if assessment.requires_consensus:
+            summary_status = (
+                consensus_result.status
+                if consensus_result
+                else ConsensusStatusEnum.INFRA_FAILURE
+            )
+            votes_summary = (
+                consensus_result.vote_count.__dict__
+                if consensus_result
+                else {
+                    "approvals": 0,
+                    "rejections": 0,
+                    "abstentions": 0,
+                    "unavailable": 0,
+                    "total": 0,
+                }
+            )
+            tier = ReliabilityTierEnum.HIGH if approved else ReliabilityTierEnum.LOW
+            response_envelope = ResponseEnvelopeSchema(
+                answer=final_conclusion,
+                reliability_tiers=[
+                    ReliabilityTierSchema(
+                        tier=tier,
+                        claims=[],
+                        rationale=(
+                            "Consensus-approved output."
+                            if approved else
+                            "Consensus not reached; output is low reliability."
+                        ),
+                        sources=[s.url for s in evidence_pack.sources if getattr(s, "url", None)],
+                    )
+                ],
+                unknowns=[] if approved else ["Consensus not reached"],
+                recommended_next_steps=(
+                    [] if approved else [
+                        "Provide more specific context and sources",
+                        "Collect primary references",
+                        "Consult a domain expert for final decisions",
+                    ]
+                ),
+                consensus=ConsensusSummarySchema(
+                    status=summary_status,
+                    quorum="2/3",
+                    votes_summary=votes_summary,
+                    warnings=[] if approved else ["consensus_not_reached"],
+                ),
+                debug_trace={"correlation_id": correlation_id},
+            )
+            
+            logger.info(json.dumps({
+                "event": "envelope_emit",
+                "correlation_id": correlation_id,
+                "status": summary_status.value,
+                "tier": tier.value,
+            }))
+
         conclusion = ResearchConclusion(
             correlation_id=correlation_id,
             query=query,
             success=success,
             approved=approved,
             conclusion_text=final_conclusion,
+            response_envelope=response_envelope,
             evidence_pack=evidence_pack,
             evidence_valid=evidence_valid,
             consensus_result=consensus_result,

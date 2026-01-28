@@ -493,61 +493,36 @@ Réponds en JSON:
         analysis: Dict[str, Any]
     ) -> Tuple[bool, Dict[str, Any]]:
         """Valide l'analyse par consensus multi-LLM."""
-        logger.info("🔒 Validation par consensus...")
-        
-        # Préparer le contexte
+        logger.info("🔒 Validation par consensus (engine)...")
+        from python.consensus.engine import run_consensus
+
         context = {
             "dossier_id": dossier.dossier_id,
             "query": dossier.query,
             "data_count": len(dossier.get_all_data()),
-            "analysis": analysis
+            "analysis": analysis,
         }
-        
-        # Créer la proposition
-        decision_hash = generate_decision_hash(analysis.get("summary", ""), context)
-        
-        proposal_id = await self.consensus.propose(
-            decision_hash,
-            {"analysis": analysis, "context": context},
-            DecisionType.RESEARCH_VALIDATION
+
+        decision = await run_consensus(
+            evidence_pack={"dossier_id": dossier.dossier_id, "data": dossier.get_all_data()},
+            policy={
+                "action": analysis.get("summary", ""),
+                "context": context,
+                "decision_type": DecisionType.RESEARCH_VALIDATION,
+                "correlation_id": dossier.dossier_id,
+            },
         )
-        
-        dossier.consensus_proposals.append(proposal_id)
-        
-        # Simuler les votes des arbitres (en production, appeler les vrais LLMs)
-        arbiter_models = [
-            self.settings.get("consensus_arbiter_1"),
-            self.settings.get("consensus_arbiter_2"),
-            self.settings.get("consensus_arbiter_3"),
-        ]
-        
-        for i, model in enumerate(arbiter_models):
-            # En production: appeler le modèle pour voter
-            # Pour l'instant: vote simulé basé sur la confiance de l'analyse
-            confidence = analysis.get("confidence", 0.5)
-            vote = VoteType.APPROVE if confidence >= 0.6 else VoteType.REJECT
-            
-            self.consensus.submit_vote(
-                proposal_id,
-                f"arbiter_{i+1}_{model}",
-                vote,
-                f"Vote basé sur confidence={confidence}",
-                confidence
-            )
-        
-        # Attendre le résultat
-        status = await self.consensus.wait_for_consensus(proposal_id, 5000)
-        
-        approved = status and status["status"] == ConsensusStatus.APPROVED
-        
+
         result = {
-            "proposal_id": proposal_id,
-            "status": status["status"].value if status else "TIMEOUT",
-            "votes": status["votes"] if status else {},
-            "approved": approved
+            "proposal_id": decision.proposal_id,
+            "status": decision.status.value,
+            "votes": {k: v.__dict__ for k, v in decision.votes.items()},
+            "approved": decision.approved,
+            "decision_time_ms": decision.decision_time_ms,
+            "warnings": decision.warnings,
         }
-        
-        return approved, result
+
+        return decision.approved, result
     
     async def _generate_conclusion(
         self,

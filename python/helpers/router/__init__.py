@@ -83,6 +83,24 @@ except ImportError:
     # Judge not yet implemented
     pass
 
+# Legal Pipeline Integration
+try:
+    from ..legal_pipeline import (
+        LegalRiskTier,
+        DecisionScope,
+        Jurisdiction,
+        LegalRouteContext,
+        detect_legal_context,
+    )
+    LEGAL_PIPELINE_AVAILABLE = True
+except ImportError:
+    LEGAL_PIPELINE_AVAILABLE = False
+    LegalRiskTier = None
+    DecisionScope = None
+    Jurisdiction = None
+    LegalRouteContext = None
+    detect_legal_context = None
+
 # Metrics
 from .metrics import RouterMetrics, RouterStats, DivergenceSample
 
@@ -167,4 +185,11 @@ __all__ = [
     "_canonicalize_text",
     "_stable_route_id",
     "_stable_input_hash",
+    # Legal Pipeline
+    "LEGAL_PIPELINE_AVAILABLE",
+    "LegalRiskTier",
+    "DecisionScope",
+    "Jurisdiction",
+    "LegalRouteContext",
+    "detect_legal_context",
 ]

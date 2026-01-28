@@ -150,8 +150,20 @@ class TestNoiseRobustness:
             manager.submit_vote(proposal_id, "a2", VoteType.APPROVE)
             manager.submit_vote(proposal_id, "a3", VoteType.APPROVE)
             # 2 unavailable (noise)
-            manager.submit_vote(proposal_id, "a4", VoteType.UNAVAILABLE)
-            manager.submit_vote(proposal_id, "a5", VoteType.UNAVAILABLE)
+            manager.submit_vote(
+                proposal_id,
+                "a4",
+                None,
+                available=False,
+                availability_reason="unavailable",
+            )
+            manager.submit_vote(
+                proposal_id,
+                "a5",
+                None,
+                available=False,
+                availability_reason="unavailable",
+            )
             
             await asyncio.sleep(0.1)
             status = manager.get_proposal_status(proposal_id)

@@ -1,0 +1,16 @@
+{
+  "case_id": "07_add_exception",
+  "description": "Ajout d'une exception/exemption (assouplissement)",
+  "before": "Article 1. La procédure s'applique à toutes les entreprises.",
+  "after": "Article 1. La procédure s'applique à toutes les entreprises.\nArticle 2. Les petites entreprises peuvent être exemptées de cette obligation.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": true,
+    "min_segments": 1,
+    "must_have_change_type": ["add"],
+    "must_contain_signals": ["+peuvent"],
+    "must_have_topic": ["exemption"],
+    "comment": "Lexicon has 'exempt', 'exempté' but not 'exemptées' - +peuvent is detected"
+  }
+}

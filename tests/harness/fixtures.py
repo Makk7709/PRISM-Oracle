@@ -410,7 +410,7 @@ TALLY_TEST_CASES = [
     (1, 0, 0, 2, "NO_CONSENSUS"),  # 1-0-0-2: Timeout prevents quorum
     (2, 0, 0, 1, "APPROVED"),      # 2-0-0-1: Quorum despite timeout
     (0, 0, 3, 0, "NO_CONSENSUS"),  # All abstain
-    (0, 0, 0, 3, "TIMEOUT"),       # All timeout
+    (0, 0, 0, 3, "INFRA_FAILURE"),  # All timeout -> infra failure
 ]
 
 

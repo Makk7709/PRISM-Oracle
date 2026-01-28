@@ -363,6 +363,27 @@ class Agent:
                 # call monologue_start extensions
                 await self.call_extensions("monologue_start", loop_data=self.loop_data)
 
+                # ═══════════════════════════════════════════════════════════════════
+                # PIPELINE SHORT-CIRCUIT: If an extension (e.g., legal_safe) has
+                # produced a final response, skip the LLM entirely and return it.
+                # This ensures deterministic pipeline outputs are not overwritten.
+                # ═══════════════════════════════════════════════════════════════════
+                pipeline_final_response = self.get_data("_pipeline_final_response")
+                if pipeline_final_response is not None:
+                    # Log the short-circuit for auditability
+                    self.context.log.log(
+                        type="info",
+                        heading="🔒 Pipeline Short-Circuit",
+                        content="Returning pre-computed pipeline response (LLM bypassed)",
+                    )
+                    # Add to history as AI response
+                    self.hist_add_ai_response(pipeline_final_response)
+                    # Clear the flag for next request
+                    self.set_data("_pipeline_final_response", None)
+                    self.set_data("_skip_llm", None)
+                    # Return the pipeline response directly
+                    return pipeline_final_response
+
                 printer = PrintStyle(italic=True, font_color="#b3ffd9", padding=False)
 
                 # let the agent run message loop until he stops it with a response tool
@@ -740,6 +761,19 @@ class Agent:
         reasoning_callback: Callable[[str, str], Awaitable[None]] | None = None,
         background: bool = False,
     ):
+        # ═══════════════════════════════════════════════════════════════════
+        # DEFENSE-IN-DEPTH: If _skip_llm flag is set, do NOT call the LLM.
+        # This is a safety net in case the monologue short-circuit was bypassed.
+        # ═══════════════════════════════════════════════════════════════════
+        if self.get_data("_skip_llm"):
+            pipeline_response = self.get_data("_pipeline_final_response") or ""
+            # Log warning - this path should not normally be hit
+            import logging
+            logging.getLogger("agent").warning(
+                "SKIP_LLM flag set but reached call_chat_model - returning pipeline response"
+            )
+            return pipeline_response, ""
+
         response = ""
 
         # model class
@@ -870,6 +904,20 @@ class Agent:
                     await self.handle_intervention()
 
                     if response.break_loop:
+                        # When breaking loop (e.g., pipeline response), ensure the message
+                        # is added to history AND displayed in the UI
+                        if response.message:
+                            # Add to history
+                            self.hist_add_ai_response(response.message)
+                            
+                            # For the "response" tool, the live_response extension already
+                            # handles the UI log. For other tools, we need to add a log.
+                            if tool_name != "response":
+                                self.context.log.log(
+                                    type="response",
+                                    heading=f"{self.agent_name}",
+                                    content=response.message,
+                                )
                         return response.message
                 finally:
                     self.loop_data.current_tool = None

@@ -1,0 +1,13 @@
+{
+  "case_id": "03_remove_paragraph",
+  "description": "Suppression d'un paragraphe neutre",
+  "before": "Article 1. Le contrat est valable.\nArticle 2. Les parties sont liées.\nArticle 3. Cette clause est supprimée.",
+  "after": "Article 1. Le contrat est valable.\nArticle 2. Les parties sont liées.",
+  "expected": {
+    "diff_status": "available",
+    "aggravation_detected": false,
+    "relaxation_detected": false,
+    "min_segments": 1,
+    "must_have_change_type": ["remove"]
+  }
+}

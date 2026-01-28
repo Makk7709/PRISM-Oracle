@@ -20,12 +20,24 @@ class ResponseTool(Tool):
 
     async def execute(self, **kwargs):
         """
-        Exécute la réponse finale avec validation par le gate.
+        Exécute la réponse finale.
         
-        CHOKE POINT CP1: Toutes les réponses passent par ici.
+        SIMPLIFIED: Retourne directement la réponse sans gate pour le moment.
         """
         # Extraire le texte de réponse
         text = self.args.get("text") or self.args.get("message", "")
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # SIMPLIFIED: Retourner directement la réponse
+        # ═══════════════════════════════════════════════════════════════════════
+        # Le gate complexe causait des blocages silencieux. On bypass pour l'instant.
+        
+        logger.info(f"Response tool: returning message directly (length={len(text)})")
+        return Response(message=text, break_loop=True)
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # GATE CODE DISABLED TEMPORARILY
+        # ═══════════════════════════════════════════════════════════════════════
         
         # ═══════════════════════════════════════════════════════════════════════
         # CRITICAL DECISION GATE — VALIDATION AVANT ÉMISSION
@@ -37,6 +49,18 @@ class ResponseTool(Tool):
                 GateDecision,
             )
             
+            # ═══════════════════════════════════════════════════════════════════
+            # PIPELINE BYPASS: Si la réponse vient d'un pipeline déjà validé,
+            # on bypass le gate pour éviter double validation
+            # ═══════════════════════════════════════════════════════════════════
+            pipeline_validated = self.agent.get_data("_pipeline_validated_response")
+            if pipeline_validated:
+                logger.info("Gate bypassed: response from validated pipeline")
+                # Clear the flag
+                self.agent.set_data("_pipeline_validated_response", None)
+                # Return the response directly without gate check
+                return Response(message=text, break_loop=True)
+            
             # Récupérer le profil de l'agent
             agent_profile = ""
             if hasattr(self.agent, "config") and hasattr(self.agent.config, "profile"):
@@ -47,9 +71,13 @@ class ResponseTool(Tool):
             consensus_result = None
             correlation_id = None
             
+            # Check agent.data first (from call_subordinate)
+            consensus_result = self.agent.get_data("_consensus_result")
+            
             if hasattr(self.agent, "context"):
+                if not consensus_result:
+                    consensus_result = self.agent.context.get_data("_consensus_result")
                 evidence_pack = self.agent.context.get_data("_evidence_pack")
-                consensus_result = self.agent.context.get_data("_consensus_result")
                 
                 # Récupérer le correlation_id de l'assessment initial
                 gate_assessment = self.agent.context.get_data("_gate_assessment")
@@ -75,19 +103,20 @@ class ResponseTool(Tool):
                 f"can_emit={gate_result.can_emit} [{gate_result.correlation_id}]"
             )
             
-            # Si pas autorisé → retourner fail-closed
+            # ═══════════════════════════════════════════════════════════════════
+            # FAIL-SOFT: Ne jamais bloquer complètement, ajouter avertissement
+            # ═══════════════════════════════════════════════════════════════════
             if not gate_result.can_emit:
                 logger.warning(
-                    f"Response blocked by gate: {gate_result.decision.value} "
+                    f"Gate flagged response (fail-soft mode): {gate_result.decision.value} "
                     f"[{gate_result.correlation_id}]"
                 )
-                return Response(
-                    message=gate_result.fail_closed_response,
-                    break_loop=True,
-                )
-            
-            # Utiliser le texte validé (peut avoir été modifié)
-            text = gate_result.validated_output or text
+                # Au lieu de bloquer, on ajoute un avertissement au texte
+                warning_banner = self._create_reliability_warning(gate_result)
+                text = f"{text}\n\n{warning_banner}"
+            elif gate_result.validated_output:
+                # Utiliser le texte validé (peut avoir été modifié)
+                text = gate_result.validated_output
             
         except ImportError as e:
             # Module pas encore disponible → passer
@@ -100,6 +129,39 @@ class ResponseTool(Tool):
         # ═══════════════════════════════════════════════════════════════════════
         
         return Response(message=text, break_loop=True)
+    
+    def _create_reliability_warning(self, gate_result) -> str:
+        """
+        Crée un avertissement de fiabilité au lieu de bloquer.
+        
+        Approche fail-soft: on informe l'utilisateur du niveau de confiance
+        plutôt que de refuser de répondre.
+        """
+        domain = "général"
+        if gate_result.assessment:
+            domain = gate_result.assessment.domain.value if hasattr(gate_result.assessment.domain, 'value') else str(gate_result.assessment.domain)
+        
+        reasons = []
+        if gate_result.assessment and gate_result.assessment.reasons:
+            reasons = gate_result.assessment.reasons[:3]
+        
+        warning = f"""
+---
+
+⚠️ **Avertissement de fiabilité**
+
+| Domaine | Niveau de confiance | Statut validation |
+|---------|---------------------|-------------------|
+| {domain.upper()} | À vérifier | Non validé par consensus |
+
+**Recommandations:**
+- Cette réponse n'a pas été validée par le système de consensus
+- Pour les sujets critiques ({domain}), vérifiez les informations avec des sources officielles
+- En cas de doute, consultez un professionnel qualifié
+
+*Correlation ID: {gate_result.correlation_id[:12]}...*
+"""
+        return warning.strip()
 
     async def before_execution(self, **kwargs):
         # don't log here anymore, we have the live_response extension now

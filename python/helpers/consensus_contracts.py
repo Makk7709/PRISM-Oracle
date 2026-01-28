@@ -31,20 +31,26 @@ class DecisionTypeEnum(str, Enum):
     RESEARCH_VALIDATION = "research_validation"
 
 
-class VoteTypeEnum(str, Enum):
-    """Types de votes valides."""
+class VoteVerdictEnum(str, Enum):
+    """Types de verdicts valides."""
     APPROVE = "approve"
     REJECT = "reject"
     ABSTAIN = "abstain"
-    UNAVAILABLE = "unavailable"
+
+
+# Backward-compatible alias (single enum object)
+VoteTypeEnum = VoteVerdictEnum
 
 
 class ConsensusStatusEnum(str, Enum):
     """Statuts de consensus valides."""
+    # NOTE: PENDING is internal-only and should not be exposed to user output.
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
-    TIMEOUT = "TIMEOUT"
+    NO_CONSENSUS = "NO_CONSENSUS"
+    INFRA_FAILURE = "INFRA_FAILURE"
+    SKIPPED = "SKIPPED"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -63,15 +69,27 @@ class DecisionProposalSchema(BaseModel):
 
 class VoteSchema(BaseModel):
     """Schéma pour un vote."""
-    vote: VoteTypeEnum
+    vote: Optional[VoteVerdictEnum] = None
     reasoning: str = Field(default="", max_length=5000)
     timestamp: float = Field(..., gt=0)
     provider: str = Field(..., min_length=1, max_length=128)
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     risks_identified: List[str] = Field(default_factory=list)
+    available: bool = True
+    availability_reason: Optional[str] = None
     
     class Config:
         extra = "forbid"
+    
+    @root_validator(skip_on_failure=True)
+    def enforce_availability(cls, values):
+        available = values.get("available", True)
+        vote = values.get("vote")
+        if not available and vote is not None:
+            raise ValueError("Unavailable votes must not include a verdict")
+        if available and vote is None:
+            raise ValueError("Available votes must include a verdict")
+        return values
 
 
 class ConsensusResultSchema(BaseModel):
@@ -84,6 +102,7 @@ class ConsensusResultSchema(BaseModel):
     unavailable: int = Field(..., ge=0)
     total: int = Field(..., ge=0)
     decision_time_ms: Optional[int] = Field(None, ge=0)
+    warnings: List[str] = Field(default_factory=list)
     
     class Config:
         extra = "forbid"
@@ -140,6 +159,61 @@ class ConsensusConfigSchema(BaseModel):
     # Logging
     enable_audit_log: bool = True
     log_votes: bool = True
+    
+    class Config:
+        extra = "forbid"
+
+
+class ConsensusPolicySchema(BaseModel):
+    """Schéma pour policy d'appel consensus."""
+    action: str = Field(..., min_length=1)
+    context: Dict[str, Any] = Field(default_factory=dict)
+    decision_type: DecisionTypeEnum = DecisionTypeEnum.CRITICAL
+    correlation_id: Optional[str] = None
+    integrity_checks: bool = False
+    timeout_ms: Optional[int] = Field(None, ge=1000, le=60000)
+    
+    class Config:
+        extra = "forbid"
+
+
+class ReliabilityTierEnum(str, Enum):
+    """Reliability tiers for user-facing envelopes."""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class ReliabilityTierSchema(BaseModel):
+    """Reliability tier details."""
+    tier: ReliabilityTierEnum
+    claims: List[str] = Field(default_factory=list)
+    rationale: str = Field(default="", max_length=2000)
+    sources: List[str] = Field(default_factory=list)
+    
+    class Config:
+        extra = "forbid"
+
+
+class ConsensusSummarySchema(BaseModel):
+    """Consensus summary for the user envelope."""
+    status: ConsensusStatusEnum
+    quorum: Optional[str] = None
+    votes_summary: Dict[str, int] = Field(default_factory=dict)
+    warnings: List[str] = Field(default_factory=list)
+    
+    class Config:
+        extra = "forbid"
+
+
+class ResponseEnvelopeSchema(BaseModel):
+    """Fail-soft response envelope for critical outputs."""
+    answer: str
+    reliability_tiers: List[ReliabilityTierSchema] = Field(default_factory=list)
+    unknowns: List[str] = Field(default_factory=list)
+    recommended_next_steps: List[str] = Field(default_factory=list)
+    consensus: ConsensusSummarySchema
+    debug_trace: Optional[Dict[str, Any]] = None
     
     class Config:
         extra = "forbid"
