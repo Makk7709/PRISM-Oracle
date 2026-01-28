@@ -59,6 +59,9 @@ class ConsensusStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     TIMEOUT = "TIMEOUT"
+    # New statuses for proper fail-closed semantics
+    NO_CONSENSUS = "NO_CONSENSUS"      # Not enough effective votes to decide
+    INFRA_FAILURE = "INFRA_FAILURE"    # Zero effective votes (all UNAVAILABLE)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -84,6 +87,21 @@ class VoteCount:
     abstentions: int = 0
     unavailable: int = 0
     total: int = 0
+    
+    @property
+    def effective_votes(self) -> int:
+        """
+        Number of effective votes (excluding UNAVAILABLE).
+        
+        INVARIANT: Only approve/reject/abstain count as effective votes.
+        UNAVAILABLE is an infrastructure signal, NOT a vote.
+        """
+        return self.approvals + self.rejections + self.abstentions
+    
+    @property
+    def decisive_votes(self) -> int:
+        """Number of decisive votes (approve + reject, excluding abstain)."""
+        return self.approvals + self.rejections
 
 
 @dataclass
@@ -97,6 +115,7 @@ class DecisionProposal:
     votes: Dict[str, Vote] = field(default_factory=dict)
     status: ConsensusStatus = ConsensusStatus.PENDING
     total_providers: int = 3
+    min_effective_votes: int = 2  # Minimum effective votes required for any verdict
     timeout_task: Optional[asyncio.Task] = None
     
     def add_vote(self, provider: str, vote: VoteType, reasoning: str = "", 
@@ -130,30 +149,95 @@ class DecisionProposal:
         """
         Vérifie si le consensus est atteint.
         
-        Règles :
-        - APPROVED si 2/3 approuvent
-        - REJECTED si 2/3 rejettent
-        - REJECTED si tous ont voté sans quorum
+        INVARIANTS (non-négociables):
+        1. UNAVAILABLE ≠ vote. Ne compte jamais dans le quorum.
+        2. Aucun vote effectif ⇒ aucun verdict juridique (INFRA_FAILURE).
+        3. Le quorum se calcule sur les votes effectifs uniquement.
+        4. Fail-closed ≠ mensonge : bloquer sans inventer une décision.
+        5. Toute décision doit être explicable par un tally réel.
+        
+        Règles de verdict (ONLY when enough data to decide):
+        - First: check if quorum reached (can decide early)
+        - Only when ALL providers responded:
+          - INFRA_FAILURE if effective_votes == 0
+          - NO_CONSENSUS if effective_votes < min_effective_votes
+          - NO_CONSENSUS if no quorum reached
         """
         count = self.get_vote_count()
-        required_quorum = (self.total_providers * 2 + 2) // 3  # ceil(2/3)
+        effective = count.effective_votes
+        all_responded = count.total >= self.total_providers
         
-        # Consensus APPROVED si 2/3 approuvent
-        if count.approvals >= required_quorum:
-            self.status = ConsensusStatus.APPROVED
+        # Log the tally for auditability
+        logger.debug(
+            f"Consensus tally: approvals={count.approvals}, rejections={count.rejections}, "
+            f"abstentions={count.abstentions}, unavailable={count.unavailable}, "
+            f"effective_votes={effective}, min_required={self.min_effective_votes}, "
+            f"all_responded={all_responded}"
+        )
+        
+        # ─────────────────────────────────────────────────────────────────────────
+        # EARLY EXIT: Check if quorum already reached (can decide without all votes)
+        # ─────────────────────────────────────────────────────────────────────────
+        if effective >= self.min_effective_votes:
+            required_quorum = (effective * 2 + 2) // 3  # ceil(2/3 * effective)
+            
+            # APPROVED if 2/3 of effective votes approve
+            if count.approvals >= required_quorum:
+                self.status = ConsensusStatus.APPROVED
+                logger.info(
+                    f"Consensus APPROVED: {count.approvals}/{effective} effective votes "
+                    f"(quorum: {required_quorum})"
+                )
+                return True
+            
+            # REJECTED if 2/3 of effective votes reject
+            if count.rejections >= required_quorum:
+                self.status = ConsensusStatus.REJECTED
+                logger.info(
+                    f"Consensus REJECTED: {count.rejections}/{effective} effective votes "
+                    f"(quorum: {required_quorum})"
+                )
+                return True
+        
+        # ─────────────────────────────────────────────────────────────────────────
+        # NOT ALL PROVIDERS RESPONDED: Wait for more votes
+        # ─────────────────────────────────────────────────────────────────────────
+        if not all_responded:
+            return False  # Keep waiting
+        
+        # ─────────────────────────────────────────────────────────────────────────
+        # ALL PROVIDERS RESPONDED: Now we must render a final verdict
+        # ─────────────────────────────────────────────────────────────────────────
+        
+        # CASE 1: Zero effective votes = Infrastructure failure
+        # All providers responded but none provided an actual vote.
+        if effective == 0:
+            self.status = ConsensusStatus.INFRA_FAILURE
+            logger.warning(
+                f"Consensus INFRA_FAILURE: 0 effective votes "
+                f"({count.unavailable} unavailable). No arbiter evaluated content."
+            )
             return True
         
-        # Consensus REJECTED si 2/3 rejettent
-        if count.rejections >= required_quorum:
-            self.status = ConsensusStatus.REJECTED
+        # CASE 2: Not enough effective votes
+        if effective < self.min_effective_votes:
+            self.status = ConsensusStatus.NO_CONSENSUS
+            logger.warning(
+                f"Consensus NO_CONSENSUS: only {effective} effective votes "
+                f"(min required: {self.min_effective_votes}). Cannot render verdict."
+            )
             return True
         
-        # Tous ont voté mais pas de quorum → REJECTED (fail-closed)
-        if count.total >= self.total_providers:
-            self.status = ConsensusStatus.REJECTED
-            return True
-        
-        return False
+        # CASE 3: Enough votes but no quorum reached
+        # All providers responded, we have enough effective votes, but no 2/3 majority
+        required_quorum = (effective * 2 + 2) // 3
+        self.status = ConsensusStatus.NO_CONSENSUS
+        logger.info(
+            f"Consensus NO_CONSENSUS: all {count.total} responded but no quorum. "
+            f"Approvals={count.approvals}, Rejections={count.rejections}, "
+            f"Abstentions={count.abstentions}, Required={required_quorum}"
+        )
+        return True
 
 
 @dataclass
@@ -373,35 +457,54 @@ class ConsensusManager:
         # Calculer temps de décision
         decision_time_ms = int((time.time() - proposal.timestamp) * 1000)
         
-        # Mettre à jour métriques
+        # Mettre à jour métriques selon le statut
         if proposal.status == ConsensusStatus.APPROVED:
             self.metrics["approved_proposals"] += 1
-        else:
+        elif proposal.status == ConsensusStatus.REJECTED:
             self.metrics["rejected_proposals"] += 1
+        elif proposal.status == ConsensusStatus.NO_CONSENSUS:
+            self.metrics["no_consensus_proposals"] = self.metrics.get("no_consensus_proposals", 0) + 1
+        elif proposal.status == ConsensusStatus.INFRA_FAILURE:
+            self.metrics["infra_failure_proposals"] = self.metrics.get("infra_failure_proposals", 0) + 1
         
-        total_decisions = (
-            self.metrics["approved_proposals"] + 
-            self.metrics["rejected_proposals"]
-        )
-        self.metrics["average_decision_time"] = (
-            (self.metrics["average_decision_time"] * (total_decisions - 1) + 
-             decision_time_ms) / total_decisions
-        )
+        # Calculer moyenne temps de décision (seulement pour APPROVED/REJECTED)
+        if proposal.status in (ConsensusStatus.APPROVED, ConsensusStatus.REJECTED):
+            total_decisions = (
+                self.metrics["approved_proposals"] + 
+                self.metrics["rejected_proposals"]
+            )
+            self.metrics["average_decision_time"] = (
+                (self.metrics["average_decision_time"] * (total_decisions - 1) + 
+                 decision_time_ms) / total_decisions
+            )
         
-        # Émettre événement
+        # Émettre événement avec effective_votes pour auditabilité
         vote_count = proposal.get_vote_count()
         self._emit("consensus_reached", {
             "proposal_id": proposal_id,
             "status": proposal.status.value,
             "decision_hash": proposal.decision_hash,
-            **vote_count.__dict__,
+            "approvals": vote_count.approvals,
+            "rejections": vote_count.rejections,
+            "abstentions": vote_count.abstentions,
+            "unavailable": vote_count.unavailable,
+            "total": vote_count.total,
+            "effective_votes": vote_count.effective_votes,
             "decision_time_ms": decision_time_ms
         })
         
-        emoji = "✅" if proposal.status == ConsensusStatus.APPROVED else "❌"
+        # Log avec emoji approprié
+        status_emoji = {
+            ConsensusStatus.APPROVED: "✅",
+            ConsensusStatus.REJECTED: "❌",
+            ConsensusStatus.NO_CONSENSUS: "⚠️",
+            ConsensusStatus.INFRA_FAILURE: "🔴",
+        }
+        emoji = status_emoji.get(proposal.status, "❓")
         logger.info(
             f"{emoji} Consensus: {proposal.status.value} "
-            f"({vote_count.approvals}/{vote_count.total} approvals)"
+            f"(effective: {vote_count.effective_votes}, "
+            f"approvals: {vote_count.approvals}, rejections: {vote_count.rejections})"
         )
         
         # Archiver

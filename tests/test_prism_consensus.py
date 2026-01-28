@@ -109,9 +109,10 @@ class TestConsensusManager:
             DecisionType.CRITICAL
         )
         
-        # Soumettre 2 votes APPROVE (quorum 2/3)
+        # Soumettre 3 votes avec 2 APPROVE (quorum 2/3)
         consensus_manager.submit_vote(proposal_id, "arbiter_1", VoteType.APPROVE, "Safe action")
         consensus_manager.submit_vote(proposal_id, "arbiter_2", VoteType.APPROVE, "Looks good")
+        consensus_manager.submit_vote(proposal_id, "arbiter_3", VoteType.REJECT, "Minor concern")
         
         # Attendre finalisation
         await asyncio.sleep(0.2)
@@ -128,9 +129,10 @@ class TestConsensusManager:
             DecisionType.CRITICAL
         )
         
-        # Soumettre 2 votes REJECT
+        # Soumettre 3 votes avec 2 REJECT (quorum 2/3)
         consensus_manager.submit_vote(proposal_id, "arbiter_1", VoteType.REJECT, "Too risky")
         consensus_manager.submit_vote(proposal_id, "arbiter_2", VoteType.REJECT, "Reject")
+        consensus_manager.submit_vote(proposal_id, "arbiter_3", VoteType.APPROVE, "Minor concern")
         
         await asyncio.sleep(0.2)
         
@@ -157,7 +159,7 @@ class TestConsensusManager:
     
     @pytest.mark.asyncio
     async def test_fail_closed_no_quorum(self, consensus_manager):
-        """Test fail-closed: pas de quorum = rejet."""
+        """Test fail-closed: pas de quorum = NO_CONSENSUS (not fake REJECTED)."""
         proposal_id = await consensus_manager.propose(
             "test_hash_no_quorum",
             {"action": "uncertain_action"},
@@ -165,6 +167,7 @@ class TestConsensusManager:
         )
         
         # 1 APPROVE, 1 REJECT, 1 UNAVAILABLE
+        # Only 2 effective votes (approve + reject), neither reaches 2/3 quorum
         consensus_manager.submit_vote(proposal_id, "arbiter_1", VoteType.APPROVE)
         consensus_manager.submit_vote(proposal_id, "arbiter_2", VoteType.REJECT)
         consensus_manager.submit_vote(proposal_id, "arbiter_3", VoteType.UNAVAILABLE)
@@ -172,13 +175,16 @@ class TestConsensusManager:
         await asyncio.sleep(0.2)
         
         status = consensus_manager.get_proposal_status(proposal_id)
-        # Sans majorité claire, doit être REJECTED (fail-closed)
-        assert status["status"] == ConsensusStatus.REJECTED
+        # CRITICAL FIX: NO_CONSENSUS, not REJECTED
+        # We cannot claim arbiters rejected when they didn't.
+        # 1 approve + 1 reject = no quorum in either direction.
+        assert status["status"] == ConsensusStatus.NO_CONSENSUS
     
     @pytest.mark.asyncio
     async def test_metrics_tracking(self, consensus_manager):
         """Test suivi des métriques."""
         initial_total = consensus_manager.metrics["total_proposals"]
+        initial_approved = consensus_manager.metrics["approved_proposals"]
         
         proposal_id = await consensus_manager.propose(
             "test_metrics",
@@ -188,13 +194,14 @@ class TestConsensusManager:
         
         assert consensus_manager.metrics["total_proposals"] == initial_total + 1
         
-        # Approuver
+        # Need 3 effective votes for quorum with min_effective_votes=2
         consensus_manager.submit_vote(proposal_id, "arbiter_1", VoteType.APPROVE)
         consensus_manager.submit_vote(proposal_id, "arbiter_2", VoteType.APPROVE)
+        consensus_manager.submit_vote(proposal_id, "arbiter_3", VoteType.REJECT)  # 2/3 approve
         
         await asyncio.sleep(0.2)
         
-        assert consensus_manager.metrics["approved_proposals"] >= 1
+        assert consensus_manager.metrics["approved_proposals"] >= initial_approved + 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -342,18 +349,23 @@ class TestIntegration:
         )
         
         # 4. Soumettre les votes
+        # Note: Consensus may be reached after 2nd approve (early exit on quorum)
         manager.submit_vote(proposal_id, "Claude", VoteType.APPROVE, "Looks safe", 0.9)
         manager.submit_vote(proposal_id, "GPT-4", VoteType.APPROVE, "Approved", 0.85)
         manager.submit_vote(proposal_id, "Gemini", VoteType.REJECT, "Slight concern", 0.6)
         
-        # 5. Attendre résultat
+        # 5. Wait for async finalization to complete
+        await asyncio.sleep(0.2)
+        
+        # 6. Attendre résultat
         status = await manager.wait_for_consensus(proposal_id, 3000)
         
-        # 6. Vérifications
+        # 7. Vérifications
         assert status is not None
         assert status["status"] == ConsensusStatus.APPROVED
-        assert status["votes"]["approvals"] == 2
-        assert status["votes"]["rejections"] == 1
+        # Note: With early quorum exit, we may have 2 or 3 votes counted
+        # depending on timing. The key invariant is: >= 2 approvals for quorum.
+        assert status["votes"]["approvals"] >= 2
         
         # Vérifier les événements
         event_types = [e[0] for e in events_received]

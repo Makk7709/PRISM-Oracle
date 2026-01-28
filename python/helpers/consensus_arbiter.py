@@ -41,7 +41,29 @@ from python.helpers.consensus_manager import (
     generate_decision_hash,
 )
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# LLM PROVIDER IMPORT (module-level for stability)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Import at module level to:
+# 1. Fail-fast at boot if provider unavailable in production
+# 2. Avoid cwd-dependent import issues
+# 3. Make import errors explicit and traceable
+
+from python.helpers import llm_provider as _llm_provider
+
+# Boot validation: ensures we fail early if providers are misconfigured
+_LLM_PROVIDER_AVAILABLE = _llm_provider.is_provider_available()
+
 logger = logging.getLogger("consensus_arbiter")
+
+# Log provider status at module load
+if _LLM_PROVIDER_AVAILABLE:
+    logger.info("✅ LLM provider layer available for consensus arbiters")
+else:
+    logger.warning(
+        "⚠️ LLM provider layer NOT available. "
+        "Consensus arbiters will fail unless CONSENSUS_SIMULATION=true"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -328,40 +350,37 @@ class ArbiterCaller:
         """
         Fait l'appel réel au LLM.
         
-        Cette méthode doit être implémentée selon votre setup LLM.
+        Uses module-level imported llm_provider for stability.
+        Fails fast if provider unavailable (no silent fallback).
         """
-        # Import dynamique pour éviter dépendances circulaires
-        try:
-            from python.helpers.llm_provider import get_provider
-            
-            provider = get_provider(arbiter.provider, arbiter.model)
-            
-            response = await asyncio.wait_for(
-                provider.generate(
-                    prompt=prompt,
-                    temperature=arbiter.temperature,
-                    max_tokens=arbiter.max_tokens,
-                ),
-                timeout=timeout_ms / 1000,
-            )
-            
-            return response
-            
-        except ImportError:
-            # Fallback si pas de provider configuré
-            logger.warning(
-                f"LLM provider {arbiter.provider} not available, "
-                "using mock response for testing"
-            )
-            
-            # En mode simulation (dev uniquement)
+        # Check if provider is available (already validated at boot in prod)
+        if not _LLM_PROVIDER_AVAILABLE:
             if self.config.simulation_enabled:
+                logger.warning(
+                    f"LLM provider unavailable, using simulation for "
+                    f"{arbiter.provider}/{arbiter.model}"
+                )
                 return self._generate_simulated_vote(prompt)
             
             raise ArbiterUnavailableError(
-                f"Arbiter {arbiter.provider}/{arbiter.model} unavailable "
-                "and simulation is disabled"
+                f"LLM provider layer unavailable. "
+                f"Cannot call arbiter {arbiter.provider}/{arbiter.model}. "
+                f"Set CONSENSUS_SIMULATION=true for testing without LLMs."
             )
+        
+        # Get provider wrapper (validated at module import)
+        provider = _llm_provider.get_provider(arbiter.provider, arbiter.model)
+        
+        response = await asyncio.wait_for(
+            provider.generate(
+                prompt=prompt,
+                temperature=arbiter.temperature,
+                max_tokens=arbiter.max_tokens,
+            ),
+            timeout=timeout_ms / 1000,
+        )
+        
+        return response
     
     def _generate_simulated_vote(self, prompt: str) -> str:
         """

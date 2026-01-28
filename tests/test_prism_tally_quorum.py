@@ -138,7 +138,7 @@ class TestVoteCombinations:
         asyncio.get_event_loop().run_until_complete(run())
     
     def test_split_vote_no_consensus(self):
-        """1-1-1 : Vote divisé = no consensus."""
+        """1-1-1 : Vote divisé = NO_CONSENSUS (not fake REJECTED)."""
         async def run():
             manager = ConsensusManager(timeout_ms=5000, total_providers=3)
             
@@ -151,8 +151,10 @@ class TestVoteCombinations:
             await asyncio.sleep(0.1)
             
             status = manager.get_proposal_status(proposal_id)
-            # No 2/3 majority - should be REJECTED (fail-closed)
-            assert status["status"] == ConsensusStatus.REJECTED
+            # No 2/3 majority - NO_CONSENSUS (we cannot claim arbiters rejected)
+            # 3 effective votes, need ceil(2/3*3)=2 for quorum
+            # 1 approve, 1 reject, neither reaches 2
+            assert status["status"] == ConsensusStatus.NO_CONSENSUS
         
         asyncio.get_event_loop().run_until_complete(run())
 
@@ -192,6 +194,7 @@ class TestAbstainUnavailable:
             proposal_id = await manager.propose("hash", {"action": "test"}, DecisionType.CRITICAL)
             
             # 1 approve, 2 unavailable
+            # Only 1 effective vote, min_effective_votes=2 required
             manager.submit_vote(proposal_id, "a1", VoteType.APPROVE)
             manager.submit_vote(proposal_id, "a2", VoteType.UNAVAILABLE)
             manager.submit_vote(proposal_id, "a3", VoteType.UNAVAILABLE)
@@ -199,13 +202,14 @@ class TestAbstainUnavailable:
             await asyncio.sleep(0.1)
             
             status = manager.get_proposal_status(proposal_id)
-            # 1 approve is not quorum - should fail
-            assert status["status"] == ConsensusStatus.REJECTED
+            # Only 1 effective vote < min_effective_votes (2)
+            # Should be NO_CONSENSUS, not fake REJECTED
+            assert status["status"] == ConsensusStatus.NO_CONSENSUS
         
         asyncio.get_event_loop().run_until_complete(run())
     
     def test_all_abstain_no_consensus(self):
-        """Tous abstain = no consensus."""
+        """Tous abstain = NO_CONSENSUS (not fake REJECTED)."""
         async def run():
             manager = ConsensusManager(timeout_ms=5000, total_providers=3)
             
@@ -218,8 +222,10 @@ class TestAbstainUnavailable:
             await asyncio.sleep(0.1)
             
             status = manager.get_proposal_status(proposal_id)
-            # No valid votes - fail-closed
-            assert status["status"] == ConsensusStatus.REJECTED
+            # 3 effective votes (abstentions count as effective)
+            # 0 approve, 0 reject - no quorum in either direction
+            # NO_CONSENSUS is the truthful answer
+            assert status["status"] == ConsensusStatus.NO_CONSENSUS
         
         asyncio.get_event_loop().run_until_complete(run())
 
