@@ -59,6 +59,9 @@ from .policy import (
     MULTI_INTENT_RULES,
     INJECTION_PATTERNS,
     POLICY_VERSION,
+    # Strategic documents
+    STRATEGIC_DOCUMENT_KEYWORDS,
+    STRATEGIC_DOCUMENT_THRESHOLD,
 )
 
 # Router
@@ -103,6 +106,30 @@ except ImportError:
 
 # Metrics
 from .metrics import RouterMetrics, RouterStats, DivergenceSample
+
+# Strategic Pipeline Integration
+try:
+    from ..strategic_pipeline import (
+        StrategicRouteContext,
+        StrategicPipelineResult,
+        detect_strategic_context,
+        enrich_route_decision,
+        validate_strategic_response,
+        run_strategic_pipeline,
+        should_enforce_strategic_validation,
+        get_strategic_requirements_summary,
+    )
+    STRATEGIC_PIPELINE_AVAILABLE = True
+except ImportError:
+    STRATEGIC_PIPELINE_AVAILABLE = False
+    StrategicRouteContext = None
+    StrategicPipelineResult = None
+    detect_strategic_context = None
+    enrich_route_decision = None
+    validate_strategic_response = None
+    run_strategic_pipeline = None
+    should_enforce_strategic_validation = None
+    get_strategic_requirements_summary = None
 
 
 def is_deterministic_router_enabled() -> bool:
@@ -172,6 +199,9 @@ __all__ = [
     "MULTI_INTENT_RULES",
     "INJECTION_PATTERNS",
     "POLICY_VERSION",
+    # Strategic documents
+    "STRATEGIC_DOCUMENT_KEYWORDS",
+    "STRATEGIC_DOCUMENT_THRESHOLD",
     # Router
     "decide_route",
     "get_primary_intent",
@@ -192,4 +222,14 @@ __all__ = [
     "Jurisdiction",
     "LegalRouteContext",
     "detect_legal_context",
+    # Strategic Pipeline
+    "STRATEGIC_PIPELINE_AVAILABLE",
+    "StrategicRouteContext",
+    "StrategicPipelineResult",
+    "detect_strategic_context",
+    "enrich_route_decision",
+    "validate_strategic_response",
+    "run_strategic_pipeline",
+    "should_enforce_strategic_validation",
+    "get_strategic_requirements_summary",
 ]

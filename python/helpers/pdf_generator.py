@@ -173,10 +173,10 @@ def create_styles(template: Optional[PDFTemplate] = None):
         fontName=body_font + '-Oblique' if 'Helvetica' in body_font else body_font,
     ))
     
-    # Code block
+    # Code block - use unique name to avoid conflict with built-in
     styles.add(ParagraphStyle(
-        name='Code',
-        parent=styles['Code'],
+        name='CodeBlock',
+        parent=styles['Normal'],
         fontSize=body_size - 1,
         textColor=HexColor('#1a202c'),
         spaceAfter=10,
@@ -479,7 +479,7 @@ class MarkdownToPDF:
                         try:
                             # Sanitize code for display
                             safe_code = self.sanitize_text(code_text)
-                            self.elements.append(Preformatted(safe_code, self.styles['Code']))
+                            self.elements.append(Preformatted(safe_code, self.styles['CodeBlock']))
                             self.elements.append(Spacer(1, 6))
                         except:
                             # Fallback: add as plain paragraph

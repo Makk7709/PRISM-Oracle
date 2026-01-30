@@ -535,10 +535,65 @@ INJECTION_PATTERNS: List[str] = [
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# STRATEGIC DOCUMENT KEYWORDS (force HIGH criticality + multi-agent)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# These keywords trigger strategic document detection
+# When matched, the request becomes HIGH criticality with mandatory agents
+STRATEGIC_DOCUMENT_KEYWORDS: List[Keyword] = [
+    # Market Study
+    Keyword("étude de marché", weight=6.0, use_boundary=False),
+    Keyword("market study", weight=6.0, use_boundary=False),
+    Keyword("market analysis", weight=5.0, use_boundary=False),
+    Keyword("analyse du marché", weight=5.0, use_boundary=False),
+    Keyword("tam", weight=4.0),  # Total Addressable Market
+    Keyword("sam", weight=4.0),  # Serviceable Available Market
+    Keyword("som", weight=4.0),  # Serviceable Obtainable Market
+    Keyword("taille du marché", weight=5.0, use_boundary=False),
+    Keyword("market size", weight=5.0, use_boundary=False),
+    
+    # Financial Forecast
+    Keyword("prévisionnel", weight=5.0),
+    Keyword("financial forecast", weight=5.0, use_boundary=False),
+    Keyword("projection financière", weight=5.0, use_boundary=False),
+    Keyword("p&l", weight=4.0, use_boundary=False),
+    Keyword("compte de résultat prévisionnel", weight=6.0, use_boundary=False),
+    Keyword("break-even", weight=4.0, use_boundary=False),
+    Keyword("point mort", weight=4.0, use_boundary=False),
+    
+    # Pricing
+    Keyword("stratégie de prix", weight=5.0, use_boundary=False),
+    Keyword("pricing strategy", weight=5.0, use_boundary=False),
+    Keyword("modèle économique", weight=4.0, use_boundary=False),
+    Keyword("business model", weight=4.0, use_boundary=False),
+    Keyword("unit economics", weight=5.0, use_boundary=False),
+    
+    # GTM
+    Keyword("go-to-market", weight=5.0, use_boundary=False),
+    Keyword("go to market", weight=5.0, use_boundary=False),
+    Keyword("gtm", weight=4.0),
+    Keyword("stratégie de lancement", weight=5.0, use_boundary=False),
+    Keyword("launch strategy", weight=5.0, use_boundary=False),
+    
+    # Competitive Analysis
+    Keyword("analyse concurrentielle", weight=5.0, use_boundary=False),
+    Keyword("competitive analysis", weight=5.0, use_boundary=False),
+    Keyword("benchmark concurrentiel", weight=5.0, use_boundary=False),
+    
+    # Business Plan
+    Keyword("business plan", weight=5.0, use_boundary=False),
+    Keyword("plan d'affaires", weight=5.0, use_boundary=False),
+]
+
+# Threshold for strategic document detection
+STRATEGIC_DOCUMENT_THRESHOLD: float = 4.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # POLICY VERSION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-POLICY_VERSION = "1.1.0"
+POLICY_VERSION = "1.2.0"  # Updated for strategic document support
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -556,4 +611,7 @@ __all__ = [
     "MULTI_INTENT_RULES",
     "INJECTION_PATTERNS",
     "POLICY_VERSION",
+    # Strategic documents
+    "STRATEGIC_DOCUMENT_KEYWORDS",
+    "STRATEGIC_DOCUMENT_THRESHOLD",
 ]
