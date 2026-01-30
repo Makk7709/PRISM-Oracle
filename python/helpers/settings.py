@@ -100,6 +100,12 @@ class Settings(TypedDict):
 
     shell_interface: Literal['local','ssh']
 
+    # Terminal/Code execution timeouts
+    terminal_first_output_timeout: int
+    terminal_between_output_timeout: int
+    terminal_max_exec_timeout: int
+    terminal_dialog_timeout: int
+
     stt_model_size: str
     stt_language: str
     stt_silence_threshold: float
@@ -1839,6 +1845,11 @@ def get_default_settings() -> Settings:
         rfc_port_http=55080,
         rfc_port_ssh=55022,
         shell_interface="local" if runtime.is_dockerized() else "ssh",
+        # Terminal timeouts (in seconds)
+        terminal_first_output_timeout=60,  # Wait for first output (increased from 30)
+        terminal_between_output_timeout=30,  # Wait between outputs (increased from 15)
+        terminal_max_exec_timeout=300,  # Max execution time (increased from 180)
+        terminal_dialog_timeout=5,  # Dialog detection timeout
         stt_model_size="base",
         stt_language="en",
         stt_silence_threshold=0.3,

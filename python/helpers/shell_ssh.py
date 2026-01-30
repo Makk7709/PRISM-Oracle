@@ -214,22 +214,55 @@ class SSHInteractiveSession:
         return data
 
 def clean_string(input_string):
-    # Remove ANSI escape codes
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    cleaned = ansi_escape.sub("", input_string)
+    """
+    Clean terminal output by removing ANSI escape codes and handling special characters.
+    
+    Handles:
+    - Standard ANSI escape sequences (colors, cursor movement, etc.)
+    - OSC sequences (Operating System Commands)
+    - CSI sequences (Control Sequence Introducer)
+    - DCS sequences (Device Control String)
+    - Progress bars and spinner characters
+    - UTF-8 special characters that may cause display issues
+    """
+    # Remove ANSI escape codes - comprehensive pattern
+    # Standard CSI sequences: ESC [ ... final_byte
+    ansi_csi = re.compile(r"\x1B\[[0-9;]*[A-Za-z]")
+    # OSC sequences: ESC ] ... (ST or BEL)
+    ansi_osc = re.compile(r"\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)")
+    # DCS sequences: ESC P ... ST
+    ansi_dcs = re.compile(r"\x1BP[^\x1B]*\x1B\\")
+    # Single character escapes: ESC followed by single char
+    ansi_single = re.compile(r"\x1B[@-Z\\-_]")
+    # Generic fallback for other escape sequences
+    ansi_generic = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    
+    cleaned = input_string
+    cleaned = ansi_csi.sub("", cleaned)
+    cleaned = ansi_osc.sub("", cleaned)
+    cleaned = ansi_dcs.sub("", cleaned)
+    cleaned = ansi_single.sub("", cleaned)
+    cleaned = ansi_generic.sub("", cleaned)
 
-    # remove null bytes
+    # Remove null bytes
     cleaned = cleaned.replace("\x00", "")
+    
+    # Remove common progress bar / spinner characters
+    # These can appear in pip, npm, docker output
+    cleaned = re.sub(r"[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⣾⣽⣻⢿⡿⣟⣯⣷●○◐◑◒◓◔◕▁▂▃▄▅▆▇█]", "", cleaned)
+    
+    # Remove backspace sequences (char + backspace)
+    cleaned = re.sub(r".\x08", "", cleaned)
 
-    # remove ipython \r\r\n> sequences from the start
+    # Remove ipython \r\r\n> sequences from the start
     cleaned = re.sub(r'^[ \r]*(?:\r*\n>[ \r]*)*', '', cleaned)
-    # also remove any amount of '> ' sequences from the start
+    # Also remove any amount of '> ' sequences from the start
     cleaned = re.sub(r'^(>\s*)+', '', cleaned)
 
     # Replace '\r\n' with '\n'
     cleaned = cleaned.replace("\r\n", "\n")
 
-    # remove leading \r and spaces
+    # Remove leading \r and spaces
     cleaned = cleaned.lstrip("\r ")
 
     # Split the string by newline characters to process each segment separately
@@ -237,10 +270,9 @@ def clean_string(input_string):
 
     for i in range(len(lines)):
         # Handle carriage returns '\r' by splitting and taking the last part
+        # This handles progress bar updates that overwrite the same line
         parts = [part for part in lines[i].split("\r") if part.strip()]
         if parts:
-            lines[i] = parts[
-                -1
-            ].rstrip()  # Overwrite with the last part after the last '\r'
+            lines[i] = parts[-1].rstrip()  # Overwrite with the last part after the last '\r'
 
     return "\n".join(lines)

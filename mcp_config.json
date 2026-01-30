@@ -14,15 +14,19 @@
             "args": ["arxiv-mcp-server"],
             "description": "Recherche et télécharge des papiers académiques depuis Arxiv"
         },
-        "brave-search": {
-            "name": "Brave Search",
+        "semanticscholar": {
+            "name": "Semantic Scholar",
             "type": "stdio",
-            "command": "npx",
-            "args": ["-y", "@kwp-lab/mcp-brave-search"],
-            "env": {
-                "BRAVE_API_KEY": "${BRAVE_API_KEY}"
-            },
-            "description": "Recherche web avancée via Brave Search API"
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/semanticscholar/server.py"],
+            "description": "Recherche dans 200M+ de publications académiques"
+        },
+        "openalex": {
+            "name": "OpenAlex Academic",
+            "type": "stdio",
+            "command": "node",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/openalex/src/server.js"],
+            "description": "Métadonnées académiques ouvertes (auteurs, institutions, citations)"
         },
         "filesystem": {
             "name": "Filesystem",
@@ -30,6 +34,16 @@
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/Users/aminemohamed/Desktop"],
             "description": "Accès en lecture/écriture aux fichiers du bureau"
+        },
+        "brave-search": {
+            "name": "Brave Search",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@anthropic-ai/mcp-server-brave-search"],
+            "env": {
+                "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+            },
+            "description": "Recherche web avancée via Brave Search API"
         },
         "puppeteer": {
             "name": "Puppeteer Browser",

@@ -12,19 +12,20 @@ from python.helpers.strings import truncate_text as truncate_text_string
 from python.helpers.messages import truncate_text as truncate_text_agent
 import re
 
-# Timeouts for python, nodejs, and terminal runtimes.
-CODE_EXEC_TIMEOUTS: dict[str, int] = {
-    "first_output_timeout": 30,
-    "between_output_timeout": 15,
-    "max_exec_timeout": 180,
+# Default timeouts for python, nodejs, and terminal runtimes.
+# These are fallbacks if agent config is not available
+DEFAULT_CODE_EXEC_TIMEOUTS: dict[str, int] = {
+    "first_output_timeout": 60,
+    "between_output_timeout": 30,
+    "max_exec_timeout": 300,
     "dialog_timeout": 5,
 }
 
-# Timeouts for output runtime.
-OUTPUT_TIMEOUTS: dict[str, int] = {
-    "first_output_timeout": 90,
-    "between_output_timeout": 45,
-    "max_exec_timeout": 300,
+# Default timeouts for output runtime (longer waits for reading output)
+DEFAULT_OUTPUT_TIMEOUTS: dict[str, int] = {
+    "first_output_timeout": 120,
+    "between_output_timeout": 60,
+    "max_exec_timeout": 600,
     "dialog_timeout": 5,
 }
 
@@ -42,19 +43,46 @@ class State:
 
 class CodeExecution(Tool):
 
+    def get_timeouts(self, for_output: bool = False) -> dict[str, int]:
+        """Get timeout values from agent config or use defaults."""
+        try:
+            config = self.agent.config
+            base_timeouts = {
+                "first_output_timeout": getattr(config, "terminal_first_output_timeout", 60),
+                "between_output_timeout": getattr(config, "terminal_between_output_timeout", 30),
+                "max_exec_timeout": getattr(config, "terminal_max_exec_timeout", 300),
+                "dialog_timeout": getattr(config, "terminal_dialog_timeout", 5),
+            }
+            if for_output:
+                # Output mode needs longer timeouts
+                return {
+                    "first_output_timeout": base_timeouts["first_output_timeout"] * 2,
+                    "between_output_timeout": base_timeouts["between_output_timeout"] * 2,
+                    "max_exec_timeout": base_timeouts["max_exec_timeout"] * 2,
+                    "dialog_timeout": base_timeouts["dialog_timeout"],
+                }
+            return base_timeouts
+        except Exception:
+            return DEFAULT_OUTPUT_TIMEOUTS if for_output else DEFAULT_CODE_EXEC_TIMEOUTS
+
     # Common shell prompt regex patterns (add more as needed)
     prompt_patterns = [
-        re.compile(r"\\(venv\\).+[$#] ?$"),  # (venv) ...$ or (venv) ...#
-        re.compile(r"root@[^:]+:[^#]+# ?$"),  # root@container:~#
-        re.compile(r"[a-zA-Z0-9_.-]+@[^:]+:[^$#]+[$#] ?$"),  # user@host:~$
-        re.compile(r"\(?.*\)?\s*PS\s+[^>]+> ?$"),  # PowerShell prompt like (base) PS C:\...>
+        re.compile(r"\(venv\).+[$#]\s*$"),  # (venv) ...$ or (venv) ...#
+        re.compile(r"\([^)]+\)\s*[$#]\s*$"),  # Any (env_name) ...$ or ...#
+        re.compile(r"root@[^:]+:[^#]+#\s*$"),  # root@container:~#
+        re.compile(r"[a-zA-Z0-9_.-]+@[^:]+:[^$#]+[$#]\s*$"),  # user@host:~$
+        re.compile(r"\(?.*\)?\s*PS\s+[^>]+>\s*$"),  # PowerShell prompt like (base) PS C:\...>
+        re.compile(r"[$#%>]\s*$"),  # Generic prompt ending with $ # % >
     ]
-    # potential dialog detection
+    # potential dialog detection - more strict to avoid false positives
     dialog_patterns = [
-        re.compile(r"Y/N", re.IGNORECASE),  # Y/N anywhere in line
-        re.compile(r"yes/no", re.IGNORECASE),  # yes/no anywhere in line
-        re.compile(r":\s*$"),  # line ending with colon
-        re.compile(r"\?\s*$"),  # line ending with question mark
+        re.compile(r"\[Y/n\]", re.IGNORECASE),  # [Y/n] or [y/N] format
+        re.compile(r"\[yes/no\]", re.IGNORECASE),  # [yes/no] format
+        re.compile(r"y/n\s*[:\?]?\s*$", re.IGNORECASE),  # y/n at end of line
+        re.compile(r"continue\s*\?\s*\[", re.IGNORECASE),  # "Continue? [" pattern
+        re.compile(r"proceed\s*\?\s*$", re.IGNORECASE),  # "proceed?" at end
+        re.compile(r"password\s*:\s*$", re.IGNORECASE),  # password prompt
+        re.compile(r"enter\s+.+:\s*$", re.IGNORECASE),  # "Enter something:" prompt
     ]
 
     async def execute(self, **kwargs) -> Response:
@@ -64,6 +92,7 @@ class CodeExecution(Tool):
         runtime = self.args.get("runtime", "").lower().strip()
         session = int(self.args.get("session", 0))
         self.allow_running = bool(self.args.get("allow_running", False))
+        self.wait_for_completion = bool(self.args.get("wait_for_completion", False))
 
         if runtime == "python":
             response = await self.execute_python_code(
@@ -79,7 +108,7 @@ class CodeExecution(Tool):
             )
         elif runtime == "output":
             response = await self.get_terminal_output(
-                session=session, timeouts=OUTPUT_TIMEOUTS
+                session=session, timeouts=self.get_timeouts(for_output=True)
             )
         elif runtime == "reset":
             response = await self.reset_terminal(session=session)
@@ -186,7 +215,10 @@ class CodeExecution(Tool):
 
         # Check if session is running and handle it
         if not self.allow_running:
-            if response := await self.handle_running_session(session):
+            if self.wait_for_completion:
+                # Wait for the current command to complete before proceeding
+                await self.wait_for_session_completion(session, timeouts or self.get_timeouts())
+            elif response := await self.handle_running_session(session):
                 return response
         
         # try again on lost connection
@@ -209,7 +241,7 @@ class CodeExecution(Tool):
                 PrintStyle(
                     background_color="white", font_color="#1B4F72", bold=True
                 ).print(f"{self.agent.agent_name} code execution output{locl}")
-                return await self.get_terminal_output(session=session, prefix=prefix, timeouts=(timeouts or CODE_EXEC_TIMEOUTS))
+                return await self.get_terminal_output(session=session, prefix=prefix, timeouts=(timeouts or self.get_timeouts()))
 
             except Exception as e:
                 if i == 1:
@@ -426,6 +458,43 @@ class CodeExecution(Tool):
         # Mark session as idle - command finished
         if self.state and session in self.state.shells:
             self.state.shells[session].running = False
+
+    async def wait_for_session_completion(self, session: int, timeouts: dict):
+        """Wait for a running session to complete before proceeding."""
+        if not self.state or session not in self.state.shells:
+            return
+        if not self.state.shells[session].running:
+            return
+
+        max_wait = timeouts.get("max_exec_timeout", 300)
+        poll_interval = 0.5
+        waited = 0
+
+        PrintStyle(font_color="#FFA500").print(
+            f"Waiting for session {session} to complete..."
+        )
+
+        while waited < max_wait:
+            await asyncio.sleep(poll_interval)
+            waited += poll_interval
+
+            # Read output to check for prompt
+            full_output, _ = await self.state.shells[session].session.read_output(
+                timeout=0.1, reset_full_output=False
+            )
+            truncated_output = self.fix_full_output(full_output)
+
+            # Check for shell prompt indicating completion
+            last_lines = truncated_output.splitlines()[-3:] if truncated_output else []
+            for line in reversed(last_lines):
+                for pat in self.prompt_patterns:
+                    if pat.search(line.strip()):
+                        PrintStyle.info(f"Session {session} completed.")
+                        self.mark_session_idle(session)
+                        return
+
+        # Timeout reached
+        PrintStyle.warning(f"Timeout waiting for session {session} to complete.")
 
     async def reset_terminal(self, session=0, reason: str | None = None):
         # Print the reason for the reset to the console if provided
