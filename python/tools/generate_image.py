@@ -78,10 +78,10 @@ class GenerateImage(Tool):
         
         # Determine providers
         primary = current_settings.get("image_gen_primary_provider", "openai")
-        fallback = current_settings.get("image_gen_fallback_provider", "none")
+        fallback = current_settings.get("image_gen_fallback_provider", "google")
         
-        # SMART PROVIDER SELECTION: If OpenAI key is available, prefer it over Google
-        # This ensures we use the best model (gpt-image-1) when possible
+        # FORCE OPENAI AS PRIMARY - Always use OpenAI with gpt-image-1 when key is available
+        # Check all possible sources for OpenAI API key
         openai_key = (
             current_settings.get("image_gen_openai_api_key") or
             current_settings.get("api_keys", {}).get("openai") or
@@ -89,12 +89,33 @@ class GenerateImage(Tool):
             os.environ.get("OPENAI_API_KEY")
         )
         
-        if openai_key and primary == "google":
-            # Swap: use OpenAI as primary since we have the key
+        # Also try loading from .env file directly if not found
+        if not openai_key:
+            try:
+                env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env')
+                if os.path.exists(env_path):
+                    with open(env_path, 'r') as f:
+                        for line in f:
+                            if line.startswith('API_KEY_OPENAI='):
+                                openai_key = line.split('=', 1)[1].strip()
+                                break
+            except:
+                pass
+        
+        if openai_key:
+            # ALWAYS use OpenAI as primary when key is available
+            if primary != "openai":
+                PrintStyle(font_color="green").print(
+                    f"[Image Gen] OpenAI API key found, forcing OpenAI as primary (was: {primary})"
+                )
+            primary = "openai"
+            fallback = "google"
+            
+            # Also force gpt-image-1 model
+            current_settings["image_gen_openai_model"] = "gpt-image-1"
             PrintStyle(font_color="green").print(
-                f"[Image Gen] OpenAI API key detected, using OpenAI (gpt-image-1) as primary"
+                f"[Image Gen] Using OpenAI gpt-image-1 (best quality)"
             )
-            primary, fallback = "openai", primary  # OpenAI first, Google as fallback
         
         PrintStyle(font_color="cyan").print(f"[Image Gen] Generating image with {primary}...")
         
