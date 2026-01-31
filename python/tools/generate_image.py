@@ -80,6 +80,22 @@ class GenerateImage(Tool):
         primary = current_settings.get("image_gen_primary_provider", "openai")
         fallback = current_settings.get("image_gen_fallback_provider", "none")
         
+        # SMART PROVIDER SELECTION: If OpenAI key is available, prefer it over Google
+        # This ensures we use the best model (gpt-image-1) when possible
+        openai_key = (
+            current_settings.get("image_gen_openai_api_key") or
+            current_settings.get("api_keys", {}).get("openai") or
+            os.environ.get("API_KEY_OPENAI") or
+            os.environ.get("OPENAI_API_KEY")
+        )
+        
+        if openai_key and primary == "google":
+            # Swap: use OpenAI as primary since we have the key
+            PrintStyle(font_color="green").print(
+                f"[Image Gen] OpenAI API key detected, using OpenAI (gpt-image-1) as primary"
+            )
+            primary, fallback = "openai", primary  # OpenAI first, Google as fallback
+        
         PrintStyle(font_color="cyan").print(f"[Image Gen] Generating image with {primary}...")
         
         # Try primary provider
@@ -225,7 +241,9 @@ class GenerateImage(Tool):
                 "error": "OpenAI API key not configured"
             }
         
-        model = settings.get("image_gen_openai_model", "dall-e-3")
+        model = settings.get("image_gen_openai_model", "gpt-image-1")
+        
+        PrintStyle(font_color="cyan").print(f"[Image Gen] Using OpenAI model: {model}")
         
         # Prepare request
         url = "https://api.openai.com/v1/images/generations"
