@@ -378,6 +378,17 @@ class Agent:
                     )
                     # Add to history as AI response
                     self.hist_add_ai_response(pipeline_final_response)
+                    
+                    # ═══════════════════════════════════════════════════════════════
+                    # CRITICAL: Also log as "response" type so UI displays the content
+                    # The UI polls /poll for logs, not history
+                    # ═══════════════════════════════════════════════════════════════
+                    self.context.log.log(
+                        type="response",
+                        heading=f"{self.agent_name}",
+                        content=pipeline_final_response,
+                    )
+                    
                     # Clear the flag for next request
                     self.set_data("_pipeline_final_response", None)
                     self.set_data("_skip_llm", None)

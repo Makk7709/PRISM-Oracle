@@ -50,34 +50,84 @@ class StrategicEnforcementMonologueHook(Extension):
     """
     
     def _extract_user_text(self, loop_data) -> str:
-        """Extract user message text from loop_data."""
+        """
+        Extract user message text from loop_data.
+        
+        Handles various message formats:
+        - String content
+        - Dict with 'user_message', 'message', or 'text' keys
+        - Raw message with 'raw_content' or 'preview'
+        - JSON-encoded strings
+        """
         if not loop_data or not loop_data.user_message:
             return ""
         
         msg = loop_data.user_message
         msg_content = msg.content if hasattr(msg, 'content') else None
         
+        if msg_content is None:
+            return ""
+        
+        # String content - most common case
+        if isinstance(msg_content, str):
+            # Check if it's JSON-encoded
+            try:
+                parsed = json.loads(msg_content.strip().strip('`').replace('json\n', ''))
+                if isinstance(parsed, dict):
+                    return (
+                        parsed.get("user_message", "") or 
+                        parsed.get("message", "") or 
+                        parsed.get("text", "") or
+                        msg_content
+                    )
+            except (json.JSONDecodeError, ValueError):
+                pass
+            return msg_content
+        
+        # Dict content - check various keys
         if isinstance(msg_content, dict):
+            # Check for raw message format
+            if "raw_content" in msg_content:
+                raw = msg_content.get("raw_content", "")
+                if isinstance(raw, str):
+                    return raw
+                elif isinstance(raw, dict):
+                    return (
+                        raw.get("user_message", "") or
+                        raw.get("message", "") or
+                        raw.get("text", "") or
+                        str(raw)
+                    )
+            
+            # Check for preview (used in raw messages)
+            if "preview" in msg_content and msg_content.get("preview"):
+                return str(msg_content["preview"])
+            
+            # Standard dict keys
             return (
                 msg_content.get("user_message", "") or 
                 msg_content.get("message", "") or 
                 msg_content.get("text", "") or 
                 ""
             )
-        elif isinstance(msg_content, str):
-            try:
-                parsed = json.loads(msg_content.strip().strip('`').replace('json\n', ''))
-                return (
-                    parsed.get("user_message", "") or 
-                    parsed.get("message", "") or 
-                    msg_content
-                )
-            except (json.JSONDecodeError, ValueError):
-                return msg_content
-        elif msg_content is not None:
-            return str(msg_content)
         
-        return ""
+        # List content - concatenate strings
+        if isinstance(msg_content, list):
+            parts = []
+            for item in msg_content:
+                if isinstance(item, str):
+                    parts.append(item)
+                elif isinstance(item, dict):
+                    parts.append(
+                        item.get("user_message", "") or 
+                        item.get("message", "") or 
+                        item.get("text", "") or
+                        ""
+                    )
+            return " ".join(filter(None, parts))
+        
+        # Fallback - stringify
+        return str(msg_content)
     
     async def execute(self, loop_data: "LoopData" = None, **kwargs):
         """
@@ -88,19 +138,29 @@ class StrategicEnforcementMonologueHook(Extension):
         2. Validate output
         3. Short-circuit LLM with pipeline response
         """
+        # Debug: Always visible print for troubleshooting
+        PrintStyle(font_color="cyan").print("[STRATEGIC_HOOK] execute() called")
+        logger.info("[STRATEGIC_HOOK] execute() called")
+        
         if not ORCHESTRATOR_AVAILABLE:
+            logger.warning("[STRATEGIC_HOOK] Orchestrator not available")
             return
         
         if not is_strategic_orchestrator_enabled():
+            logger.info("[STRATEGIC_HOOK] Orchestrator disabled")
             return
         
         # Extract user text
         user_text = self._extract_user_text(loop_data)
+        PrintStyle(font_color="cyan").print(f"[STRATEGIC_HOOK] Extracted: {user_text[:80] if user_text else 'EMPTY'}...")
+        
         if not user_text:
+            PrintStyle(font_color="gray").print("[STRATEGIC_HOOK] No user text, skipping")
             return
         
         # Detect strategic document
         detection = detect_strategic_document(user_text)
+        PrintStyle(font_color="cyan").print(f"[STRATEGIC_HOOK] Detection: is_strategic={detection.is_strategic}, type={detection.document_type}")
         
         if not detection.is_strategic:
             return
