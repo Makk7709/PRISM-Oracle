@@ -364,11 +364,11 @@ class ImageTool:
             client = AsyncOpenAI()
             
             response = await client.images.generate(
-                model="dall-e-3",
+                model="gpt-image-1",  # Upgraded to best quality model
                 prompt=request.prompt,
                 size=request.size.value,
                 quality=request.quality.value,
-                n=request.n,
+                n=1,  # gpt-image-1 only supports n=1
             )
             
             return [img.url for img in response.data]
