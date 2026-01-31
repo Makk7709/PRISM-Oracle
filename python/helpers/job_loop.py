@@ -17,28 +17,43 @@ async def run_loop():
     global pause_time, keep_running
 
     while True:
+        # In development mode, only pause if there's actually a Docker container to defer to
+        # Otherwise, run the scheduler normally
+        should_pause = False
         if runtime.is_development():
-            # Signal to container that the job loop should be paused
-            # if we are runing a development instance to avoid duble-running the jobs
             try:
+                # Try to signal pause to Docker container
+                # If call fails (no container), we should run locally
                 await runtime.call_development_function(pause_loop)
+                should_pause = True
             except Exception as e:
-                PrintStyle().error("Failed to pause job loop by development instance: " + errors.error_text(e))
+                # No Docker container responding - run scheduler locally
+                should_pause = False
+                if not keep_running:
+                    resume_loop()  # Resume if we were paused
+        
+        # Auto-resume if paused for too long
         if not keep_running and (time.time() - pause_time) > (SLEEP_TIME * 2):
             resume_loop()
+        
+        # Run scheduler tick if not paused
         if keep_running:
             try:
                 await scheduler_tick()
             except Exception as e:
                 PrintStyle().error(errors.format_error(e))
+        
         await asyncio.sleep(SLEEP_TIME)  # TODO! - if we lower it under 1min, it can run a 5min job multiple times in it's target minute
 
 
 async def scheduler_tick():
-    # Get the task scheduler instance and print detailed debug info
+    # Get the task scheduler instance
     scheduler = TaskScheduler.get()
     # Run the scheduler tick
-    await scheduler.tick()
+    try:
+        await scheduler.tick()
+    except Exception as e:
+        PrintStyle().error(f"Scheduler tick error: {errors.error_text(e)}")
 
 
 def pause_loop():
