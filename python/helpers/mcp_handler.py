@@ -53,6 +53,36 @@ def normalize_name(name: str) -> str:
     return name
 
 
+def expand_env_vars(env_dict: dict[str, str] | None) -> dict[str, str] | None:
+    """Expand ${VAR} patterns in env dict values using os.environ and .env file."""
+    import os
+    from python.helpers import dotenv
+    
+    if not env_dict:
+        return env_dict
+    
+    expanded = {}
+    for key, value in env_dict.items():
+        if isinstance(value, str) and "${" in value:
+            # Extract variable name from ${VAR_NAME} pattern
+            match = re.match(r'\$\{([^}]+)\}', value)
+            if match:
+                var_name = match.group(1)
+                # Try os.environ first, then dotenv
+                env_value = os.environ.get(var_name) or dotenv.get_dotenv_value(var_name)
+                if env_value:
+                    expanded[key] = env_value
+                    PrintStyle(font_color="green").print(f"✓ Expanded {var_name} for MCP server")
+                else:
+                    PrintStyle(font_color="yellow").print(f"⚠ {var_name} not found in environment")
+                    expanded[key] = ""  # Empty string if not found
+            else:
+                expanded[key] = value
+        else:
+            expanded[key] = value
+    return expanded
+
+
 def _determine_server_type(config_dict: dict) -> str:
     """Determine the server type based on configuration, with backward compatibility."""
     # First check if type is explicitly specified
@@ -352,6 +382,9 @@ class MCPServerLocal(BaseModel):
                 ]:
                     if key == "name":
                         value = normalize_name(value)
+                    # Expand environment variables in env dict
+                    if key == "env" and value:
+                        value = expand_env_vars(value)
                     setattr(self, key, value)
             # We already run in an event loop, dont believe Pylance
             return asyncio.run(self.__on_update())

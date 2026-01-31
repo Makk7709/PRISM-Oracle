@@ -1,22 +1,37 @@
 # Research MCP Strategy Guide
 
-You have access to specialized MCP servers for academic research. This guide helps you choose the right source and strategy.
+You have access to specialized MCP servers for research. **USE THEM PROACTIVELY** for any research task.
+
+## 🚨 IMPORTANT: Always Use These Tools for Research
+
+When user asks for: "enquête", "étude", "recherche", "analyse de marché", "state of the art", "benchmark", etc.
+**→ MANDATORY: Call MCP tools BEFORE answering**
 
 ## 🎯 Quick Decision Matrix
 
 | User wants... | Primary Server | Fallback | Why |
 |--------------|----------------|----------|-----|
-| Latest preprints/papers | **arxiv** | semanticscholar | arXiv has newest, unreviewed papers |
-| Citation analysis | **semanticscholar** | openalex | Best citation network data |
-| Author profile/h-index | **openalex** | semanticscholar | Rich author metrics |
-| Web search/general info | **tavily** | firecrawl | AI-powered web search |
-| Web scraping | **firecrawl** | - | Extract content from URLs |
-| EU law/regulations | **tavily** (search) | code_execution (scrape) | Search legal databases via web |
+| Any web page content | **fetch** ✅ | - | Basic web fetching, always available |
+| Latest preprints/papers | **arxiv** ✅ | semanticscholar | arXiv has newest papers |
+| Citation analysis | **semanticscholar** ✅ | openalex | Best citation network |
+| Author profile/h-index | **openalex** ✅ | semanticscholar | Rich author metrics |
+| Web search/general info | **tavily** ⚠️ | fetch | Needs TAVILY_API_KEY |
+| Advanced web scraping | **firecrawl** ⚠️ | fetch | Needs FIRECRAWL_API_KEY |
+| Browser automation | **puppeteer** ✅ | playwright | Screenshots, interactive scraping |
+| EU law/regulations | **fetch** ✅ | code_execution | Fetch EUR-Lex pages directly |
 
-> ⚠️ **NOT AVAILABLE in this instance:**
-> - **eurlex** - EUR-Lex MCP not configured (use tavily to search EUR-Lex website)
-> - **crossref** - CrossRef MCP not configured
-> - **espacenet/lens** - Patent servers require API keys not configured
+> ✅ **AVAILABLE NOW (no API key needed):**
+> - **fetch** - Web page fetching
+> - **arxiv** - Academic papers search
+> - **semanticscholar** - 200M+ publications, citations
+> - **openalex** - Author/institution data
+> - **puppeteer/playwright** - Browser automation
+>
+> ⚠️ **NEED API KEY (check .env):**
+> - **tavily** - Needs TAVILY_API_KEY
+> - **firecrawl** - Needs FIRECRAWL_API_KEY  
+> - **brave-search** - Needs BRAVE_API_KEY
+> - **pubmed** - Needs NCBI_API_KEY
 
 ## 📚 Server Specializations
 

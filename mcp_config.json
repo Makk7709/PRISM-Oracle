@@ -28,6 +28,43 @@
             "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/openalex/src/server.js"],
             "description": "Métadonnées académiques ouvertes (auteurs, institutions, citations)"
         },
+        "firecrawl": {
+            "name": "Firecrawl Web Scraper",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "firecrawl-mcp"],
+            "env": {
+                "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+            },
+            "description": "Scraping web avancé et extraction de contenu structuré"
+        },
+        "tavily": {
+            "name": "Tavily AI Search",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "tavily-mcp"],
+            "env": {
+                "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+            },
+            "description": "Recherche web AI-powered avec ranking de pertinence"
+        },
+        "pubmed": {
+            "name": "PubMed Biomedical",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "pubmed-mcp-server"],
+            "env": {
+                "NCBI_API_KEY": "${NCBI_API_KEY}"
+            },
+            "description": "Recherche dans la base de données biomédicale PubMed/NCBI"
+        },
+        "playwright": {
+            "name": "Playwright Browser",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@playwright/mcp"],
+            "description": "Automatisation de navigateur pour tests et scraping interactif"
+        },
         "filesystem": {
             "name": "Filesystem",
             "type": "stdio",

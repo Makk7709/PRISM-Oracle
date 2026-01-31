@@ -1707,6 +1707,13 @@ def normalize_settings(settings: Settings) -> Settings:
     # mcp server token is set automatically
     copy["mcp_server_token"] = create_auth_token()
 
+    # Auto-load MCP config from file if current setting is empty
+    mcp_servers = copy.get("mcp_servers", "")
+    if not mcp_servers or mcp_servers.strip() in ['', '{}', '[]', '{\n    "mcpServers": {}\n}']:
+        loaded_config = _load_mcp_config_from_file()
+        if loaded_config and loaded_config not in ['{}', '[]', '{\n    "mcpServers": {}\n}']:
+            copy["mcp_servers"] = loaded_config
+
     return copy
 
 
@@ -1768,6 +1775,37 @@ def _write_sensitive_settings(settings: Settings):
     submitted_content = settings["secrets"]
     secrets_manager.save_secrets_with_merge(submitted_content)
 
+
+
+def _load_mcp_config_from_file() -> str:
+    """Load MCP servers config from mcp_config.json if it exists."""
+    mcp_config_path = files.get_abs_path("mcp_config.json")
+    try:
+        if os.path.exists(mcp_config_path):
+            with open(mcp_config_path, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+            # Convert to the format expected by MCPConfig (list of servers)
+            if isinstance(config_data, dict) and "mcpServers" in config_data:
+                servers_dict = config_data["mcpServers"]
+                servers_list = []
+                for server_id, server_config in servers_dict.items():
+                    server_entry = {"name": server_id, **server_config}
+                    servers_list.append(server_entry)
+                PrintStyle(font_color="green").print(
+                    f"✓ MCP config loaded from {mcp_config_path}: {len(servers_list)} servers"
+                )
+                return json.dumps(servers_list)
+            elif isinstance(config_data, list):
+                # Already in list format
+                PrintStyle(font_color="green").print(
+                    f"✓ MCP config loaded from {mcp_config_path}: {len(config_data)} servers"
+                )
+                return json.dumps(config_data)
+    except Exception as e:
+        PrintStyle(font_color="yellow").print(
+            f"⚠ Could not load mcp_config.json: {e}"
+        )
+    return '{\n    "mcpServers": {}\n}'
 
 
 def get_default_settings() -> Settings:
@@ -1856,7 +1894,7 @@ def get_default_settings() -> Settings:
         stt_silence_duration=1000,
         stt_waiting_timeout=2000,
         tts_kokoro=True,
-        mcp_servers='{\n    "mcpServers": {}\n}',
+        mcp_servers=_load_mcp_config_from_file(),
         mcp_client_init_timeout=10,
         mcp_client_tool_timeout=120,
         mcp_server_enabled=False,
