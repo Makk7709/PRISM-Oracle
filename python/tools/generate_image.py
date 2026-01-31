@@ -167,12 +167,21 @@ class GenerateImage(Tool):
             async with aiohttp.ClientSession() as session:
                 for img in images:
                     if img.startswith("data:"):
-                        # Base64 image - save locally
+                        # Base64 image with data URL prefix - save locally
                         local_path = await self._save_base64_image(img)
                         local_images.append(local_path)
                     elif img.startswith("http"):
                         # URL image - download and save locally
                         local_path = await self._download_and_save_image(img, session)
+                        local_images.append(local_path)
+                    elif self._is_raw_base64(img):
+                        # Raw base64 without data: prefix (gpt-image-1 format)
+                        # Add proper data URL prefix before saving
+                        PrintStyle(font_color="cyan").print(
+                            f"[Image Gen] Converting raw base64 ({len(img)} chars) to data URL"
+                        )
+                        data_url = f"data:image/png;base64,{img}"
+                        local_path = await self._save_base64_image(data_url)
                         local_images.append(local_path)
                     else:
                         local_images.append(img)
@@ -532,6 +541,23 @@ class GenerateImage(Tool):
         except Exception as e:
             PrintStyle(font_color="red").print(f"[Image Gen] Error saving base64 image: {e}")
             return base64_data  # Return original as fallback
+
+    def _is_raw_base64(self, data: str) -> bool:
+        """Check if a string looks like raw base64 image data (without data: prefix)."""
+        if not data or len(data) < 100:  # Base64 images are typically large
+            return False
+        
+        # Check if it starts with common PNG/JPEG base64 prefixes
+        # PNG starts with: iVBORw0KGgo (base64 of PNG magic bytes)
+        # JPEG starts with: /9j/ (base64 of JPEG magic bytes)
+        png_prefix = data.startswith("iVBORw0KGgo")
+        jpeg_prefix = data.startswith("/9j/")
+        
+        # Also check if it's valid base64 characters only
+        import re
+        is_base64_chars = bool(re.match(r'^[A-Za-z0-9+/=]+$', data[:100]))
+        
+        return (png_prefix or jpeg_prefix) or (is_base64_chars and len(data) > 1000)
 
     def _format_success(self, result: dict, prompt: str) -> str:
         """Format successful generation result."""
