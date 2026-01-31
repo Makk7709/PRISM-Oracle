@@ -19,30 +19,35 @@ async def run_loop():
     PrintStyle(font_color="green").print("[JobLoop] Starting scheduler loop...")
 
     while True:
-        # In development mode, only pause if RFC bridge is actually configured
-        # This prevents double-running when both dev instance and Docker are running
-        # But allows standalone development without Docker
-        if runtime.is_development() and _has_rfc_bridge():
-            try:
-                # Signal to Docker container that dev instance is handling jobs
-                await runtime.call_development_function(pause_loop)
-            except Exception as e:
-                # RFC bridge failed - resume and handle locally
-                if not keep_running:
-                    resume_loop()
+        try:
+            # In development mode, only pause if RFC bridge is actually configured
+            # This prevents double-running when both dev instance and Docker are running
+            # But allows standalone development without Docker
+            if runtime.is_development() and _has_rfc_bridge():
+                try:
+                    # Signal to Docker container that dev instance is handling jobs
+                    await runtime.call_development_function(pause_loop)
+                except Exception:
+                    # RFC bridge failed - resume and handle locally
+                    if not keep_running:
+                        resume_loop()
+            
+            # Auto-resume if paused for too long (failsafe)
+            if not keep_running and (time.time() - pause_time) > (SLEEP_TIME * 2):
+                PrintStyle(font_color="yellow").print("[JobLoop] Auto-resuming after pause timeout")
+                resume_loop()
+            
+            # Run scheduler tick if not paused
+            if keep_running:
+                PrintStyle(font_color="cyan").print(f"[JobLoop] Running scheduler tick at {datetime.now().strftime('%H:%M:%S')}")
+                try:
+                    await scheduler_tick()
+                except Exception as e:
+                    PrintStyle().error(f"[JobLoop] Scheduler tick error: {errors.error_text(e)}")
         
-        # Auto-resume if paused for too long (failsafe)
-        if not keep_running and (time.time() - pause_time) > (SLEEP_TIME * 2):
-            PrintStyle(font_color="yellow").print("[JobLoop] Auto-resuming after pause timeout")
-            resume_loop()
-        
-        # Run scheduler tick if not paused
-        if keep_running:
-            PrintStyle(font_color="cyan").print(f"[JobLoop] Running scheduler tick at {datetime.now().strftime('%H:%M:%S')}")
-            try:
-                await scheduler_tick()
-            except Exception as e:
-                PrintStyle().error(errors.format_error(e))
+        except Exception as e:
+            # Catch any unexpected errors to prevent loop from crashing
+            PrintStyle().error(f"[JobLoop] Unexpected error: {errors.error_text(e)}")
         
         await asyncio.sleep(SLEEP_TIME)
 
@@ -50,12 +55,11 @@ async def run_loop():
 def _has_rfc_bridge() -> bool:
     """Check if RFC bridge is configured (for Docker communication)"""
     try:
-        from python.helpers.settings import Settings
-        set = Settings.get()
-        # Only consider RFC available if password is set (indicates Docker setup)
-        rfc_password = set.get("rfc_password", "")
+        import os
+        # Only consider RFC available if password is set in environment
+        rfc_password = os.environ.get("RFC_PASSWORD", "")
         return bool(rfc_password and len(rfc_password) > 0)
-    except:
+    except Exception:
         return False
 
 
