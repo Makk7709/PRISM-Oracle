@@ -267,12 +267,23 @@ class GenerateImage(Tool):
             payload["quality"] = quality
             if style:
                 payload["style"] = style
-        elif model.startswith("gpt-image"):
-            # GPT-Image models (gpt-image-1, etc.)
-            payload["n"] = 1  # Usually only n=1 for newer models
-            payload["quality"] = quality
+        elif model.startswith("gpt-image") or model.startswith("chatgpt-image"):
+            # GPT-Image models (gpt-image-1, gpt-image-1.5, chatgpt-image-latest, etc.)
+            payload["n"] = 1  # Only n=1 for newer models
+            
+            # Map quality: gpt-image uses low/medium/high/auto instead of standard/hd
+            quality_map = {
+                "standard": "medium",
+                "hd": "high",
+                "low": "low",
+                "medium": "medium", 
+                "high": "high",
+                "auto": "auto",
+            }
+            payload["quality"] = quality_map.get(quality, "high")
+            
             # GPT-Image models support more sizes
-            if size not in ["1024x1024", "1792x1024", "1024x1792"]:
+            if size not in ["1024x1024", "1792x1024", "1024x1792", "auto"]:
                 payload["size"] = "1024x1024"  # Fallback to square
         
         async with aiohttp.ClientSession() as session:
