@@ -255,6 +255,23 @@ class GenerateImage(Tool):
             # Fall back to environment variables (both naming conventions)
             api_key = os.environ.get("API_KEY_OPENAI") or os.environ.get("OPENAI_API_KEY")
         
+        # LAST RESORT: Load directly from .env file
+        if not api_key:
+            try:
+                from python.helpers import files
+                env_path = files.get_abs_path(".env")
+                if os.path.exists(env_path):
+                    with open(env_path, 'r') as f:
+                        for line in f:
+                            if line.startswith('API_KEY_OPENAI='):
+                                api_key = line.split('=', 1)[1].strip()
+                                PrintStyle(font_color="green").print(
+                                    f"[Image Gen] Loaded OpenAI key from .env file"
+                                )
+                                break
+            except Exception as e:
+                PrintStyle(font_color="red").print(f"[Image Gen] Failed to load .env: {e}")
+        
         if not api_key:
             return {
                 "status": "error",
@@ -307,26 +324,57 @@ class GenerateImage(Tool):
             if size not in ["1024x1024", "1792x1024", "1024x1792", "auto"]:
                 payload["size"] = "1024x1024"  # Fallback to square
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, json=payload, timeout=120) as response:
-                if response.status != 200:
-                    error_data = await response.json()
+        PrintStyle(font_color="cyan").print(
+            f"[Image Gen] OpenAI request: model={model}, size={payload.get('size')}, quality={payload.get('quality')}"
+        )
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload, timeout=120) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        PrintStyle(font_color="red").print(
+                            f"[Image Gen] OpenAI error {response.status}: {error_text[:200]}"
+                        )
+                        try:
+                            error_data = await response.json()
+                            error_msg = error_data.get("error", {}).get("message", f"HTTP {response.status}")
+                        except:
+                            error_msg = error_text[:200]
+                        return {
+                            "status": "error",
+                            "provider": "openai",
+                            "error": error_msg
+                        }
+                    
+                    data = await response.json()
+                    images = [img.get("url") or img.get("b64_json") for img in data.get("data", [])]
+                    
+                    PrintStyle(font_color="green").print(
+                        f"[Image Gen] OpenAI success: {len(images)} image(s) generated"
+                    )
+                    
                     return {
-                        "status": "error",
+                        "status": "success",
                         "provider": "openai",
-                        "error": error_data.get("error", {}).get("message", f"HTTP {response.status}")
+                        "model": model,
+                        "images": images,
+                        "revised_prompt": data.get("data", [{}])[0].get("revised_prompt")
                     }
-                
-                data = await response.json()
-                images = [img.get("url") or img.get("b64_json") for img in data.get("data", [])]
-                
-                return {
-                    "status": "success",
-                    "provider": "openai",
-                    "model": model,
-                    "images": images,
-                    "revised_prompt": data.get("data", [{}])[0].get("revised_prompt")
-                }
+        except aiohttp.ClientError as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] OpenAI connection error: {e}")
+            return {
+                "status": "error",
+                "provider": "openai",
+                "error": f"Connection error: {str(e)}"
+            }
+        except Exception as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] OpenAI unexpected error: {e}")
+            return {
+                "status": "error",
+                "provider": "openai",
+                "error": str(e)
+            }
 
     async def _generate_google(
         self,
