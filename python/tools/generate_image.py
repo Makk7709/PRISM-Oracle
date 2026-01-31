@@ -320,9 +320,21 @@ class GenerateImage(Tool):
             }
             payload["quality"] = quality_map.get(quality, "high")
             
-            # GPT-Image models support more sizes
-            if size not in ["1024x1024", "1792x1024", "1024x1792", "auto"]:
-                payload["size"] = "1024x1024"  # Fallback to square
+            # gpt-image-1 ONLY supports: 1024x1024, 1024x1536, 1536x1024, auto
+            # Map DALL-E 3 sizes to closest gpt-image-1 equivalent
+            size_map = {
+                "1792x1024": "1536x1024",  # Wide landscape -> gpt-image landscape
+                "1024x1792": "1024x1536",  # Tall portrait -> gpt-image portrait
+                "1024x1024": "1024x1024",  # Square stays square
+                "auto": "auto",
+                "1536x1024": "1536x1024",  # Already valid
+                "1024x1536": "1024x1536",  # Already valid
+            }
+            mapped_size = size_map.get(size, "1024x1024")  # Default to square
+            payload["size"] = mapped_size
+            PrintStyle(font_color="cyan").print(
+                f"[Image Gen] Size mapped: {size} -> {mapped_size}"
+            )
         
         PrintStyle(font_color="cyan").print(
             f"[Image Gen] OpenAI request: model={model}, size={payload.get('size')}, quality={payload.get('quality')}"
