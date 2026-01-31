@@ -9,8 +9,8 @@ from python.api import get_work_dir_files
 class DeleteWorkDirFile(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         file_path = input.get("path", "")
-        if not file_path.startswith("/"):
-            file_path = f"/{file_path}"
+        # Strip leading "/" to treat as relative path within project
+        file_path = file_path.lstrip("/")
 
         current_path = input.get("currentPath", "")
 
