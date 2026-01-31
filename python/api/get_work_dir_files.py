@@ -7,6 +7,11 @@ class GetWorkDirFiles(ApiHandler):
     @classmethod
     def get_methods(cls):
         return ["GET"]
+    
+    @classmethod
+    def requires_csrf(cls) -> bool:
+        # Read-only file listing, no CSRF needed
+        return False
 
     async def process(self, input: dict, request: Request) -> dict | Response:
         current_path = request.args.get("path", "")
