@@ -3,15 +3,16 @@ import { fetchApi } from "/js/api.js";
 
 /**
  * Image Gallery Store
- * Read-only gallery for viewing generated images
- * No delete functionality for safety
+ * Gallery for viewing and managing generated images
  */
 const model = {
   // State
   isLoading: false,
+  isDeleting: false,
   images: [],
   error: null,
   selectedImage: null,
+  confirmDelete: null, // Image pending deletion confirmation
   
   // Lifecycle
   init() {
@@ -113,6 +114,58 @@ const model = {
     document.body.removeChild(link);
   },
 
+  // Show delete confirmation
+  showDeleteConfirm(image, event) {
+    if (event) {
+      event.stopPropagation(); // Prevent opening preview
+    }
+    this.confirmDelete = image;
+  },
+
+  // Cancel delete
+  cancelDelete() {
+    this.confirmDelete = null;
+  },
+
+  // Delete image
+  async deleteImage(image) {
+    if (!image) return;
+    
+    this.isDeleting = true;
+    this.error = null;
+    
+    try {
+      const response = await fetchApi("/delete_work_dir_file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: image.path,
+          currentPath: "tmp/generated_images"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Impossible de supprimer l'image");
+      }
+
+      // Remove from local list
+      this.images = this.images.filter(img => img.name !== image.name);
+      
+      // Close preview if deleting the selected image
+      if (this.selectedImage?.name === image.name) {
+        this.selectedImage = null;
+      }
+      
+      this.confirmDelete = null;
+      
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      this.error = "Impossible de supprimer l'image";
+    } finally {
+      this.isDeleting = false;
+    }
+  },
+
   // Format file size
   formatSize(bytes) {
     if (!bytes) return '';
@@ -146,9 +199,11 @@ const model = {
   // Cleanup
   destroy() {
     this.isLoading = false;
+    this.isDeleting = false;
     this.images = [];
     this.error = null;
     this.selectedImage = null;
+    this.confirmDelete = null;
   }
 };
 
