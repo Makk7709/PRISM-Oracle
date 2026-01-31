@@ -63,6 +63,9 @@ STRATEGIC_PATTERNS = {
         r"tarification",
         r"stratégie\s+de\s+prix",
         r"grille\s+tarifaire",
+        r"fixer\s+le\s+(?:prix|tarif)",
+        r"politique\s+de\s+prix",
+        r"modèle\s+tarifaire",
     ],
     "go_to_market": [
         r"go\s*-?\s*to\s*-?\s*market",
@@ -164,22 +167,73 @@ def detect_strategic_document(query: str) -> StrategicDetection:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def count_sources(text: str) -> int:
-    """Count source indicators in text."""
-    patterns = [
+    """
+    Count source indicators in text.
+    
+    Counts multiple types of source references:
+    - Reference markers [REF-XX], [S-XX]
+    - Institutional sources (Eurostat, INSEE, etc.)
+    - Year citations (2024)
+    - URLs
+    """
+    count = 0
+    
+    # Reference markers
+    ref_patterns = [
         r"\[REF-\d+\]",
         r"\[S\d+\]",
         r"Source\s*:\s*\S+",
-        r"Eurostat|Gartner|McKinsey|Forrester|IDC|Statista|INSEE",
-        r"\(20\d{2}\)",  # Year citations
-        r"https?://\S+",  # URLs
     ]
-    
-    count = 0
-    for pattern in patterns:
+    for pattern in ref_patterns:
         matches = re.findall(pattern, text, re.IGNORECASE)
         count += len(matches)
     
+    # Institutional sources (EU + major analysts)
+    institutional = [
+        r"Eurostat",
+        r"INSEE",
+        r"Bpifrance",
+        r"Commission\s*européenne",
+        r"EUR-Lex",
+        r"Syntec",
+        r"IDC",
+        r"Gartner",
+        r"McKinsey",
+        r"Forrester",
+        r"Statista",
+    ]
+    for pattern in institutional:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        count += len(matches)
+    
+    # Year citations (20XX)
+    year_pattern = r"\(20\d{2}\)"
+    matches = re.findall(year_pattern, text)
+    count += len(matches)
+    
+    # URLs (all valid URLs count)
+    url_pattern = r"https?://[^\s\)]+"
+    urls = re.findall(url_pattern, text, re.IGNORECASE)
+    count += len(urls)
+    
     return count
+
+
+def extract_references(text: str) -> List[str]:
+    """Extract all references from text."""
+    refs = []
+    
+    # Extract [REF-XX] references
+    ref_pattern = r"\[REF-\d+\][^\[\n]*(?:\n[^\[\n]*)*"
+    matches = re.findall(ref_pattern, text)
+    refs.extend(matches)
+    
+    # Extract URLs with context
+    url_pattern = r"(?:https?://[^\s]+)"
+    urls = re.findall(url_pattern, text)
+    refs.extend(urls)
+    
+    return refs
 
 
 def validate_strategic_content(
@@ -243,7 +297,7 @@ def get_agent_prompt(
     - The user query
     - The document type context
     - Previous agent responses (for synthesis)
-    - Strict sourcing requirements
+    - Strict sourcing requirements with EU-specific sources
     """
     context = ""
     if previous_responses:
@@ -251,19 +305,55 @@ def get_agent_prompt(
         for resp in previous_responses:
             context += f"\n### {resp.agent_name} ({resp.profile}):\n{resp.response[:500]}...\n"
     
-    base_requirements = """
-## Exigences STRICTES
+    # EU-specific sources list
+    eu_sources = """
+## 📚 SOURCES EUROPÉENNES OBLIGATOIRES
 
-1. **Sourcing obligatoire** — Chaque chiffre/affirmation doit citer sa source:
-   - Format: [REF-XX] avec liste des sources en fin
-   - Sources acceptées: Eurostat, INSEE, Gartner, McKinsey, Statista, rapports publics
-   - PAS d'invention de chiffres sans source
+Tu dois citer EXCLUSIVEMENT des sources européennes vérifiables:
 
-2. **Hypothèses explicites** — Toute hypothèse doit être clairement marquée:
-   - "Hypothèse: [description]"
+### Statistiques officielles
+- **Eurostat** — https://ec.europa.eu/eurostat/ — ICT, entreprises, économie numérique
+- **INSEE** — https://www.insee.fr/ — Statistiques France
+- **Bpifrance Le Lab** — https://lelab.bpifrance.fr/ — Études PME/ETI
+
+### Réglementation
+- **EUR-Lex** — https://eur-lex.europa.eu/ — AI Act, RGPD, législation EU
+- **Commission européenne** — https://ec.europa.eu/ — Rapports officiels
+
+### Marché & Industrie
+- **IDC Europe** — https://www.idc.com/eu — Marché IT européen
+- **Syntec Numérique** — https://syntec-numerique.fr/ — Marché logiciel France
+- **Gartner** — Rapports européens uniquement
+
+### Format de citation OBLIGATOIRE
+[REF-01] Nom source, "Titre document", année, URL
+
+Exemple:
+[REF-01] Eurostat, "ICT usage in enterprises 2024", 2024, https://ec.europa.eu/eurostat/...
+"""
+
+    base_requirements = f"""
+{eu_sources}
+
+## Exigences STRICTES KOREV Evidence
+
+1. **Sourcing obligatoire** — CHAQUE chiffre doit avoir [REF-XX]:
+   - Minimum 3 sources différentes
+   - Sources EU uniquement (pas McKinsey US, pas Statista global)
+   - PAS d'invention — Si pas de source, écrire "⚠️ NON VÉRIFIÉ"
+
+2. **Hypothèses explicites** — TOUTE estimation doit être marquée:
+   - "**Hypothèse H-XX**: [description]"
+   - Base de calcul
    - Impact si hypothèse fausse
 
-3. **Alternatives** — Au moins 2 alternatives avec raison d'élimination
+3. **Alternatives** — AU MOINS 2 alternatives analysées:
+   - Option A vs Option B
+   - Raison de rejet de chaque alternative
+
+4. **Si donnée manquante** — NE PAS inventer:
+   - Marquer: "⚠️ FAIL_CLOSED: Donnée requise non disponible"
+   - Lister ce qu'il faudrait rechercher
 
 """
     
@@ -417,18 +507,55 @@ async def call_agent(
 ) -> AgentResponse:
     """
     Call a specialized agent and capture response.
+    
+    Uses full agent delegation for proper specialized responses.
     """
     start_time = time.time()
     
     try:
-        # Use the agent's utility model for specialized calls
-        response = await agent.call_utility_model(
-            system=f"Tu es un agent spécialisé '{profile}' dans KOREV Evidence. "
-                   f"Tu dois fournir une analyse SOURCÉE et VÉRIFIABLE. "
-                   f"Corrélation: {correlation_id}",
+        # Import required modules
+        from initialize import initialize_agent
+        from agent import UserMessage
+        
+        # SYSTEM PROMPT forcing sourcing
+        system_prompt = f"""Tu es un agent spécialisé '{profile}' dans KOREV Evidence.
+
+## RÈGLES ABSOLUES
+
+1. **SOURCING OBLIGATOIRE** — Chaque chiffre/affirmation doit avoir une source:
+   - Format: [REF-XX] avec liste des sources en fin
+   - Sources EU acceptées: Eurostat, INSEE, Bpifrance, Commission EU, Gartner, IDC
+   - JAMAIS d'invention de chiffres
+
+2. **FORMAT DE CITATION**
+   - [REF-01] Eurostat, "ICT usage in enterprises 2024", https://ec.europa.eu/eurostat/...
+   - [REF-02] INSEE, "Entreprises en France 2024", https://insee.fr/...
+
+3. **SI DONNÉE MANQUANTE**
+   - Marquer explicitement: "⚠️ DONNÉE NON VÉRIFIÉE — Source requise"
+   - Ne PAS inventer
+
+Correlation ID: {correlation_id}"""
+
+        # Create a subordinate agent with the specialized profile
+        subordinate = initialize_agent(
+            agent_name=f"strategic-{profile}",
+            agent_config=agent.config,
+            context=agent.context,
+        )
+        
+        # Set the agent profile for specialized behavior
+        subordinate.set_data("_specialized_profile", profile)
+        
+        # Call the agent with the enhanced prompt
+        response = await subordinate.call_utility_model(
+            system=system_prompt,
             message=prompt,
             background=False,
         )
+        
+        # Clean up
+        del subordinate
         
         duration_ms = int((time.time() - start_time) * 1000)
         sources = count_sources(response)
@@ -450,6 +577,8 @@ async def call_agent(
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{correlation_id}] Agent {profile} failed: {e}")
+        import traceback
+        traceback.print_exc()
         
         return AgentResponse(
             agent_name=f"Evidence-{profile}",
@@ -572,6 +701,8 @@ def consolidate_responses(
 ) -> str:
     """
     Consolidate agent responses into a coherent document.
+    
+    Adds Decision Governance block and extracts all references.
     """
     doc_type_labels = {
         "market_study": "Étude de Marché",
@@ -581,6 +712,14 @@ def consolidate_responses(
     }
     
     label = doc_type_labels.get(document_type, document_type)
+    
+    # Count total sources
+    total_sources = sum(r.sources_count for r in responses if r.success)
+    successful_agents = sum(1 for r in responses if r.success)
+    
+    # Determine validation status
+    min_required = MIN_SOURCES.get(document_type, 3)
+    validation_status = "✅ APPROVED" if total_sources >= min_required else "⚠️ PARTIAL"
     
     # Build consolidated document
     sections = []
@@ -593,7 +732,12 @@ def consolidate_responses(
 |-----------|--------|
 | **Type** | `{document_type}` |
 | **Mode** | `MULTI_AGENT_CONSENSUS` |
-| **Agents consultés** | {len(responses)} |
+| **Criticité** | `HIGH` |
+| **Agents sollicités** | {len(responses)} |
+| **Agents ayant répondu** | {successful_agents} |
+| **Sources totales** | {total_sources} |
+| **Sources requises** | {min_required} |
+| **Statut validation** | {validation_status} |
 | **Correlation ID** | `{correlation_id}` |
 
 ---
