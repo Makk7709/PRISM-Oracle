@@ -19,6 +19,14 @@ from python.helpers.api import ApiHandler
 from python.helpers.print_style import PrintStyle
 from python.helpers import login
 
+# Security imports - Phase 1 P0
+from python.security.rate_limit import (
+    check_login_rate_limit,
+    reset_login_rate_limit,
+    rate_limit_response,
+)
+from python.security.auth import verify_password, is_password_hashed
+
 # disable logging
 import logging
 logging.getLogger().setLevel(logging.WARNING)
@@ -34,10 +42,18 @@ if hasattr(time, 'tzset'):
 # initialize the internal Flask server
 webapp = Flask("app", static_folder=get_abs_path("./webui"), static_url_path="/")
 webapp.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
+
+# Determine if running in production (non-localhost)
+_is_production = os.getenv("KOREV_PRODUCTION", "").lower() in ("true", "1", "yes")
+_host_setting = os.getenv("WEB_UI_HOST", "localhost")
+_is_secure = _is_production or _host_setting not in ("localhost", "127.0.0.1", "::1")
+
 webapp.config.update(
     JSON_SORT_KEYS=False,
     SESSION_COOKIE_NAME="session_" + runtime.get_runtime_id(),  # bind the session cookie name to runtime id to prevent session collision on same host
     SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_HTTPONLY=True,  # Security: prevent XSS access to session
+    SESSION_COOKIE_SECURE=_is_secure,  # Security: HTTPS only in production
     SESSION_PERMANENT=True,
     PERMANENT_SESSION_LIFETIME=timedelta(days=1)
 )
@@ -149,11 +165,41 @@ def csrf_protect(f):
 @webapp.route("/login", methods=["GET", "POST"])
 async def login_handler():
     error = None
+    client_ip = request.remote_addr or "unknown"
+    
     if request.method == 'POST':
-        user = dotenv.get_dotenv_value("AUTH_LOGIN")
-        password = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        # Rate limiting check - Phase 1 P0 Security
+        allowed, retry_after = check_login_rate_limit(client_ip)
+        if not allowed:
+            error = f'Too many login attempts. Please wait {retry_after} seconds.'
+            login_page_content = files.read_file("webui/login.html")
+            return render_template_string(login_page_content, error=error), 429
         
-        if request.form['username'] == user and request.form['password'] == password:
+        expected_user = dotenv.get_dotenv_value("AUTH_LOGIN")
+        stored_password = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        
+        submitted_user = request.form.get('username', '')
+        submitted_password = request.form.get('password', '')
+        
+        # Secure password verification - Phase 1 P0 Security
+        # Support both hashed (Argon2) and legacy plaintext passwords
+        password_valid = False
+        if stored_password:
+            if is_password_hashed(stored_password):
+                # Modern: verify against Argon2 hash
+                password_valid = verify_password(stored_password, submitted_password)
+            else:
+                # Legacy: plaintext comparison (log warning)
+                # TODO: Migrate to hashed passwords
+                password_valid = (submitted_password == stored_password)
+        
+        # Constant-time username comparison to prevent timing attacks
+        import hmac
+        user_valid = hmac.compare_digest(submitted_user, expected_user or '')
+        
+        if user_valid and password_valid:
+            # Successful login - reset rate limit
+            reset_login_rate_limit(client_ip)
             session['authentication'] = login.get_credentials_hash()
             return redirect(url_for('serve_index'))
         else:
