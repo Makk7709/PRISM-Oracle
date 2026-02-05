@@ -1,0 +1,198 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY CI GATES — MANDATORY FOR MERGE TO MAIN
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This workflow runs on every PR and push to main/develop.
+# ALL TESTS MUST PASS before merge is allowed.
+#
+# Jobs:
+#   1. security-gate: All security tests (unit + integration)
+#   2. rate-limit-coverage: Coverage gate (95% minimum)
+#   3. redis-multi-worker: Multi-worker proof with Redis service
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Security CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'python/security/**'
+      - 'tests/security/**'
+      - 'run_ui.py'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'python/security/**'
+      - 'tests/security/**'
+      - 'run_ui.py'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 1. SECURITY GATE — All security tests
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  security-gate:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      
+      - name: Run Security Tests
+        env:
+          KOREV_PRODUCTION: 'false'
+          KOREV_RATE_LIMIT_BACKEND: 'memory'
+        run: |
+          pytest tests/security/ -q --tb=short
+      
+      - name: Run E2E Login Rate Limit Tests
+        env:
+          AUTH_LOGIN: 'testuser'
+          AUTH_PASSWORD: 'testpass'
+          KOREV_PRODUCTION: 'false'
+        run: |
+          pytest tests/security/test_login_rate_limit_e2e.py -v --tb=short
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 2. RATE LIMIT COVERAGE — 95% minimum enforced
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  rate-limit-coverage:
+    name: Rate Limit Coverage (95% min)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      
+      - name: Run Coverage Gate
+        run: |
+          pytest tests/security/test_rate_limit*.py tests/security/test_ip.py \
+            --cov=python/security/rate_limit \
+            --cov=python/security/ip \
+            --cov-fail-under=95 \
+            --cov-report=term-missing
+      
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: .coverage
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 3. REDIS MULTI-WORKER — Proves shared state across workers
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  redis-multi-worker:
+    name: Redis Multi-Worker Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio redis
+      
+      - name: Verify Redis Connection
+        run: |
+          python -c "
+          import redis
+          r = redis.from_url('redis://localhost:6379/0')
+          assert r.ping(), 'Redis not available'
+          print('Redis connection verified')
+          "
+      
+      - name: Run Redis Backend Tests
+        env:
+          KOREV_REDIS_URL: 'redis://localhost:6379/0'
+          KOREV_RATE_LIMIT_BACKEND: 'redis'
+        run: |
+          pytest tests/security/test_rate_limit_redis.py -v --tb=short
+      
+      - name: Verify Multi-Worker Shared State
+        env:
+          KOREV_REDIS_URL: 'redis://localhost:6379/0'
+        run: |
+          # Critical test: proves rate limiting works across processes
+          python -c "
+          from python.security.rate_limit.redis_backend import RedisBackend, is_redis_available
+          from python.security.rate_limit.interfaces import RateLimitConfig
+          
+          assert is_redis_available(), 'Redis must be available'
+          
+          config = RateLimitConfig(name='test', max_requests=3, window_seconds=60)
+          
+          # Simulate two workers
+          worker1 = RedisBackend(key_prefix='ci_test:')
+          worker2 = RedisBackend(key_prefix='ci_test:')
+          
+          key = 'login:test_ip'
+          
+          # Worker 1: 2 requests
+          worker1.check(key, config)
+          worker1.check(key, config)
+          
+          # Worker 2: 1 request (shared state!)
+          result = worker2.check(key, config)
+          assert result.allowed, 'Third request should be allowed'
+          
+          # Worker 1: 1 more = at limit
+          result = worker1.check(key, config)
+          assert not result.allowed, 'Fourth request should be blocked (shared limit)'
+          
+          # Cleanup
+          worker1._get_client().delete(worker1._make_key(key))
+          
+          print('MULTI-WORKER PROOF: Rate limit shared across workers ✓')
+          "

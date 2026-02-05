@@ -3,7 +3,8 @@ KOREV Evidence Security Module - Phase 1 P0
 
 This module provides security primitives for:
 - Password hashing (Argon2)
-- Rate limiting
+- Rate limiting (Memory/Redis backends)
+- IP extraction (proxy-aware)
 - Path validation (traversal protection)
 - File upload validation
 - Shell command sanitization
@@ -88,6 +89,19 @@ from python.security.shell_safety import (
     build_safe_command,
     COMMAND_ALLOWLIST,
 )
+from python.security.ip import (
+    get_client_ip,
+    is_valid_ip,
+    is_behind_proxy,
+)
+from python.security.rate_limit import (
+    check_login_rate_limit,
+    check_api_rate_limit,
+    reset_login_rate_limit,
+    rate_limit_response,
+    get_limiter,
+    RateLimiter,
+)
 
 __all__ = [
     # Auth
@@ -106,4 +120,15 @@ __all__ = [
     "validate_command",
     "build_safe_command",
     "COMMAND_ALLOWLIST",
+    # IP
+    "get_client_ip",
+    "is_valid_ip",
+    "is_behind_proxy",
+    # Rate Limit
+    "check_login_rate_limit",
+    "check_api_rate_limit",
+    "reset_login_rate_limit",
+    "rate_limit_response",
+    "get_limiter",
+    "RateLimiter",
 ]

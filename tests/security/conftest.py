@@ -81,21 +81,15 @@ def mock_env_vars():
 @pytest.fixture
 def clean_rate_limiters():
     """Reset rate limiters before and after test."""
-    from python.security import rate_limit
+    from python.security.rate_limit.limiter import reset_limiter
     
-    # Store original limiters
-    orig_login = rate_limit._login_limiter
-    orig_api = rate_limit._api_limiter
-    
-    # Reset to fresh limiters
-    rate_limit._login_limiter = None
-    rate_limit._api_limiter = None
+    # Reset to fresh limiter
+    reset_limiter()
     
     yield
     
-    # Restore
-    rate_limit._login_limiter = orig_login
-    rate_limit._api_limiter = orig_api
+    # Reset again after test
+    reset_limiter()
 
 
 # Fixtures for Flask testing

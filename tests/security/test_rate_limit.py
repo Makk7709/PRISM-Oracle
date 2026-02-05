@@ -1,249 +1,171 @@
 """
-Rate Limiting Tests - Brute Force Protection
+Rate Limiting Tests - Backward Compatibility
 
-Tests verify:
-1. Rate limits are enforced per IP
-2. Limits are configurable
-3. Backoff increases on repeated violations
-4. Reset works after successful auth
+These tests verify the backward-compatible API still works correctly
+after the refactoring to the new pluggable backend system.
 """
 
-import time
 import pytest
 
 from python.security.rate_limit import (
-    RateLimiter,
     check_login_rate_limit,
     check_api_rate_limit,
     reset_login_rate_limit,
-    get_login_limiter,
     rate_limit_response,
-    RATE_LIMIT_LOGIN_MAX,
-    RATE_LIMIT_LOGIN_WINDOW,
+    get_login_limiter,
+    get_api_limiter,
 )
+from python.security.rate_limit.limiter import reset_limiter
 
 
-class TestRateLimiter:
-    """Tests for RateLimiter class."""
+@pytest.fixture(autouse=True)
+def clean_limiter():
+    """Reset limiter before and after each test."""
+    reset_limiter()
+    yield
+    reset_limiter()
+
+
+class TestBackwardCompatibleAPI:
+    """Tests for backward-compatible API functions."""
     
-    def test_first_request_allowed(self):
-        """First request is always allowed."""
-        limiter = RateLimiter(max_requests=5, window_seconds=60)
+    def test_check_login_rate_limit_returns_tuple(self):
+        """check_login_rate_limit returns (allowed, retry_after) tuple."""
+        allowed, retry_after = check_login_rate_limit("192.168.1.1")
         
-        allowed, retry_after = limiter.is_allowed("192.168.1.1")
-        
+        assert isinstance(allowed, bool)
         assert allowed is True
         assert retry_after is None
     
-    def test_requests_under_limit_allowed(self):
-        """Requests under the limit are allowed."""
-        limiter = RateLimiter(max_requests=5, window_seconds=60)
+    def test_check_login_rate_limit_blocks_after_limit(self):
+        """check_login_rate_limit blocks after exceeding limit."""
         ip = "192.168.1.2"
         
+        # Default limit is 5 requests per minute
         for _ in range(5):
-            allowed, _ = limiter.is_allowed(ip)
+            allowed, _ = check_login_rate_limit(ip)
             assert allowed is True
-    
-    def test_requests_over_limit_blocked(self):
-        """Requests over the limit are blocked."""
-        limiter = RateLimiter(max_requests=3, window_seconds=60)
-        ip = "192.168.1.3"
         
-        # Use up the limit
-        for _ in range(3):
-            limiter.is_allowed(ip)
-        
-        # Next request should be blocked
-        allowed, retry_after = limiter.is_allowed(ip)
-        
+        # 6th request should be blocked
+        allowed, retry_after = check_login_rate_limit(ip)
         assert allowed is False
         assert retry_after is not None
         assert retry_after > 0
     
-    def test_different_ips_separate_limits(self):
-        """Different IPs have separate limits."""
-        limiter = RateLimiter(max_requests=2, window_seconds=60)
+    def test_check_api_rate_limit_returns_tuple(self):
+        """check_api_rate_limit returns (allowed, retry_after) tuple."""
+        allowed, retry_after = check_api_rate_limit("192.168.1.3")
         
-        # Exhaust limit for IP1
-        limiter.is_allowed("192.168.1.10")
-        limiter.is_allowed("192.168.1.10")
-        allowed1, _ = limiter.is_allowed("192.168.1.10")
-        
-        # IP2 should still be allowed
-        allowed2, _ = limiter.is_allowed("192.168.1.11")
-        
-        assert allowed1 is False
-        assert allowed2 is True
-    
-    def test_window_expires_and_resets(self):
-        """Limit resets after window expires."""
-        # Short window for testing
-        limiter = RateLimiter(max_requests=2, window_seconds=1, enable_backoff=False)
-        ip = "192.168.1.20"
-        
-        # Exhaust limit
-        limiter.is_allowed(ip)
-        limiter.is_allowed(ip)
-        allowed1, _ = limiter.is_allowed(ip)
-        assert allowed1 is False
-        
-        # Wait for window to expire (with buffer)
-        time.sleep(1.5)
-        
-        # Should be allowed again
-        allowed2, _ = limiter.is_allowed(ip)
-        assert allowed2 is True
-    
-    def test_reset_clears_limit(self):
-        """reset() clears the rate limit for a key."""
-        limiter = RateLimiter(max_requests=2, window_seconds=60)
-        ip = "192.168.1.30"
-        
-        # Exhaust limit
-        limiter.is_allowed(ip)
-        limiter.is_allowed(ip)
-        allowed1, _ = limiter.is_allowed(ip)
-        assert allowed1 is False
-        
-        # Reset
-        limiter.reset(ip)
-        
-        # Should be allowed again
-        allowed2, _ = limiter.is_allowed(ip)
-        assert allowed2 is True
-    
-    def test_get_remaining_returns_correct_count(self):
-        """get_remaining returns correct remaining requests."""
-        limiter = RateLimiter(max_requests=5, window_seconds=60)
-        ip = "192.168.1.40"
-        
-        assert limiter.get_remaining(ip) == 5
-        
-        limiter.is_allowed(ip)
-        assert limiter.get_remaining(ip) == 4
-        
-        limiter.is_allowed(ip)
-        limiter.is_allowed(ip)
-        assert limiter.get_remaining(ip) == 2
-
-
-class TestBackoff:
-    """Tests for backoff functionality."""
-    
-    def test_backoff_increases_on_violations(self):
-        """Backoff window increases on repeated violations."""
-        limiter = RateLimiter(max_requests=1, window_seconds=10, enable_backoff=True)
-        ip = "192.168.1.50"
-        
-        # First request - allowed
-        limiter.is_allowed(ip)
-        
-        # Second request - blocked, first violation
-        _, retry1 = limiter.is_allowed(ip)
-        
-        # Wait for retry, then violate again
-        time.sleep(0.1)
-        limiter._entries[ip].blocked_until = 0  # Simulate retry window passed
-        limiter._entries[ip].window_start = time.time() - 5  # Reset window
-        limiter._entries[ip].count = 0
-        
-        limiter.is_allowed(ip)  # Use the one request
-        _, retry2 = limiter.is_allowed(ip)  # Second violation
-        
-        # Second violation should have longer retry (backoff)
-        assert retry2 >= retry1
-    
-    def test_backoff_can_be_disabled(self):
-        """Backoff can be disabled."""
-        limiter = RateLimiter(max_requests=1, window_seconds=10, enable_backoff=False)
-        ip = "192.168.1.60"
-        
-        limiter.is_allowed(ip)
-        _, retry1 = limiter.is_allowed(ip)
-        
-        # With backoff disabled, retry should be consistent
-        assert retry1 <= 11  # Within original window
-
-
-class TestLoginRateLimiting:
-    """Tests for login-specific rate limiting."""
-    
-    def test_login_rate_limit_uses_configured_values(self):
-        """Login limiter uses configured max and window."""
-        limiter = get_login_limiter()
-        
-        assert limiter.max_requests == RATE_LIMIT_LOGIN_MAX
-        assert limiter.window_seconds == RATE_LIMIT_LOGIN_WINDOW
-    
-    def test_check_login_rate_limit_function(self):
-        """check_login_rate_limit function works."""
-        # Reset first to ensure clean state
-        reset_login_rate_limit("test_ip_login")
-        
-        allowed, _ = check_login_rate_limit("test_ip_login")
+        assert isinstance(allowed, bool)
         assert allowed is True
     
-    def test_reset_login_rate_limit_function(self):
-        """reset_login_rate_limit clears limit."""
-        ip = "test_ip_reset"
+    def test_reset_login_rate_limit_clears_limit(self):
+        """reset_login_rate_limit clears the rate limit."""
+        ip = "192.168.1.4"
         
         # Exhaust limit
-        limiter = get_login_limiter()
-        for _ in range(RATE_LIMIT_LOGIN_MAX + 1):
-            limiter.is_allowed(ip)
+        for _ in range(5):
+            check_login_rate_limit(ip)
         
-        # Verify blocked
-        allowed1, _ = check_login_rate_limit(ip)
-        assert allowed1 is False
+        allowed, _ = check_login_rate_limit(ip)
+        assert allowed is False
         
         # Reset
         reset_login_rate_limit(ip)
         
-        # Should be allowed
-        allowed2, _ = check_login_rate_limit(ip)
-        assert allowed2 is True
-
-
-class TestAPIRateLimiting:
-    """Tests for API rate limiting."""
-    
-    def test_api_rate_limit_function(self):
-        """check_api_rate_limit function works."""
-        allowed, _ = check_api_rate_limit("api_test_ip")
+        # Should be allowed again
+        allowed, _ = check_login_rate_limit(ip)
         assert allowed is True
-
-
-class TestRateLimitResponse:
-    """Tests for rate limit response generation."""
     
-    def test_response_format(self):
+    def test_rate_limit_response_format(self):
         """rate_limit_response returns correct format."""
         body, status, headers = rate_limit_response(60)
         
         assert status == 429
         assert "Retry-After" in headers
         assert headers["Retry-After"] == "60"
-        assert "60" in body or "seconds" in body.lower()
+        assert "60" in body
+    
+    def test_different_ips_have_separate_limits(self):
+        """Different IPs have separate rate limits."""
+        # Exhaust limit for IP1
+        for _ in range(6):
+            check_login_rate_limit("192.168.1.10")
+        
+        ip1_allowed, _ = check_login_rate_limit("192.168.1.10")
+        assert ip1_allowed is False
+        
+        # IP2 should still be allowed
+        ip2_allowed, _ = check_login_rate_limit("192.168.1.11")
+        assert ip2_allowed is True
 
 
-class TestIntegration:
-    """Integration tests for rate limiting in Flask app."""
+class TestLegacyLimiterAPI:
+    """Tests for legacy limiter class compatibility."""
     
-    @pytest.mark.integration
-    def test_login_endpoint_rate_limited(self):
-        """
-        Verify /login endpoint is rate limited.
+    def test_get_login_limiter_returns_object(self):
+        """get_login_limiter returns a limiter-like object."""
+        limiter = get_login_limiter()
         
-        This test validates that run_ui.py applies rate limiting.
-        """
-        # This will be implemented after we patch run_ui.py
-        pytest.skip("Pending run_ui.py modification")
+        assert limiter is not None
+        assert hasattr(limiter, 'is_allowed')
+        assert hasattr(limiter, 'reset')
     
-    @pytest.mark.integration
-    def test_api_endpoint_rate_limited(self):
-        """
-        Verify API endpoints are rate limited.
+    def test_get_api_limiter_returns_object(self):
+        """get_api_limiter returns a limiter-like object."""
+        limiter = get_api_limiter()
         
-        This test validates that API handlers apply rate limiting.
-        """
-        pytest.skip("Pending API handler modification")
+        assert limiter is not None
+        assert hasattr(limiter, 'is_allowed')
+        assert hasattr(limiter, 'reset')
+    
+    def test_legacy_limiter_is_allowed(self):
+        """Legacy limiter is_allowed method works."""
+        limiter = get_login_limiter()
+        
+        allowed, retry_after = limiter.is_allowed("192.168.1.20")
+        
+        assert isinstance(allowed, bool)
+        assert allowed is True
+    
+    def test_legacy_limiter_reset(self):
+        """Legacy limiter reset method works."""
+        limiter = get_login_limiter()
+        ip = "192.168.1.21"
+        
+        # Exhaust limit
+        for _ in range(6):
+            limiter.is_allowed(ip)
+        
+        allowed, _ = limiter.is_allowed(ip)
+        assert allowed is False
+        
+        # Reset
+        limiter.reset(ip)
+        
+        # Should be allowed
+        allowed, _ = limiter.is_allowed(ip)
+        assert allowed is True
+
+
+class TestRateLimitResponse:
+    """Tests for rate limit response generation."""
+    
+    def test_response_includes_retry_after_header(self):
+        """Response includes Retry-After header."""
+        body, status, headers = rate_limit_response(120)
+        
+        assert headers["Retry-After"] == "120"
+    
+    def test_response_body_contains_wait_time(self):
+        """Response body mentions wait time."""
+        body, status, headers = rate_limit_response(30)
+        
+        assert "30" in body
+        assert "seconds" in body.lower() or "try again" in body.lower()
+    
+    def test_response_status_is_429(self):
+        """Response status is 429 Too Many Requests."""
+        _, status, _ = rate_limit_response(60)
+        
+        assert status == 429

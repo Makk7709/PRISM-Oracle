@@ -1,5 +1,6 @@
 import asyncio
 from datetime import timedelta
+import hmac
 import os
 import secrets
 import hashlib
@@ -10,6 +11,7 @@ from functools import wraps
 import threading
 from flask import Flask, request, Response, session, redirect, url_for, render_template_string
 from werkzeug.wrappers.response import Response as BaseResponse
+from werkzeug.middleware.proxy_fix import ProxyFix
 import initialize
 from python.helpers import files, git, mcp_server, fasta2a_server
 from python.helpers.files import get_abs_path
@@ -24,8 +26,10 @@ from python.security.rate_limit import (
     check_login_rate_limit,
     reset_login_rate_limit,
     rate_limit_response,
+    get_limiter,
 )
-from python.security.auth import verify_password, is_password_hashed
+from python.security.auth import verify_password, is_password_hashed, hash_password
+from python.security.ip import get_client_ip
 
 # disable logging
 import logging
@@ -43,10 +47,30 @@ if hasattr(time, 'tzset'):
 webapp = Flask("app", static_folder=get_abs_path("./webui"), static_url_path="/")
 webapp.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
-# Determine if running in production (non-localhost)
+# ─────────────────────────────────────────────────────────────────────────────
+# Security Configuration - Phase 1 P0 Hardening
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Production mode detection
 _is_production = os.getenv("KOREV_PRODUCTION", "").lower() in ("true", "1", "yes")
-_host_setting = os.getenv("WEB_UI_HOST", "localhost")
-_is_secure = _is_production or _host_setting not in ("localhost", "127.0.0.1", "::1")
+
+# Secure cookies: explicit env var takes precedence, then infer from production mode
+# Use KOREV_SECURE_COOKIES=true when behind reverse proxy (Caddy/Nginx) with TLS termination
+_secure_cookies_env = os.getenv("KOREV_SECURE_COOKIES", "").lower()
+if _secure_cookies_env in ("true", "1", "yes"):
+    _is_secure = True
+elif _secure_cookies_env in ("false", "0", "no"):
+    _is_secure = False
+else:
+    # Auto-detect: secure in production, not secure on localhost
+    _host_setting = os.getenv("WEB_UI_HOST", "localhost")
+    _is_secure = _is_production or _host_setting not in ("localhost", "127.0.0.1", "::1")
+
+# Apply ProxyFix for proper IP detection behind reverse proxy (Caddy/Nginx)
+# This trusts X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host headers
+_proxy_fix_enabled = os.getenv("KOREV_BEHIND_PROXY", "").lower() in ("true", "1", "yes")
+if _proxy_fix_enabled or _is_production:
+    webapp.wsgi_app = ProxyFix(webapp.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore
 
 webapp.config.update(
     JSON_SORT_KEYS=False,
@@ -165,15 +189,28 @@ def csrf_protect(f):
 @webapp.route("/login", methods=["GET", "POST"])
 async def login_handler():
     error = None
-    client_ip = request.remote_addr or "unknown"
+    # Use proxy-aware IP extraction for rate limiting
+    client_ip = get_client_ip(request)
     
     if request.method == 'POST':
+        # ─────────────────────────────────────────────────────────────────
         # Rate limiting check - Phase 1 P0 Security
+        # ─────────────────────────────────────────────────────────────────
         allowed, retry_after = check_login_rate_limit(client_ip)
         if not allowed:
-            error = f'Too many login attempts. Please wait {retry_after} seconds.'
+            # Return proper 429 with Retry-After and X-RateLimit-* headers (RFC 6585)
+            body, status, response_headers = rate_limit_response(retry_after)
             login_page_content = files.read_file("webui/login.html")
-            return render_template_string(login_page_content, error=error), 429
+            error = f'Too many login attempts. Please wait {retry_after} seconds.'
+            response = Response(
+                render_template_string(login_page_content, error=error),
+                status=status,
+                mimetype='text/html'
+            )
+            # Add all rate limit headers
+            for header_name, header_value in response_headers.items():
+                response.headers[header_name] = header_value
+            return response
         
         expected_user = dotenv.get_dotenv_value("AUTH_LOGIN")
         stored_password = dotenv.get_dotenv_value("AUTH_PASSWORD")
@@ -181,26 +218,61 @@ async def login_handler():
         submitted_user = request.form.get('username', '')
         submitted_password = request.form.get('password', '')
         
+        # ─────────────────────────────────────────────────────────────────
         # Secure password verification - Phase 1 P0 Security
-        # Support both hashed (Argon2) and legacy plaintext passwords
+        # ─────────────────────────────────────────────────────────────────
         password_valid = False
+        password_needs_migration = False
+        
         if stored_password:
             if is_password_hashed(stored_password):
-                # Modern: verify against Argon2 hash
+                # Modern: verify against Argon2 hash (timing-safe)
                 password_valid = verify_password(stored_password, submitted_password)
             else:
-                # Legacy: plaintext comparison (log warning)
-                # TODO: Migrate to hashed passwords
-                password_valid = (submitted_password == stored_password)
+                # Legacy plaintext password handling
+                if _is_production:
+                    # SECURITY: In production, refuse plaintext passwords entirely
+                    # This is a fail-fast to force migration before deployment
+                    PrintStyle.error(
+                        "SECURITY ERROR: Plaintext password detected in production mode. "
+                        "Set AUTH_PASSWORD to an Argon2 hash or disable KOREV_PRODUCTION."
+                    )
+                    error = 'Server configuration error. Contact administrator.'
+                    login_page_content = files.read_file("webui/login.html")
+                    return render_template_string(login_page_content, error=error), 500
+                else:
+                    # Development mode: allow legacy with constant-time comparison
+                    # Use hmac.compare_digest for timing-safe comparison even on plaintext
+                    password_valid = hmac.compare_digest(
+                        submitted_password.encode('utf-8'),
+                        stored_password.encode('utf-8')
+                    )
+                    if password_valid:
+                        password_needs_migration = True
+                        PrintStyle.warning(
+                            "WARNING: Using plaintext password. "
+                            "Run: python -c \"from python.security.auth import hash_password; "
+                            f"print(hash_password('{stored_password}'))\" "
+                            "and update AUTH_PASSWORD in .env"
+                        )
         
         # Constant-time username comparison to prevent timing attacks
-        import hmac
-        user_valid = hmac.compare_digest(submitted_user, expected_user or '')
+        user_valid = hmac.compare_digest(
+            submitted_user.encode('utf-8'),
+            (expected_user or '').encode('utf-8')
+        )
         
         if user_valid and password_valid:
             # Successful login - reset rate limit
             reset_login_rate_limit(client_ip)
             session['authentication'] = login.get_credentials_hash()
+            
+            # Log migration reminder if needed
+            if password_needs_migration:
+                PrintStyle.warning(
+                    "REMINDER: Migrate to Argon2 password hash before production deployment."
+                )
+            
             return redirect(url_for('serve_index'))
         else:
             error = 'Invalid Credentials. Please try again.'
