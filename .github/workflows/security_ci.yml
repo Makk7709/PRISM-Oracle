@@ -153,12 +153,21 @@ jobs:
           print('Redis connection verified')
           "
       
-      - name: Run Redis Backend Tests
+      - name: Run Redis Backend Tests (NO SKIPS ALLOWED)
         env:
           KOREV_REDIS_URL: 'redis://localhost:6379/0'
           KOREV_RATE_LIMIT_BACKEND: 'redis'
         run: |
-          pytest tests/security/test_rate_limit_redis.py -v --tb=short
+          # Run tests and capture output
+          pytest tests/security/test_rate_limit_redis.py -v --tb=short 2>&1 | tee redis_test_output.txt
+          
+          # FAIL if any test was SKIPPED
+          if grep -q "SKIPPED" redis_test_output.txt; then
+            echo "❌ ERROR: Redis tests SKIPPED — not allowed in CI!"
+            exit 1
+          fi
+          
+          echo "✅ All Redis tests ran (no skips)"
       
       - name: Verify Multi-Worker Shared State
         env:

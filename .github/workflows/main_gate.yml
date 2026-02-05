@@ -136,19 +136,45 @@ jobs:
       
       - name: Verify Redis Available
         run: |
+          # Try both hostnames (localhost works on most runners, redis is the service name)
           python -c "
           import redis
-          r = redis.from_url('redis://localhost:6379/0')
-          assert r.ping(), 'Redis not available'
-          print('Redis OK')
+          import sys
+          
+          for url in ['redis://localhost:6379/0', 'redis://redis:6379/0']:
+              try:
+                  r = redis.from_url(url)
+                  if r.ping():
+                      print(f'Redis OK at {url}')
+                      # Export working URL for subsequent steps
+                      with open('$GITHUB_ENV', 'a') if '$GITHUB_ENV' else sys.stdout as f:
+                          pass  # env handled below
+                      sys.exit(0)
+              except Exception as e:
+                  print(f'Failed {url}: {e}')
+          
+          print('ERROR: Redis not available on any URL')
+          sys.exit(1)
           "
+          # Set env for subsequent steps (localhost is default, works in GHA)
+          echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
       
-      - name: Run Redis Backend Tests
+      - name: Run Redis Backend Tests (NO SKIPS ALLOWED)
         env:
           KOREV_REDIS_URL: 'redis://localhost:6379/0'
           KOREV_RATE_LIMIT_BACKEND: 'redis'
         run: |
-          pytest tests/security/test_rate_limit_redis.py -v --tb=short
+          # Run tests and capture output
+          pytest tests/security/test_rate_limit_redis.py -v --tb=short 2>&1 | tee redis_test_output.txt
+          
+          # FAIL if any test was SKIPPED (no silent bypass allowed)
+          if grep -q "SKIPPED" redis_test_output.txt; then
+            echo "❌ ERROR: Some Redis tests were SKIPPED — this is not allowed!"
+            echo "Redis tests must run, not skip. Check Redis connectivity."
+            exit 1
+          fi
+          
+          echo "✅ All Redis tests ran (no skips)"
       
       - name: Multi-Worker Shared State Proof
         env:
