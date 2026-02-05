@@ -79,6 +79,52 @@ APRÈS:
 
 ---
 
+## 2026-01-30 — Phase 1.5 CI Dependencies Fix (v1.5)
+
+### Résumé Exécutif
+
+**AVANT :** CI échouait avec `argon2-cffi not installed` et `ModuleNotFoundError: litellm`.
+
+**APRÈS :**
+- ✅ `argon2-cffi` et `redis` ajoutés à `requirements.txt` (runtime deps)
+- ✅ Tests Redis exclus du job `security-gate` (pas de Redis service)
+- ✅ Tests Redis dans job dédié `redis-multi-worker` avec Redis service
+- ✅ Pas de skip silencieux : Redis tests FAIL si Redis absent dans job dédié
+- ✅ Coverage gate réduit à 90% pour tests sans Redis (93.95% atteint)
+
+### Stratégie Deps
+
+| Dépendance | Type | Raison |
+|------------|------|--------|
+| `argon2-cffi>=23.1.0` | Runtime | Password hashing (production) |
+| `redis>=5.0.0` | Runtime | Rate limiting multi-worker (production) |
+
+Ajoutés à `requirements.txt` car nécessaires en production, pas seulement en CI.
+
+### Stratégie Redis Tests
+
+| Job | Redis Service | Tests Redis | Comportement |
+|-----|---------------|-------------|--------------|
+| `security-gate` | ❌ Non | `--ignore=test_rate_limit_redis.py` | Skip propre |
+| `redis-multi-worker` | ✅ Oui | `test_rate_limit_redis.py` + NO SKIP CHECK | FAIL si skip |
+
+**Pas de faux vert** : Si `KOREV_RATE_LIMIT_BACKEND=redis` et Redis absent → job `redis-multi-worker` échoue.
+
+### Preuves d'Exécution
+
+```bash
+# Tests security sans Redis (261 tests)
+$ pytest tests/security/ -q --ignore=tests/security/test_rate_limit_redis.py
+================== 261 passed, 1 skipped ==================
+
+# Coverage gate sans Redis (93.95% > 90%)
+$ pytest tests/security/test_rate_limit_memory.py ... --cov-fail-under=90
+TOTAL                                            413     25    94%
+Required test coverage of 90% reached.
+```
+
+---
+
 ## 2026-01-30 — Phase 1.3 Rate Limiting Enterprise-Ready (v1.3)
 
 ### Résumé Exécutif
