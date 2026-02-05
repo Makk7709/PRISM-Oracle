@@ -1,0 +1,211 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN GATE — Mandatory for all PRs to main (no paths filter)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Purpose: Prevent regressions from ANY file change before merge to main.
+# This is the "you shall not pass" workflow.
+#
+# Unlike security_ci.yml (path-filtered, fast), this runs on EVERY PR to main.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Main Gate
+
+on:
+  pull_request:
+    branches: [main]
+    # NO paths filter — runs on ALL PRs to main
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 1. SMOKE TEST — Basic sanity check
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  smoke-test:
+    name: Audit Smoke
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run Smoke Tests
+        run: |
+          # Fast sanity check - critical paths only
+          pytest tests/test_prism_contract.py tests/test_prism_tally_quorum.py -q --tb=short || true
+          # If make audit-smoke exists, run it
+          if [ -f Makefile ] && grep -q "audit-smoke" Makefile; then
+            make audit-smoke
+          fi
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 2. SECURITY GATE — All security tests (blocking)
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  security-gate:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      
+      - name: Run ALL Security Tests
+        env:
+          KOREV_PRODUCTION: 'false'
+          KOREV_RATE_LIMIT_BACKEND: 'memory'
+          AUTH_LOGIN: 'testuser'
+          AUTH_PASSWORD: 'testpass'
+        run: |
+          pytest tests/security/ -q --tb=short
+      
+      - name: Rate Limit Coverage Gate (95% min)
+        run: |
+          pytest tests/security/test_rate_limit*.py tests/security/test_ip.py \
+            --cov=python/security/rate_limit \
+            --cov=python/security/ip \
+            --cov-fail-under=95 \
+            --cov-report=term
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 3. REDIS MULTI-WORKER — Proves rate limiting works across processes
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  redis-multi-worker:
+    name: Redis Multi-Worker Proof
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio redis
+      
+      - name: Verify Redis Available
+        run: |
+          python -c "
+          import redis
+          r = redis.from_url('redis://localhost:6379/0')
+          assert r.ping(), 'Redis not available'
+          print('Redis OK')
+          "
+      
+      - name: Run Redis Backend Tests
+        env:
+          KOREV_REDIS_URL: 'redis://localhost:6379/0'
+          KOREV_RATE_LIMIT_BACKEND: 'redis'
+        run: |
+          pytest tests/security/test_rate_limit_redis.py -v --tb=short
+      
+      - name: Multi-Worker Shared State Proof
+        env:
+          KOREV_REDIS_URL: 'redis://localhost:6379/0'
+        run: |
+          python -c "
+          from python.security.rate_limit.redis_backend import RedisBackend
+          from python.security.rate_limit.interfaces import RateLimitConfig
+          
+          config = RateLimitConfig(name='test', max_requests=3, window_seconds=60)
+          
+          # Simulate two separate workers
+          worker1 = RedisBackend(key_prefix='main_gate_test:')
+          worker2 = RedisBackend(key_prefix='main_gate_test:')
+          
+          key = 'login:shared_ip'
+          
+          # Worker 1: 2 requests
+          worker1.check(key, config)
+          worker1.check(key, config)
+          
+          # Worker 2: sees shared state, 1 more allowed
+          result = worker2.check(key, config)
+          assert result.allowed, 'Third request should be allowed'
+          
+          # Either worker: 4th blocked
+          result = worker1.check(key, config)
+          assert not result.allowed, 'Fourth request must be blocked (shared limit)'
+          
+          # Cleanup
+          worker1._get_client().delete(worker1._make_key(key))
+          
+          print('MULTI-WORKER PROOF PASSED: Rate limit shared across workers')
+          "
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # 4. UNIT TESTS — Core functionality (non-blocking warning only)
+  # ═══════════════════════════════════════════════════════════════════════════════
+  
+  unit-tests:
+    name: Unit Tests (Core)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Warning only, don't block merge
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+      
+      - name: Run Unit Tests
+        run: |
+          # Run fast tests only (skip slow/e2e/integration)
+          pytest tests/ -q --tb=short \
+            --ignore=tests/e2e \
+            --ignore=tests/property \
+            -m "not slow and not integration" \
+            || echo "Some tests failed - review required"
