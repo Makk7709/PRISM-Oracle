@@ -5,6 +5,10 @@ This test proves that run_ui.py correctly integrates the rate limiting system.
 It uses Flask test client to simulate real HTTP requests.
 
 Critical test - ensures nobody accidentally disables rate limiting.
+
+ARCHITECTURE NOTE:
+This test uses create_app() factory which does NOT import litellm/initialize.
+This allows the test to run in CI without heavy LLM dependencies.
 """
 
 import os
@@ -17,7 +21,11 @@ from python.security.rate_limit.limiter import reset_limiter
 
 @pytest.fixture
 def app():
-    """Create Flask test application with controlled rate limiter."""
+    """Create Flask test application with controlled rate limiter.
+    
+    Uses create_app() factory to avoid importing litellm/initialize.
+    This is critical for CI where LLM dependencies may not be available.
+    """
     # Reset any existing limiter
     reset_limiter()
     
@@ -30,13 +38,13 @@ def app():
         "RATE_LIMIT_LOGIN_MAX": "5",  # 5 attempts max
         "RATE_LIMIT_LOGIN_WINDOW": "60",  # 60 second window
     }):
-        # Import app after env is set
-        from run_ui import webapp
+        # Import create_app factory (NO litellm import cascade)
+        from run_ui import create_app
         
-        webapp.config['TESTING'] = True
-        webapp.config['WTF_CSRF_ENABLED'] = False
+        # Create app with testing=True
+        test_app = create_app(testing=True)
         
-        yield webapp
+        yield test_app
     
     # Cleanup
     reset_limiter()

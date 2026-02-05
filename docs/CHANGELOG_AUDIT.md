@@ -1,5 +1,84 @@
 # CHANGELOG — Audit KOREV Evidence
 
+## 2026-01-30 — Phase 1.4 App Factory Decoupling (v1.4)
+
+### Résumé Exécutif
+
+**AVANT :** `import run_ui` déclenchait `import litellm` via la cascade :
+```
+run_ui → ApiHandler → agent → models → litellm
+run_ui → runtime → settings → models → litellm
+```
+
+**APRÈS :**
+- ✅ `create_app()` factory : crée l'app Flask SANS dépendances LLM
+- ✅ Imports lourds déplacés dans `run()` et `init_a0()` (runtime only)
+- ✅ Tests E2E `/login` fonctionnent SANS litellm installé
+- ✅ CI plus rapide : pas besoin d'installer litellm pour tester login
+
+### Modules Modifiés
+
+| Module | Changement |
+|--------|------------|
+| `run_ui.py` | App Factory pattern : `create_app()` + imports lourds déplacés |
+| `python/helpers/runtime.py` | Import `settings` déplacé dans `_get_rfc_url()` (lazy) |
+
+### Nouveaux Tests
+
+| Fichier | Tests | Preuves |
+|---------|-------|---------|
+| `tests/security/test_run_ui_import_purity.py` | 7 | `import run_ui` sans litellm |
+| `tests/security/test_login_rate_limit_e2e.py` | +0 | Utilise `create_app()` |
+
+### Preuves d'Exécution
+
+```bash
+# Import purity tests (7 tests prouvant découplement)
+$ pytest tests/security/test_run_ui_import_purity.py -v
+======================== 7 passed ========================
+
+# E2E login tests (9 tests)
+$ pytest tests/security/test_login_rate_limit_e2e.py -v
+======================== 9 passed ========================
+
+# All security tests (274 tests)
+$ pytest tests/security/ -q
+================== 274 passed, 1 skipped ==================
+```
+
+### Architecture
+
+```
+AVANT:
+  import run_ui
+    └─→ from python.helpers.api import ApiHandler
+          └─→ from agent import AgentContext
+                └─→ import models
+                      └─→ from litellm import ...  ❌ CASCADE
+
+APRÈS:
+  import run_ui
+    └─→ (no litellm cascade)  ✅ CLEAN
+  
+  run() (runtime only)
+    └─→ from python.helpers.api import ApiHandler (litellm loaded here)
+    └─→ from python.helpers import mcp_server, fasta2a_server
+    └─→ init_a0() → import initialize → litellm
+```
+
+### Invariants Prouvés par Tests
+
+| Test | Preuve |
+|------|--------|
+| `test_import_run_ui_without_litellm` | `import run_ui` ne déclenche pas litellm |
+| `test_import_run_ui_without_initialize` | `import run_ui` ne déclenche pas initialize |
+| `test_import_run_ui_without_models` | `import run_ui` ne déclenche pas models |
+| `test_create_app_without_litellm` | `create_app()` fonctionne sans litellm |
+| `test_login_endpoint_without_litellm` | `/login` GET/POST fonctionnent sans litellm |
+| `test_create_app_does_not_call_init_a0` | `create_app()` ne déclenche pas init_a0() |
+
+---
+
 ## 2026-01-30 — Phase 1.3 Rate Limiting Enterprise-Ready (v1.3)
 
 ### Résumé Exécutif

@@ -1,15 +1,26 @@
+"""
+KOREV Evidence Runtime Module
+
+ARCHITECTURE NOTE (Lazy Imports):
+- `settings` is imported lazily (inside functions) to avoid importing litellm at module level
+- This allows `import runtime` without triggering the litellm import cascade
+- Functions that need settings import it locally when called
+"""
 import argparse
 import inspect
 import os
 import secrets
 from pathlib import Path
-from typing import TypeVar, Callable, Awaitable, Union, overload, cast
-from python.helpers import dotenv, rfc, settings, files
+from typing import TypeVar, Callable, Awaitable, Union, overload, cast, TYPE_CHECKING
+from python.helpers import dotenv, rfc, files
 from python.helpers.print_style import PrintStyle
 import asyncio
 import threading
 import queue
 import sys
+
+if TYPE_CHECKING:
+    from python.helpers import settings as settings_module
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -188,13 +199,15 @@ def has_rfc_password() -> bool:
 
 
 def _get_rfc_url() -> str:
-    set = settings.get_settings()
-    url = set["rfc_url"]
+    # Lazy import to avoid litellm cascade at module level
+    from python.helpers import settings
+    s = settings.get_settings()
+    url = s["rfc_url"]
     if not "://" in url:
         url = "http://" + url
     if url.endswith("/"):
         url = url[:-1]
-    url = url + ":" + str(set["rfc_port_http"])
+    url = url + ":" + str(s["rfc_port_http"])
     url += "/rfc"
     return url
 
