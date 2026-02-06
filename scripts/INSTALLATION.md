@@ -59,6 +59,24 @@ DEFAULT_USER_TIMEZONE=Europe/Paris
 
 ---
 
+## Mise à jour
+
+### Windows
+```
+Double-cliquez sur scripts/update-windows.bat
+```
+
+### macOS / Linux
+```bash
+cd korev-evidence
+git pull
+source venv/bin/activate
+pip install -r requirements.txt --upgrade
+pip install -r requirements2.txt --upgrade
+```
+
+---
+
 ## Lancement manuel
 
 Après l'installation initiale, pour relancer Evidence :

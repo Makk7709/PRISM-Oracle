@@ -43,7 +43,21 @@ if errorlevel 1 (
 )
 
 for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-echo ✓ Python %PYTHON_VERSION% trouve
+echo    Python %PYTHON_VERSION% detecte
+
+REM Verify Python 3.11+ (strict check)
+python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+if errorlevel 1 (
+    echo.
+    echo ❌ Python 3.11 ou superieur requis ^(version actuelle: %PYTHON_VERSION%^)
+    echo.
+    echo Installez Python 3.11+ depuis:
+    echo   https://www.python.org/downloads/
+    echo.
+    pause
+    exit /b 1
+)
+echo ✓ Python %PYTHON_VERSION% OK ^(3.11+ requis^)
 echo.
 
 REM ───────────────────────────────────────────────────────────────────────────────
