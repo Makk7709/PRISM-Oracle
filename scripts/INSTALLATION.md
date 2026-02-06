@@ -103,6 +103,27 @@ Evidence est accessible sur : **http://localhost:5050**
 
 ---
 
+## Désinstallation
+
+### Windows
+```
+Double-cliquez sur scripts/uninstall-windows.bat
+```
+
+Ce script supprime :
+- `venv/` (environnement virtuel, ~2-5 GB)
+- `__pycache__/`, `.pytest_cache/`, `*.pyc`
+- `logs/`, `tmp/`
+
+Ce script **NE supprime PAS** :
+- `.env` (votre configuration)
+- `data/` (vos données)
+- Le code source
+
+Pour une suppression complète, supprimez le dossier manuellement après.
+
+---
+
 ## Dépannage
 
 ### "Python n'est pas reconnu"
