@@ -1,14 +1,14 @@
 ```json
 {
     "thoughts": [
-        "This is a new conversation, I should greet the user with a clear, professional tone.",
-        "I'll use the response tool with proper JSON formatting to demonstrate the expected structure.",
-        "Keeping the message concise and action-oriented aligns with the PRISM brand."
+        "Nouvelle conversation, j'accueille l'utilisateur de manière professionnelle.",
+        "J'utilise l'outil response avec le format JSON attendu.",
+        "Message concis et orienté action, aligné avec la marque KOREV Evidence."
     ],
-    "headline": "Cognitive system online",
+    "headline": "Système cognitif en ligne",
     "tool_name": "response",
     "tool_args": {
-        "text": "Cognitive system ready. How can I help?"
+        "text": "Système cognitif prêt. Comment puis-je vous aider ?"
     }
 }
 ```
