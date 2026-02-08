@@ -135,35 +135,37 @@ class PdfOcr(Tool):
             return ""
     
     def _run_ocr(self, path: str, max_pages: int, language: str) -> str:
-        """Run OCR on PDF pages."""
+        """Run OCR on PDF pages using centralized OCREngine."""
         try:
-            from pdf2image import convert_from_path
-            import pytesseract
-            
-            # Convert PDF to images
-            PrintStyle(font_color="cyan").print(f"[PDF OCR] Converting to images (max {max_pages} pages)...")
-            
-            images = convert_from_path(
-                path,
-                first_page=1,
-                last_page=max_pages,
-                dpi=200  # Good balance of quality vs speed
+            from python.helpers.pdf_extraction.ocr_engine import OCREngine
+
+            engine = OCREngine()
+            adaptive_dpi = engine.select_dpi(page_count=max_pages)
+
+            PrintStyle(font_color="cyan").print(
+                f"[PDF OCR] Running OCR (max {max_pages} pages, DPI={adaptive_dpi})..."
             )
-            
-            PrintStyle(font_color="cyan").print(f"[PDF OCR] Running OCR on {len(images)} pages...")
-            
+
+            results = engine.run_ocr_on_pdf(
+                path,
+                language=language,
+                max_pages=max_pages,
+                dpi=adaptive_dpi,
+                total_timeout_s=120.0,
+            )
+
             text_parts = []
-            for i, image in enumerate(images, 1):
-                PrintStyle(font_color="cyan").print(f"[PDF OCR] Processing page {i}/{len(images)}...")
-                
-                # Run OCR
-                text = pytesseract.image_to_string(image, lang=language)
-                
-                if text.strip():
-                    text_parts.append(f"--- Page {i} ---\n{text}")
-            
+            for result in results:
+                if result.text.strip():
+                    conf_pct = f"{result.confidence * 100:.0f}%"
+                    text_parts.append(
+                        f"--- Page {result.page + 1} "
+                        f"(confidence: {conf_pct}, DPI: {result.dpi_used}) ---\n"
+                        f"{result.text}"
+                    )
+
             return "\n\n".join(text_parts)
-            
+
         except ImportError as e:
             missing = str(e).split("'")[1] if "'" in str(e) else str(e)
             return f"Error: Missing library '{missing}'. Install with: pip install {missing}"

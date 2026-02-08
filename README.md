@@ -330,7 +330,7 @@ PYTHONPATH=. DETERMINISTIC_ROUTER_V2=2 python scripts/router_prod_validation.py
 
 Ce projet est sous licence MIT. Voir [LICENSE](./LICENSE) pour plus de détails.
 
-La licence MIT originale d'Agent Zero est respectée et conservée dans [legal/THIRD_PARTY_NOTICES.txt](./legal/THIRD_PARTY_NOTICES.txt).
+Les licences des composants open-source utilisés sont conservées dans [legal/THIRD_PARTY_NOTICES.txt](./legal/THIRD_PARTY_NOTICES.txt).
 
 ---
 

@@ -1,35 +1,35 @@
-![Korev Evidence Logo](res/header.png)
-# Korev Evidence Documentation
-To begin with Korev Evidence, follow the links below for detailed guides on various topics:
+![KOREV Evidence Logo](res/header.png)
+# KOREV Evidence Documentation
+To begin with KOREV Evidence, follow the links below for detailed guides on various topics:
 
-- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-korev-evidence)) Korev Evidence on your system.
+- **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-korev-evidence)) KOREV Evidence on your system.
 - **[Usage Guide](usage.md):** Explore GUI features and usage scenarios.
-- **[Development](development.md):** Set up a development environment for Korev Evidence.
-- **[Extensibility](extensibility.md):** Learn how to create custom extensions for Korev Evidence.
-- **[Connectivity](connectivity.md):** Learn how to connect to Korev Evidence from other applications.
+- **[Development](development.md):** Set up a development environment for KOREV Evidence.
+- **[Extensibility](extensibility.md):** Learn how to create custom extensions for KOREV Evidence.
+- **[Connectivity](connectivity.md):** Learn how to connect to KOREV Evidence from other applications.
 - **[Architecture Overview](architecture.md):** Understand the internal workings of the framework.
-- **[Contributing](contribution.md):** Learn how to contribute to the Korev Evidence project.
+- **[Contributing](contribution.md):** Learn how to contribute to the KOREV Evidence project.
 - **[Troubleshooting and FAQ](troubleshooting.md):** Find answers to common issues and questions.
 
-### Your experience with Korev Evidence starts now!
+### Your experience with KOREV Evidence starts now!
 
-- **Download Korev Evidence:** Follow the [installation guide](installation.md) to download and run Korev Evidence.
+- **Download KOREV Evidence:** Follow the [installation guide](installation.md) to download and run KOREV Evidence.
 - **Join the Community:** Visit [korev.ai](https://korev.ai) for support and documentation.
-- **Share your Work:** Share your Korev Evidence creations, workflows and discoverings on our [Show and Tell](https://github.com/agent0ai/korev-evidence/discussions/categories/show-and-tell) area on GitHub.
-- **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/korev-evidence/issues) to report framework-relative bugs or suggest new features.
+- **Share your Work:** Share your KOREV Evidence creations, workflows and discoveries on our [Show and Tell](https://github.com/korevai/korev-evidence/discussions/categories/show-and-tell) area on GitHub.
+- **Report Issues:** Use the [GitHub issue tracker](https://github.com/korevai/korev-evidence/issues) to report framework-relative bugs or suggest new features.
 
 ## Table of Contents
 
-- [Welcome to the Korev Evidence Documentation](#korev-evidence-documentation)
-  - [Your Experience with Korev Evidence](#your-experience-with-korev-evidence-starts-now)
+- [Welcome to the KOREV Evidence Documentation](#korev-evidence-documentation)
+  - [Your Experience with KOREV Evidence](#your-experience-with-korev-evidence-starts-now)
   - [Table of Contents](#table-of-contents)
 - [Installation Guide](installation.md)
   - [Windows, macOS and Linux Setup](installation.md#windows-macos-and-linux-setup-guide)
   - [Settings Configuration](installation.md#settings-configuration)
   - [Choosing Your LLMs](installation.md#choosing-your-llms)
   - [Installing and Using Ollama](installation.md#installing-and-using-ollama-local-models)
-  - [Using Korev Evidence on Mobile](installation.md#using-korev-evidence-on-your-mobile-device)
-  - [How to Update Korev Evidence](installation.md#how-to-update-korev-evidence)
+  - [Using KOREV Evidence on Mobile](installation.md#using-korev-evidence-on-your-mobile-device)
+  - [How to Update KOREV Evidence](installation.md#how-to-update-korev-evidence)
   - [Full Binaries Installation](installation.md#in-depth-guide-for-full-binaries-installation)
 - [Usage Guide](usage.md)
   - [Basic Operations](usage.md#basic-operations)

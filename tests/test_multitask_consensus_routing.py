@@ -35,7 +35,8 @@ class TestMultitaskLegalSafeConsensus:
             agent_profile="legal_safe",
         )
         assert assessment.requires_consensus is False
-        assert assessment.can_bypass is True
+        # In production mode, can_bypass is False (only True for debug profiles)
+        assert assessment.can_bypass is False
     
     def test_legal_safe_level3_requires_consensus(self, router):
         """legal_safe + L3 action -> consensus required."""
@@ -121,10 +122,10 @@ class TestDomainDetectionTriggersConsensus:
         return CriticalityRouter(is_production=False)
     
     def test_medical_query_no_consensus_for_l2(self, router):
-        """Query medical L2 -> no consensus."""
+        """Query medical L2 -> domain detected, no consensus."""
         assessment = router.assess(
-            query="Explain common headache medications.",
-            agent_profile="default",  # Pas un agent critique
+            query="What are the side effects of common headache medications?",
+            agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.MEDICAL
         assert assessment.requires_consensus is False
@@ -150,7 +151,7 @@ class TestDomainDetectionTriggersConsensus:
     def test_french_medical_detected(self, router):
         """Detection works in French (no consensus for L2)."""
         assessment = router.assess(
-            query="Explique les traitements medicaux courants.",
+            query="Quels sont les effets secondaires des traitements medicaux courants ?",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.MEDICAL
@@ -179,24 +180,23 @@ class TestConsensusRoutingIntegration:
         assert "researcher" in CONSENSUS_REQUIRED_PROFILES
     
     def test_assess_criticality_function(self):
-        """La fonction raccourci fonctionne."""
+        """La fonction raccourci fonctionne avec Level 3."""
         assessment = assess_criticality(
-            query="Legal question",
+            query="Dois-je signer ce contrat juridique ?",
             agent_profile="legal_safe",
         )
         assert assessment.requires_consensus is True
     
     def test_multiple_triggers_combine(self):
-        """Plusieurs triggers combinés."""
+        """Plusieurs triggers combinés (Level 3 + profil)."""
         router = CriticalityRouter()
         
-        # Query médicale + agent researcher
+        # Query Level 3 (cas réel) + agent researcher
         assessment = router.assess(
-            query="What are the symptoms of this disease?",
+            query="Mon patient présente ces symptômes de maladie, quel diagnostic ?",
             agent_profile="researcher",
         )
         assert assessment.requires_consensus is True
-        # Peut être MEDICAL ou SCIENTIFIC selon la détection
         assert assessment.domain in [CriticalDomain.MEDICAL, CriticalDomain.SCIENTIFIC]
     
     def test_simple_query_default_agent_no_consensus(self):

@@ -1,17 +1,17 @@
 # Users installation guide for Windows, macOS and Linux
 
-Click to open a video to learn how to install Korev Evidence:
+Click to open a video to learn how to install KOREV Evidence:
 
 [![Easy Installation guide](/docs/res/easy_ins_vid.png)](https://www.youtube.com/watch?v=w5v5Kjx51hs)
 
-The following user guide provides instructions for installing and running Korev Evidence using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](#in-depth-guide-for-full-binaries-installation).
+The following user guide provides instructions for installing and running KOREV Evidence using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](#in-depth-guide-for-full-binaries-installation).
 
 
 ## Windows, macOS and Linux Setup Guide
 
 
 1. **Install Docker Desktop:** 
-- Docker Desktop provides the runtime environment for Korev Evidence, ensuring consistent behavior and security across platforms
+- Docker Desktop provides the runtime environment for KOREV Evidence, ensuring consistent behavior and security across platforms
 - The entire framework runs within a Docker container, providing isolation and easy deployment
 - Available as a user-friendly GUI application for all major operating systems
 
@@ -56,11 +56,11 @@ The following user guide provides instructions for installing and running Korev 
 
 ![docker socket macOS](res/setup/macsocket.png)
 
-2. **Run Korev Evidence:**
+2. **Run KOREV Evidence:**
 
-- Note: Korev Evidence also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-evidence:hacking image instead of korevai/korev-evidence.
+- Note: KOREV Evidence also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-evidence:hacking image instead of korevai/korev-evidence.
 
-2.1. Pull the Korev Evidence Docker image:
+2.1. Pull the KOREV Evidence Docker image:
 - Search for `korevai/korev-evidence` in Docker Desktop
 - Click the `Pull` button
 - The image will be downloaded to your machine in a few minutes
@@ -77,23 +77,23 @@ The following user guide provides instructions for installing and running Korev 
 2.2. OPTIONAL - Create a data directory for persistence:
 
 > [!CAUTION]
-> Preferred way of persisting Korev Evidence data is to use the backup and restore feature.
-> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Evidence to a newer version.
+> Preferred way of persisting KOREV Evidence data is to use the backup and restore feature.
+> By mapping the whole `/app` directory to a local directory, you will run into problems when upgrading KOREV Evidence to a newer version.
 
-- Choose or create a directory on your machine where you want to store Korev Evidence's data
+- Choose or create a directory on your machine where you want to store KOREV Evidence's data
 - This can be any location you prefer (e.g., `C:/korev-evidence-data` or `/home/user/korev-evidence-data`)
-- You can map individual subfolders of `/a0` to a local directory or the full `/a0` directory (not recommended).
-- This directory will contain all your Korev Evidence files, like the legacy root folder structure:
+- You can map individual subfolders of `/app` to a local directory or the full `/app` directory (not recommended).
+- This directory will contain all your KOREV Evidence files, like the legacy root folder structure:
   - `/agents` - Specialized agents with their prompts and tools
   - `/memory` - Agent's memory and learned information
   - `/knowledge` - Knowledge base
   - `/instruments` - Instruments and functions
   - `/prompts` - Prompt files
   - `.env` - Your API keys
-  - `/tmp/settings.json` - Your Korev Evidence settings
+  - `/tmp/settings.json` - Your KOREV Evidence settings
 
 > [!TIP]
-> Choose a location that's easy to access and backup. All your Korev Evidence data 
+> Choose a location that's easy to access and backup. All your KOREV Evidence data 
 > will be directly accessible in this directory.
 
 2.3. Run the container:
@@ -104,11 +104,11 @@ The following user guide provides instructions for installing and running Korev 
 
 Optionally you can map local folders for file persistence:
 > [!CAUTION]
-> Preferred way of persisting Korev Evidence data is to use the backup and restore feature.
-> By mapping the whole `/a0` directory to a local directory, you will run into problems when upgrading Korev Evidence to a newer version.
+> Preferred way of persisting KOREV Evidence data is to use the backup and restore feature.
+> By mapping the whole `/app` directory to a local directory, you will run into problems when upgrading KOREV Evidence to a newer version.
 - OPTIONAL: Under "Volumes", configure your mapped folders, if needed:
   - Example host path: Your chosen directory (e.g., `C:\korev-evidence\memory`)
-  - Example container path: `/a0/memory`
+  - Example container path: `/app/memory`
 
 
 - Click the `Run` button in the "Images" tab.
@@ -135,7 +135,7 @@ Optionally you can map local folders for file persistence:
 ![docker logs](res/setup/5-docker-click-to-open.png)
 
 - Open `http://localhost:<PORT>` in your browser
-- The Web UI will open. Korev Evidence is ready for configuration!
+- The Web UI will open. KOREV Evidence is ready for configuration!
 
 ![docker ui](res/setup/6-docker-a0-running.png)
 
@@ -143,15 +143,15 @@ Optionally you can map local folders for file persistence:
 > You can also access the Web UI by clicking the ports right under the container ID in Docker Desktop.
 
 > [!NOTE]
-> After starting the container, you'll find all Korev Evidence files in your chosen 
+> After starting the container, you'll find all KOREV Evidence files in your chosen 
 > directory. You can access and edit these files directly on your machine, and 
 > the changes will be immediately reflected in the running container.
 
-3. Configure Korev Evidence
-- Refer to the following sections for a full guide on how to configure Korev Evidence.
+3. Configure KOREV Evidence
+- Refer to the following sections for a full guide on how to configure KOREV Evidence.
 
 ## Settings Configuration
-Korev Evidence provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings"button with a gear icon in the sidebar.
+KOREV Evidence provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings"button with a gear icon in the sidebar.
 
 ### Agent Configuration
 - **Prompts Subdirectory:** Choose the subdirectory within `/prompts` for agent behavior customization. The 'default' directory contains the standard prompts.
@@ -187,7 +187,7 @@ Korev Evidence provides a comprehensive settings interface to customize various 
 - Click `Save` to confirm your settings
 
 > [!CAUTION]
-> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using Korev Evidence.
+> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using KOREV Evidence.
 
 > [!NOTE]
 > **GitHub Copilot Limitations:** GitHub Copilot models typically have smaller rate limits and context windows compared to models hosted by other providers like OpenAI, Anthropic, or Azure. Consider this when working with large conversations or high-frequency requests.
@@ -210,7 +210,7 @@ Learn more about Remote Function Calls and their purpose [here](#7-configure-kor
 > Always keep your API keys and passwords secure.
 
 # Choosing Your LLMs
-The Settings page is the control center for selecting the Large Language Models (LLMs) that power Korev Evidence.  You can choose different LLMs for different roles:
+The Settings page is the control center for selecting the Large Language Models (LLMs) that power KOREV Evidence.  You can choose different LLMs for different roles:
 
 | LLM Role | Description |
 | --- | --- |
@@ -259,7 +259,7 @@ ollama pull <model-name>
 
 2. A CLI message should confirm the model download on your system
 
-#### Selecting your model within Korev Evidence
+#### Selecting your model within KOREV Evidence
 1. Once you've downloaded your model(s), you must select it in the Settings page of the GUI. 
 
 2. Within the Chat model, Utility model, or Embedding model section, choose Ollama as provider.
@@ -289,11 +289,11 @@ Once you've downloaded some models, you might want to check which ones you have 
 
 - Experiment with different model combinations to find the balance of performance and cost that best suits your needs. E.g., faster and lower latency LLMs will help, and you can also use `faiss_gpu` instead of `faiss_cpu` for the memory.
 
-## Using Korev Evidence on your mobile device
-Korev Evidence's Web UI is accessible from any device on your network through the Docker container:
+## Using KOREV Evidence on your mobile device
+KOREV Evidence's Web UI is accessible from any device on your network through the Docker container:
 
 > [!NOTE]
-> In settings, External Services tab, you can enable Cloudflare Tunnel to expose your Korev Evidence instance to the internet.
+> In settings, External Services tab, you can enable Cloudflare Tunnel to expose your KOREV Evidence instance to the internet.
 > ⚠️ Do not forget to set username and password in the settings Authentication tab to secure your instance on the internet.
 
 1. The Docker container automatically exposes the Web UI on all network interfaces
@@ -310,31 +310,31 @@ Korev Evidence's Web UI is accessible from any device on your network through th
 > - The port is automatically assigned by Docker unless you specify one
 
 > [!NOTE]
-> If you're running Korev Evidence directly on your system (legacy approach) instead of 
+> If you're running KOREV Evidence directly on your system (legacy approach) instead of 
 > using Docker, you'll need to configure the host manually in `run_ui.py` to run on all interfaces using `host="0.0.0.0"`.
 
-For developers or users who need to run Korev Evidence directly on their system,see the [In-Depth Guide for Full Binaries Installation](#in-depth-guide-for-full-binaries-installation).
+For developers or users who need to run KOREV Evidence directly on their system,see the [In-Depth Guide for Full Binaries Installation](#in-depth-guide-for-full-binaries-installation).
 
-# How to update Korev Evidence
+# How to update KOREV Evidence
 
 > [!NOTE]
-> Since v0.9, Korev Evidence has a Backup and Restore feature, so you don't need to backup the files manually.
+> Since v0.9, KOREV Evidence has a Backup and Restore feature, so you don't need to backup the files manually.
 > In Settings, Backup and Restore tab will guide you through the process.
 
-1. **If you come from the previous version of Korev Evidence:**
-- Your data is safely stored across various directories and files inside the Korev Evidence folder.
+1. **If you come from the previous version of KOREV Evidence:**
+- Your data is safely stored across various directories and files inside the KOREV Evidence folder.
 - To update to the new Docker runtime version, you might want to backup the following files and directories:
   - `/memory` - Agent's memory
   - `/knowledge` - Custom knowledge base (if you imported any custom knowledge files)
   - `/instruments` - Custom instruments and functions (if you created any custom)
-  - `/tmp/settings.json` - Your Korev Evidence settings
+  - `/tmp/settings.json` - Your KOREV Evidence settings
   - `/tmp/chats/` - Your chat history
 - Once you have saved these files and directories, you can proceed with the Docker runtime [installation instructions above](#windows-macos-and-linux-setup-guide) setup guide.
-- Reach for the folder where you saved your data and copy it to the new Korev Evidence folder set during the installation process.
-- Korev Evidence will automatically detect your saved data and use it across memory, knowledge, instruments, prompts and settings.
+- Reach for the folder where you saved your data and copy it to the new KOREV Evidence folder set during the installation process.
+- KOREV Evidence will automatically detect your saved data and use it across memory, knowledge, instruments, prompts and settings.
 
 > [!IMPORTANT]
-> If you have issues loading your settings, you can try to delete the `/tmp/settings.json` file and let Korev Evidence generate a new one.
+> If you have issues loading your settings, you can try to delete the `/tmp/settings.json` file and let KOREV Evidence generate a new one.
 > The same goes for chats in `/tmp/chats/`, they might be incompatible with the new version
 
 2. **Update Process (Docker Desktop)**
@@ -350,7 +350,7 @@ For developers or users who need to run Korev Evidence directly on their system,
 > [!IMPORTANT]
 > Make sure to use the same volume mount path when running the new
 > container to preserve your data. The exact path depends on where you stored
-> your Korev Evidence data directory (the chosen directory on your machine).
+> your KOREV Evidence data directory (the chosen directory on your machine).
 
 > [!TIP]
 > Alternatively, run the following commands in your terminal:
@@ -374,7 +374,7 @@ For developers or users who need to run Korev Evidence directly on their system,
 
       
 ### Conclusion
-After following the instructions for your specific operating system, you should have Korev Evidence successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
+After following the instructions for your specific operating system, you should have KOREV Evidence successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
 
 If you encounter any issues during the installation process, please consult the [Troubleshooting section](troubleshooting.md) of this documentation or refer to the [korev.ai](https://korev.ai) for assistance.
 

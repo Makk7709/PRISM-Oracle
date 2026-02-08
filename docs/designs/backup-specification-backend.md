@@ -1,7 +1,7 @@
-# Korev Evidence Backup/Restore Backend Specification
+# KOREV Evidence Backup/Restore Backend Specification
 
 ## Overview
-This specification defines the backend implementation for Korev Evidence's backup and restore functionality, providing users with the ability to backup and restore their Korev Evidence configurations, data, and custom files using glob pattern-based selection. The backup functionality is implemented as a dedicated "backup" tab in the settings interface for easy access and organization.
+This specification defines the backend implementation for KOREV Evidence's backup and restore functionality, providing users with the ability to backup and restore their KOREV Evidence configurations, data, and custom files using glob pattern-based selection. The backup functionality is implemented as a dedicated "backup" tab in the settings interface for easy access and organization.
 
 ## Core Requirements
 
@@ -25,7 +25,7 @@ Add backup/restore section with dedicated tab to `python/helpers/settings.py`:
 
 **Integration Notes:**
 - Leverages existing settings button handler pattern (follows MCP servers example)
-- Integrates with Korev Evidence's established error handling and toast notification system
+- Integrates with KOREV Evidence's established error handling and toast notification system
 - Uses existing file operation helpers with RFC support for development mode compatibility
 
 ```python
@@ -33,7 +33,7 @@ Add backup/restore section with dedicated tab to `python/helpers/settings.py`:
 backup_section: SettingsSection = {
     "id": "backup_restore",
     "title": "Backup & Restore",
-    "description": "Backup and restore Korev Evidence data and configurations using glob pattern-based file selection.",
+    "description": "Backup and restore KOREV Evidence data and configurations using glob pattern-based file selection.",
     "fields": [
         {
             "id": "backup_create",
@@ -64,11 +64,11 @@ def _get_default_patterns(self) -> str:
     agent_root = self.korev_root.rstrip('/')
     user_home = self.user_home.rstrip('/')
 
-    return f"""# Korev Evidence Knowledge (excluding defaults)
+    return f"""# KOREV Evidence Knowledge (excluding defaults)
 {agent_root}/knowledge/**
 !{agent_root}/knowledge/default/**
 
-# Korev Evidence Instruments (excluding defaults)
+# KOREV Evidence Instruments (excluding defaults)
 {agent_root}/instruments/**
 !{agent_root}/instruments/default/**
 
@@ -92,21 +92,21 @@ def _get_default_patterns(self) -> str:
 **Example Resolved Patterns** (varies by environment):
 ```
 # Docker container environment
-/a0/knowledge/**
-!/a0/knowledge/default/**
+/app/knowledge/**
+!/app/knowledge/default/**
 /root/**
 !/root/.*/**
 !/root/.*
 
 # Host environment
-/home/rafael/a0/data/knowledge/**
-!/home/rafael/a0/data/knowledge/default/**
+/home/rafael/app/data/knowledge/**
+!/home/rafael/app/data/knowledge/default/**
 /home/rafael/**
 !/home/rafael/.*/**
 !/home/rafael/.*
 ```
 
-> **⚠️ CRITICAL FILE NOTICE**: The `{agent_root}/.env` file contains essential configuration including API keys, model settings, and runtime parameters. This file is **REQUIRED** for Korev Evidence to function properly and should always be included in backups alongside `settings.json`. Without this file, restored Korev Evidence instances will not have access to configured language models or external services.
+> **⚠️ CRITICAL FILE NOTICE**: The `{agent_root}/.env` file contains essential configuration including API keys, model settings, and runtime parameters. This file is **REQUIRED** for KOREV Evidence to function properly and should always be included in backups alongside `settings.json`. Without this file, restored KOREV Evidence instances will not have access to configured language models or external services.
 
 ### 2. API Endpoints
 
@@ -473,7 +473,7 @@ class BackupInspect(ApiHandler):
 **File**: `python/helpers/backup.py`
 
 **RFC Integration Notes:**
-The BackupService leverages Korev Evidence's existing file operation helpers which already support RFC (Remote Function Call) routing for development mode. This ensures seamless operation whether running in direct mode or with container isolation.
+The BackupService leverages KOREV Evidence's existing file operation helpers which already support RFC (Remote Function Call) routing for development mode. This ensures seamless operation whether running in direct mode or with container isolation.
 
 ```python
 import zipfile
@@ -488,11 +488,11 @@ from python.helpers import files, runtime, git
 import shutil
 
 class BackupService:
-    """Core backup and restore service for Korev Evidence"""
+    """Core backup and restore service for KOREV Evidence"""
 
     def __init__(self):
         self.korev_version = self._get_korev_version()
-        self.korev_root = files.get_abs_path("")  # Resolved Korev Evidence root
+        self.korev_root = files.get_abs_path("")  # Resolved KOREV Evidence root
         self.user_home = os.path.expanduser("~")       # Current user's home directory
 
     def _get_default_patterns(self) -> str:
@@ -500,7 +500,7 @@ class BackupService:
         return DEFAULT_BACKUP_PATTERNS
 
     def _get_korev_version(self) -> str:
-        """Get current Korev Evidence version"""
+        """Get current KOREV Evidence version"""
         try:
             # Get version from git info (same as run_ui.py)
             gitinfo = git.get_git_info()
@@ -1234,8 +1234,8 @@ pathspec>=0.10.0  # For gitignore-style pattern matching
 psutil>=5.8.0     # For system information collection
 ```
 
-#### Korev Evidence Internal Dependencies
-The backup system requires these Korev Evidence helper modules:
+#### KOREV Evidence Internal Dependencies
+The backup system requires these KOREV Evidence helper modules:
 - `python.helpers.git` - For version detection using git.get_git_info() (consistent with run_ui.py)
 - `python.helpers.files` - For file operations and path resolution
 - `python.helpers.runtime` - For development/production mode detection
@@ -1247,14 +1247,14 @@ pip install pathspec psutil
 
 ### 5. Error Handling
 
-#### Integration with Korev Evidence Error System
-The backup system integrates with Korev Evidence's existing error handling infrastructure:
+#### Integration with KOREV Evidence Error System
+The backup system integrates with KOREV Evidence's existing error handling infrastructure:
 
 ```python
 from python.helpers.errors import format_error
 from python.helpers.print_style import PrintStyle
 
-# Follow Korev Evidence's error handling patterns
+# Follow KOREV Evidence's error handling patterns
 try:
     result = await backup_operation()
     return {"success": True, "data": result}
@@ -1333,7 +1333,7 @@ BACKUP_CONFIG = {
 
 #### Future Integration Opportunities
 **Task Scheduler Integration:**
-Korev Evidence's existing task scheduler could be extended to support automated backups:
+KOREV Evidence's existing task scheduler could be extended to support automated backups:
 
 ```python
 # Potential future enhancement - scheduled backups
@@ -1352,11 +1352,11 @@ Korev Evidence's existing task scheduler could be extended to support automated 
 ## Enhanced Metadata Structure and Restore Workflow
 
 ### Version Detection Implementation
-The backup system uses the same version detection method as Korev Evidence's main UI:
+The backup system uses the same version detection method as KOREV Evidence's main UI:
 
 ```python
 def _get_korev_version(self) -> str:
-    """Get current Korev Evidence version"""
+    """Get current KOREV Evidence version"""
     try:
         # Get version from git info (same as run_ui.py)
         gitinfo = git.get_git_info()
@@ -1378,16 +1378,16 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
   "include_hidden": boolean,
 
   "include_patterns": [
-    "/a0/knowledge/**",
-    "/a0/instruments/**",
-    "/a0/memory/**",
-    "/a0/.env",
-    "/a0/tmp/settings.json"
+    "/app/knowledge/**",
+    "/app/instruments/**",
+    "/app/memory/**",
+    "/app/.env",
+    "/app/tmp/settings.json"
   ],
   "exclude_patterns": [
-    "/a0/knowledge/default/**",
-    "/a0/instruments/default/**",
-    "/a0/memory/embeddings/**"
+    "/app/knowledge/default/**",
+    "/app/instruments/default/**",
+    "/app/memory/embeddings/**"
   ],
 
   "system_info": { /* platform, architecture, etc. */ },
@@ -1427,11 +1427,11 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
 ### Enhanced Metadata Structure
 The backup metadata has been significantly enhanced to include:
 - **System Information**: Platform, architecture, Python version, CPU count, memory, disk usage
-- **Environment Details**: User, timezone, working directory, runtime mode, Korev Evidence root path
+- **Environment Details**: User, timezone, working directory, runtime mode, KOREV Evidence root path
 - **Backup Author**: System identifier (user@hostname) for backup tracking
 - **File Checksums**: SHA-256 hashes for all backed up files for integrity verification
 - **Backup Statistics**: Total files, directories, sizes with verification methods
-- **Compatibility Data**: Korev Evidence version and environment for restoration validation
+- **Compatibility Data**: KOREV Evidence version and environment for restoration validation
 
 ### Smart File Management
 - **Grouped File Preview**: Organize files by directory structure with depth limitation (max 3 levels)
@@ -1464,7 +1464,7 @@ The backup metadata has been significantly enhanced to include:
 - **Path Security**: Enhanced validation with system information context
 - **Backup Validation**: Version compatibility checking and environment verification
 
-This enhanced backend specification provides a production-ready, comprehensive backup and restore system with advanced metadata tracking, real-time progress monitoring, and intelligent file management capabilities, all while maintaining Korev Evidence's architectural patterns and security standards.
+This enhanced backend specification provides a production-ready, comprehensive backup and restore system with advanced metadata tracking, real-time progress monitoring, and intelligent file management capabilities, all while maintaining KOREV Evidence's architectural patterns and security standards.
 
 ### Implementation Status Updates
 
@@ -1472,7 +1472,7 @@ This enhanced backend specification provides a production-ready, comprehensive b
 - **Git Version Integration**: Updated to use `git.get_git_info()` consistent with `run_ui.py`
 - **Type Safety**: Fixed psutil return values to be strings for JSON metadata consistency
 - **Code Quality**: All linting errors resolved, proper import structure
-- **Testing Verified**: BackupService initializes correctly and detects Korev Evidence root paths
+- **Testing Verified**: BackupService initializes correctly and detects KOREV Evidence root paths
 - **Dependencies Added**: pathspec>=0.10.0 for pattern matching, psutil>=5.8.0 for system info
 - **Git Helper Integration**: Uses python.helpers.git.get_git_info() for version detection consistency
 
@@ -1544,13 +1544,13 @@ if not include_hidden and file.startswith('.'):
 
 ### **Critical Issue Fixed: Hidden Files**
 
-**Problem:** When `include_hidden=false`, the system was excluding ALL hidden files, even when they were explicitly specified in patterns like `/a0/.env`.
+**Problem:** When `include_hidden=false`, the system was excluding ALL hidden files, even when they were explicitly specified in patterns like `/app/.env`.
 
 **Solution:** Implemented explicit pattern detection that distinguishes between:
-- **Explicit patterns** (like `/a0/.env`) - Always included regardless of `include_hidden` setting
-- **Wildcard discoveries** (like `/a0/*`) - Respect the `include_hidden` setting
+- **Explicit patterns** (like `/app/.env`) - Always included regardless of `include_hidden` setting
+- **Wildcard discoveries** (like `/app/*`) - Respect the `include_hidden` setting
 
-**Result:** Critical files like `.env` are now properly backed up when explicitly specified, ensuring Korev Evidence configurations are preserved.
+**Result:** Critical files like `.env` are now properly backed up when explicitly specified, ensuring KOREV Evidence configurations are preserved.
 
 ### **Implementation Status: ✅ PRODUCTION READY**
 
@@ -1568,7 +1568,7 @@ The backup system is now:
 - ✅ **Cleaner API** - Only endpoints that are actually used
 - ✅ **Better reliability** - Removed complex features that weren't properly implemented
 
-The Korev Evidence backup system is now production-ready and battle-tested! 🚀
+The KOREV Evidence backup system is now production-ready and battle-tested! 🚀
 
 ## ✅ **FINAL STATUS: ACE EDITOR STATE GUARANTEE COMPLETED (December 2024)**
 
@@ -1687,7 +1687,7 @@ async def _find_files_to_clean_with_user_metadata(self, user_metadata: Dict[str,
 #### **✅ Cross-System Compatibility:**
 - Path translation preserves technical functionality
 - Users don't need to manually adjust paths
-- Works seamlessly between different Korev Evidence installations
+- Works seamlessly between different KOREV Evidence installations
 - Maintains backup portability across environments
 
 #### **✅ Clean Architecture:**
@@ -1698,7 +1698,7 @@ async def _find_files_to_clean_with_user_metadata(self, user_metadata: Dict[str,
 
 ### **Final Status: ✅ PRODUCTION READY**
 
-The Korev Evidence backup system now provides:
+The KOREV Evidence backup system now provides:
 - **✅ Complete user control** via ACE editor state
 - **✅ Cross-system compatibility** through intelligent path translation
 - **✅ Clean, maintainable code** with dead code eliminated

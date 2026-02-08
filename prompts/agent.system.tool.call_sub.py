@@ -25,7 +25,7 @@ class CallSubordinate(VariablesPlugin):
         if not profiles:
             # PrintStyle().error("No agent profiles found")
             profiles = [
-                {"name": "default", "context": "Default Korev Evidence AI Assistant"}
+                {"name": "default", "context": "Default KOREV Evidence AI Assistant"}
             ]
 
         return {"agent_profiles": profiles}

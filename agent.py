@@ -345,8 +345,8 @@ class Agent:
 
         # non-config vars
         self.number = number
-        # Korev Evidence branding: main agent = "Korev Evidence", subordinates = "Evidence-N"
-        self.agent_name = "Korev Evidence" if self.number == 0 else f"Evidence-{self.number}"
+        # KOREV Evidence branding: main agent = "KOREV Evidence", subordinates = "Evidence-N"
+        self.agent_name = "KOREV Evidence" if self.number == 0 else f"Evidence-{self.number}"
 
         self.history = history.History(self)  # type: ignore[abstract]
         self.last_user_message: history.Message | None = None

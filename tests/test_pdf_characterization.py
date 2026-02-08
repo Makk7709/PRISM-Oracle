@@ -230,14 +230,15 @@ class TestClassificationCharacterization:
     @staticmethod
     def _classify(pdf_path: Path) -> dict:
         """Run classification on a PDF and capture results."""
-        import fitz
+        from python.helpers.pdf_extraction.pdf_backend import get_backend
         from python.helpers.pdf_extraction.pipeline import classify_pdf
         from python.helpers.pdf_extraction.config import PDFExtractionConfig
 
         config = PDFExtractionConfig()
-        doc = fitz.open(str(pdf_path))
+        backend = get_backend()
+        doc = backend.open_path(str(pdf_path))
         pdf_type, confidence = classify_pdf(doc, config)
-        page_count = doc.page_count
+        page_count = doc.page_count()
         doc.close()
 
         return {

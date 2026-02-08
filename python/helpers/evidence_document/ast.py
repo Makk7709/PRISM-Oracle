@@ -267,7 +267,7 @@ class Assumption:
 @dataclass
 class DocumentMetadata:
     """Métadonnées du document."""
-    author: str = "Korev Evidence"
+    author: str = "KOREV Evidence"
     created_at: Optional[datetime] = None
     version: str = "1.0"
     confidentiality: ConfidentialityLevel = ConfidentialityLevel.INTERNAL
@@ -387,7 +387,7 @@ class Document:
             confidentiality = ConfidentialityLevel(confidentiality)
         
         metadata = DocumentMetadata(
-            author=meta_data.get("author", "Korev Evidence"),
+            author=meta_data.get("author", "KOREV Evidence"),
             version=meta_data.get("version", "1.0"),
             confidentiality=confidentiality,
             language=meta_data.get("language", "fr"),

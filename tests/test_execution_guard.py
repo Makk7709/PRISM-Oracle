@@ -103,8 +103,8 @@ class TestToolCallDetection:
         '''
         assert has_tool_call(response) is True
     
-    def test_response_tool_with_missing_tool(self):
-        """Response tool with MISSING_TOOL is valid."""
+    def test_response_tool_with_missing_tool_rejected(self):
+        """Response tool with MISSING_TOOL is REJECTED (agent must use code_execution)."""
         response = '''
         {
             "thoughts": ["No tool available"],
@@ -112,7 +112,9 @@ class TestToolCallDetection:
             "tool_args": {"text": "MISSING_TOOL: pdf_merger\\nREASON: No tool for merging PDFs"}
         }
         '''
-        assert has_tool_call(response) is True
+        # MISSING_TOOL responses are explicitly rejected by the execution guard
+        # The agent should use code_execution instead
+        assert has_tool_call(response) is False
     
     def test_response_tool_with_long_text(self):
         """Response tool with long explanatory text is a violation."""
@@ -181,8 +183,8 @@ class TestExecutionGuard:
         result = check_execution_guard(user_msg, agent_response)
         assert result.is_valid is True
     
-    def test_missing_tool_response_valid(self):
-        """MISSING_TOOL response should be valid for action requests."""
+    def test_missing_tool_response_rejected(self):
+        """MISSING_TOOL response should be REJECTED (agent must use code_execution)."""
         user_msg = "Fusionne ces PDFs et réordonne les pages"
         agent_response = '''
         {
@@ -193,7 +195,9 @@ class TestExecutionGuard:
         '''
         
         result = check_execution_guard(user_msg, agent_response)
-        assert result.is_valid is True
+        # The guard REJECTS MISSING_TOOL responses — agent must use code_execution
+        assert result.is_valid is False
+        assert result.has_tool_call is False
 
 
 class TestIntegration:

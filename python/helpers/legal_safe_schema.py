@@ -231,13 +231,13 @@ class Disclaimers(BaseModel):
     text_fr: str = Field(
         default="⚠️ Cette analyse ne constitue pas un conseil juridique. Elle est fournie à titre informatif uniquement. "
                 "Pour toute décision importante, consultez un avocat ou un professionnel du droit qualifié. "
-                "Korev Evidence décline toute responsabilité quant aux conséquences de l'utilisation de ces informations.",
+                "KOREV Evidence décline toute responsabilité quant aux conséquences de l'utilisation de ces informations.",
         max_length=1000
     )
     text_en: str = Field(
         default="⚠️ This analysis does not constitute legal advice. It is provided for informational purposes only. "
                 "For any important decision, consult a qualified lawyer or legal professional. "
-                "Korev Evidence disclaims all liability for consequences arising from the use of this information.",
+                "KOREV Evidence disclaims all liability for consequences arising from the use of this information.",
         max_length=1000
     )
 

@@ -43,7 +43,18 @@ Examples of what you CAN do with code_execution:
     "tool_name": "code_execution",
     "tool_args": {
         "runtime": "python",
-        "code": "import fitz\ndoc = fitz.open('/path/to/file.pdf')\nfor page in doc:\n    print(page.get_text())"
+        "code": "from pypdf import PdfReader\nreader = PdfReader('/path/to/file.pdf')\nfor page in reader.pages:\n    print(page.extract_text())"
+    }
+}
+```
+
+**OCR on scanned PDF (use pdf_ocr tool instead when possible):**
+```json
+{
+    "tool_name": "code_execution",
+    "tool_args": {
+        "runtime": "python",
+        "code": "from python.helpers.pdf_extraction.ocr_engine import OCREngine\nengine = OCREngine()\nresults = engine.run_ocr_on_pdf('/path/to/scanned.pdf', language='eng+fra', max_pages=10)\nfor r in results:\n    print(f'--- Page {r.page+1} (confidence: {r.confidence:.0%}) ---')\n    print(r.text)"
     }
 }
 ```
@@ -62,13 +73,27 @@ Examples of what you CAN do with code_execution:
 ### Available Python Libraries
 - `pandas` — Excel, CSV, data analysis
 - `openpyxl` — Excel files
-- `pypdf` — PDF reading
+- `pypdf` — PDF reading (text extraction)
 - `pdfplumber` — PDF reading with table extraction
 - `reportlab` — PDF creation
 - `Pillow` — Image processing
+- `pytesseract` — OCR (Optical Character Recognition)
+- `pdf2image` — Convert PDF pages to images (for OCR)
+- `python.helpers.pdf_extraction.ocr_engine.OCREngine` — Centralized OCR with confidence scoring
 - `requests` — HTTP/API calls
 - `os`, `shutil` — File operations
 - Standard library (json, csv, re, etc.)
+
+### OCR for Scanned PDFs
+When a PDF is scanned (image-based), use the **pdf_ocr** tool directly, OR use OCREngine via code_execution:
+```python
+from python.helpers.pdf_extraction.ocr_engine import OCREngine
+engine = OCREngine()
+results = engine.run_ocr_on_pdf('/path/to/file.pdf', language='eng+fra')
+for r in results:
+    print(r.text)
+```
+**DO NOT claim OCR is unavailable** — tesseract, poppler, pytesseract, and pdf2image are ALL installed.
 
 ### Key Paths
 - User uploads: `{{work_dir}}/tmp/uploads/`

@@ -47,15 +47,15 @@ class ApiFilesGet(ApiHandler):
             for path in paths:
                 try:
                     # Convert internal paths to external paths
-                    # Support both /korev/ and legacy /a0/ paths
-                    if path.startswith("/korev/tmp/uploads/") or path.startswith("/a0/tmp/uploads/"):
+                    # Support /app/ (Docker runtime), /korev/ (data), and legacy /a0/ paths
+                    if path.startswith("/app/tmp/uploads/") or path.startswith("/korev/tmp/uploads/") or path.startswith("/a0/tmp/uploads/"):
                         # Internal path - convert to external
-                        filename = path.replace("/korev/tmp/uploads/", "").replace("/a0/tmp/uploads/", "")
+                        filename = path.replace("/app/tmp/uploads/", "").replace("/korev/tmp/uploads/", "").replace("/a0/tmp/uploads/", "")
                         external_path = files.get_abs_path("tmp/uploads", filename)
                         filename = os.path.basename(external_path)
-                    elif path.startswith("/korev/") or path.startswith("/a0/"):
-                        # Other internal Korev Evidence paths
-                        relative_path = path.replace("/korev/", "").replace("/a0/", "")
+                    elif path.startswith("/app/") or path.startswith("/korev/") or path.startswith("/a0/"):
+                        # Other internal KOREV Evidence paths
+                        relative_path = path.replace("/app/", "").replace("/korev/", "").replace("/a0/", "")
                         external_path = files.get_abs_path(relative_path)
                         filename = os.path.basename(external_path)
                     else:

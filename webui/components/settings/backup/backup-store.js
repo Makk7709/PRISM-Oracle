@@ -6,7 +6,7 @@ const toast = globalThis.toast;
 const fetchApi = globalThis.fetchApi;
 
 // ⚠️ CRITICAL: The .env file contains API keys and essential configuration.
-// This file is REQUIRED for Korev Evidence to function and must be backed up.
+// This file is REQUIRED for KOREV Evidence to function and must be backed up.
 
 const model = {
   // State
@@ -143,7 +143,7 @@ const model = {
     };
   },
 
-  // Editor Management - Following Korev Evidence ACE editor patterns
+  // Editor Management - Following KOREV Evidence ACE editor patterns
   async initBackupEditor() {
     const container = document.getElementById("backup-metadata-editor");
     if (container) {
@@ -654,13 +654,13 @@ const model = {
 
     const warnings = [];
 
-    // Check Korev Evidence version compatibility
+    // Check KOREV Evidence version compatibility
     // Note: Both backup and current versions are obtained via git.get_git_info()
     const backupVersion = this.backupMetadata.korev_version || this.backupMetadata.agent_zero_version;
     const currentVersion = "current"; // Retrieved from git.get_git_info() on backend
 
     if (backupVersion !== currentVersion && backupVersion !== "development") {
-      warnings.push(`Backup created with Korev Evidence ${backupVersion}, current version is ${currentVersion}`);
+      warnings.push(`Backup created with KOREV Evidence ${backupVersion}, current version is ${currentVersion}`);
     }
 
     // Check backup age

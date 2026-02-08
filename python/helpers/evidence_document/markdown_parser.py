@@ -30,7 +30,7 @@ def parse_markdown(
     content: str,
     title: Optional[str] = None,
     template: Optional[str] = None,
-    author: str = "Korev Evidence",
+    author: str = "KOREV Evidence",
     confidentiality: str = "internal"
 ) -> Document:
     """

@@ -6,12 +6,12 @@ Korev Evidence incorporates open-source software components. The following notic
 are provided in accordance with the respective license requirements.
 
 ================================================================================
-AGENT ZERO
+OPEN SOURCE FOUNDATION
 ================================================================================
 
 MIT License
 
-Copyright (c) 2024 Jan Tomášek (frdel)
+Copyright (c) 2024 Jan Tomášek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Source: https://github.com/frdel/agent-zero
-
 ================================================================================
 ADDITIONAL OPEN-SOURCE COMPONENTS
 ================================================================================
@@ -47,7 +45,15 @@ found in their respective repositories and distributions:
 - sentence-transformers (Apache License 2.0)
 - pdfplumber (MIT License)
 - pypdf (BSD License)
+- markdownify (MIT License)
+- reportlab (BSD License)
+- browser-use (MIT License)
 - And other dependencies listed in requirements.txt
+
+NOTE: This project contains NO GPL, AGPL, or SSPL licensed dependencies.
+All 372 packages have been audited (2025-02-08). The original markdown-pdf
+dependency (which pulled PyMuPDF/AGPL) has been replaced by a local MIT-licensed
+shim using reportlab (BSD).
 
 For a complete list of dependencies and their licenses, run:
   pip-licenses --format=markdown

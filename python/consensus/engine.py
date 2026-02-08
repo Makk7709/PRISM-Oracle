@@ -27,6 +27,7 @@ from python.helpers.consensus_manager import (
     DecisionType,
     VoteCount,
     Vote,
+    VoteType,
     generate_decision_hash,
 )
 from python.helpers.consensus_contracts import (
@@ -125,6 +126,57 @@ class ConsensusEngine:
 
         arbiters = self._select_arbiters()
         if not arbiters:
+            # ─────────────────────────────────────────────────────────────────
+            # SIMULATION MODE: Generate simulated votes when no arbiters
+            # ─────────────────────────────────────────────────────────────────
+            if self.config.simulation_enabled:
+                logger.warning(
+                    "No arbiters configured but simulation enabled — "
+                    "generating simulated approval votes"
+                )
+                sim_providers = [
+                    "simulation/arbiter-1",
+                    "simulation/arbiter-2",
+                    "simulation/arbiter-3",
+                ]
+                sim_votes = {}
+                for p in sim_providers:
+                    sim_votes[p] = Vote(
+                        provider=p,
+                        vote=VoteType.APPROVE,
+                        reasoning="Simulated approval (no arbiters configured)",
+                        confidence=1.0,
+                        timestamp=time.time(),
+                        available=True,
+                        availability_reason="simulation",
+                    )
+                decision = ConsensusDecision(
+                    proposal_id=str(uuid.uuid4()),
+                    decision_hash=generate_decision_hash(policy_obj.action, policy_obj.context),
+                    status=ConsensusStatusEnum.APPROVED,
+                    approved=True,
+                    votes=sim_votes,
+                    vote_count=VoteCount(
+                        total=3,
+                        approvals=3,
+                        rejections=0,
+                        abstentions=0,
+                        unavailable=0,
+                    ),
+                    decision_time_ms=int((time.time() - start_time) * 1000),
+                    correlation_id=correlation_id,
+                    warnings=["simulation_mode_active", "no_arbiters_configured"],
+                )
+                _log_json("consensus_tally", {
+                    "correlation_id": correlation_id,
+                    "status": decision.status.value,
+                    "warnings": decision.warnings,
+                })
+                return decision
+
+            # ─────────────────────────────────────────────────────────────────
+            # NO SIMULATION: Fail-closed — INFRA_FAILURE
+            # ─────────────────────────────────────────────────────────────────
             warnings = ["no_arbiters_configured"]
             decision = ConsensusDecision(
                 proposal_id=str(uuid.uuid4()),

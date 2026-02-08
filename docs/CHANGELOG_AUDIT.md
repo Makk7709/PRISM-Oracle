@@ -12,7 +12,7 @@ run_ui → runtime → settings → models → litellm
 
 **APRÈS :**
 - ✅ `create_app()` factory : crée l'app Flask SANS dépendances LLM
-- ✅ Imports lourds déplacés dans `run()` et `init_a0()` (runtime only)
+- ✅ Imports lourds déplacés dans `run()` et `init_evidence()` (runtime only)
 - ✅ Tests E2E `/login` fonctionnent SANS litellm installé
 - ✅ CI plus rapide : pas besoin d'installer litellm pour tester login
 
@@ -63,7 +63,7 @@ APRÈS:
   run() (runtime only)
     └─→ from python.helpers.api import ApiHandler (litellm loaded here)
     └─→ from python.helpers import mcp_server, fasta2a_server
-    └─→ init_a0() → import initialize → litellm
+    └─→ init_evidence() → import initialize → litellm
 ```
 
 ### Invariants Prouvés par Tests
@@ -75,7 +75,7 @@ APRÈS:
 | `test_import_run_ui_without_models` | `import run_ui` ne déclenche pas models |
 | `test_create_app_without_litellm` | `create_app()` fonctionne sans litellm |
 | `test_login_endpoint_without_litellm` | `/login` GET/POST fonctionnent sans litellm |
-| `test_create_app_does_not_call_init_a0` | `create_app()` ne déclenche pas init_a0() |
+| `test_create_app_does_not_call_init_evidence` | `create_app()` ne déclenche pas init_evidence() |
 
 ---
 

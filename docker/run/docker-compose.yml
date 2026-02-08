@@ -4,7 +4,7 @@
 #
 # IMPORTANT: Cette configuration nécessite une image Docker personnalisée.
 # 
-# Pour construire l'image Korev Evidence:
+# Pour construire l'image KOREV Evidence:
 #   cd /chemin/vers/korev-evidence
 #   docker build -f DockerfileLocal -t korev-evidence:local .
 #
@@ -23,7 +23,7 @@ services:
       dockerfile: DockerfileLocal
     volumes:
       - ./data:/korev
-      - ../../.env:/a0/.env:ro
+      - ../../.env:/app/.env:ro
     ports:
       - "${EVIDENCE_PORT:-50080}:80"
     environment:

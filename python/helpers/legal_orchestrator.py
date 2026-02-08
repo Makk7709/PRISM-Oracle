@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                      LEGAL ORCHESTRATOR — EVIDENCE                           ║
 ║                                                                              ║
-║  Single entry point for the legal pipeline in Korev Evidence.               ║
+║  Single entry point for the legal pipeline in KOREV Evidence.               ║
 ║  Enforces P0.7 invariants + P0.8/P0.9 production requirements.              ║
 ║                                                                              ║
 ║  P1 WIRING:                                                                  ║

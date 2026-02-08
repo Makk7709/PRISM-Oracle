@@ -1,5 +1,5 @@
 """
-Korev Evidence — Reasoning Engine
+KOREV Evidence — Reasoning Engine
 ===============================
 
 Moteur de raisonnement non-linéaire avec décomposition de tâches,

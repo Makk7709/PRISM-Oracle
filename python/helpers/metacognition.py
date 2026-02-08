@@ -1,5 +1,5 @@
 """
-Korev Evidence — Metacognition Module
+KOREV Evidence — Metacognition Module
 ====================================
 
 Module de métacognition pour l'auto-évaluation, la détection d'incertitude,

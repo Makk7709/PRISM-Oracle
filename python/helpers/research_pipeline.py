@@ -522,6 +522,10 @@ Réponds en JSON:
             "warnings": decision.warnings,
         }
 
+        # Track proposal in dossier for audit/tracing
+        dossier.consensus_proposals.append(decision.proposal_id)
+        dossier.consensus_results.append(result)
+
         return decision.approved, result
     
     async def _generate_conclusion(

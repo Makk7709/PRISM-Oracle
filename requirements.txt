@@ -1,5 +1,5 @@
 a2wsgi==1.10.8
-ansio==0.0.1
+# ansio removed — GPL v3, not used anywhere in codebase
 browser-use==0.5.11
 docker==7.1.0
 duckduckgo-search==6.1.12
@@ -43,7 +43,7 @@ pathspec>=0.12.1
 psutil>=7.0.0
 soundfile==0.13.1
 imapclient>=3.0.1
-html2text>=2024.2.26
+# html2text removed — GPL-3.0, replaced by markdownify (MIT, already a dep of browser-use)
 beautifulsoup4>=4.12.3
 exchangelib>=5.4.3
 pywinpty==3.0.2; sys_platform == "win32"

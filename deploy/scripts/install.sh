@@ -1,6 +1,6 @@
 #!/bin/bash
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    PRISM + EVIDENCE — Installation Script                      ║
+# ║                 KOREV EVIDENCE — Installation Script                           ║
 # ║                                                                              ║
 # ║  Script d'installation pour déploiement Docker                               ║
 # ║  Usage: ./install.sh [--version VERSION] [--env ENV_FILE]                    ║
@@ -186,7 +186,7 @@ print_summary() {
 main() {
     echo ""
     echo "╔══════════════════════════════════════════════════════════════════════╗"
-    echo "║              PRISM + EVIDENCE — Installation                           ║"
+    echo "║              KOREV EVIDENCE — Installation                             ║"
     echo "╚══════════════════════════════════════════════════════════════════════╝"
     echo ""
     

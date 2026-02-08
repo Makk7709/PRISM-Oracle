@@ -68,6 +68,36 @@ def is_adversarial_pipeline_enabled() -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# P3.2: ANTI DOUBLE-RUN PROTECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Module-level set to track executed correlation IDs (prevents re-execution)
+_executed_correlation_ids: set = set()
+
+
+def _mark_executed(correlation_id: str) -> bool:
+    """
+    Mark a correlation_id as executed.
+    
+    Returns:
+        True if this is the first execution (allowed).
+        False if this correlation_id was already executed (blocked).
+    """
+    if correlation_id in _executed_correlation_ids:
+        logger.warning(
+            f"DOUBLE-RUN BLOCKED: correlation_id={correlation_id} already executed"
+        )
+        return False
+    _executed_correlation_ids.add(correlation_id)
+    return True
+
+
+def _clear_executed(correlation_id: str) -> None:
+    """Remove a correlation_id from the executed set (allows re-execution)."""
+    _executed_correlation_ids.discard(correlation_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # EXTENSION CLASS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -94,18 +124,120 @@ class LegalSafeModeExtension(Extension):
     PRE_TRIGGERS_KEY = "_legal_safe_pre_triggers"
     PIPELINE_OUTPUT_KEY = "_legal_pipeline_output"
     PIPELINE_RENDERED_KEY = "_legal_pipeline_rendered"
+    PIPELINE_EXECUTED_KEY = "_legal_pipeline_executed"
     
     # ─────────────────────────────────────────────────────────────────────────
     # HELPERS
     # ─────────────────────────────────────────────────────────────────────────
     
-    def is_legal_safe_mode(self, agent: "Agent") -> bool:
-        """Vérifie si le mode Legal-Safe est actif."""
+    # ─────────────────────────────────────────────────────────────────────────
+    # LEGAL AUTO-DETECTION PATTERNS
+    # ─────────────────────────────────────────────────────────────────────────
+    # These patterns detect queries that are CLEARLY legal and should
+    # auto-activate the legal pipeline even without explicit profile setting.
+    LEGAL_AUTODETECT_STRONG = [
+        # Contract drafting
+        r"\brédaction\b.*\bcontrat\b",
+        r"\bcontrat\b.*\brédaction\b",
+        r"\bcontrat\s+(?:de\s+)?(?:licence|prestation|service|travail|mandat|bail|location)",
+        r"\bprêt\s+à\s+signature\b",
+        r"\btexte\s+contractuel\b",
+        r"\bconditions\s+(?:générales|particulières)\b",
+        # Legal document production
+        r"\blegal[_\s]?contract\b",
+        r"\bproduire\s+un\s+contrat\b",
+        r"\brédig(?:er?|ez)\s+(?:un|le|ce)\s+contrat\b",
+        r"\bannexes?\s+(?:SLA|RGPD|DPA|sécurité|réversibilité)\b",
+        # Explicit legal framing
+        r"\bdroit\s+applicable\b.*\bjuridiction\b",
+        r"\bjuridiction\b.*\btribunal\b",
+        r"\bcode\s+civil\b",
+        r"\bcode\s+de\s+commerce\b",
+        r"\bcpi\b",
+        r"\bpropriété\s+intellectuelle\b.*\bcession\b",
+        r"\bcession\b.*\bpropriété\s+intellectuelle\b",
+    ]
+    
+    LEGAL_AUTODETECT_WEAK = [
+        # These need multiple matches to trigger
+        r"\bcontrat\b",
+        r"\bclause\b",
+        r"\bjuridique\b",
+        r"\blicence\b",
+        r"\bRGPD\b",
+        r"\bDPA\b",
+        r"\bannexe\b",
+        r"\bresponsabilité\b",
+        r"\bréversibilité\b",
+        r"\bconfidentialité\b",
+        r"\bgarantie\b",
+        r"\btribunal\b",
+        r"\bjuridiction\b",
+        r"\bpénalités?\b",
+        r"\bart(?:icle)?\s*\d+",
+        r"\bsignature\b",
+    ]
+    
+    LEGAL_AUTODETECT_THRESHOLD_WEAK = 5  # Need >= 5 weak matches to auto-detect
+    
+    def _detect_legal_query(self, query: str) -> bool:
+        """
+        Auto-detect if a query is a legal request based on content analysis.
+        
+        Returns True if the query is clearly legal (contract drafting,
+        legal document production, etc.) regardless of profile setting.
+        """
+        import re
+        query_lower = query.lower()
+        
+        # Strong patterns: any single match triggers legal mode
+        for pattern in self.LEGAL_AUTODETECT_STRONG:
+            if re.search(pattern, query_lower, re.IGNORECASE):
+                logger.info(
+                    f"Legal auto-detect: STRONG match '{pattern}' — "
+                    f"activating legal pipeline"
+                )
+                return True
+        
+        # Weak patterns: need multiple matches
+        weak_count = 0
+        for pattern in self.LEGAL_AUTODETECT_WEAK:
+            matches = re.findall(pattern, query_lower, re.IGNORECASE)
+            weak_count += len(matches)
+        
+        if weak_count >= self.LEGAL_AUTODETECT_THRESHOLD_WEAK:
+            logger.info(
+                f"Legal auto-detect: {weak_count} weak matches (threshold={self.LEGAL_AUTODETECT_THRESHOLD_WEAK}) — "
+                f"activating legal pipeline"
+            )
+            return True
+        
+        return False
+    
+    def is_legal_safe_mode(self, agent: "Agent", query: str = "") -> bool:
+        """
+        Vérifie si le mode Legal-Safe est actif.
+        
+        Activation par:
+        1. Profil agent = "legal_safe" (explicite)
+        2. Variable d'environnement KOREV_LEGAL_SAFE_MODE
+        3. Auto-détection du contenu de la requête (contrat, juridique, etc.)
+        """
+        # 1. Explicit profile
         if agent.config.profile == self.LEGAL_SAFE_PROFILE:
             return True
         
+        # 2. Environment variable
         env_value = os.environ.get("KOREV_LEGAL_SAFE_MODE", "").lower()
         if env_value in ("true", "1", "yes", "on"):
+            return True
+        
+        # 3. Auto-detect from query content
+        if query and self._detect_legal_query(query):
+            logger.info(
+                f"Legal Safe Mode AUTO-ACTIVATED based on query content "
+                f"(profile was '{agent.config.profile}')"
+            )
             return True
         
         return False
@@ -130,6 +262,55 @@ class LegalSafeModeExtension(Extension):
         if not ADVERSARIAL_PIPELINE_AVAILABLE:
             return False
         return is_adversarial_pipeline_enabled()
+    
+    def _extract_contract_variables(self, user_text: str) -> dict:
+        """
+        Extract contract variables from user text (best-effort).
+        Variables not found are left empty (template marks them [À COMPLÉTER]).
+        """
+        import re as _re
+        variables = {}
+        
+        # Try to extract common variables
+        # Client name
+        client_match = _re.search(r"(?:client|entre.*et)\s+(\w[\w\s]{2,30}(?:France|SAS|SARL|SA|EURL|SCI))", user_text, _re.IGNORECASE)
+        if client_match:
+            variables["client_name"] = client_match.group(1).strip()
+        
+        # Editor name (KOREV by default)
+        if "korev" in user_text.lower():
+            variables["editor_name"] = "KOREV"
+        
+        # Software name
+        for pattern in [
+            r"(?:logiciel|software|produit)\s+(?:\"([^\"]+)\"|(\w[\w\s]+?)(?:\s*[,(.]|$))",
+            r"(\w+\s+\w+)\s+\(actif\s+korev\)",
+        ]:
+            sw_match = _re.search(pattern, user_text, _re.IGNORECASE)
+            if sw_match:
+                name = sw_match.group(1) or sw_match.group(2) if sw_match.lastindex > 1 else sw_match.group(1)
+                if name:
+                    variables["software_name"] = name.strip()
+                    break
+        
+        # Jurisdiction
+        jur_match = _re.search(r"(?:tribunal|juridiction)\s+(?:de\s+)?(?:commerce\s+de\s+)?(\w+)", user_text, _re.IGNORECASE)
+        if jur_match:
+            variables["jurisdiction"] = f"Tribunal de commerce de {jur_match.group(1).strip()}"
+        
+        # Remote access
+        if _re.search(r"(?:accès|acces)\s+(?:à\s+)?distance|support\s+distant|remote", user_text, _re.IGNORECASE):
+            variables["remote_access"] = "true"
+        else:
+            variables["remote_access"] = "false"
+        
+        # Licence metric
+        if "par poste" in user_text.lower():
+            variables["licence_metric"] = "par poste"
+        elif "par utilisateur" in user_text.lower():
+            variables["licence_metric"] = "par utilisateur"
+        
+        return variables
     
     def _render_user_response(self, dossier) -> str:
         """
@@ -365,14 +546,60 @@ Elle ne constitue pas un avis juridique et ne remplace pas la consultation d'un 
         """
         from python.helpers.print_style import PrintStyle
         
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 0: Extract user text FIRST (needed for auto-detection)
+        # ─────────────────────────────────────────────────────────────────
+        user_text = ""
+        if loop_data and loop_data.user_message:
+            msg = loop_data.user_message
+            msg_content = msg.content if hasattr(msg, 'content') else None
+            
+            if isinstance(msg_content, dict):
+                user_text = (
+                    msg_content.get("user_message", "") or 
+                    msg_content.get("message", "") or 
+                    msg_content.get("text", "") or 
+                    ""
+                )
+            elif isinstance(msg_content, str):
+                try:
+                    import json as _json
+                    parsed = _json.loads(msg_content.strip().strip('`').replace('json\n', ''))
+                    user_text = (
+                        parsed.get("user_message", "") or
+                        parsed.get("message", "") or
+                        parsed.get("text", "") or
+                        msg_content
+                    )
+                except (ValueError, AttributeError):
+                    user_text = msg_content
+            elif isinstance(msg_content, list):
+                parts = []
+                for item in msg_content:
+                    if isinstance(item, str):
+                        parts.append(item)
+                    elif isinstance(item, dict):
+                        parts.append(
+                            item.get("user_message", "") or
+                            item.get("message", "") or
+                            item.get("text", "") or
+                            ""
+                        )
+                user_text = " ".join(filter(None, parts))
+        
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 1: Check legal safe mode (with query auto-detection)
+        # ─────────────────────────────────────────────────────────────────
         # DEBUG: Always log entry
+        is_legal = self.is_legal_safe_mode(agent, query=user_text)
         PrintStyle(font_color="yellow").print(
             f"🔧 DEBUG monologue_start: profile={agent.config.profile}, "
-            f"is_legal_safe={self.is_legal_safe_mode(agent)}, "
-            f"should_use_pipeline={self.should_use_legal_pipeline()}"
+            f"is_legal_safe={is_legal}, "
+            f"should_use_pipeline={self.should_use_legal_pipeline()}, "
+            f"query_len={len(user_text)}"
         )
         
-        if not self.is_legal_safe_mode(agent):
+        if not is_legal:
             PrintStyle(font_color="red").print("🔧 DEBUG: NOT legal_safe mode - skipping")
             return
         
@@ -381,44 +608,78 @@ Elle ne constitue pas un avis juridique et ne remplace pas la consultation d'un 
         agent.set_data(self.CORRELATION_ID_KEY, correlation_id)
         agent.set_data(self.START_TIME_KEY, time.time())
         
-        # Extraire le texte du message
-        user_text = ""
-        if loop_data and loop_data.user_message:
-            msg = loop_data.user_message
-            msg_content = msg.content if hasattr(msg, 'content') else None
-            
-            PrintStyle(font_color="yellow").print(
-                f"🔧 DEBUG: msg_content type={type(msg_content)}, value={str(msg_content)[:200] if msg_content else 'None'}"
-            )
-            
-            if isinstance(msg_content, dict):
-                # The template uses "user_message" key, not "message"
-                user_text = (
-                    msg_content.get("user_message", "") or 
-                    msg_content.get("message", "") or 
-                    msg_content.get("text", "") or 
-                    ""
+        # user_text already extracted above — skip duplicate extraction
+        
+        PrintStyle(font_color="green" if user_text else "red").print(
+            f"🔧 DEBUG: Extracted user_text (len={len(user_text)}): '{user_text[:100]}...'" if user_text else "🔧 DEBUG: NO USER TEXT EXTRACTED!"
+        )
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # NEW: ROUTE TO CONTRACT DRAFTING PIPELINE IF INTENT DETECTED
+        # ═══════════════════════════════════════════════════════════════════
+        
+        if user_text:
+            try:
+                from python.helpers.contract_drafting.orchestrator import (
+                    detect_contract_drafting_intent,
+                    run_drafting_pipeline,
                 )
-            elif isinstance(msg_content, str):
-                # Try to parse as JSON first (template output is JSON string)
-                try:
-                    import json
-                    parsed = json.loads(msg_content.strip().strip('`').replace('json\n', ''))
-                    user_text = (
-                        parsed.get("user_message", "") or 
-                        parsed.get("message", "") or 
-                        msg_content
+                
+                if detect_contract_drafting_intent(user_text):
+                    PrintStyle(font_color="cyan", bold=True).print(
+                        "📝 CONTRACT DRAFTING PIPELINE — Intent detected, routing to legal_drafting_guarded"
                     )
-                except (json.JSONDecodeError, ValueError):
-                    user_text = msg_content
-            elif msg_content is not None:
-                user_text = str(msg_content)
-            
-            PrintStyle(font_color="green" if user_text else "red").print(
-                f"🔧 DEBUG: Extracted user_text (len={len(user_text)}): '{user_text[:100]}...'" if user_text else "🔧 DEBUG: NO USER TEXT EXTRACTED!"
-            )
-        else:
-            PrintStyle(font_color="red").print(f"🔧 DEBUG: No loop_data or user_message")
+                    logger.info(f"[{correlation_id}] Routing to CONTRACT DRAFTING pipeline...")
+                    
+                    # Extract variables from user text (minimal extraction)
+                    variables = self._extract_contract_variables(user_text)
+                    
+                    # Execute pipeline
+                    output = run_drafting_pipeline(variables, contract_type="on_prem_licence")
+                    
+                    # Build user-facing response
+                    if output.gate_passed:
+                        response_text = (
+                            f"📝 **PROJET DE CONTRAT — À VALIDER PAR UN JURISTE QUALIFIÉ**\n\n"
+                            f"Gate d'audit : ✅ {output.gate_summary}\n\n"
+                            f"---\n\n"
+                            f"{output.rendered_contract}\n\n"
+                            f"---\n\n"
+                            f"⚠️ **AVERTISSEMENT** : Ce document est un PROJET rédigé par un assistant IA. "
+                            f"Il ne constitue PAS un acte juridique finalisé. "
+                            f"Il DOIT être revu et validé par un juriste qualifié avant toute utilisation ou signature."
+                        )
+                    else:
+                        corrections = "\n".join(f"  - {c}" for c in output.corrections_needed)
+                        response_text = (
+                            f"🚫 **CONTRAT NON LIBÉRÉ — Gate d'audit REJETÉE**\n\n"
+                            f"Verdict : {output.gate_summary}\n\n"
+                            f"**Corrections requises avant release :**\n{corrections}\n\n"
+                            f"Le contrat ne peut pas être présenté tant que les problèmes P0 ne sont pas corrigés."
+                        )
+                    
+                    # SHORT-CIRCUIT LLM
+                    agent.set_data("_pipeline_final_response", response_text)
+                    agent.set_data("_skip_llm", True)
+                    agent.set_data("_pipeline_was_used", True)
+                    agent.set_data("_contract_drafting_output", output)
+                    
+                    agent.context.log.log(
+                        type="info",
+                        heading="📝 Contract Drafting Pipeline",
+                        content=f"Pipeline executed: gate_passed={output.gate_passed}",
+                        kvps={
+                            "correlation_id": correlation_id,
+                            "gate_passed": output.gate_passed,
+                            "gate_summary": output.gate_summary,
+                            "p0_count": output.gate_verdict.p0_count(),
+                            "p1_count": output.gate_verdict.p1_count(),
+                        }
+                    )
+                    return  # Pipeline handled — exit monologue_start
+                    
+            except ImportError:
+                logger.warning("Contract drafting module not available — continuing")
         
         # ═══════════════════════════════════════════════════════════════════
         # NEW: ROUTE TO ADVERSARIAL PIPELINE (7-phase) IF ENABLED

@@ -158,6 +158,15 @@ class StrategicEnforcementMonologueHook(Extension):
             PrintStyle(font_color="gray").print("[STRATEGIC_HOOK] No user text, skipping")
             return
         
+        # ─── Check if legal pipeline already claimed this request ─────────
+        # If _skip_llm is already set (by legal hook running first via _10_),
+        # do NOT override with strategic pipeline.
+        if self.agent.get_data("_skip_llm"):
+            PrintStyle(font_color="gray").print(
+                "[STRATEGIC_HOOK] Another pipeline already active (_skip_llm=True). Skipping."
+            )
+            return
+        
         # Detect strategic document
         detection = detect_strategic_document(user_text)
         PrintStyle(font_color="cyan").print(f"[STRATEGIC_HOOK] Detection: is_strategic={detection.is_strategic}, type={detection.document_type}")

@@ -696,7 +696,7 @@ def generate_pdf(
     content: str,
     output_path: str,
     title: Optional[str] = None,
-    author: str = "Korev Evidence",
+    author: str = "KOREV Evidence",
     template_name: Optional[str] = None,
     user_request: Optional[str] = None,
     pagesize = A4
@@ -794,7 +794,7 @@ def generate_pdf(
 def markdown_to_pdf_bytes(
     content: str,
     title: Optional[str] = None,
-    author: str = "Korev Evidence",
+    author: str = "KOREV Evidence",
     template_name: Optional[str] = None,
     user_request: Optional[str] = None
 ) -> bytes:

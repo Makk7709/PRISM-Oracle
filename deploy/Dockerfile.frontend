@@ -1,8 +1,8 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    ORACLE FRONTEND — Dockerfile                              ║
+# ║              KOREV EVIDENCE FRONTEND — Dockerfile                            ║
 # ║                                                                              ║
 # ║  Build statique servi par Caddy                                              ║
-# ║  Optimisé pour DICA (léger, sécurisé)                                        ║
+# ║  Optimisé pour déploiement (léger, sécurisé)                                 ║
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -27,9 +27,9 @@ RUN if [ -f "webui/package.json" ]; then \
 FROM caddy:2-alpine
 
 # Labels
-LABEL org.opencontainers.image.title="Oracle Frontend"
-LABEL org.opencontainers.image.description="PRISM + Oracle Web UI"
-LABEL org.opencontainers.image.vendor="KOREV"
+LABEL org.opencontainers.image.title="KOREV Evidence Frontend"
+LABEL org.opencontainers.image.description="KOREV Evidence Web UI"
+LABEL org.opencontainers.image.vendor="KOREV AI"
 
 # Copier le frontend (build ou source)
 COPY --from=builder /build/webui/ /srv/

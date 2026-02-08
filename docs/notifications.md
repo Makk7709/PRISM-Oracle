@@ -1,6 +1,6 @@
-# Korev Evidence Notifications
+# KOREV Evidence Notifications
 
-Quick guide for using the notification system in Korev Evidence.
+Quick guide for using the notification system in KOREV Evidence.
 
 ## Backend Usage
 

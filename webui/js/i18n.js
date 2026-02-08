@@ -1,5 +1,5 @@
 /**
- * Korev Evidence — Internationalization (i18n) System
+ * KOREV Evidence — Internationalization (i18n) System
  * 
  * Supports: English (en), French (fr)
  * Default: Auto-detect from browser

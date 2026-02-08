@@ -18,8 +18,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Load PDF test fixtures (conftest_pdf.py)
-pytest_plugins = ["tests.conftest_pdf"]
+# Load PDF test fixtures (conftest_pdf.py) — optional, requires Python 3.10+
+try:
+    import tests.conftest_pdf as _pdf_conftest  # noqa: F401
+    pytest_plugins = ["tests.conftest_pdf"]
+except (ImportError, TypeError):
+    # conftest_pdf or pdf_generator uses Python 3.10+ syntax (Path | None)
+    # Skip gracefully on Python 3.9
+    pass
 
 
 # ============================================================================

@@ -201,7 +201,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "chat_model_provider",
             "title": "Chat model provider",
-            "description": "Select provider for main chat model used by Korev Evidence",
+            "description": "Select provider for main chat model used by KOREV Evidence",
             "type": "select",
             "value": settings["chat_model_provider"],
             "options": cast(list[FieldOption], get_providers("chat")),
@@ -303,7 +303,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     chat_model_section: SettingsSection = {
         "id": "chat_model",
         "title": "Chat Model",
-        "description": "Selection and settings for main chat model used by Korev Evidence",
+        "description": "Selection and settings for main chat model used by KOREV Evidence",
         "fields": chat_model_fields,
         "tab": "agent",
     }
@@ -453,7 +453,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     embed_model_section: SettingsSection = {
         "id": "embed_model",
         "title": "Embedding Model",
-        "description": f"Settings for the embedding model used by Korev Evidence.<br><h4>⚠️ No need to change</h4>The default HuggingFace model {default_settings['embed_model_name']} is preloaded and runs locally within the docker container and there's no need to change it unless you have a specific requirements for embedding.",
+        "description": f"Settings for the embedding model used by KOREV Evidence.<br><h4>⚠️ No need to change</h4>The default HuggingFace model {default_settings['embed_model_name']} is preloaded and runs locally within the docker container and there's no need to change it unless you have a specific requirements for embedding.",
         "fields": embed_model_fields,
         "tab": "agent",
     }
@@ -553,7 +553,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     browser_model_section: SettingsSection = {
         "id": "browser_model",
         "title": "Web Browser Model",
-        "description": "Settings for the web browser model. Korev Evidence uses <a href='https://github.com/browser-use/browser-use' target='_blank'>browser-use</a> agentic framework to handle web interactions.",
+        "description": "Settings for the web browser model. KOREV Evidence uses <a href='https://github.com/browser-use/browser-use' target='_blank'>browser-use</a> agentic framework to handle web interactions.",
         "fields": browser_model_fields,
         "tab": "agent",
     }
@@ -731,7 +731,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     auth_section: SettingsSection = {
         "id": "auth",
         "title": "Authentication",
-        "description": "Settings for authentication to use Korev Evidence Web UI.",
+        "description": "Settings for authentication to use KOREV Evidence Web UI.",
         "fields": auth_fields,
         "tab": "external",
     }
@@ -754,7 +754,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     api_keys_section: SettingsSection = {
         "id": "api_keys",
         "title": "API Keys",
-        "description": "API keys for model providers and services used by Korev Evidence. You can set multiple API keys separated by a comma (,). They will be used in round-robin fashion.<br>For more information abou Korev Evidence Venice provider, see <a href='https://korev.ai/api-dashboard' target='_blank'>Korev Evidence Venice</a>.",
+        "description": "API keys for model providers and services used by KOREV Evidence. You can set multiple API keys separated by a comma (,). They will be used in round-robin fashion.<br>For more information abou KOREV Evidence Venice provider, see <a href='https://korev.ai/api-dashboard' target='_blank'>KOREV Evidence Venice</a>.",
         "fields": api_keys_fields,
         "tab": "external",
     }
@@ -851,7 +851,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "memory_recall_enabled",
             "title": "Memory auto-recall enabled",
-            "description": "Korev Evidence will automatically recall memories based on convesation context.",
+            "description": "KOREV Evidence will automatically recall memories based on convesation context.",
             "type": "switch",
             "value": settings["memory_recall_enabled"],
         }
@@ -1263,7 +1263,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     mcp_client_section: SettingsSection = {
         "id": "mcp_client",
         "title": "External MCP Servers",
-        "description": "Korev Evidence can use external MCP servers, local or remote as tools.",
+        "description": "KOREV Evidence can use external MCP servers, local or remote as tools.",
         "fields": mcp_client_fields,
         "tab": "mcp",
     }
@@ -1309,7 +1309,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "mcp_server_enabled",
             "title": "Enable Korev MCP Server",
-            "description": "Expose Korev Evidence as an SSE/HTTP MCP server. This will make this Korev instance available to MCP clients.",
+            "description": "Expose KOREV Evidence as an SSE/HTTP MCP server. This will make this Korev instance available to MCP clients.",
             "type": "switch",
             "value": settings["mcp_server_enabled"],
         }
@@ -1329,7 +1329,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     mcp_server_section: SettingsSection = {
         "id": "mcp_server",
         "title": "Korev MCP Server",
-        "description": "Korev Evidence can be exposed as an SSE MCP server. See <a href=\"javascript:openModal('settings/mcp/server/example.html')\">connection example</a>.",
+        "description": "KOREV Evidence can be exposed as an SSE MCP server. See <a href=\"javascript:openModal('settings/mcp/server/example.html')\">connection example</a>.",
         "fields": mcp_server_fields,
         "tab": "mcp",
     }
@@ -1341,7 +1341,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "a2a_server_enabled",
             "title": "Enable A2A server",
-            "description": "Expose Korev Evidence as A2A server. This allows other agents to connect to Korev via A2A protocol.",
+            "description": "Expose KOREV Evidence as A2A server. This allows other agents to connect to Korev via A2A protocol.",
             "type": "switch",
             "value": settings["a2a_server_enabled"],
         }
@@ -1350,7 +1350,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     a2a_section: SettingsSection = {
         "id": "a2a_server",
         "title": "Korev A2A Server",
-        "description": "Korev Evidence can be exposed as an A2A server. See <a href=\"javascript:openModal('settings/a2a/a2a-connection.html')\">connection example</a>.",
+        "description": "KOREV Evidence can be exposed as an A2A server. See <a href=\"javascript:openModal('settings/a2a/a2a-connection.html')\">connection example</a>.",
         "fields": a2a_fields,
         "tab": "mcp",
     }
@@ -1516,7 +1516,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "external_api_examples",
             "title": "API Examples",
-            "description": "View examples for using Korev Evidence's external API endpoints with API key authentication.",
+            "description": "View examples for using KOREV Evidence's external API endpoints with API key authentication.",
             "type": "button",
             "value": "Show API Examples",
         }
@@ -1525,7 +1525,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     external_api_section: SettingsSection = {
         "id": "external_api",
         "title": "External API",
-        "description": "Korev Evidence provides external API endpoints for integration with other applications. "
+        "description": "KOREV Evidence provides external API endpoints for integration with other applications. "
                        "These endpoints use API key authentication and support text messages and file attachments.",
         "fields": external_api_fields,
         "tab": "external",
@@ -1538,7 +1538,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "update_check_enabled",
             "title": "Enable Update Checker",
-            "description": "Enable update checker to notify about newer versions of Korev Evidence.",
+            "description": "Enable update checker to notify about newer versions of KOREV Evidence.",
             "type": "switch",
             "value": settings["update_check_enabled"],
         }
@@ -1547,7 +1547,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     update_checker_section: SettingsSection = {
         "id": "update_checker",
         "title": "Update Checker",
-        "description": "Update checker periodically checks for new releases of Korev Evidence and will notify when an update is recommended.<br>No personal data is sent to the update server, only randomized+anonymized unique ID and current version number, which help us evaluate the importance of the update in case of critical bug fixes etc.",
+        "description": "Update checker periodically checks for new releases of KOREV Evidence and will notify when an update is recommended.<br>No personal data is sent to the update server, only randomized+anonymized unique ID and current version number, which help us evaluate the importance of the update in case of critical bug fixes etc.",
         "fields": update_checker_fields,
         "tab": "external",
     }
@@ -1580,7 +1580,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     backup_section: SettingsSection = {
         "id": "backup_restore",
         "title": "Backup & Restore",
-        "description": "Backup and restore Korev Evidence data and configurations "
+        "description": "Backup and restore KOREV Evidence data and configurations "
         "using glob pattern-based file selection.",
         "fields": backup_fields,
         "tab": "backup",

@@ -534,15 +534,21 @@ class TestRendering:
 class TestP1ConsensusWiring:
     """P1.2: Test real consensus wiring (no mock in prod path)."""
     
-    def test_consensus_simulation_disabled_by_default(self):
-        """Simulation should be disabled by default (production mode)."""
-        # Remove env var if set
+    def test_consensus_simulation_enabled_in_development(self):
+        """Simulation should be enabled by default in development mode."""
+        # Remove env var if set, ensure we're in development
         env_backup = os.environ.pop("LEGAL_CONSENSUS_SIMULATION", None)
+        env_mode_backup = os.environ.get("EVIDENCE_ENV")
+        os.environ["EVIDENCE_ENV"] = "development"
         try:
-            assert is_consensus_simulation_enabled() == False
+            assert is_consensus_simulation_enabled() == True
         finally:
             if env_backup is not None:
                 os.environ["LEGAL_CONSENSUS_SIMULATION"] = env_backup
+            if env_mode_backup is not None:
+                os.environ["EVIDENCE_ENV"] = env_mode_backup
+            else:
+                os.environ.pop("EVIDENCE_ENV", None)
     
     def test_consensus_simulation_can_be_enabled(self):
         """Simulation can be enabled for testing."""

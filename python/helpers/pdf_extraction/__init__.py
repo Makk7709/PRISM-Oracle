@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    PDF EXTRACTION MODULE                                     ║
 ║                                                                              ║
-║  Robust, non-blocking PDF extraction for Korev Evidence.                       ║
+║  Robust, non-blocking PDF extraction for KOREV Evidence.                       ║
 ║                                                                              ║
 ║  Quick Start:                                                                ║
 ║  ```python                                                                   ║

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testing utilities for Korev Evidence.
+Testing utilities for KOREV Evidence.
 
 This module provides:
 - FakeLiteLLMProvider: Deterministic LLM responses from fixtures

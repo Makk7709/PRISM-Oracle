@@ -86,35 +86,47 @@ class TestMedicalRoutingConsensus:
         """medical est dans CONSENSUS_REQUIRED_PROFILES."""
         assert "medical" in CONSENSUS_REQUIRED_PROFILES
     
-    def test_medical_profile_always_requires_consensus(self, router):
-        """Profile medical → consensus obligatoire, même query banale."""
+    def test_medical_profile_level3_requires_consensus(self, router):
+        """Profile medical + Level 3 → consensus obligatoire."""
         assessment = router.assess(
-            query="Hello",
+            query="Mon patient présente ces symptômes, quel diagnostic ?",
             agent_profile="medical",
         )
         assert assessment.requires_consensus is True
         assert assessment.strict_evidence_mode is True
     
-    def test_medical_profile_prod_mode(self, prod_router):
-        """Profile medical en production → toujours consensus."""
+    def test_medical_profile_level1_no_consensus(self, router):
+        """Profile medical + Level 1 (greeting) → pas de consensus."""
+        assessment = router.assess(
+            query="Hello",
+            agent_profile="medical",
+        )
+        # Level 1 bypasse le consensus même pour profil medical
+        assert assessment.requires_consensus is False
+    
+    def test_medical_profile_prod_mode_level3(self, prod_router):
+        """Profile medical en production + Level 3 → toujours consensus."""
         assessment = prod_router.assess(
-            query="Simple greeting",
+            query="Quel traitement pour mon patient diabétique ?",
             agent_profile="medical",
         )
         assert assessment.requires_consensus is True
     
     def test_medical_query_detected_without_profile(self, router):
-        """Query médicale détectée même sans profil medical explicite."""
+        """Query médicale Level 2 détectée → domaine MEDICAL, pas consensus."""
         assessment = router.assess(
             query="What are the side effects of metformin?",
             agent_profile="default",
         )
         assert assessment.domain == CriticalDomain.MEDICAL
-        assert assessment.requires_consensus is True
+        # Level 2 → pas de consensus, mais domaine détecté
     
-    def test_medical_profile_forces_consensus_regardless_of_query(self, router):
-        """Le profil medical force le consensus, peu importe la query."""
-        queries = ["Hello", "What time is it?", "Random text"]
+    def test_medical_profile_level3_forces_consensus(self, router):
+        """Le profil medical avec Level 3 force le consensus."""
+        queries = [
+            "Mon patient a ces symptômes, que dois-je faire ?",
+            "Dois-je prescrire ce traitement à mon patient ?",
+        ]
         
         for query in queries:
             assessment = router.assess(query=query, agent_profile="medical")
@@ -605,13 +617,13 @@ class TestGateIntegration:
             pytest.skip("Gate module not available")
     
     def test_router_medical_profile_assessment(self, router):
-        """Assessment complet pour profil medical."""
+        """Assessment complet pour profil medical + Level 3."""
         assessment = router.assess(
-            query="What are drug interactions?",
+            query="Dois-je prescrire ces interactions médicamenteuses à mon patient ?",
             agent_profile="medical"
         )
         
-        # Observable stable signals (pas can_bypass)
+        # Observable stable signals
         assert assessment.requires_consensus is True
         assert assessment.strict_evidence_mode is True
         assert assessment.domain in [CriticalDomain.MEDICAL, CriticalDomain.DEFAULT]

@@ -136,13 +136,98 @@ class StrategicResult:
 # DETECTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ─────────────────────────────────────────────────────────────────────────────
+# LEGAL EXCLUSION PATTERNS
+# ─────────────────────────────────────────────────────────────────────────────
+# If these patterns dominate the query, it's a LEGAL request, not strategic.
+# The strategic pipeline must NOT hijack legal contract drafting requests.
+LEGAL_EXCLUSION_PATTERNS = [
+    r"\bcontrat\b",
+    r"\blicence\b",
+    r"\bjuridique\b",
+    r"\bjuridiction\b",
+    r"\btribunal\b",
+    r"\bclauses?\b",
+    r"\bannexes?\b",
+    r"\bconditions\s+(?:générales|particulières)\b",
+    r"\bpropriété\s+intellectuelle\b",
+    r"\bdroit\s+(?:applicable|d'usage|français|civil)\b",
+    r"\bcode\s+(?:civil|de\s+commerce|du\s+travail)\b",
+    r"\bRGPD\b",
+    r"\bDPA\b",
+    r"\bréversibilité\b",
+    r"\bSLA\b",
+    r"\bresponsabilité\b",
+    r"\bgaranties?\b",
+    r"\blitige\b",
+    r"\bcession\b",
+    r"\bsignature\b",
+    r"\bprêt\s+à\s+signature\b",
+    r"\bcontractuel(?:le)?\b",
+    r"\brédaction\b.*\bcontrat\b",
+    r"\bcontrat\b.*\brédaction\b",
+    r"\blegal[_\s]contract\b",
+    r"\bcpi\b",
+    r"\bart(?:icle)?\s*\d+",
+]
+
+
+def _is_legal_context(query: str) -> bool:
+    """
+    Check if the query is primarily a legal context.
+    
+    Returns True if legal patterns significantly outnumber strategic patterns,
+    indicating this is a legal request that should NOT be routed to strategic.
+    """
+    query_lower = query.lower()
+    
+    legal_score = 0
+    for pattern in LEGAL_EXCLUSION_PATTERNS:
+        matches = re.findall(pattern, query_lower, re.IGNORECASE)
+        legal_score += len(matches)
+    
+    strategic_score = 0
+    for doc_type, patterns in STRATEGIC_PATTERNS.items():
+        for pattern in patterns:
+            matches = re.findall(pattern, query_lower, re.IGNORECASE)
+            strategic_score += len(matches)
+    
+    # Legal context dominates if:
+    # - Legal score is >= 3 (strong legal presence), OR
+    # - Legal score is at least 2x strategic score
+    if legal_score >= 3:
+        logger.info(
+            f"Legal context detected (score={legal_score} vs strategic={strategic_score}). "
+            f"Excluding from strategic pipeline."
+        )
+        return True
+    
+    if strategic_score > 0 and legal_score >= strategic_score * 2:
+        logger.info(
+            f"Legal context dominates (score={legal_score} vs strategic={strategic_score}). "
+            f"Excluding from strategic pipeline."
+        )
+        return True
+    
+    return False
+
+
 def detect_strategic_document(query: str) -> StrategicDetection:
     """
     Detect if query requests a strategic document.
     
+    IMPORTANT: Legal requests are excluded — a contract with pricing terms
+    is a LEGAL document, not a strategic one.
+    
     Returns detection result with document type and requirements.
     """
     query_lower = query.lower()
+    
+    # ─────────────────────────────────────────────────────────────────────
+    # RULE 0: Legal exclusion — legal contracts NEVER go to strategic
+    # ─────────────────────────────────────────────────────────────────────
+    if _is_legal_context(query):
+        return StrategicDetection(is_strategic=False)
     
     for doc_type, patterns in STRATEGIC_PATTERNS.items():
         matched = []

@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         LEGAL PIPELINE — EVIDENCE                            ║
 ║                                                                              ║
-║  Pipeline juridique verrouillé pour Korev Evidence.                          ║
+║  Pipeline juridique verrouillé pour KOREV Evidence.                          ║
 ║                                                                              ║
 ║  AVERTISSEMENT: Ce module garantit la provenance et la traçabilité,          ║
 ║  pas l'exhaustivité ni l'interprétation juridique.                           ║
@@ -1622,24 +1622,24 @@ def build_legal_output(
     # Case 3: Judge approved
     elif judge_result.verdict == LegalJudgeVerdict.APPROVE:
         
-        # P0.7 Invariant C: Consensus required but missing
+        # P0.7 Invariant C: Consensus required but missing → REFUSAL (fail-closed)
         if consensus_required and not consensus_result:
-            mode = LegalOutputMode.SAFE_ANALYSIS
+            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
             missing_info.append(MissingInfoCode.CONSENSUS_REQUIRED)
         
-        # P0.7 Invariant C: Consensus required but rejected (real rejection)
+        # P0.7 Invariant C: Consensus required but rejected → REFUSAL (fail-closed)
         elif consensus_required and consensus_rejected:
-            mode = LegalOutputMode.SAFE_ANALYSIS
+            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
             missing_info.append(MissingInfoCode.CONSENSUS_REJECTED)
         
-        # NEW: Consensus required but no quorum (evaluation done, disagreement)
+        # Consensus required but no quorum → REFUSAL (fail-closed)
         elif consensus_required and consensus_no_quorum:
-            mode = LegalOutputMode.SAFE_ANALYSIS
+            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
             missing_info.append(MissingInfoCode.CONSENSUS_NO_QUORUM)
         
-        # NEW: Consensus required but infra failure (no evaluation possible)
+        # Consensus required but infra failure → REFUSAL (fail-closed)
         elif consensus_required and consensus_infra_failure:
-            mode = LegalOutputMode.SAFE_ANALYSIS
+            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
             missing_info.append(MissingInfoCode.CONSENSUS_INFRA_FAILURE)
         
         # P0.7 Invariant F: APPROVED_POSITION only if consensus APPROVED

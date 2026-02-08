@@ -4,12 +4,12 @@ REM  KOREV EVIDENCE - Installation Script (Windows)
 REM  VERSION COMPLÈTE avec toutes les customisations
 REM ═══════════════════════════════════════════════════════════════════════════════
 REM
-REM  Double-cliquez sur ce fichier pour installer et lancer Korev Evidence
+REM  Double-cliquez sur ce fichier pour installer et lancer KOREV Evidence
 REM  avec toutes les customisations : WebUI, typography, MCP servers, etc.
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
-title Korev Evidence - Installation
+title KOREV Evidence - Installation
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗
@@ -119,7 +119,7 @@ if exist ".env" (
     ) else (
         echo Creation du fichier .env...
         (
-            echo # Korev Evidence Configuration
+            echo # KOREV Evidence Configuration
             echo # Cle OpenRouter ^(requise^) - https://openrouter.ai/keys
             echo API_KEY_OPENROUTER=
             echo.
@@ -153,7 +153,7 @@ echo.
 REM ───────────────────────────────────────────────────────────────────────────────
 REM Step 6: Launch Evidence
 REM ───────────────────────────────────────────────────────────────────────────────
-echo [6/6] Lancement de Korev Evidence...
+echo [6/6] Lancement de KOREV Evidence...
 
 set WEB_UI_PORT=5050
 
@@ -162,7 +162,7 @@ echo ╔════════════════════════
 echo ║           ✓ INSTALLATION TERMINEE                             ║
 echo ╠═══════════════════════════════════════════════════════════════╣
 echo ║                                                               ║
-echo ║  Korev Evidence demarre sur:                                  ║
+echo ║  KOREV Evidence demarre sur:                                  ║
 echo ║  → http://localhost:5050                                      ║
 echo ║                                                               ║
 echo ║  Pour arreter: Fermez cette fenetre ou Ctrl+C                 ║

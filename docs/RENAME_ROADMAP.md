@@ -22,7 +22,7 @@
 | Pattern Source | Pattern Cible |
 |----------------|---------------|
 | `KOREV Evidence` | `KOREV Evidence` |
-| `Korev Evidence` | `Korev Evidence` |
+| `KOREV Evidence` | `KOREV Evidence` |
 | `KOREV_Evidence` | `KOREV_Evidence` |
 | `korev_evidence` | `korev_evidence` |
 | `korev-evidence` | `korev-evidence` |

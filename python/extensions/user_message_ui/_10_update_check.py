@@ -5,7 +5,7 @@ from python.helpers import settings, update_check
 import datetime
 
 
-# check for newer versions of Korev Evidence available and send notification
+# check for newer versions of KOREV Evidence available and send notification
 # check after user message is sent from UI, not API, MCP etc. (user is active and can see the notification)
 # do not check too often, use cooldown
 # do not notify too often unless there's a different notification
@@ -49,7 +49,7 @@ class UpdateCheck(Extension):
         notifs = self.agent.context.get_notification_manager()
         notifs.send_notification(
             title=notif.get("title", "Newer version available"),
-            message=notif.get("message", "A newer version of Korev Evidence is available. Please update to the latest version."),
+            message=notif.get("message", "A newer version of KOREV Evidence is available. Please update to the latest version."),
             type=notif.get("type", "info"),
             detail=notif.get("detail", ""),
             display_time=notif.get("display_time", 10),

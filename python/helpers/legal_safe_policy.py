@@ -66,10 +66,10 @@ ABUSE_QUERY_THRESHOLD = 10
 
 # Patterns de demande de certitude (déclenchent escalade)
 CERTAINTY_PATTERNS = [
-    r"\bcertifie[rz]?\b",
+    r"\bcertifi[eé][rz]?\b",
     r"\bgaranti[rse]?\b",
     r"\bvalide[rz]?\s+légalement\b",
-    r"\bassure[rz]?\s+(?:moi|nous)\s+que\b",
+    r"\bassure[rz]?[- ](?:moi|nous)\s+que\b",
     r"\bconfirme[rz]?\s+(?:que|légalement)\b",
     r"\bdonne[rz]?\s+(?:moi|nous)\s+une?\s+certitude\b",
     r"\best[- ]ce\s+(?:légal|valide|conforme)\s*\?\s*$",
@@ -110,17 +110,17 @@ DOMAIN_KEYWORDS = {
         "vol", "escroquerie", "abus de confiance", "violence", "menace",
     ],
     LegalDomain.FISCAL: [
-        "impôts", "impot", "fiscal", "TVA", "IS", "IR", "redressement", "contrôle fiscal",
+        "impôts", "impot", "fiscal", "tva", "redressement", "contrôle fiscal",
         "optimisation fiscale", "évasion", "fraude fiscale", "déclaration",
         "payer mes impôts", "taxes",
     ],
     LegalDomain.RGPD_DONNEES: [
-        "RGPD", "données personnelles", "CNIL", "DPO", "violation de données",
+        "rgpd", "données personnelles", "cnil", "dpo", "violation de données",
         "consentement", "droit à l'oubli", "portabilité", "registre de traitement",
         "données", "protection des données", "data", "gdpr",
     ],
     LegalDomain.IMMIGRATION: [
-        "titre de séjour", "visa", "naturalisation", "expulsion", "OQTF",
+        "titre de séjour", "visa", "naturalisation", "expulsion", "oqtf",
         "regroupement familial", "asile", "réfugié", "carte de résident",
     ],
     LegalDomain.CONTRATS: [

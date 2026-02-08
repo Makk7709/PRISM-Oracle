@@ -1,5 +1,5 @@
 """
-Korev Evidence — Task Planner (HTN + SMART Goals)
+KOREV Evidence — Task Planner (HTN + SMART Goals)
 ================================================
 
 Planificateur hiérarchique de tâches avec:

@@ -330,19 +330,19 @@ class TestModuleLevelImportCheck:
                 )
     
     @pytest.mark.security
-    def test_create_app_does_not_call_init_a0(self):
+    def test_create_app_does_not_call_init_evidence(self):
         """
-        create_app() should NOT call init_a0().
+        create_app() should NOT call init_evidence().
         
-        init_a0() imports initialize which imports litellm.
+        init_evidence() imports initialize which imports litellm.
         """
         from unittest.mock import patch
         import run_ui
         
-        with patch.object(run_ui, 'init_a0') as mock_init:
+        with patch.object(run_ui, 'init_evidence') as mock_init:
             app = run_ui.create_app(testing=True)
             
-            # init_a0 should NOT have been called
+            # init_evidence should NOT have been called
             mock_init.assert_not_called()
             
             # App should still be valid

@@ -300,7 +300,7 @@ def _build_elements(
     
     # Footer
     elements.append(Spacer(1, 30))
-    footer_text = f"Document généré par Korev Evidence — {created_at.strftime('%Y-%m-%d %H:%M')}"
+    footer_text = f"Document généré par KOREV Evidence — {created_at.strftime('%Y-%m-%d %H:%M')}"
     elements.append(Paragraph(
         f"<font color='#a0aec0' size='8'>{sanitize_text(footer_text)}</font>",
         styles['Body']

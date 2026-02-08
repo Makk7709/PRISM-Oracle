@@ -9,7 +9,7 @@ from email.message import Message as EmailMessage
 from fnmatch import fnmatch
 from typing import Any, Dict, List, Optional, Tuple
 
-import html2text
+from markdownify import markdownify as md
 from bs4 import BeautifulSoup
 from imapclient import IMAPClient
 
@@ -474,14 +474,17 @@ class EmailClient:
                         img.replace_with(soup.new_string(file_marker))
             html_content = str(soup)
 
-        # Convert HTML to text
-        h = html2text.HTML2Text()
-        h.ignore_links = False
-        h.ignore_images = False
-        h.ignore_emphasis = False
-        h.body_width = 0  # Don't wrap lines
+        # Convert HTML to Markdown-style text (markdownify — MIT license)
+        text = md(
+            html_content,
+            strip=None,           # Keep all tags converted
+            convert=None,         # Convert all supported tags
+            wrap=False,           # Don't wrap lines (equiv. body_width=0)
+            wrap_width=0,         # No wrapping
+        )
 
-        text = h.handle(html_content)
+        # Fix markdownify escaping underscores in file paths like [file://...path_name.png]
+        text = re.sub(r'\[file://(.*?)\]', lambda m: '[file://' + m.group(1).replace('\\_', '_') + ']', text)
 
         # Clean up extra whitespace
         text = re.sub(r"\n{3,}", "\n\n", text)  # Max 2 consecutive newlines
@@ -498,7 +501,7 @@ class EmailClient:
         """
         Save attachment to disk and return absolute path.
 
-        Uses Korev Evidence's file helpers for path management.
+        Uses KOREV Evidence's file helpers for path management.
         """
         # Sanitize filename
         filename = files.safe_file_name(filename)

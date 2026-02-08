@@ -1,7 +1,7 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    PRISM + EVIDENCE — Docker Compose                           ║
+# ║                  KOREV EVIDENCE — Docker Compose                               ║
 # ║                                                                              ║
-# ║  Déploiement production-ready pour PC DICA                                   ║
+# ║  Déploiement production-ready                                                ║
 # ║  Mode: offline-first, audit complet, rollback supporté                       ║
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝

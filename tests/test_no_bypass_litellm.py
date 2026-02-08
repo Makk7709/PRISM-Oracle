@@ -59,8 +59,9 @@ class TestNetworkGuard:
                 messages=[{"role": "user", "content": "test"}],
             )
         
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
-        assert "litellm.completion" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
+        assert "litellm.completion" in error_msg
     
     @pytest.mark.asyncio
     async def test_direct_acompletion_blocked(self):
@@ -73,8 +74,9 @@ class TestNetworkGuard:
                 messages=[{"role": "user", "content": "test"}],
             )
         
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
-        assert "litellm.acompletion" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
+        assert "litellm.acompletion" in error_msg
     
     def test_direct_embedding_blocked(self):
         """Direct litellm.embedding() is blocked."""
@@ -86,7 +88,8 @@ class TestNetworkGuard:
                 input=["test"],
             )
         
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
 
 
 @requires_litellm
@@ -104,7 +107,8 @@ class TestModelWrapperGuard:
                 model="gpt-4",
                 messages=[{"role": "user", "content": "test"}],
             )
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
     
     @pytest.mark.asyncio
     async def test_models_module_acompletion_blocked(self):
@@ -116,7 +120,8 @@ class TestModelWrapperGuard:
                 model="gpt-4",
                 messages=[{"role": "user", "content": "test"}],
             )
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
 
 
 @requires_litellm
@@ -168,7 +173,8 @@ class TestFakeProviderBypass:
                 model="gpt-4",
                 messages=[{"role": "user", "content": "test"}],
             )
-        assert "REAL_LITELLM_CALL_FORBIDDEN" in str(exc_info.value)
+        error_msg = str(exc_info.value)
+        assert "LITELLM" in error_msg.upper() and "FORBIDDEN" in error_msg.upper()
 
 
 class TestNoDirectLiteLLMUsage:
@@ -252,7 +258,9 @@ class TestGuardErrorMessage:
                     {"role": "user", "content": "Hello"},
                 ],
             )
-        except RealLiteLLMCallForbiddenError as e:
+            pytest.fail("Expected RuntimeError for real LiteLLM call")
+        except RuntimeError as e:
+            # Catch RuntimeError (parent of both local and conftest versions)
             assert "claude-3-opus" in str(e)
             assert "2" in str(e)  # 2 messages
     

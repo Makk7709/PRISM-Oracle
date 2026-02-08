@@ -1032,6 +1032,76 @@ def extract_from_pdf(
         diagnostics.methods_attempted.append(ExtractionMethod.PYMUPDF_TEXT)
         diagnostics.methods_succeeded.append(ExtractionMethod.PYMUPDF_TEXT)
         
+        # 2.5. OCR fallback — if text extraction yielded too few words
+        #      and OCR is enabled and PDF type matches
+        if (config.ocr.enabled
+            and diagnostics.word_count < 10
+            and result.pdf_type.value in config.ocr.only_if_pdf_type
+            and pdf_path
+            and not context.is_budget_exhausted(config.budgets.total_timeout_s)):
+            
+            ocr_start = time.time()
+            try:
+                from python.helpers.pdf_extraction.ocr_engine import OCREngine
+                
+                ocr_engine = OCREngine()
+                adaptive_dpi = ocr_engine.select_dpi(diagnostics.page_count)
+                
+                ocr_results = ocr_engine.run_ocr_on_pdf(
+                    pdf_path,
+                    language="eng+fra",
+                    max_pages=min(diagnostics.page_count, config.budgets.max_pages),
+                    dpi=adaptive_dpi,
+                    total_timeout_s=max(
+                        1.0,
+                        config.budgets.total_timeout_s
+                        - (time.time() - context.start_time)
+                    ),
+                )
+                
+                diagnostics.methods_attempted.append(ExtractionMethod.OCR_TESSERACT)
+                
+                # Convert OCR words to pipeline Words + apply confidence filter
+                ocr_words: list[Word] = []
+                ocr_region_count = 0
+                for ocr_page in ocr_results:
+                    filtered = ocr_engine.filter_by_confidence(
+                        ocr_page.words,
+                        min_confidence=config.ocr.min_confidence_to_accept,
+                    )
+                    ocr_region_count += len(filtered)
+                    for ow in filtered:
+                        ocr_words.append(Word(
+                            text=ow.text,
+                            bbox=BBox(
+                                x0=ow.x0, y0=ow.y0,
+                                x1=ow.x1, y1=ow.y1,
+                            ),
+                            page=ow.page,
+                            confidence=ow.confidence,
+                        ))
+                
+                if ocr_words:
+                    words = ocr_words
+                    result.words = words
+                    diagnostics.word_count = len(words)
+                    diagnostics.methods_succeeded.append(
+                        ExtractionMethod.OCR_TESSERACT
+                    )
+                
+                diagnostics.ocr_region_count = ocr_region_count
+                
+            except Exception as e:
+                logger.warning(
+                    "OCR step failed",
+                    extra={
+                        "correlation_id": context.correlation_id,
+                        "error_type": type(e).__name__,
+                    }
+                )
+            
+            diagnostics.ocr_time_ms = int((time.time() - ocr_start) * 1000)
+        
         # 3. Extract tables (geometry reconstruction)
         tables: list[TableResult] = []
         table_start = time.time()

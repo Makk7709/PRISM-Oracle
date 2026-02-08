@@ -1,21 +1,21 @@
 # Troubleshooting and FAQ
-This page addresses frequently asked questions (FAQ) and provides troubleshooting steps for common issues encountered while using Korev Evidence.
+This page addresses frequently asked questions (FAQ) and provides troubleshooting steps for common issues encountered while using KOREV Evidence.
 
 ## Frequently Asked Questions
-**1. How do I ask Korev Evidence to work directly on my files or dirs?**
--   Place the files/dirs in the `work_dir` directory. Korev Evidence will be able to perform tasks on them. The `work_dir` directory is located in the root directory of the Docker Container.
+**1. How do I ask KOREV Evidence to work directly on my files or dirs?**
+-   Place the files/dirs in the `work_dir` directory. KOREV Evidence will be able to perform tasks on them. The `work_dir` directory is located in the root directory of the Docker Container.
 
 **2. When I input something in the chat, nothing happens. What's wrong?**
 -   Check if you have set up API keys in the Settings page. If not, the application will not be able to communicate with the endpoints it needs to run LLMs and to perform tasks.
 
-**3. How do I integrate open-source models with Korev Evidence?**
+**3. How do I integrate open-source models with KOREV Evidence?**
 Refer to the [Choosing your LLMs](installation.md#installing-and-using-ollama-local-models) section of the documentation for detailed instructions and examples for configuring different LLMs. Local models can be run using Ollama or LM Studio.
 
 > [!TIP]
 > Some LLM providers offer free usage of their APIs, for example Groq, Mistral, SambaNova or CometAPI.
 
-**6. How can I make Korev Evidence retain memory between sessions?**
-Refer to the [How to update Korev Evidence](installation.md#how-to-update-korev-evidence) section of the documentation for instructions on how to update Korev Evidence while retaining memory and data.
+**6. How can I make KOREV Evidence retain memory between sessions?**
+Refer to the [How to update KOREV Evidence](installation.md#how-to-update-korev-evidence) section of the documentation for instructions on how to update KOREV Evidence while retaining memory and data.
 
 **7. Where can I find more documentation or tutorials?**
 -   Visit [korev.ai](https://korev.ai) for support and documentation.
@@ -27,8 +27,8 @@ Modify the `rate_limit_seconds` and `rate_limit_requests` parameters in the `Age
 -   Ensure you have Docker installed and running.  If using Docker Desktop on macOS, grant it access to your project files in Docker Desktop's settings.  Check the [Installation guide](installation.md#4-install-docker-docker-desktop-application) for more details.
 -   Verify that the Docker image is updated.
 
-**10. Can Korev Evidence interact with external APIs or services (e.g., WhatsApp)?**
-Extending Korev Evidence to interact with external APIs is possible by creating custom tools or solutions. Refer to the documentation on creating them. 
+**10. Can KOREV Evidence interact with external APIs or services (e.g., WhatsApp)?**
+Extending KOREV Evidence to interact with external APIs is possible by creating custom tools or solutions. Refer to the documentation on creating them. 
 
 ## Troubleshooting
 
@@ -41,4 +41,4 @@ Extending Korev Evidence to interact with external APIs is possible by creating 
 
 * **Error Messages:** Pay close attention to the error messages displayed in the Web UI or terminal.  They often provide valuable clues for diagnosing the issue. Refer to the specific error message in online searches or community forums for potential solutions.
 
-* **Performance Issues:** If Korev Evidence is slow or unresponsive, it might be due to resource limitations, network latency, or the complexity of your prompts and tasks, especially when using local models.
+* **Performance Issues:** If KOREV Evidence is slow or unresponsive, it might be due to resource limitations, network latency, or the complexity of your prompts and tasks, especially when using local models.

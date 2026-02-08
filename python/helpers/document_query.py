@@ -651,17 +651,24 @@ class DocumentQueryHelper:
 
             if not contents:
                 try:
-                    import pdf2image
-                    import pytesseract
+                    from python.helpers.pdf_extraction.ocr_engine import OCREngine
 
                     PrintStyle.debug(
-                        f"DocumentQueryHelper::handle_pdf_document: FALLBACK Converting PDF to images: {temp_file_path}"
+                        f"DocumentQueryHelper::handle_pdf_document: FALLBACK OCR via OCREngine: {temp_file_path}"
                     )
 
-                    # Convert PDF to images
-                    pages = pdf2image.convert_from_path(temp_file_path)  # type: ignore
-                    for page in pages:
-                        contents += pytesseract.image_to_string(page) + "\n\n"
+                    engine = OCREngine()
+                    adaptive_dpi = engine.select_dpi(page_count=10)
+                    ocr_results = engine.run_ocr_on_pdf(
+                        temp_file_path,
+                        language="eng+fra",
+                        max_pages=20,
+                        dpi=adaptive_dpi,
+                        total_timeout_s=60.0,
+                    )
+                    for ocr_page in ocr_results:
+                        if ocr_page.text.strip():
+                            contents += ocr_page.text + "\n\n"
                 except Exception as ocr_error:
                     PrintStyle.warning(f"[PDF] OCR fallback failed: {ocr_error}")
                     contents = ""

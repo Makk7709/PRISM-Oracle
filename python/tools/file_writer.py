@@ -152,7 +152,7 @@ class FileWriter(Tool):
                 content=content,
                 title=title if title else None,
                 template=normalized_template if normalized_template else None,
-                author="Korev Evidence"
+                author="KOREV Evidence"
             )
             
             # Render to file
@@ -173,7 +173,7 @@ class FileWriter(Tool):
                     content=content,
                     output_path=path,
                     title=title if title else None,
-                    author="Korev Evidence",
+                    author="KOREV Evidence",
                     template_name=normalized_template if normalized_template else None
                 )
                 

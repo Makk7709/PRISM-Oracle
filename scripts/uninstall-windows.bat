@@ -8,7 +8,7 @@ REM  NE SUPPRIME PAS: le code source, .env, ni les donnees utilisateur
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
-title Korev Evidence - Desinstallation
+title KOREV Evidence - Desinstallation
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗

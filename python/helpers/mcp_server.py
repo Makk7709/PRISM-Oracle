@@ -22,12 +22,12 @@ _PRINTER = PrintStyle(italic=True, font_color="green", padding=False)
 
 
 mcp_server: FastMCP = FastMCP(
-    name="Korev Evidence integrated MCP Server",
+    name="KOREV Evidence integrated MCP Server",
     instructions="""
-    Connect to remote Korev Evidence instance.
-    Korev Evidence is a general AI assistant controlling it's linux environment.
-    Korev Evidence can install software, manage files, execute commands, code, use internet, etc.
-    Korev Evidence's environment is isolated unless configured otherwise.
+    Connect to remote KOREV Evidence instance.
+    KOREV Evidence is a general AI assistant controlling it's linux environment.
+    KOREV Evidence can install software, manage files, execute commands, code, use internet, etc.
+    KOREV Evidence's environment is isolated unless configured otherwise.
     """,
 )
 
@@ -37,7 +37,7 @@ class ToolResponse(BaseModel):
         description="The status of the response", default="success"
     )
     response: str = Field(
-        description="The response from the remote Korev Evidence Instance"
+        description="The response from the remote KOREV Evidence Instance"
     )
     chat_id: str = Field(description="The id of the chat this message belongs to.")
 
@@ -47,14 +47,14 @@ class ToolError(BaseModel):
         description="The status of the response", default="error"
     )
     error: str = Field(
-        description="The error message from the remote Korev Evidence Instance"
+        description="The error message from the remote KOREV Evidence Instance"
     )
     chat_id: str = Field(description="The id of the chat this message belongs to.")
 
 
 SEND_MESSAGE_DESCRIPTION = """
-Send a message to the remote Korev Evidence Instance.
-This tool is used to send a message to the remote Korev Evidence Instance connected remotely via MCP.
+Send a message to the remote KOREV Evidence Instance.
+This tool is used to send a message to the remote KOREV Evidence Instance connected remotely via MCP.
 """
 
 
@@ -87,7 +87,7 @@ async def send_message(
     message: Annotated[
         str,
         Field(
-            description="The message to send to the remote Korev Evidence Instance",
+            description="The message to send to the remote KOREV Evidence Instance",
             title="message",
         ),
     ],
@@ -95,7 +95,7 @@ async def send_message(
         Annotated[
             list[str],
             Field(
-                description="Optional: A list of attachments (file paths or web urls) to send to the remote Korev Evidence Instance with the message. Default: Empty list",
+                description="Optional: A list of attachments (file paths or web urls) to send to the remote KOREV Evidence Instance with the message. Default: Empty list",
                 title="attachments",
             ),
         ]
@@ -124,7 +124,7 @@ async def send_message(
 ) -> Annotated[
     Union[ToolResponse, ToolError],
     Field(
-        description="The response from the remote Korev Evidence Instance", title="response"
+        description="The response from the remote KOREV Evidence Instance", title="response"
     ),
 ]:
     context: AgentContext | None = None
@@ -160,10 +160,10 @@ async def send_message(
 
 
 FINISH_CHAT_DESCRIPTION = """
-Finish a chat with the remote Korev Evidence Instance.
-This tool is used to finish a persistent chat (send_message with persistent_chat=True) with the remote Korev Evidence Instance connected remotely via MCP.
+Finish a chat with the remote KOREV Evidence Instance.
+This tool is used to finish a persistent chat (send_message with persistent_chat=True) with the remote KOREV Evidence Instance connected remotely via MCP.
 If you want to continue the chat, use the send_message tool instead.
-Always use this tool to finish persistent chat conversations with remote Korev Evidence.
+Always use this tool to finish persistent chat conversations with remote KOREV Evidence.
 """
 
 
@@ -202,7 +202,7 @@ async def finish_chat(
 ) -> Annotated[
     Union[ToolResponse, ToolError],
     Field(
-        description="The response from the remote Korev Evidence Instance", title="response"
+        description="The response from the remote KOREV Evidence Instance", title="response"
     ),
 ]:
     if not chat_id:

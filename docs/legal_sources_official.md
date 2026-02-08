@@ -1,6 +1,6 @@
 # Legal Sources — Sources Officielles
 
-> **P4** — Gestion des sources juridiques officielles pour le pipeline Korev Evidence.
+> **P4** — Gestion des sources juridiques officielles pour le pipeline KOREV Evidence.
 
 ---
 

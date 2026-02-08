@@ -4,6 +4,11 @@ set -e
 echo "====================BASE PACKAGES4 START===================="
 
 apt-get install -y --no-install-recommends \
-    tesseract-ocr tesseract-ocr-script-latn poppler-utils
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-script-latn \
+    poppler-utils
 
 echo "====================BASE PACKAGES4 END===================="

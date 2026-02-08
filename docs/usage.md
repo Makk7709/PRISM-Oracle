@@ -1,13 +1,13 @@
 # Usage Guide
-This guide explores usage and configuration scenarios for Korev Evidence. You can consider this as a reference post-installation guide.
+This guide explores usage and configuration scenarios for KOREV Evidence. You can consider this as a reference post-installation guide.
 
 ![Utility Message with Solutions](res/memory-man.png)
 
 ## Basic Operations
-Korev Evidence provides several basic operations through its interface:
+KOREV Evidence provides several basic operations through its interface:
 
 ### Restart Framework
-The Restart button allows you to quickly restart the Korev Evidence framework without using the terminal:
+The Restart button allows you to quickly restart the KOREV Evidence framework without using the terminal:
 
 ![Restart Framework](res/ui-restarting.png)
 
@@ -22,7 +22,7 @@ The Restart button allows you to quickly restart the Korev Evidence framework wi
 > - Reinitialize the system when agents become unresponsive
 
 ### Action Buttons
-Located beneath the chat input box, Korev Evidence provides a set of action buttons for enhanced control and visibility:
+Located beneath the chat input box, KOREV Evidence provides a set of action buttons for enhanced control and visibility:
 
 ![Action Buttons](res/ui-actions.png)
 #### Chat Flow Control
@@ -38,7 +38,7 @@ Located beneath the chat input box, Korev Evidence provides a set of action butt
   - Success message confirms successful import
   - See [knowledge](architecture.md#knowledge) for more details
 
-### File Browser: Manage files in the Korev Evidence environment
+### File Browser: Manage files in the KOREV Evidence environment
   - Upload new files and folders
   - Download files (click filename) or folders (as zip archives)
   - Delete files and folders
@@ -72,7 +72,7 @@ Access the chat history in JSON format
 > Use the Context and History buttons to understand how the agent interprets your instructions and debug any unexpected behavior.
 
 ### File Attachments
-Korev Evidence supports direct file attachments in the chat interface for seamless file operations:
+KOREV Evidence supports direct file attachments in the chat interface for seamless file operations:
 
 #### Attaching Files
 * Click the attachment icon (📎) on the left side of the chat input box
@@ -86,7 +86,7 @@ Korev Evidence supports direct file attachments in the chat interface for seamle
 
 #### Working with Attached Files
 * Files can be referenced directly in your messages
-* Korev Evidence can:
+* KOREV Evidence can:
   - Process attached files
   - Move files to specific directories
   - Perform operations on multiple files simultaneously
@@ -98,16 +98,16 @@ Korev Evidence supports direct file attachments in the chat interface for seamle
 > When working with multiple files, you can attach them all at once and then give instructions about what to do with them. The agent will handle them as a batch while keeping you informed of the progress.
 
 ## Tool Usage
-Korev Evidence's power comes from its ability to use [tools](architecture.md#tools). Here's how to leverage them effectively:
+KOREV Evidence's power comes from its ability to use [tools](architecture.md#tools). Here's how to leverage them effectively:
 
-- **Understand Tools:** Korev Evidence includes default tools like knowledge (powered by SearXNG), code execution, and communication. Understand the capabilities of these tools and how to invoke them.
+- **Understand Tools:** KOREV Evidence includes default tools like knowledge (powered by SearXNG), code execution, and communication. Understand the capabilities of these tools and how to invoke them.
 
 ## Example of Tools Usage: Web Search and Code Execution
-Let's say you want Korev Evidence to perform some financial analysis tasks. Here's a possible prompt:
+Let's say you want KOREV Evidence to perform some financial analysis tasks. Here's a possible prompt:
 
 > Please be a professional financial analyst. Find last month Bitcoin/ USD price trend and make a chart in your environment. The chart must  have highlighted key points corresponding with dates of major news  about cryptocurrency. Use the 'search_engine' and 'document_query_tool' to find the price and  the news, and the 'code_execution_tool' to perform the rest of the job.
 
-Korev Evidence might then:
+KOREV Evidence might then:
 
 1. Use the `search_engine` and `document_query_tool` to query a reliable source for the Bitcoin price and for the news about cryptocurrency as prompted.
 2. Extract the price from the search results and save the news, extracting their dates and possible impact on the price.
@@ -115,30 +115,30 @@ Korev Evidence might then:
 4. Save the final chart on disk inside the container and provide a link to it with the `response_tool`.
 
 > [!NOTE]
-> The first run of `code_execution_tool` may take a while as it downloads and builds the Korev Evidence Docker image. Subsequent runs will be faster.
+> The first run of `code_execution_tool` may take a while as it downloads and builds the KOREV Evidence Docker image. Subsequent runs will be faster.
 
-This example demonstrates how to combine multiple tools to achieve an analysis task. By mastering prompt engineering and tool usage, you can unlock the full potential of Korev Evidence to solve complex problems.
+This example demonstrates how to combine multiple tools to achieve an analysis task. By mastering prompt engineering and tool usage, you can unlock the full potential of KOREV Evidence to solve complex problems.
 
 ## Multi-Agent Cooperation
-One of Korev Evidence's unique features is multi-agent cooperation.
+One of KOREV Evidence's unique features is multi-agent cooperation.
 
 * **Creating Sub-Agents:** Agents can create sub-agents to delegate sub-tasks.  This helps manage complexity and distribute workload.
 * **Communication:** Agents can communicate with each other, sharing information and coordinating actions. The system prompt and message history play a key role in guiding this communication.
-* **Hierarchy:** Korev Evidence uses a [hierarchical structure](architecture.md#agent-hierarchy-and-communication), with superior agents delegating tasks to subordinates.  This allows for structured problem-solving and efficient resource allocation.
+* **Hierarchy:** KOREV Evidence uses a [hierarchical structure](architecture.md#agent-hierarchy-and-communication), with superior agents delegating tasks to subordinates.  This allows for structured problem-solving and efficient resource allocation.
 
 ![](res/physics.png)
 ![](res/physics-2.png)
 
 ## Prompt Engineering
-Effective prompt engineering is crucial for getting the most out of Korev Evidence. Here are some tips and techniques:
+Effective prompt engineering is crucial for getting the most out of KOREV Evidence. Here are some tips and techniques:
 
-* **Be Clear and Specific:** Clearly state your desired outcome.  The more specific you are, the better Korev Evidence can understand and fulfill your request.  Avoid vague or ambiguous language.
+* **Be Clear and Specific:** Clearly state your desired outcome.  The more specific you are, the better KOREV Evidence can understand and fulfill your request.  Avoid vague or ambiguous language.
 * **Provide Context:** If necessary, provide background information or context to help the agent understand the task better. This might include relevant details, constraints, or desired format for the response.
 * **Break Down Complex Tasks:**  For complex tasks, break them down into smaller, more manageable sub-tasks.  This makes it easier for the agent to reason through the problem and generate a solution.
 * **Iterative Refinement:** Don't expect perfect results on the first try.  Experiment with different prompts, refine your instructions based on the agent's responses, and iterate until you achieve the desired outcome. To achieve a full-stack, web-app development task, for example, you might need to iterate for a few hours for 100% success.
 
 ## Voice Interface
-Korev Evidence provides both Text-to-Speech (TTS) and Speech-to-Text (STT) capabilities for natural voice interaction:
+KOREV Evidence provides both Text-to-Speech (TTS) and Speech-to-Text (STT) capabilities for natural voice interaction:
 
 ### Text-to-Speech
 Enable voice responses from agents:
@@ -203,7 +203,7 @@ Configure STT settings in the Settings page:
 > When asking the agent to solve mathematical problems, it will automatically respond using KaTeX formatting for clear and professional-looking mathematical expressions.
 
 ### File Browser
-Korev Evidence provides a powerful file browser interface for managing your workspace:
+KOREV Evidence provides a powerful file browser interface for managing your workspace:
 
 #### Interface Overview
 - **Navigation Bar**: Shows current directory path with "Up" button for parent directory
@@ -224,7 +224,7 @@ Korev Evidence provides a powerful file browser interface for managing your work
   - Current path always visible for context
 
 > [!NOTE]
-> The files browser allows the user to go in the Korev Evidence root folder if you click the `Up` button, but the working directory of Agents will always be `/work_dir`
+> The files browser allows the user to go in the KOREV Evidence root folder if you click the `Up` button, but the working directory of Agents will always be `/work_dir`
 >
 - **File Operations**:
   - Create new files and directories
@@ -240,10 +240,10 @@ Korev Evidence provides a powerful file browser interface for managing your work
   - Select and manage multiple files at once
 
 > [!TIP]
-> The File Browser integrates seamlessly with Korev Evidence's capabilities. You can reference files directly in your conversations, and the agent can help you manage, modify, and organize your files.
+> The File Browser integrates seamlessly with KOREV Evidence's capabilities. You can reference files directly in your conversations, and the agent can help you manage, modify, and organize your files.
 
 ## Backup & Restore
-Korev Evidence provides a comprehensive backup and restore system to protect your data and configurations. This feature helps you safeguard your work and migrate Korev Evidence setups between different systems.
+KOREV Evidence provides a comprehensive backup and restore system to protect your data and configurations. This feature helps you safeguard your work and migrate KOREV Evidence setups between different systems.
 
 ### Creating Backups
 Access the backup functionality through the Settings interface:
@@ -253,7 +253,7 @@ Access the backup functionality through the Settings interface:
 3. Click **Create Backup** to start the backup process
 
 #### What Gets Backed Up
-By default, Korev Evidence backs up your most important data:
+By default, KOREV Evidence backs up your most important data:
 
 * **Knowledge Base**: Your custom knowledge files and documents
 * **Memory System**: Agent memories and learned information
@@ -283,7 +283,7 @@ Before creating a backup, you can customize what to include:
 > Backup creation may take a few minutes depending on the amount of data. You'll see progress updates during the process.
 
 ### Restoring from Backup
-The restore process allows you to recover your Korev Evidence setup from a previous backup:
+The restore process allows you to recover your KOREV Evidence setup from a previous backup:
 
 #### Starting a Restore
 1. Navigate to **Settings** → **Backup** tab
@@ -317,12 +317,12 @@ Optionally clean up existing files before restoring:
 #### When to Create Backups
 * **Before Major Changes**: Always backup before significant modifications
 * **Regular Schedule**: Create weekly or monthly backups of your work
-* **Before System Updates**: Backup before updating Korev Evidence or system components
+* **Before System Updates**: Backup before updating KOREV Evidence or system components
 * **Project Milestones**: Save backups when completing important work
 
 #### Backup Management
 * **Descriptive Names**: Use clear names like "project-completion-2024-01"
-* **External Storage**: Keep backup files in a safe location outside Korev Evidence
+* **External Storage**: Keep backup files in a safe location outside KOREV Evidence
 * **Multiple Versions**: Maintain several backup versions for different time periods
 * **Test Restores**: Occasionally test restoring backups to ensure they work
 
@@ -334,9 +334,9 @@ Optionally clean up existing files before restoring:
 ### Common Use Cases
 
 #### System Migration
-Moving Korev Evidence to a new server or computer:
+Moving KOREV Evidence to a new server or computer:
 1. Create a complete backup on the original system
-2. Install Korev Evidence on the new system
+2. Install KOREV Evidence on the new system
 3. Restore the backup to migrate all your data and settings
 
 #### Project Archival
@@ -352,7 +352,7 @@ Saving work-in-progress states:
 3. Restore previous versions if something goes wrong
 
 #### Team Collaboration
-Sharing Korev Evidence configurations:
+Sharing KOREV Evidence configurations:
 1. Create backups with shared configurations and tools
 2. Team members can restore to get consistent setups
 3. Include documentation and project files
@@ -361,4 +361,4 @@ Sharing Korev Evidence configurations:
 > Always test your backup and restore process in a safe environment before relying on it for critical data. Keep multiple backup versions and store them in secure, accessible locations.
 
 > [!TIP]
-> The backup system is designed to work across different operating systems and Korev Evidence installations. Your backups from a Windows system will work on Linux, and vice versa.
+> The backup system is designed to work across different operating systems and KOREV Evidence installations. Your backups from a Windows system will work on Linux, and vice versa.

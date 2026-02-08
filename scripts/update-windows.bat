@@ -8,7 +8,7 @@ REM  Usage: Double-cliquez sur ce fichier
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
-title Korev Evidence - Mise a jour
+title KOREV Evidence - Mise a jour
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════════╗
@@ -120,7 +120,7 @@ echo ╔════════════════════════
 echo ║           ✓ MISE A JOUR TERMINEE                              ║
 echo ╠═══════════════════════════════════════════════════════════════╣
 echo ║                                                               ║
-echo ║  Pour lancer Korev Evidence:                                  ║
+echo ║  Pour lancer KOREV Evidence:                                  ║
 echo ║  → Double-cliquez sur install-windows.bat                     ║
 echo ║                                                               ║
 echo ║  OU manuellement:                                             ║
@@ -133,7 +133,7 @@ echo.
 set /p LAUNCH="Voulez-vous lancer Evidence maintenant? (O/N): "
 if /i "%LAUNCH%"=="O" (
     echo.
-    echo Lancement de Korev Evidence...
+    echo Lancement de KOREV Evidence...
     echo → http://localhost:5050
     echo.
     start "" /b cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:5050"

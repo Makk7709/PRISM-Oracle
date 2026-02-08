@@ -1,7 +1,7 @@
-# Korev Evidence Backup/Restore Frontend Specification
+# KOREV Evidence Backup/Restore Frontend Specification
 
 ## Overview
-This specification defines the frontend implementation for Korev Evidence's backup and restore functionality, providing an intuitive user interface with a dedicated "backup" tab in the settings system and following established Alpine.js patterns. The backup functionality gets its own tab for better organization and user experience.
+This specification defines the frontend implementation for KOREV Evidence's backup and restore functionality, providing an intuitive user interface with a dedicated "backup" tab in the settings system and following established Alpine.js patterns. The backup functionality gets its own tab for better organization and user experience.
 
 ## Frontend Architecture
 
@@ -330,8 +330,8 @@ The backup system uses a comprehensive `metadata.json` file that includes:
 import { createStore } from "/js/AlpineStore.js";
 
 // ⚠️ CRITICAL: The .env file contains API keys and essential configuration.
-// This file is REQUIRED for Korev Evidence to function and must be backed up.
-// Note: Patterns now use resolved absolute paths (e.g., /home/user/a0/data/.env)
+// This file is REQUIRED for KOREV Evidence to function and must be backed up.
+// Note: Patterns now use resolved absolute paths (e.g., /home/user/app/data/.env)
 
 const model = {
   // State
@@ -467,7 +467,7 @@ const model = {
     };
   },
 
-    // Editor Management - Following Korev Evidence ACE editor patterns
+    // Editor Management - Following KOREV Evidence ACE editor patterns
   async initBackupEditor() {
     const container = document.getElementById("backup-metadata-editor");
     if (container) {
@@ -1001,13 +1001,13 @@ const model = {
 
         const warnings = [];
 
-        // Check Korev Evidence version compatibility
+        // Check KOREV Evidence version compatibility
         // Note: Both backup and current versions are obtained via git.get_git_info()
         const backupVersion = this.backupMetadata.korev_version;
         const currentVersion = "current"; // Retrieved from git.get_git_info() on backend
 
         if (backupVersion !== currentVersion && backupVersion !== "development") {
-            warnings.push(`Backup created with Korev Evidence ${backupVersion}, current version is ${currentVersion}`);
+            warnings.push(`Backup created with KOREV Evidence ${backupVersion}, current version is ${currentVersion}`);
         }
 
     // Check backup age
@@ -1295,7 +1295,7 @@ async handleFieldButton(field) {
 Use existing `openModal()` and `closeModal()` functions from the global modal system (`webui/js/modals.js`).
 
 #### Toast Notifications
-Use existing Korev Evidence toast system for consistent user feedback:
+Use existing KOREV Evidence toast system for consistent user feedback:
 ```javascript
 // Use established toast patterns
 globalThis.toast("Backup created successfully", "success");
@@ -1304,7 +1304,7 @@ globalThis.toast("Error creating backup", "error");
 ```
 
 #### ACE Editor Integration
-The backup system follows Korev Evidence's established ACE editor patterns **exactly** as implemented in MCP servers:
+The backup system follows KOREV Evidence's established ACE editor patterns **exactly** as implemented in MCP servers:
 
 **Theme Detection (identical to MCP servers):**
 ```javascript
@@ -1339,7 +1339,7 @@ onClose() {
 ```
 
 #### API Integration Patterns
-The backup system uses Korev Evidence's existing API communication methods for consistency:
+The backup system uses KOREV Evidence's existing API communication methods for consistency:
 
 **Standard API Calls (using global sendJsonData):**
 ```javascript
@@ -1350,7 +1350,7 @@ const response = await sendJsonData("backup_test", {
     max_files: 1000
 });
 
-// Error handling follows Korev Evidence patterns
+// Error handling follows KOREV Evidence patterns
 if (response.success) {
     this.previewFiles = response.files;
 } else {
@@ -1389,12 +1389,12 @@ eventSource.onmessage = (event) => {
 ```
 
 #### Utility Function Integration
-The backup system can leverage existing Korev Evidence utility functions for consistency:
+The backup system can leverage existing KOREV Evidence utility functions for consistency:
 
 **File Size Formatting:**
 ```javascript
-// Check if Korev Evidence has existing file size utilities
-// If not available, implement following Korev Evidence's style patterns
+// Check if KOREV Evidence has existing file size utilities
+// If not available, implement following KOREV Evidence's style patterns
 formatFileSize(bytes) {
     if (!bytes) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -1501,10 +1501,10 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Performance Optimization**: Debounced search, efficient list rendering, and scroll management
 
 ### Integration Features
-- **Settings Modal Integration**: Seamless integration with existing Korev Evidence settings system
+- **Settings Modal Integration**: Seamless integration with existing KOREV Evidence settings system
 - **Toast Notifications**: Success/error feedback using existing notification system
-- **Modal System**: Proper integration with Korev Evidence's modal management
-- **API Layer**: Consistent API communication patterns following Korev Evidence conventions
+- **Modal System**: Proper integration with KOREV Evidence's modal management
+- **API Layer**: Consistent API communication patterns following KOREV Evidence conventions
 - **Error Handling**: Unified error handling and user feedback mechanisms
 
 ### Accessibility and Usability
@@ -1538,7 +1538,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Real-time Preview**: See exactly which files will be restored before proceeding
 - **Immediate Feedback**: JSON validation and error highlighting as you edit
 
-This enhanced frontend specification delivers a professional-grade user interface with sophisticated file management, real-time progress monitoring, and comprehensive metadata visualization, all organized within a dedicated backup tab for optimal user experience. The implementation maintains perfect integration with Korev Evidence's existing UI architecture and follows established Alpine.js patterns.
+This enhanced frontend specification delivers a professional-grade user interface with sophisticated file management, real-time progress monitoring, and comprehensive metadata visualization, all organized within a dedicated backup tab for optimal user experience. The implementation maintains perfect integration with KOREV Evidence's existing UI architecture and follows established Alpine.js patterns.
 
 ### Implementation Status: ✅ COMPLETED & PRODUCTION READY
 
@@ -1549,7 +1549,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 **1. Settings Integration** ✅
 - **Backup Tab**: Dedicated "Backup & Restore" tab in settings interface
 - **Button Handlers**: Integrated with existing `handleFieldButton()` method
-- **Modal System**: Uses existing Korev Evidence modal management
+- **Modal System**: Uses existing KOREV Evidence modal management
 - **Toast Notifications**: Consistent error/success feedback
 
 **2. Alpine.js Components** ✅
@@ -1586,7 +1586,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 **Communication Patterns:**
 - **Standard API**: Uses global `sendJsonData()` for consistency
 - **File Upload**: FormData for archive uploads with proper validation
-- **Error Handling**: Follows Korev Evidence error formatting and toast patterns
+- **Error Handling**: Follows KOREV Evidence error formatting and toast patterns
 - **Progress Updates**: Real-time file operation logging and status updates
 
 #### **✅ Key Technical Achievements:**
@@ -1604,7 +1604,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 - **Export Capabilities**: File lists and metadata export functionality
 
 **Professional UI/UX:**
-- **Consistent Styling**: Follows Korev Evidence design patterns and CSS variables
+- **Consistent Styling**: Follows KOREV Evidence design patterns and CSS variables
 - **Loading States**: Comprehensive progress indicators and status messages
 - **Error Recovery**: Clear error messages with suggested fixes
 - **Accessibility**: Keyboard navigation and screen reader support
@@ -1613,20 +1613,20 @@ This enhanced frontend specification delivers a professional-grade user interfac
 
 **Alpine.js Integration:**
 - **Store Pattern**: Uses proven `createStore()` pattern from MCP servers
-- **Component Lifecycle**: Proper initialization and cleanup following Korev Evidence patterns
+- **Component Lifecycle**: Proper initialization and cleanup following KOREV Evidence patterns
 - **Reactive State**: Real-time UI updates with Alpine's reactivity system
 - **Event Handling**: Leverages Alpine's declarative event system
 
 **Code Reuse:**
 - **ACE Editor Setup**: Identical theme detection and configuration as MCP servers
-- **Modal Management**: Uses existing Korev Evidence modal and overlay systems
-- **API Communication**: Consistent with Korev Evidence's established API patterns
+- **Modal Management**: Uses existing KOREV Evidence modal and overlay systems
+- **API Communication**: Consistent with KOREV Evidence's established API patterns
 - **Error Handling**: Unified error formatting and toast notification system
 
 ### **Implementation Quality Metrics:**
 
 **Code Quality:** ✅
-- Follows Korev Evidence coding conventions
+- Follows KOREV Evidence coding conventions
 - Proper error handling and validation
 - Clean separation of concerns
 - Comprehensive documentation
@@ -1635,7 +1635,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 - Intuitive backup/restore workflow
 - Real-time feedback and progress tracking
 - Responsive design for all screen sizes
-- Consistent with Korev Evidence UI patterns
+- Consistent with KOREV Evidence UI patterns
 
 **Performance:** ✅
 - Efficient file preview with grouping
@@ -1651,13 +1651,13 @@ This enhanced frontend specification delivers a professional-grade user interfac
 
 ### **Final Status: 🚀 PRODUCTION READY**
 
-The Korev Evidence backup frontend is now:
+The KOREV Evidence backup frontend is now:
 - **Complete**: All planned features implemented and tested
-- **Integrated**: Seamlessly integrated with existing Korev Evidence infrastructure
+- **Integrated**: Seamlessly integrated with existing KOREV Evidence infrastructure
 - **Reliable**: Comprehensive error handling and edge case coverage
-- **User-friendly**: Intuitive interface following Korev Evidence design principles
+- **User-friendly**: Intuitive interface following KOREV Evidence design principles
 - **Maintainable**: Clean code following established patterns and conventions
 
 **Ready for production use with full backup and restore capabilities!**
 
-The backup system provides users with a powerful, easy-to-use interface for backing up and restoring their Korev Evidence configurations, data, and custom files using sophisticated pattern-based selection and real-time progress monitoring.
+The backup system provides users with a powerful, easy-to-use interface for backing up and restoring their KOREV Evidence configurations, data, and custom files using sophisticated pattern-based selection and real-time progress monitoring.

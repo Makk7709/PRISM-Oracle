@@ -127,7 +127,7 @@ class CoverPage(Flowable):
         # Pied de page
         canvas.setFont(self.template.body_font, 9)
         canvas.setFillColor(gray)
-        canvas.drawString(0, 10, "Généré par Korev Evidence")
+        canvas.drawString(0, 10, "Généré par KOREV Evidence")
         
         canvas.restoreState()
     

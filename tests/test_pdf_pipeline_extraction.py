@@ -23,8 +23,9 @@ import asyncio
 import time
 from pathlib import Path
 
-import fitz
 import pytest
+
+from python.helpers.pdf_extraction.pdf_backend import get_backend
 
 from python.helpers.pdf_extraction.config import PDFExtractionConfig, get_default_config
 from python.helpers.pdf_extraction.types import (
@@ -52,7 +53,7 @@ class TestClassifyPdfReal:
         """Simple text PDF should be classified as TEXT."""
         from python.helpers.pdf_extraction.pipeline import classify_pdf
 
-        doc = fitz.open(str(pdf_text_simple))
+        doc = get_backend().open_path(str(pdf_text_simple))
         config = PDFExtractionConfig()
         pdf_type, confidence = classify_pdf(doc, config)
         doc.close()
@@ -64,7 +65,7 @@ class TestClassifyPdfReal:
         """Empty PDF should be classified as SCAN or UNKNOWN."""
         from python.helpers.pdf_extraction.pipeline import classify_pdf
 
-        doc = fitz.open(str(pdf_empty))
+        doc = get_backend().open_path(str(pdf_empty))
         config = PDFExtractionConfig()
         pdf_type, confidence = classify_pdf(doc, config)
         doc.close()
@@ -75,7 +76,7 @@ class TestClassifyPdfReal:
         """Dense text should be classified as TEXT with high confidence."""
         from python.helpers.pdf_extraction.pipeline import classify_pdf
 
-        doc = fitz.open(str(pdf_dense_text))
+        doc = get_backend().open_path(str(pdf_dense_text))
         config = PDFExtractionConfig()
         pdf_type, confidence = classify_pdf(doc, config)
         doc.close()
@@ -87,7 +88,7 @@ class TestClassifyPdfReal:
         """When classification is disabled, should return UNKNOWN."""
         from python.helpers.pdf_extraction.pipeline import classify_pdf
 
-        doc = fitz.open(str(pdf_text_simple))
+        doc = get_backend().open_path(str(pdf_text_simple))
         config = PDFExtractionConfig()
         config.classification.enabled = False
         pdf_type, confidence = classify_pdf(doc, config)
@@ -100,7 +101,7 @@ class TestClassifyPdfReal:
         """Multipage text should be classified as TEXT."""
         from python.helpers.pdf_extraction.pipeline import classify_pdf
 
-        doc = fitz.open(str(pdf_text_multipage))
+        doc = get_backend().open_path(str(pdf_text_multipage))
         config = PDFExtractionConfig()
         pdf_type, confidence = classify_pdf(doc, config)
         doc.close()
@@ -119,7 +120,7 @@ class TestExtractWordsPyMuPDF:
         """Should extract words with positions from text PDF."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_text_simple))
+        doc = get_backend().open_path(str(pdf_text_simple))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
 
@@ -139,7 +140,7 @@ class TestExtractWordsPyMuPDF:
         """Words should have correct page numbers."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_text_multipage))
+        doc = get_backend().open_path(str(pdf_text_multipage))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
 
@@ -154,7 +155,7 @@ class TestExtractWordsPyMuPDF:
         """Should respect max_pages limit."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_text_multipage))
+        doc = get_backend().open_path(str(pdf_text_multipage))
         config = PDFExtractionConfig()
         config.budgets.max_pages = 1
         context = ExtractionContext(start_time=time.time())
@@ -169,7 +170,7 @@ class TestExtractWordsPyMuPDF:
         """Empty PDF should return no words."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_empty))
+        doc = get_backend().open_path(str(pdf_empty))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
 
@@ -182,7 +183,7 @@ class TestExtractWordsPyMuPDF:
         """Single word PDF should extract exactly one word."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_single_word))
+        doc = get_backend().open_path(str(pdf_single_word))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
 
@@ -197,7 +198,7 @@ class TestExtractWordsPyMuPDF:
         """Words should have normalized whitespace."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_text_simple))
+        doc = get_backend().open_path(str(pdf_text_simple))
         config = PDFExtractionConfig()
         config.text.normalize_whitespace = True
         context = ExtractionContext(start_time=time.time())
@@ -213,7 +214,7 @@ class TestExtractWordsPyMuPDF:
         """Context should track pages processed."""
         from python.helpers.pdf_extraction.pipeline import extract_words_pymupdf
 
-        doc = fitz.open(str(pdf_text_multipage))
+        doc = get_backend().open_path(str(pdf_text_multipage))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
 
@@ -237,7 +238,7 @@ class TestTableExtractionGeometry:
             extract_tables_geometry,
         )
 
-        doc = fitz.open(str(pdf_table_simple))
+        doc = get_backend().open_path(str(pdf_table_simple))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
         diagnostics = Diagnostics()
@@ -255,7 +256,7 @@ class TestTableExtractionGeometry:
             extract_tables_geometry,
         )
 
-        doc = fitz.open(str(pdf_table_simple))
+        doc = get_backend().open_path(str(pdf_table_simple))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
         diagnostics = Diagnostics()
@@ -278,7 +279,7 @@ class TestTableExtractionGeometry:
             extract_tables_geometry,
         )
 
-        doc = fitz.open(str(pdf_single_word))
+        doc = get_backend().open_path(str(pdf_single_word))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
         diagnostics = Diagnostics()
@@ -297,7 +298,7 @@ class TestTableExtractionGeometry:
             extract_tables_geometry,
         )
 
-        doc = fitz.open(str(pdf_table_simple))
+        doc = get_backend().open_path(str(pdf_table_simple))
         config = PDFExtractionConfig()
         config.tables.enabled = False
         context = ExtractionContext(start_time=time.time())
@@ -316,7 +317,7 @@ class TestTableExtractionGeometry:
             extract_tables_geometry,
         )
 
-        doc = fitz.open(str(pdf_table_financial))
+        doc = get_backend().open_path(str(pdf_table_financial))
         config = PDFExtractionConfig()
         context = ExtractionContext(start_time=time.time())
         diagnostics = Diagnostics()

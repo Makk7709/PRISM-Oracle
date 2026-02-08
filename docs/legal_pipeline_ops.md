@@ -1,6 +1,6 @@
 # Legal Pipeline Operations Guide
 
-> **P3 Production Hardening** — Runbook pour l'exploitation du pipeline juridique Korev Evidence.
+> **P3 Production Hardening** — Runbook pour l'exploitation du pipeline juridique KOREV Evidence.
 
 ---
 

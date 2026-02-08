@@ -89,7 +89,7 @@ class TestConsensusAudit:
         
         # Test action et contexte
         action = "Analyser la responsabilité du transporteur selon L.132-8"
-        context = "Question juridique complexe nécessitant consensus"
+        context = {"description": "Question juridique complexe nécessitant consensus"}
         
         # Exécuter le consensus
         result = await orchestrator.seek_consensus(
@@ -106,13 +106,21 @@ class TestConsensusAudit:
         print(f"  decision_time_ms: {result.decision_time_ms}")
         print(f"  votes:")
         for provider, vote in result.votes.items():
-            print(f"    {provider}: {vote.vote.value} ({vote.reasoning[:50]}...)")
+            vote_label = vote.vote.value if vote.vote is not None else "UNAVAILABLE"
+            reasoning = (vote.reasoning[:50] + "...") if vote.reasoning else "N/A"
+            print(f"    {provider}: {vote_label} ({reasoning})")
         
         if config.simulation_enabled:
             assert result.approved, "Simulation should always approve"
             assert result.status == ConsensusStatus.APPROVED
-            assert result.vote_count.total == 3, "Simulation should have 3 votes"
-            assert result.vote_count.approvals == 3, "All simulation votes should approve"
+            # With early exit, consensus is reached as soon as quorum (2/3) is met.
+            # e.g., with 3 providers, 2 approvals suffice; the 3rd vote may be rejected
+            # because status is no longer PENDING.
+            required_quorum = (config.total_providers * 2 + 2) // 3
+            assert result.vote_count.approvals >= required_quorum, (
+                f"Simulation should have at least {required_quorum} approvals, "
+                f"got {result.vote_count.approvals}"
+            )
         
         return result
 

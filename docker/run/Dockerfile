@@ -1,5 +1,5 @@
-# Use the pre-built base image for A0
-# FROM korev-oracle-base:local
+# KOREV Evidence — Production Image
+# FROM korev-evidence-base:local
 FROM korevai/korev-oracle-base:latest
 
 # Check if the argument is provided, else throw an error
@@ -13,15 +13,15 @@ COPY ./fs/ /
 # pre installation steps
 RUN bash /ins/pre_install.sh $BRANCH
 
-# install A0
-RUN bash /ins/install_A0.sh $BRANCH
+# install Korev Evidence
+RUN bash /ins/install_evidence.sh $BRANCH
 
 # install additional software
 RUN bash /ins/install_additional.sh $BRANCH
 
-# cleanup repo and install A0 without caching, this speeds up builds
+# cleanup repo and install Korev Evidence without caching, this speeds up builds
 ARG CACHE_DATE=none
-RUN echo "cache buster $CACHE_DATE" && bash /ins/install_A02.sh $BRANCH
+RUN echo "cache buster $CACHE_DATE" && bash /ins/install_evidence2.sh $BRANCH
 
 # post installation steps
 RUN bash /ins/post_install.sh $BRANCH
@@ -29,7 +29,7 @@ RUN bash /ins/post_install.sh $BRANCH
 # Expose ports
 EXPOSE 22 80 9000-9009
 
-RUN chmod +x /exe/initialize.sh /exe/run_A0.sh /exe/run_searxng.sh /exe/run_tunnel_api.sh
+RUN chmod +x /exe/initialize.sh /exe/run_evidence.sh /exe/run_searxng.sh /exe/run_tunnel_api.sh
 
 # initialize runtime and switch to supervisord
 CMD ["/exe/initialize.sh", "$BRANCH"]

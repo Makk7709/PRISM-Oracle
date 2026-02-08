@@ -394,7 +394,7 @@ def run():
     2. Registers API handlers
     3. Sets up MCP and A2A middleware (imports heavy dependencies here)
     4. Starts the server
-    5. Calls init_a0() to initialize agents and MCP
+    5. Calls init_evidence() to initialize agents and MCP
     """
     PrintStyle().print("Initializing framework...")
 
@@ -471,13 +471,13 @@ def run():
     server.log_startup()
 
     # Initialize agents and MCP
-    init_a0()
+    init_evidence()
 
     # Run the server
     server.serve_forever()
 
 
-def init_a0():
+def init_evidence():
     """
     Initialize agents, MCP, and preload models.
     

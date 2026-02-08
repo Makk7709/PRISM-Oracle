@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    PRISM + ORACLE — Portable Start (Windows)                 ║
+# ║                 KOREV EVIDENCE — Portable Start (Windows)                    ║
 # ║                                                                              ║
 # ║  Démarrage en mode portable (sans Docker)                                    ║
 # ║  Usage: .\start.ps1 [-Port PORT]                                             ║
@@ -104,7 +104,7 @@ function Start-Oracle {
     $env:DATA_DIR = $DataDir
     $env:LOGS_DIR = $LogsDir
     $env:AUDIT_DIR = $AuditDir
-    $env:ORACLE_ENV = "production"
+    $env:EVIDENCE_ENV = "production"
     $env:OFFLINE_MODE = if ($env:OFFLINE_MODE) { $env:OFFLINE_MODE } else { "true" }
     
     # Start in background
@@ -162,7 +162,7 @@ function Show-Info {
 # Main
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════════════╗"
-Write-Host "║              PRISM + ORACLE — Portable Mode (Windows)                ║"
+Write-Host "║              KOREV EVIDENCE — Portable Mode (Windows)                ║"
 Write-Host "╚══════════════════════════════════════════════════════════════════════╝"
 Write-Host ""
 

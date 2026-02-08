@@ -1,6 +1,6 @@
 # Legal Sources — Guide d'Ingestion MVP
 
-Guide complet pour l'ingestion des données juridiques françaises dans Korev Evidence.
+Guide complet pour l'ingestion des données juridiques françaises dans KOREV Evidence.
 
 **Version**: `legal_sources@v1.0-enterprise`
 
@@ -190,7 +190,7 @@ python -m legal_sources --log-format json --log-level DEBUG ingest --source cass
 
 ---
 
-## Utilisation dans Korev Evidence
+## Utilisation dans KOREV Evidence
 
 ### Citations
 

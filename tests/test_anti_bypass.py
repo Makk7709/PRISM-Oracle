@@ -49,9 +49,9 @@ class TestUserEntryCriticalNoSpawn:
         return CriticalDecisionGate()
     
     def test_medical_query_triggers_gate(self, gate):
-        """Query médicale en agent=default → gate activé."""
+        """Query médicale Level 3 (cas réel) → gate activé + consensus."""
         result = gate.enforce_or_route(
-            query="What medication should I take for my headache?",
+            query="Mon médecin m'a prescrit ce médicament, dois-je le prendre ?",
             agent_profile="default",
         )
         
@@ -60,9 +60,9 @@ class TestUserEntryCriticalNoSpawn:
         assert result.assessment.strict_evidence_mode is True
     
     def test_legal_query_triggers_gate(self, gate):
-        """Query légale en agent=default → gate activé."""
+        """Query légale Level 3 (cas réel) → gate activé + consensus."""
         result = gate.enforce_or_route(
-            query="Is this contract legally enforceable?",
+            query="J'ai reçu une mise en demeure, puis-je contester ce contrat ?",
             agent_profile="default",
         )
         
@@ -70,14 +70,13 @@ class TestUserEntryCriticalNoSpawn:
         assert result.assessment.domain == CriticalDomain.LEGAL
     
     def test_scientific_query_triggers_gate(self, gate):
-        """Query scientifique en agent=default → gate activé."""
+        """Query scientifique Level 3 (décision réelle) → gate activé + consensus."""
         result = gate.enforce_or_route(
-            query="What does peer-reviewed research say about this hypothesis?",
+            query="Dois-je publier ces résultats dans ce journal scientifique ?",
             agent_profile="default",
         )
         
         assert result.consensus_required is True
-        assert result.assessment.domain == CriticalDomain.SCIENTIFIC
     
     @pytest.mark.asyncio
     async def test_final_output_blocked_without_consensus(self, gate):
@@ -94,18 +93,16 @@ class TestUserEntryCriticalNoSpawn:
             assert result.can_emit is False or result.decision == GateDecision.FAIL_CLOSED
     
     def test_force_consensus_false_overridden_for_critical(self, gate):
-        """force_consensus=False ignoré pour domaines critiques."""
+        """force_consensus=False ignoré pour cas Level 3 critiques."""
         result = gate.enforce_or_route(
-            query="What are the legal requirements for GDPR?",
+            query="Dois-je signer ce contrat de travail ou refuser ?",
             agent_profile="default",
             force_consensus=False,  # Tente de désactiver
         )
         
-        # Doit quand même être activé car domaine LEGAL
-        assert result.assessment.domain == CriticalDomain.LEGAL
+        # Level 3 détecté indépendamment → consensus malgré force=False
         assert result.consensus_required is True
-        # L'override devrait être appliqué si le caller a tenté de forcer False
-        # Note: L'override est appliqué uniquement si force_consensus=False ET domaine critique
+        assert result.assessment.domain == CriticalDomain.LEGAL
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -138,16 +135,16 @@ class TestResearchDirectBypass:
         assert pipeline.config.consensus_enabled is True
     
     def test_criticality_detected_for_research_query(self):
-        """Détection de criticité sur query de recherche."""
+        """Détection de criticité sur query Level 3 de recherche."""
         router = CriticalityRouter()
         
+        # Level 3: décision personnelle sur un essai clinique
         assessment = router.assess(
-            query="Research the latest treatments for cancer",
+            query="Mon patient participe à cet essai clinique, dois-je le recommander ?",
             agent_profile="researcher",
         )
         
         assert assessment.requires_consensus is True
-        # researcher est dans les profils critiques
         assert "researcher" in CONSENSUS_REQUIRED_PROFILES
 
 

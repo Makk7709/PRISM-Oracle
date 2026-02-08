@@ -15,7 +15,7 @@ from python.helpers.print_style import PrintStyle
 
 class BackupService:
     """
-    Core backup and restore service for Korev Evidence.
+    Core backup and restore service for KOREV Evidence.
 
     Features:
     - JSON-based metadata with user-editable path specifications
@@ -27,7 +27,7 @@ class BackupService:
 
     def __init__(self):
         self.korev_version = self._get_korev_version()
-        self.korev_root = files.get_abs_path("")  # Resolved Korev Evidence root
+        self.korev_root = files.get_abs_path("")  # Resolved KOREV Evidence root
 
         # Build base paths map for pattern resolution
         self.base_paths = {
@@ -55,16 +55,16 @@ class BackupService:
     def _get_default_patterns(self) -> str:
         """Get default backup patterns with resolved absolute paths.
 
-        Only includes Korev Evidence project directory patterns.
+        Only includes KOREV Evidence project directory patterns.
         """
         # Ensure paths don't have double slashes
         agent_root = self.korev_root.rstrip('/')
 
-        return f"""# Korev Evidence Knowledge (excluding defaults)
+        return f"""# KOREV Evidence Knowledge (excluding defaults)
 {agent_root}/knowledge/**
 !{agent_root}/knowledge/default/**
 
-# Korev Evidence Instruments (excluding defaults)
+# KOREV Evidence Instruments (excluding defaults)
 {agent_root}/instruments/**
 !{agent_root}/instruments/default/**
 
@@ -85,7 +85,7 @@ class BackupService:
 """
 
     def _get_korev_version(self) -> str:
-        """Get current Korev Evidence version"""
+        """Get current KOREV Evidence version"""
         try:
             # Get version from git info (same as run_ui.py)
             gitinfo = git.get_git_info()
@@ -217,7 +217,7 @@ class BackupService:
     def _translate_patterns(self, patterns: List[str], backup_metadata: Dict[str, Any]) -> List[str]:
         """Translate patterns from backed up system to current system.
 
-        Replaces the backed up Korev Evidence root path with the current Korev Evidence root path
+        Replaces the backed up KOREV Evidence root path with the current KOREV Evidence root path
         in all patterns if there's an exact match at the beginning of the pattern.
 
         Args:
@@ -540,7 +540,7 @@ class BackupService:
                     target_path = self._translate_restore_path(archive_path, original_backup_metadata)
 
                     # For pattern matching, we need to use the translated path (current system)
-                    # so that patterns like "/home/rafael/a0/data/**" can match files correctly
+                    # so that patterns like "/home/user/app/data/**" can match files correctly
                     translated_path_for_matching = target_path.lstrip('/')
 
                     # Check if file matches restore patterns
@@ -697,7 +697,7 @@ class BackupService:
                     target_path = self._translate_restore_path(archive_path, original_backup_metadata)
 
                     # For pattern matching, we need to use the translated path (current system)
-                    # so that patterns like "/home/rafael/a0/data/**" can match files correctly
+                    # so that patterns like "/home/user/app/data/**" can match files correctly
                     translated_path_for_matching = target_path.lstrip('/')
 
                     # Check if file matches restore patterns
@@ -774,7 +774,7 @@ class BackupService:
     def _translate_restore_path(self, archive_path: str, backup_metadata: Dict[str, Any]) -> str:
         """Translate file path from backed up system to current system.
 
-        Replaces the backed up Korev Evidence root path with the current Korev Evidence root path
+        Replaces the backed up KOREV Evidence root path with the current KOREV Evidence root path
         if there's an exact match at the beginning of the path.
 
         Args:

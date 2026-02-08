@@ -1,7 +1,7 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    ORACLE BACKEND — Dockerfile                               ║
+# ║                 KOREV EVIDENCE BACKEND — Dockerfile                          ║
 # ║                                                                              ║
-# ║  Image Python optimisée pour déploiement DICA                                ║
+# ║  Image Python optimisée pour déploiement                                     ║
 # ║  Multi-stage build pour réduire la taille finale                             ║
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -34,10 +34,10 @@ RUN pip install --no-cache-dir --upgrade pip wheel && \
 FROM python:3.11-slim as runtime
 
 # Labels pour traçabilité
-LABEL org.opencontainers.image.title="Oracle Backend"
-LABEL org.opencontainers.image.description="PRISM + Oracle AI Research System"
-LABEL org.opencontainers.image.vendor="KOREV"
-LABEL org.opencontainers.image.version="${ORACLE_VERSION:-1.0.0}"
+LABEL org.opencontainers.image.title="KOREV Evidence Backend"
+LABEL org.opencontainers.image.description="KOREV Evidence AI Research System"
+LABEL org.opencontainers.image.vendor="KOREV AI"
+LABEL org.opencontainers.image.version="${EVIDENCE_VERSION:-1.0.0}"
 
 # Variables d'environnement
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -46,38 +46,38 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PATH="/opt/venv/bin:$PATH" \
-    ORACLE_HOME=/app
+    EVIDENCE_HOME=/app
 
 WORKDIR /app
 
 # Utilisateur non-root pour sécurité
-RUN groupadd -r oracle && useradd -r -g oracle oracle && \
+RUN groupadd -r evidence && useradd -r -g evidence evidence && \
     mkdir -p /app/data /app/logs /app/audit /app/config && \
-    chown -R oracle:oracle /app
+    chown -R evidence:evidence /app
 
 # Copier le venv depuis le builder
 COPY --from=builder /opt/venv /opt/venv
 
 # Copier le code source
-COPY --chown=oracle:oracle python/ ./python/
-COPY --chown=oracle:oracle prompts/ ./prompts/
-COPY --chown=oracle:oracle agents/ ./agents/
-COPY --chown=oracle:oracle conf/ ./conf/
-COPY --chown=oracle:oracle knowledge/ ./knowledge/
-COPY --chown=oracle:oracle run_ui.py ./
-COPY --chown=oracle:oracle prepare.py ./
+COPY --chown=evidence:evidence python/ ./python/
+COPY --chown=evidence:evidence prompts/ ./prompts/
+COPY --chown=evidence:evidence agents/ ./agents/
+COPY --chown=evidence:evidence conf/ ./conf/
+COPY --chown=evidence:evidence knowledge/ ./knowledge/
+COPY --chown=evidence:evidence run_ui.py ./
+COPY --chown=evidence:evidence prepare.py ./
 
 # Copier le module de déploiement
-COPY --chown=oracle:oracle deploy/config/ ./config/
+COPY --chown=evidence:evidence deploy/config/ ./config/
 
 # Créer le fichier version
 ARG BUILD_DATE
 ARG GIT_COMMIT
-ARG ORACLE_VERSION
-RUN echo "{\n  \"version\": \"${ORACLE_VERSION:-1.0.0}\",\n  \"build_date\": \"${BUILD_DATE:-unknown}\",\n  \"git_commit\": \"${GIT_COMMIT:-unknown}\"\n}" > /app/version.json
+ARG EVIDENCE_VERSION
+RUN echo "{\n  \"version\": \"${EVIDENCE_VERSION:-1.0.0}\",\n  \"build_date\": \"${BUILD_DATE:-unknown}\",\n  \"git_commit\": \"${GIT_COMMIT:-unknown}\"\n}" > /app/version.json
 
 # Passer à l'utilisateur non-root
-USER oracle
+USER evidence
 
 # Port exposé
 EXPOSE 5050

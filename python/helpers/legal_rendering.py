@@ -502,7 +502,7 @@ def render_legal_output_html(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Analyse Juridique - Korev Evidence</title>
+    <title>Analyse Juridique - KOREV Evidence</title>
     <style>
         .legal-output {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }}
         .legal-output h1 {{ color: #1A1A2E; border-bottom: 2px solid #1A1A2E; padding-bottom: 10px; }}
@@ -764,7 +764,7 @@ def render_legal_output_pdf(
             content=md_content,
             title=_get_pdf_title(output),
             template="legal",  # Use legal template
-            author="Korev Evidence",
+            author="KOREV Evidence",
             confidentiality="internal",
         )
         

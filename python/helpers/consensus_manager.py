@@ -167,25 +167,29 @@ class DecisionProposal:
         )
         
         # ─────────────────────────────────────────────────────────────────────────
-        # EARLY EXIT: Check if quorum already reached (can decide without all votes)
+        # EARLY EXIT: Check if IRREVERSIBLE quorum reached
         # ─────────────────────────────────────────────────────────────────────────
+        # The quorum is calculated on total_providers (not just received votes).
+        # This prevents premature approval when only 2 of 5 providers have responded.
+        # Early exit is only possible if the quorum is IRREVERSIBLE — i.e., even if
+        # all remaining providers vote against, the decision would still hold.
         if effective >= self.min_effective_votes:
-            required_quorum = (effective * 2 + 2) // 3  # ceil(2/3 * effective)
+            required_quorum = (self.total_providers * 2 + 2) // 3  # ceil(2/3 * total)
             
-            # APPROVED if 2/3 of effective votes approve
+            # APPROVED if approvals >= 2/3 of TOTAL providers (irreversible)
             if count.approvals >= required_quorum:
                 self.status = ConsensusStatus.APPROVED
                 logger.info(
-                    f"Consensus APPROVED: {count.approvals}/{effective} effective votes "
+                    f"Consensus APPROVED: {count.approvals}/{self.total_providers} total providers "
                     f"(quorum: {required_quorum})"
                 )
                 return True
             
-            # REJECTED if 2/3 of effective votes reject
+            # REJECTED if rejections >= 2/3 of TOTAL providers (irreversible)
             if count.rejections >= required_quorum:
                 self.status = ConsensusStatus.REJECTED
                 logger.info(
-                    f"Consensus REJECTED: {count.rejections}/{effective} effective votes "
+                    f"Consensus REJECTED: {count.rejections}/{self.total_providers} total providers "
                     f"(quorum: {required_quorum})"
                 )
                 return True
@@ -221,7 +225,7 @@ class DecisionProposal:
         
         # CASE 3: Enough votes but no quorum reached
         # All providers responded, we have enough effective votes, but no 2/3 majority
-        required_quorum = (effective * 2 + 2) // 3
+        required_quorum = (self.total_providers * 2 + 2) // 3
         self.status = ConsensusStatus.NO_CONSENSUS
         logger.info(
             f"Consensus NO_CONSENSUS: all {count.total} responded but no quorum. "

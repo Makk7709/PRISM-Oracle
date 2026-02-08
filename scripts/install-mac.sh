@@ -6,7 +6,7 @@
 #
 #  Usage: ./install-evidence-mac.sh
 #
-#  Ce script installe la vraie version Korev Evidence (pas la version générique)
+#  Ce script installe la vraie version KOREV Evidence (pas la version générique)
 #  avec toutes les customisations : WebUI, typography, MCP servers, etc.
 #
 #═══════════════════════════════════════════════════════════════════════════════
@@ -133,7 +133,7 @@ else
     else
         echo "Création du fichier .env..."
         cat > "$ENV_FILE" << 'ENVFILE'
-# Korev Evidence Configuration
+# KOREV Evidence Configuration
 # Clé OpenRouter (requise) - https://openrouter.ai/keys
 API_KEY_OPENROUTER=
 
@@ -167,7 +167,7 @@ fi
 #───────────────────────────────────────────────────────────────────────────────
 # Step 6: Launch Evidence
 #───────────────────────────────────────────────────────────────────────────────
-echo -e "${YELLOW}[6/6] Lancement de Korev Evidence...${NC}"
+echo -e "${YELLOW}[6/6] Lancement de KOREV Evidence...${NC}"
 
 # Set port
 export WEB_UI_PORT=$EVIDENCE_PORT
@@ -178,7 +178,7 @@ echo "╔═══════════════════════�
 echo "║           ✅ INSTALLATION TERMINÉE                            ║"
 echo "╠═══════════════════════════════════════════════════════════════╣"
 echo "║                                                               ║"
-echo "║  Korev Evidence va démarrer sur:                                ║"
+echo "║  KOREV Evidence va démarrer sur:                                ║"
 echo "║  → http://localhost:$EVIDENCE_PORT                              ║"
 echo "║                                                               ║"
 echo "║  Pour arrêter: Ctrl+C                                         ║"

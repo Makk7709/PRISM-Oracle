@@ -416,12 +416,14 @@ def deabsolute_path(path: str):
 
 
 def fix_dev_path(path: str):
-    "On dev environment, convert /korev/... paths to local absolute paths"
+    "On dev environment, convert /app/, /korev/ or legacy /a0/ paths to local absolute paths"
     from python.helpers.runtime import is_development
 
     if is_development():
-        # Support both legacy /a0/ and new /korev/ paths
-        if path.startswith("/korev/"):
+        # Support /app/ (Docker runtime), /korev/ (data), and legacy /a0/ paths
+        if path.startswith("/app/"):
+            path = path.replace("/app/", "")
+        elif path.startswith("/korev/"):
             path = path.replace("/korev/", "")
         elif path.startswith("/a0/"):
             path = path.replace("/a0/", "")
