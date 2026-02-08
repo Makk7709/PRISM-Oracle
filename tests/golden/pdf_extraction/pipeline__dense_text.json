@@ -1,0 +1,91 @@
+{
+  "errors": [],
+  "fallback_used": false,
+  "first_30_words": [
+    "Dense",
+    "Text",
+    "Analysis",
+    "Document",
+    "1.",
+    "Regulatory",
+    "Analysis",
+    "The",
+    "regulatory",
+    "framework",
+    "governing",
+    "financial",
+    "institutions",
+    "in",
+    "the",
+    "European",
+    "Union",
+    "has",
+    "undergone",
+    "significant",
+    "transformation",
+    "following",
+    "the",
+    "implementation",
+    "of",
+    "Basel",
+    "III",
+    "requirements.",
+    "Credit",
+    "institutions"
+  ],
+  "last_10_words": [
+    "a",
+    "business",
+    "relationship",
+    "or",
+    "the",
+    "completion",
+    "of",
+    "an",
+    "occasional",
+    "transaction."
+  ],
+  "methods_attempted": [
+    "pymupdf_geometry",
+    "pymupdf_text"
+  ],
+  "methods_succeeded": [
+    "pymupdf_geometry",
+    "pymupdf_text"
+  ],
+  "pages_processed": 1,
+  "pdf_type": "text",
+  "pdf_type_confidence": 1.0,
+  "requires_human_review": false,
+  "status": "success",
+  "table_count": 1,
+  "tables": [
+    {
+      "cell_count": 115,
+      "confidence": 0.7,
+      "fill_ratio": 0.7371794871794872,
+      "first_data_row": [
+        "1.",
+        "Regulatory Analysis",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "header_row": [
+        "",
+        "Dense",
+        "Text Analysis Document",
+        "",
+        "",
+        ""
+      ],
+      "index": 0,
+      "method": "pymupdf_geometry",
+      "num_cols": 6,
+      "num_rows": 26,
+      "page": 0
+    }
+  ],
+  "word_count": 242
+}

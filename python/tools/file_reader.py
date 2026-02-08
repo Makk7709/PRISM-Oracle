@@ -131,27 +131,25 @@ class FileReader(Tool):
         return info
     
     def _read_pdf(self, path: str) -> str:
-        """Read PDF file using PyMuPDF."""
+        """Read PDF file using pypdf (BSD license)."""
         try:
-            import fitz  # PyMuPDF
-            
-            doc = fitz.open(path)
+            from pypdf import PdfReader
+
+            reader = PdfReader(path)
             text_parts = []
-            
-            for page_num, page in enumerate(doc, 1):
-                text = page.get_text()
+
+            for page_num, page in enumerate(reader.pages, 1):
+                text = page.extract_text() or ""
                 if text.strip():
                     text_parts.append(f"--- Page {page_num} ---\n{text}")
-            
-            doc.close()
-            
+
             if not text_parts:
                 return "(PDF contains no extractable text - may be scanned/image-based)"
-            
+
             return f"Pages: {len(text_parts)}\n\n" + "\n\n".join(text_parts[:10])
-            
+
         except ImportError:
-            return "Error: PyMuPDF not installed. Install with: pip install PyMuPDF"
+            return "Error: pypdf not installed. Install with: pip install pypdf"
     
     def _read_text(self, path: str) -> str:
         """Read text file."""

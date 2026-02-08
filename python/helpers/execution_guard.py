@@ -276,7 +276,7 @@ def _build_rejection_message(detected_actions: list[str]) -> str:
     "instructions": [
         "NEVER say MISSING_TOOL. Use code_execution instead.",
         "Write Python code to accomplish the task.",
-        "Available: pandas, openpyxl, fitz (PyMuPDF), reportlab, pytesseract, PIL",
+        "Available: pandas, openpyxl, pypdf, pdfplumber, reportlab, pytesseract, PIL",
         "Files are in: tmp/uploads/",
         "Execute immediately with code_execution tool."
     ],

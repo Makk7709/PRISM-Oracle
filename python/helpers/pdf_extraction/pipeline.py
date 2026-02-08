@@ -170,11 +170,15 @@ class CircuitBreaker:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def classify_pdf(
-    doc: "fitz.Document",
+    doc,
     config: PDFExtractionConfig
 ) -> tuple[PDFType, float]:
     """
     Classify PDF as text/hybrid/scan.
+    
+    Args:
+        doc: A PDFDocument from the backend abstraction layer,
+             or a legacy fitz.Document for backward compatibility.
     
     Returns: (pdf_type, confidence)
     """
@@ -182,7 +186,13 @@ def classify_pdf(
         return PDFType.UNKNOWN, 0.5
     
     heuristics = config.classification.heuristics
-    total_pages = min(doc.page_count, config.budgets.max_pages)
+    
+    # Support both backend abstraction and legacy fitz.Document
+    from python.helpers.pdf_extraction.pdf_backend import PDFDocument as _PDFDocument
+    if isinstance(doc, _PDFDocument):
+        total_pages = min(doc.page_count(), config.budgets.max_pages)
+    else:
+        total_pages = min(doc.page_count, config.budgets.max_pages)
     
     if total_pages == 0:
         return PDFType.UNKNOWN, 0.0
@@ -195,12 +205,22 @@ def classify_pdf(
     total_words = 0
     
     for page_num in range(total_pages):
-        page = doc[page_num]
-        text = page.get_text("text")
-        words = page.get_text("words")
+        if isinstance(doc, _PDFDocument):
+            page_data = doc.get_page(page_num)
+            text = page_data.text
+            word_count = len(page_data.words)
+            image_list = page_data.images
+            page_width = page_data.width
+            page_height = page_data.height
+        else:
+            page = doc[page_num]
+            text = page.get_text("text")
+            word_count = len(page.get_text("words"))
+            image_list = page.get_images()
+            page_width = page.rect.width
+            page_height = page.rect.height
         
         char_count = len(text.strip())
-        word_count = len(words)
         total_chars += char_count
         total_words += word_count
         
@@ -211,19 +231,21 @@ def classify_pdf(
             empty_pages += 1
         
         # Check image coverage
-        image_list = page.get_images()
         if image_list:
-            page_rect = page.rect
-            page_area = page_rect.width * page_rect.height
+            page_area = page_width * page_height
             image_area = 0
-            for img in image_list:
-                try:
-                    xref = img[0]
-                    img_rect = page.get_image_bbox(xref)
-                    if img_rect:
-                        image_area += img_rect.width * img_rect.height
-                except Exception:
-                    pass
+            if isinstance(doc, _PDFDocument):
+                for img in image_list:
+                    image_area += img.width * img.height
+            else:
+                for img in image_list:
+                    try:
+                        xref = img[0]
+                        img_rect = page.get_image_bbox(xref)
+                        if img_rect:
+                            image_area += img_rect.width * img_rect.height
+                    except Exception:
+                        pass
             if page_area > 0 and (image_area / page_area) > heuristics.image_area_ratio_scan_threshold:
                 image_heavy_pages += 1
     
@@ -251,44 +273,64 @@ def classify_pdf(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def extract_words_pymupdf(
-    doc: "fitz.Document",
+    doc,
     config: PDFExtractionConfig,
     context: ExtractionContext
 ) -> list[Word]:
     """
-    Extract words with positions using PyMuPDF.
+    Extract words with positions from a PDF document.
     
     This is the primary extraction method - fast and reliable.
+    Supports both the backend abstraction layer and legacy fitz.Document.
     """
+    from python.helpers.pdf_extraction.pdf_backend import PDFDocument as _PDFDocument
+    
     words: list[Word] = []
     text_config = config.text
-    max_pages = min(doc.page_count, config.budgets.max_pages)
+    
+    if isinstance(doc, _PDFDocument):
+        max_pages = min(doc.page_count(), config.budgets.max_pages)
+    else:
+        max_pages = min(doc.page_count, config.budgets.max_pages)
     
     for page_num in range(max_pages):
         # Check budget
         if context.is_budget_exhausted(config.budgets.total_timeout_s):
             break
         
-        page = doc[page_num]
-        
-        # Extract words: (x0, y0, x1, y1, "word", block_no, line_no, word_no)
-        word_list = page.get_text("words", sort=text_config.sort_words_reading_order)
-        
-        for w in word_list:
-            if len(w) >= 5:
-                text = w[4]
+        if isinstance(doc, _PDFDocument):
+            page_data = doc.get_page(page_num)
+            for pw in page_data.words:
+                text = pw.text
                 if text_config.normalize_whitespace:
                     text = " ".join(text.split())
                 if not text:
                     continue
-                
                 word = Word(
                     text=text,
-                    bbox=BBox(x0=w[0], y0=w[1], x1=w[2], y1=w[3]),
+                    bbox=BBox(x0=pw.x0, y0=pw.y0, x1=pw.x1, y1=pw.y1),
                     page=page_num,
-                    confidence=1.0  # Native text = full confidence
+                    confidence=pw.confidence,
                 )
                 words.append(word)
+        else:
+            # Legacy fitz.Document path
+            page = doc[page_num]
+            word_list = page.get_text("words", sort=text_config.sort_words_reading_order)
+            for w in word_list:
+                if len(w) >= 5:
+                    text = w[4]
+                    if text_config.normalize_whitespace:
+                        text = " ".join(text.split())
+                    if not text:
+                        continue
+                    word = Word(
+                        text=text,
+                        bbox=BBox(x0=w[0], y0=w[1], x1=w[2], y1=w[3]),
+                        page=page_num,
+                        confidence=1.0,
+                    )
+                    words.append(word)
         
         context.pages_processed += 1
     
@@ -580,21 +622,26 @@ def build_table_geometry(
 
 def extract_tables_geometry(
     words: list[Word],
-    doc: "fitz.Document",
+    doc,
     config: PDFExtractionConfig,
     context: ExtractionContext,
     diagnostics: Diagnostics
 ) -> list[TableResult]:
     """
-    Extract tables using geometry reconstruction (PyMuPDF-only).
+    Extract tables using geometry reconstruction.
     
     This is the DEFAULT and SAFE method.
     """
+    from python.helpers.pdf_extraction.pdf_backend import PDFDocument as _PDFDocument
+    
     if not config.tables.enabled or not config.tables.geometry.enabled:
         return []
     
     tables: list[TableResult] = []
-    max_pages = min(doc.page_count, config.budgets.max_pages)
+    if isinstance(doc, _PDFDocument):
+        max_pages = min(doc.page_count(), config.budgets.max_pages)
+    else:
+        max_pages = min(doc.page_count, config.budgets.max_pages)
     
     for page_num in range(max_pages):
         # Check budget
@@ -707,7 +754,7 @@ def try_camelot_extraction(
 def try_optional_engines(
     pdf_path: str,
     words: list[Word],
-    doc: "fitz.Document",
+    doc,
     config: PDFExtractionConfig,
     context: ExtractionContext,
     circuit_breaker: CircuitBreaker,
@@ -721,13 +768,18 @@ def try_optional_engines(
     - Budget allows
     - Circuit breaker is closed
     """
+    from python.helpers.pdf_extraction.pdf_backend import PDFDocument as _PDFDocument
+    
     tables: list[TableResult] = []
     
     # Check if we should try engines
     if context.backtracks_used >= config.budgets.max_backtracks:
         return tables
     
-    max_pages = min(doc.page_count, config.budgets.max_pages)
+    if isinstance(doc, _PDFDocument):
+        max_pages = min(doc.page_count(), config.budgets.max_pages)
+    else:
+        max_pages = min(doc.page_count, config.budgets.max_pages)
     
     for page_num in range(max_pages):
         if context.is_budget_exhausted(config.budgets.total_timeout_s):
@@ -916,7 +968,11 @@ def extract_from_pdf(
             print(f"Extraction failed: {result.status}")
         ```
     """
-    import fitz  # PyMuPDF
+    from python.helpers.pdf_extraction.pdf_backend import get_backend
+    
+    # SECURITY: Silence pdfminer debug logs — they can leak raw PDF content
+    # pdfminer (used by pdfplumber) emits DEBUG logs with raw bytes from PDFs
+    logging.getLogger("pdfminer").setLevel(logging.WARNING)
     
     # Setup
     config = config or get_default_config()
@@ -935,18 +991,23 @@ def extract_from_pdf(
     )
     
     try:
-        # Open PDF
+        # Open PDF via backend abstraction
+        backend = get_backend()
         if isinstance(source, bytes):
-            doc = fitz.open(stream=source, filetype="pdf")
+            doc = backend.open_bytes(source)
             result.document_hash = ExtractionResult.compute_hash(source)
             pdf_path = None
         else:
             pdf_path = str(source)
-            doc = fitz.open(pdf_path)
+            doc = backend.open_path(pdf_path)
             with open(pdf_path, "rb") as f:
                 result.document_hash = ExtractionResult.compute_hash(f.read())
         
-        diagnostics.page_count = doc.page_count
+        from python.helpers.pdf_extraction.pdf_backend import PDFDocument as _PDFDocument
+        if isinstance(doc, _PDFDocument):
+            diagnostics.page_count = doc.page_count()
+        else:
+            diagnostics.page_count = doc.page_count
         
         # 1. Classify PDF
         with timed_operation(diagnostics, "classification"):

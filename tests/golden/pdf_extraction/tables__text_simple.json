@@ -1,0 +1,797 @@
+{
+  "table_count": 1,
+  "tables": [
+    {
+      "cells": [
+        {
+          "bbox": {
+            "x0": 177.1,
+            "x1": 265.1,
+            "y0": 81.7,
+            "y1": 99.7
+          },
+          "col": 7,
+          "row": 0,
+          "text": "Document"
+        },
+        {
+          "bbox": {
+            "x0": 270.1,
+            "x1": 313.1,
+            "y0": 81.7,
+            "y1": 99.7
+          },
+          "col": 12,
+          "row": 0,
+          "text": "Title:"
+        },
+        {
+          "bbox": {
+            "x0": 318.1,
+            "x1": 418.1,
+            "y0": 81.7,
+            "y1": 99.7
+          },
+          "col": 15,
+          "row": 0,
+          "text": "Test Report"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 96.9,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 0,
+          "row": 1,
+          "text": "This"
+        },
+        {
+          "bbox": {
+            "x0": 99.7,
+            "x1": 106.9,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 1,
+          "row": 1,
+          "text": "is"
+        },
+        {
+          "bbox": {
+            "x0": 109.7,
+            "x1": 146.9,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 2,
+          "row": 1,
+          "text": "a simple"
+        },
+        {
+          "bbox": {
+            "x0": 149.7,
+            "x1": 165.8,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 5,
+          "row": 1,
+          "text": "test"
+        },
+        {
+          "bbox": {
+            "x0": 168.6,
+            "x1": 212.5,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 6,
+          "row": 1,
+          "text": "document"
+        },
+        {
+          "bbox": {
+            "x0": 215.3,
+            "x1": 237.0,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 9,
+          "row": 1,
+          "text": "used"
+        },
+        {
+          "bbox": {
+            "x0": 239.7,
+            "x1": 274.7,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 11,
+          "row": 1,
+          "text": "to verify"
+        },
+        {
+          "bbox": {
+            "x0": 277.5,
+            "x1": 297.5,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 13,
+          "row": 1,
+          "text": "PDF"
+        },
+        {
+          "bbox": {
+            "x0": 300.3,
+            "x1": 316.4,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 14,
+          "row": 1,
+          "text": "text"
+        },
+        {
+          "bbox": {
+            "x0": 319.2,
+            "x1": 499.3,
+            "y0": 126.1,
+            "y1": 136.1
+          },
+          "col": 15,
+          "row": 1,
+          "text": "extraction. It contains multiple sentences"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 95.8,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 0,
+          "row": 2,
+          "text": "with"
+        },
+        {
+          "bbox": {
+            "x0": 98.6,
+            "x1": 130.8,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 1,
+          "row": 2,
+          "text": "varying"
+        },
+        {
+          "bbox": {
+            "x0": 133.6,
+            "x1": 184.7,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 4,
+          "row": 2,
+          "text": "vocabulary."
+        },
+        {
+          "bbox": {
+            "x0": 187.5,
+            "x1": 204.7,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 7,
+          "row": 2,
+          "text": "The"
+        },
+        {
+          "bbox": {
+            "x0": 207.5,
+            "x1": 250.8,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 8,
+          "row": 2,
+          "text": "extraction"
+        },
+        {
+          "bbox": {
+            "x0": 253.6,
+            "x1": 288.1,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 11,
+          "row": 2,
+          "text": "pipeline"
+        },
+        {
+          "bbox": {
+            "x0": 290.9,
+            "x1": 320.3,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 14,
+          "row": 2,
+          "text": "should"
+        },
+        {
+          "bbox": {
+            "x0": 323.1,
+            "x1": 498.2,
+            "y0": 138.1,
+            "y1": 148.1
+          },
+          "col": 15,
+          "row": 2,
+          "text": "capture every word with correct reading"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 104.1,
+            "y0": 150.1,
+            "y1": 160.1
+          },
+          "col": 0,
+          "row": 3,
+          "text": "order."
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 111.9,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 0,
+          "row": 4,
+          "text": "Second"
+        },
+        {
+          "bbox": {
+            "x0": 114.7,
+            "x1": 160.3,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 2,
+          "row": 4,
+          "text": "paragraph"
+        },
+        {
+          "bbox": {
+            "x0": 163.1,
+            "x1": 180.8,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 6,
+          "row": 4,
+          "text": "with"
+        },
+        {
+          "bbox": {
+            "x0": 183.6,
+            "x1": 226.4,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 7,
+          "row": 4,
+          "text": "additional"
+        },
+        {
+          "bbox": {
+            "x0": 229.2,
+            "x1": 264.8,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 10,
+          "row": 4,
+          "text": "content."
+        },
+        {
+          "bbox": {
+            "x0": 267.6,
+            "x1": 308.1,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 12,
+          "row": 4,
+          "text": "Numbers"
+        },
+        {
+          "bbox": {
+            "x0": 310.9,
+            "x1": 474.9,
+            "y0": 180.1,
+            "y1": 190.1
+          },
+          "col": 15,
+          "row": 4,
+          "text": "like 42, 3.14, and 1000000 should be"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 122.5,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 0,
+          "row": 5,
+          "text": "preserved"
+        },
+        {
+          "bbox": {
+            "x0": 125.1,
+            "x1": 159.0,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 3,
+          "row": 5,
+          "text": "exactly."
+        },
+        {
+          "bbox": {
+            "x0": 161.7,
+            "x1": 194.4,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 6,
+          "row": 5,
+          "text": "Special"
+        },
+        {
+          "bbox": {
+            "x0": 197.1,
+            "x1": 246.6,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 8,
+          "row": 5,
+          "text": "characters:"
+        },
+        {
+          "bbox": {
+            "x0": 249.2,
+            "x1": 304.2,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 11,
+          "row": 5,
+          "text": "parentheses"
+        },
+        {
+          "bbox": {
+            "x0": 306.9,
+            "x1": 332.4,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 14,
+          "row": 5,
+          "text": "(test),"
+        },
+        {
+          "bbox": {
+            "x0": 335.1,
+            "x1": 517.3,
+            "y0": 192.1,
+            "y1": 202.1
+          },
+          "col": 15,
+          "row": 5,
+          "text": "brackets [test], and currency symbols like"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 108.6,
+            "y0": 204.1,
+            "y1": 214.1
+          },
+          "col": 0,
+          "row": 6,
+          "text": "100.50"
+        },
+        {
+          "bbox": {
+            "x0": 111.4,
+            "x1": 135.2,
+            "y0": 204.1,
+            "y1": 214.1
+          },
+          "col": 2,
+          "row": 6,
+          "text": "EUR."
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 109.1,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 0,
+          "row": 7,
+          "text": "French"
+        },
+        {
+          "bbox": {
+            "x0": 111.9,
+            "x1": 130.8,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 2,
+          "row": 7,
+          "text": "text:"
+        },
+        {
+          "bbox": {
+            "x0": 133.6,
+            "x1": 149.7,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 4,
+          "row": 7,
+          "text": "Les"
+        },
+        {
+          "bbox": {
+            "x0": 152.5,
+            "x1": 204.7,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 5,
+          "row": 7,
+          "text": "dispositions"
+        },
+        {
+          "bbox": {
+            "x0": 207.5,
+            "x1": 218.6,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 8,
+          "row": 7,
+          "text": "de"
+        },
+        {
+          "bbox": {
+            "x0": 221.4,
+            "x1": 252.2,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 9,
+          "row": 7,
+          "text": "l'article"
+        },
+        {
+          "bbox": {
+            "x0": 255.0,
+            "x1": 294.5,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 11,
+          "row": 7,
+          "text": "L.225-35"
+        },
+        {
+          "bbox": {
+            "x0": 297.2,
+            "x1": 308.4,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 14,
+          "row": 7,
+          "text": "du"
+        },
+        {
+          "bbox": {
+            "x0": 311.1,
+            "x1": 487.3,
+            "y0": 234.1,
+            "y1": 244.1
+          },
+          "col": 15,
+          "row": 7,
+          "text": "code de commerce imposent au conseil"
+        },
+        {
+          "bbox": {
+            "x0": 78.0,
+            "x1": 147.7,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 0,
+          "row": 8,
+          "text": "d'administration"
+        },
+        {
+          "bbox": {
+            "x0": 150.5,
+            "x1": 161.6,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 5,
+          "row": 8,
+          "text": "de"
+        },
+        {
+          "bbox": {
+            "x0": 164.4,
+            "x1": 175.0,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 6,
+          "row": 8,
+          "text": "se"
+        },
+        {
+          "bbox": {
+            "x0": 177.7,
+            "x1": 201.1,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 7,
+          "row": 8,
+          "text": "saisir"
+        },
+        {
+          "bbox": {
+            "x0": 203.8,
+            "x1": 215.0,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 8,
+          "row": 8,
+          "text": "de"
+        },
+        {
+          "bbox": {
+            "x0": 217.7,
+            "x1": 240.0,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 9,
+          "row": 8,
+          "text": "toute"
+        },
+        {
+          "bbox": {
+            "x0": 242.8,
+            "x1": 280.6,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 11,
+          "row": 8,
+          "text": "question"
+        },
+        {
+          "bbox": {
+            "x0": 283.3,
+            "x1": 332.2,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 13,
+          "row": 8,
+          "text": "intéressant"
+        },
+        {
+          "bbox": {
+            "x0": 335.0,
+            "x1": 471.2,
+            "y0": 246.1,
+            "y1": 256.1
+          },
+          "col": 15,
+          "row": 8,
+          "text": "la bonne marche de la société."
+        }
+      ],
+      "confidence": 0.7,
+      "csv": ",,,,,,,Document,,,,,Title:,,,Test Report\r\nThis,is,a simple,,,test,document,,,used,,to verify,,PDF,text,extraction. It contains multiple sentences\r\nwith,varying,,,vocabulary.,,,The,extraction,,,pipeline,,,should,capture every word with correct reading\r\norder.,,,,,,,,,,,,,,,\r\nSecond,,paragraph,,,,with,additional,,,content.,,Numbers,,,\"like 42, 3.14, and 1000000 should be\"\r\npreserved,,,exactly.,,,Special,,characters:,,,parentheses,,,\"(test),\",\"brackets [test], and currency symbols like\"\r\n100.50,,EUR.,,,,,,,,,,,,,\r\nFrench,,text:,,Les,dispositions,,,de,l'article,,L.225-35,,,du,code de commerce imposent au conseil\r\nd'administration,,,,,de,se,saisir,de,toute,,question,,intéressant,,la bonne marche de la société.\r\n",
+      "fill_ratio": 0.3888888888888889,
+      "index": 0,
+      "method": "pymupdf_geometry",
+      "num_cols": 16,
+      "num_rows": 9,
+      "page": 0,
+      "rows": [
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "Document",
+          "",
+          "",
+          "",
+          "",
+          "Title:",
+          "",
+          "",
+          "Test Report"
+        ],
+        [
+          "This",
+          "is",
+          "a simple",
+          "",
+          "",
+          "test",
+          "document",
+          "",
+          "",
+          "used",
+          "",
+          "to verify",
+          "",
+          "PDF",
+          "text",
+          "extraction. It contains multiple sentences"
+        ],
+        [
+          "with",
+          "varying",
+          "",
+          "",
+          "vocabulary.",
+          "",
+          "",
+          "The",
+          "extraction",
+          "",
+          "",
+          "pipeline",
+          "",
+          "",
+          "should",
+          "capture every word with correct reading"
+        ],
+        [
+          "order.",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Second",
+          "",
+          "paragraph",
+          "",
+          "",
+          "",
+          "with",
+          "additional",
+          "",
+          "",
+          "content.",
+          "",
+          "Numbers",
+          "",
+          "",
+          "like 42, 3.14, and 1000000 should be"
+        ],
+        [
+          "preserved",
+          "",
+          "",
+          "exactly.",
+          "",
+          "",
+          "Special",
+          "",
+          "characters:",
+          "",
+          "",
+          "parentheses",
+          "",
+          "",
+          "(test),",
+          "brackets [test], and currency symbols like"
+        ],
+        [
+          "100.50",
+          "",
+          "EUR.",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "French",
+          "",
+          "text:",
+          "",
+          "Les",
+          "dispositions",
+          "",
+          "",
+          "de",
+          "l'article",
+          "",
+          "L.225-35",
+          "",
+          "",
+          "du",
+          "code de commerce imposent au conseil"
+        ],
+        [
+          "d'administration",
+          "",
+          "",
+          "",
+          "",
+          "de",
+          "se",
+          "saisir",
+          "de",
+          "toute",
+          "",
+          "question",
+          "",
+          "intéressant",
+          "",
+          "la bonne marche de la société."
+        ]
+      ]
+    }
+  ]
+}

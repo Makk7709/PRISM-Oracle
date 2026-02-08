@@ -18,6 +18,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+# Load PDF test fixtures (conftest_pdf.py)
+pytest_plugins = ["tests.conftest_pdf"]
+
 
 # ============================================================================
 # NETWORK GUARD — PREVENTS REAL LITELLM CALLS

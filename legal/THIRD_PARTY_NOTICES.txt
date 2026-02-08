@@ -45,7 +45,8 @@ found in their respective repositories and distributions:
 - aiohttp (Apache License 2.0)
 - langchain (MIT License)
 - sentence-transformers (Apache License 2.0)
-- PyMuPDF (GNU AGPL v3 for open source use)
+- pdfplumber (MIT License)
+- pypdf (BSD License)
 - And other dependencies listed in requirements.txt
 
 For a complete list of dependencies and their licenses, run:

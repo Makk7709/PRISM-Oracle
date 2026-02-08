@@ -1,0 +1,10 @@
+Document Title: Test Report
+ 
+This is a simple test document used to verify PDF text extraction. It contains multiple sentences
+with varying vocabulary. The extraction pipeline should capture every word with correct reading
+order.
+Second paragraph with additional content. Numbers like 42, 3.14, and 1000000 should be
+preserved exactly. Special characters: parentheses (test), brackets [test], and currency symbols like
+100.50 EUR.
+French text: Les dispositions de l'article L.225-35 du code de commerce imposent au conseil
+d'administration de se saisir de toute question intéressant la bonne marche de la société.

@@ -115,21 +115,20 @@ class PdfOcr(Tool):
         return "\n".join(f"- {f}" for f in sorted(pdf_files)[:15])
     
     def _extract_text_direct(self, path: str) -> str:
-        """Try to extract text directly using PyMuPDF."""
+        """Try to extract text directly using pypdf (BSD license)."""
         try:
-            import fitz
-            
-            doc = fitz.open(path)
+            from pypdf import PdfReader
+
+            reader = PdfReader(path)
             text_parts = []
-            
-            for page in doc:
-                text = page.get_text()
+
+            for page in reader.pages:
+                text = page.extract_text() or ""
                 if text.strip():
                     text_parts.append(text)
-            
-            doc.close()
+
             return "\n\n".join(text_parts)
-            
+
         except ImportError:
             return ""
         except Exception:

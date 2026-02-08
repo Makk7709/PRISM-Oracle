@@ -15,7 +15,7 @@ from datetime import datetime
 
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_loaders.text import TextLoader
-from langchain_community.document_loaders.pdf import PyMuPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_transformers import MarkdownifyTransformer
 from langchain_community.document_loaders.parsers.images import TesseractBlobParser
 
@@ -609,7 +609,7 @@ class DocumentQueryHelper:
             # Use the resolved path for reading
             file_content_bytes = files.read_file_bin(resolved_path)
             PrintStyle.debug(f"[PDF] Read {len(file_content_bytes)} bytes")
-            # Create a temporary file for PyMuPDFLoader since it needs a file path
+            # Create a temporary file for PyPDFLoader since it needs a file path
             import tempfile
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
@@ -638,20 +638,14 @@ class DocumentQueryHelper:
 
         try:
             try:
-                loader = PyMuPDFLoader(
+                loader = PyPDFLoader(
                     temp_file_path,
-                    mode="single",
-                    extract_tables="markdown",
-                    extract_images=True,
-                    images_inner_format="text",
-                    images_parser=TesseractBlobParser(),
-                    pages_delimiter="\n",
                 )
                 elements: list[Document] = loader.load()
                 contents = "\n".join([element.page_content for element in elements])
             except Exception as e:
                 PrintStyle.error(
-                    f"DocumentQueryHelper::handle_pdf_document: Error loading with PyMuPDF: {e}"
+                    f"DocumentQueryHelper::handle_pdf_document: Error loading with PyPDF: {e}"
                 )
                 contents = ""
 

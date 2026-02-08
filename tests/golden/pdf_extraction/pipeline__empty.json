@@ -1,0 +1,18 @@
+{
+  "errors": [],
+  "fallback_used": false,
+  "methods_attempted": [
+    "pymupdf_geometry",
+    "pymupdf_text"
+  ],
+  "methods_succeeded": [
+    "pymupdf_text"
+  ],
+  "pages_processed": 1,
+  "pdf_type": "scan",
+  "pdf_type_confidence": 0.9,
+  "requires_human_review": false,
+  "status": "partial",
+  "table_count": 0,
+  "word_count": 0
+}

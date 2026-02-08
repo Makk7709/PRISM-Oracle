@@ -62,7 +62,8 @@ Examples of what you CAN do with code_execution:
 ### Available Python Libraries
 - `pandas` — Excel, CSV, data analysis
 - `openpyxl` — Excel files
-- `fitz` (PyMuPDF) — PDF reading
+- `pypdf` — PDF reading
+- `pdfplumber` — PDF reading with table extraction
 - `reportlab` — PDF creation
 - `Pillow` — Image processing
 - `requests` — HTTP/API calls

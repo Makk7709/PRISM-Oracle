@@ -8,6 +8,6 @@
 - ALWAYS use the full absolute path when accessing files
 - For Excel files (.xlsx): use pandas.read_excel() via code_execution
 - For CSV files: use pandas.read_csv() via code_execution
-- For PDF files: use PyMuPDF or other PDF libraries via code_execution
+- For PDF files: use pypdf or pdfplumber via code_execution
 - NEVER assume files are inaccessible - they are local and readable
 - ALWAYS verify file paths before claiming they don't exist

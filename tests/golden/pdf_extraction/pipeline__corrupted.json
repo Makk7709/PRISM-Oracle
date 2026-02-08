@@ -1,0 +1,15 @@
+{
+  "errors": [
+    "PdfminerException"
+  ],
+  "fallback_used": false,
+  "methods_attempted": [],
+  "methods_succeeded": [],
+  "pages_processed": 0,
+  "pdf_type": "unknown",
+  "pdf_type_confidence": 0.0,
+  "requires_human_review": false,
+  "status": "error",
+  "table_count": 0,
+  "word_count": 0
+}
