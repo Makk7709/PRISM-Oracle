@@ -680,6 +680,29 @@ Elle ne constitue pas un avis juridique et ne remplace pas la consultation d'un 
                     
             except ImportError:
                 logger.warning("Contract drafting module not available — continuing")
+            except Exception as drafting_exc:
+                # ═══ FAIL-CLOSED: Pipeline exception → REFUSAL, NO LLM FALLBACK ═══
+                logger.error(
+                    f"[{correlation_id}] Contract drafting pipeline EXCEPTION (fail-closed): {drafting_exc}",
+                    exc_info=True,
+                )
+                refusal_text = (
+                    f"🚫 **ERREUR INTERNE — CONTRAT NON GÉNÉRÉ**\n\n"
+                    f"Le pipeline de rédaction contractuelle a rencontré une erreur interne.\n"
+                    f"Par mesure de sécurité (fail-closed), aucun contrat ne peut être généré.\n\n"
+                    f"**Correlation ID**: `{correlation_id}`\n\n"
+                    f"Veuillez réessayer ou contacter le support technique si l'erreur persiste."
+                )
+                agent.set_data("_pipeline_final_response", refusal_text)
+                agent.set_data("_skip_llm", True)
+                agent.set_data("_pipeline_was_used", True)
+                agent.context.log.log(
+                    type="error",
+                    heading="🚫 Contract Drafting Pipeline FAIL-CLOSED",
+                    content=f"Pipeline exception: {str(drafting_exc)[:200]}",
+                    kvps={"correlation_id": correlation_id, "error": str(drafting_exc)[:200]},
+                )
+                return  # CRITICAL: Do NOT fall through to LLM
         
         # ═══════════════════════════════════════════════════════════════════
         # NEW: ROUTE TO ADVERSARIAL PIPELINE (7-phase) IF ENABLED

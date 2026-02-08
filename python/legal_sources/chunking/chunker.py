@@ -54,25 +54,50 @@ class LegalChunker:
     def chunk_document(self, doc: LegalDoc) -> Generator[LegalChunk, None, None]:
         """
         Découpe un document en chunks indexables.
-        
+
+        INVARIANT: un document avec du texte produit AU MOINS 1 chunk.
+        Les articles courts (< min_chunk_size) sont gardés tels quels
+        plutôt que silencieusement supprimés.
+
         Args:
             doc: Document juridique à découper
-        
+
         Yields:
             LegalChunk pour chaque segment
         """
-        if not doc.text:
+        if not doc.text or not doc.text.strip():
             return
-        
+
+        # ── Short document: always emit exactly 1 chunk ──
+        text_len = len(doc.text.strip())
+        if text_len < self.config.min_chunk_size:
+            pinpoint = f"Art. {doc.article_number}" if doc.article_number else "complete"
+            yield self._create_chunk(doc, doc.text.strip(), 0, pinpoint)
+            return
+
+        # ── Normal chunking strategies ──
+        chunks_emitted = 0
         if self.config.strategy == ChunkingStrategy.FIXED_SIZE:
-            yield from self._chunk_fixed_size(doc)
+            for chunk in self._chunk_fixed_size(doc):
+                chunks_emitted += 1
+                yield chunk
         elif self.config.strategy == ChunkingStrategy.ARTICLE:
-            yield from self._chunk_by_article(doc)
+            for chunk in self._chunk_by_article(doc):
+                chunks_emitted += 1
+                yield chunk
         elif self.config.strategy == ChunkingStrategy.PARAGRAPH:
-            yield from self._chunk_by_paragraph(doc)
+            for chunk in self._chunk_by_paragraph(doc):
+                chunks_emitted += 1
+                yield chunk
         else:
-            # Default to paragraph
-            yield from self._chunk_by_paragraph(doc)
+            for chunk in self._chunk_by_paragraph(doc):
+                chunks_emitted += 1
+                yield chunk
+
+        # ── Safety net: if no chunks were emitted, emit the whole text ──
+        if chunks_emitted == 0:
+            pinpoint = f"Art. {doc.article_number}" if doc.article_number else "complete"
+            yield self._create_chunk(doc, doc.text.strip(), 0, pinpoint)
     
     def _chunk_fixed_size(self, doc: LegalDoc) -> Generator[LegalChunk, None, None]:
         """Découpage à taille fixe avec overlap."""

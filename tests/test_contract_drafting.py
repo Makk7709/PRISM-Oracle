@@ -397,7 +397,7 @@ class TestGate:
         assert verdict.has_p0() is True
 
     def test_gate_approve_clean_contract(self):
-        """La gate DOIT approuver un contrat propre (pas de P0)."""
+        """La gate DOIT approuver un contrat propre (pas de P0, toutes sections)."""
         from python.helpers.contract_drafting.gate import run_gate
         from python.helpers.contract_drafting.models import ContractDraft, GateVerdictEnum
         draft = ContractDraft(
@@ -405,6 +405,12 @@ class TestGate:
                 "CP": "Le Client DICA France obtient une licence d'usage.",
                 "CG": "La propriété intellectuelle reste acquise à l'Éditeur. "
                        "Plafond de responsabilité: montant payé sur 12 mois.",
+                "ANNEXE_1": "Description du logiciel DICA Decor.",
+                "ANNEXE_2": "Support et maintenance — niveaux P1/P2/P3.",
+                "ANNEXE_3": "Sécurité: accès distant encadré, journalisation.",
+                "ANNEXE_4": "DPA RGPD — conditionnel si accès distant.",
+                "ANNEXE_5": "Réversibilité et fin de contrat.",
+                "ANNEXE_6": "Grille tarifaire et conditions de paiement.",
             },
             variables={"client_name": "DICA France"},
             disclaimer="PROJET — à valider par un juriste",

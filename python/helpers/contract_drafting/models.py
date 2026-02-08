@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -213,3 +214,77 @@ class DraftingOutput:
     gate_summary: str
     rendered_contract: str = ""
     corrections_needed: List[str] = field(default_factory=list)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE VERSIONING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class TemplateVersion:
+    """Métadonnées de versioning d'un template contractuel.
+    
+    Chaque template DOIT avoir:
+      - Un identifiant unique (section)
+      - Un numéro de version sémantique
+      - Une date de dernière revue juridique
+      - Le nom du relecteur juridique
+      - Un changelog des modifications
+    
+    RÈGLE: Un template sans revue juridique datant de > 12 mois
+    est considéré STALE et déclenche un P1 à la gate.
+    """
+    section: str
+    version: str
+    last_review_date: date
+    reviewer: str
+    changelog: List[str] = field(default_factory=list)
+    legal_basis: str = ""
+    stale_threshold_days: int = 365
+
+    def is_stale(self) -> bool:
+        """Retourne True si le template n'a pas été revu depuis > stale_threshold_days."""
+        delta = date.today() - self.last_review_date
+        return delta.days > self.stale_threshold_days
+
+    def days_since_review(self) -> int:
+        """Nombre de jours depuis la dernière revue juridique."""
+        return (date.today() - self.last_review_date).days
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INPUT VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class VariableValidationResult:
+    """Résultat de la validation des variables d'entrée.
+    
+    INVARIANT: is_valid = False ⟹ le pipeline DOIT refuser de générer.
+    """
+    is_valid: bool
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    sanitized_variables: Dict[str, str] = field(default_factory=dict)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUDIT LOG
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class DraftAuditEntry:
+    """Entrée de journal d'audit pour chaque opération du pipeline.
+    
+    Traçabilité complète: qui, quoi, quand, résultat.
+    """
+    correlation_id: str
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    action: str = ""
+    details: str = ""
+    verdict: str = ""
+    findings_count: int = 0
+    template_versions: Dict[str, str] = field(default_factory=dict)
+    variables_hash: str = ""
+    success: bool = True
+    error: str = ""

@@ -84,11 +84,13 @@ class DownloadFile(ApiHandler):
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:
             raise ValueError("No file path provided")
-        if not file_path.startswith("/"):
-            file_path = f"/{file_path}"
+
+        # Strip leading '/' so get_abs_path resolves relative to work dir
+        # (os.path.join ignores base when second arg is absolute)
+        relative_path = file_path.lstrip("/")
 
         file = await runtime.call_development_function(
-            file_info.get_file_info, file_path
+            file_info.get_file_info, relative_path
         )
 
         if not file["exists"]:

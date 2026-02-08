@@ -69,11 +69,17 @@ class FileWriter(Tool):
             
             PrintStyle(font_color="green").print(f"[FileWriter] Created: {output_path}")
             
+            # Build download URL for the chat response
+            relative_path = f"/tmp/generated/{final_filename}"
+            download_url = f"/download_work_dir_file?path={relative_path}"
+            
             return Response(
                 message=f"✅ File created successfully!\n\n"
                         f"**Filename:** {final_filename}\n"
                         f"**Path:** {output_path}\n"
-                        f"**Size:** {os.path.getsize(output_path)} bytes",
+                        f"**Size:** {os.path.getsize(output_path)} bytes\n\n"
+                        f"**Download link (use this in your response):**\n"
+                        f"[📄 Télécharger {final_filename}]({download_url})",
                 break_loop=False
             )
             

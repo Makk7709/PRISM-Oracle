@@ -28,7 +28,10 @@
 from __future__ import annotations
 
 import re
-from typing import Dict
+from datetime import date
+from typing import Dict, List
+
+from python.helpers.contract_drafting.models import TemplateVersion
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -521,3 +524,148 @@ def render_template(template: str, variables: Dict[str, str]) -> str:
         return f"[À COMPLÉTER: {var_name}]"
     
     return _VARIABLE_PATTERN.sub(_replace, template)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE VERSIONING REGISTRY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
+    "CP": TemplateVersion(
+        section="CP",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — CP licence ON-PREM",
+        ],
+        legal_basis="Art. 1101+ C. civ., Art. L.122-6 CPI",
+    ),
+    "CG": TemplateVersion(
+        section="CG",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — CG licence ON-PREM avec PI, responsabilité, résiliation",
+        ],
+        legal_basis="Art. 1170, 1171, 1231-5 C. civ., Art. L.122-6 et L.122-6-1 CPI",
+    ),
+    "ANNEXE_1": TemplateVersion(
+        section="ANNEXE_1",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — description logiciel + modules + pré-requis",
+        ],
+        legal_basis="Obligation d'information pré-contractuelle (art. 1112-1 C. civ.)",
+    ),
+    "ANNEXE_2": TemplateVersion(
+        section="ANNEXE_2",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — SLA P1/P2/P3, support, maintenance ON-PREM",
+        ],
+        legal_basis="Obligation de moyens (art. 1231-1 C. civ.)",
+    ),
+    "ANNEXE_3": TemplateVersion(
+        section="ANNEXE_3",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — sécurité, accès distant, journalisation",
+        ],
+        legal_basis="RGPD art. 32 (mesures de sécurité), Directive NIS2",
+    ),
+    "ANNEXE_4": TemplateVersion(
+        section="ANNEXE_4",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — DPA art. 28 RGPD (conditionnel si accès distant)",
+        ],
+        legal_basis="RGPD art. 28, 32, 33, 36 ; CNIL recommandations sous-traitance",
+    ),
+    "ANNEXE_5": TemplateVersion(
+        section="ANNEXE_5",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — réversibilité, fin contrat, droit de survie",
+        ],
+        legal_basis="Art. 1103, 1104 C. civ. (bonne foi contractuelle)",
+    ),
+    "ANNEXE_6": TemplateVersion(
+        section="ANNEXE_6",
+        version="1.0.0",
+        last_review_date=date(2026, 2, 1),
+        reviewer="KOREV Legal — Internal Review",
+        changelog=[
+            "1.0.0 (2026-02-01): Version initiale — grille tarifaire, indexation Syntec, pénalités SLA",
+        ],
+        legal_basis="Art. L.441-10, D.441-5 C. com., Art. 1164 C. civ. (indexation)",
+    ),
+}
+
+
+def get_template_versions() -> Dict[str, TemplateVersion]:
+    """Retourne le registre complet des versions de templates.
+    
+    Returns:
+        Dict section_name → TemplateVersion
+    """
+    return dict(_TEMPLATE_VERSIONS)
+
+
+def get_template_version(section: str) -> TemplateVersion:
+    """Retourne la version d'un template spécifique.
+    
+    Args:
+        section: Nom de la section (ex: "CP", "CG", "ANNEXE_1")
+    
+    Returns:
+        TemplateVersion
+    
+    Raises:
+        KeyError: si la section n'existe pas
+    """
+    if section not in _TEMPLATE_VERSIONS:
+        raise KeyError(f"Section inconnue: {section}. Sections disponibles: {list(_TEMPLATE_VERSIONS.keys())}")
+    return _TEMPLATE_VERSIONS[section]
+
+
+def get_stale_templates() -> List[TemplateVersion]:
+    """Retourne la liste des templates périmés (> 12 mois sans revue).
+    
+    Returns:
+        Liste des TemplateVersion périmés
+    """
+    return [v for v in _TEMPLATE_VERSIONS.values() if v.is_stale()]
+
+
+def get_template_versions_summary() -> str:
+    """Génère un résumé textuel des versions de tous les templates.
+    
+    Returns:
+        str — résumé formaté
+    """
+    lines = [
+        "══════════════════════════════════════════════════════",
+        "        REGISTRE DES VERSIONS — TEMPLATES CONTRACTUELS",
+        "══════════════════════════════════════════════════════",
+        "",
+    ]
+    for section, tv in sorted(_TEMPLATE_VERSIONS.items()):
+        stale_marker = " ⚠️ PÉRIMÉ" if tv.is_stale() else ""
+        lines.append(f"  {section:12s} v{tv.version}  revue: {tv.last_review_date}  par: {tv.reviewer}{stale_marker}")
+        if tv.legal_basis:
+            lines.append(f"               base: {tv.legal_basis}")
+    lines.append("")
+    lines.append("══════════════════════════════════════════════════════")
+    return "\n".join(lines)

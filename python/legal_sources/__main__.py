@@ -14,6 +14,7 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +36,48 @@ def setup_logging(level: str = "INFO", format_type: str = "text"):
         format=log_format,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+
+def cmd_ingest_openlegi(args):
+    """Commande d'ingestion via OpenLegi MCP (sans credentials PISTE)."""
+    from .fetchers.openlegi import run_openlegi_ingestion
+
+    config = get_default_config()
+
+    token = args.token or os.environ.get("OPENLEGI_TOKEN", "")
+    if not token:
+        logging.error(
+            "OpenLegi token required. Pass --token or set OPENLEGI_TOKEN env var."
+        )
+        sys.exit(1)
+
+    codes = [args.code] if args.code else None
+    limit = args.limit
+
+    logging.info(json.dumps({
+        "event": "ingest_openlegi_start",
+        "codes": codes or "all priority codes",
+        "limit": limit,
+        "max_pages": args.max_pages,
+    }))
+
+    try:
+        stats = run_openlegi_ingestion(
+            token=token,
+            config=config,
+            codes=codes,
+            limit=limit,
+            max_pages=args.max_pages,
+        )
+
+        print(json.dumps(stats, indent=2, ensure_ascii=False))
+        return 0 if stats.get("success", False) or stats.get("docs_indexed", 0) > 0 else 1
+
+    except Exception as e:
+        logging.error(f"OpenLegi ingestion failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
 
 
 def cmd_ingest(args):
@@ -514,6 +557,31 @@ def main():
         help="Code spécifique à ingérer (pour LEGI)",
     )
     
+    # === Commande ingest-openlegi ===
+    openlegi_parser = subparsers.add_parser(
+        "ingest-openlegi",
+        help="Ingérer via OpenLegi MCP (sans credentials PISTE)",
+    )
+    openlegi_parser.add_argument(
+        "--token",
+        help="Token OpenLegi MCP (ou env OPENLEGI_TOKEN)",
+    )
+    openlegi_parser.add_argument(
+        "--code",
+        help="Code spécifique (ex: 'Code civil'). Défaut: tous les codes prioritaires",
+    )
+    openlegi_parser.add_argument(
+        "--limit",
+        type=int,
+        help="Nombre maximum d'articles global",
+    )
+    openlegi_parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=5,
+        help="Pages max par requête de recherche (défaut: 5)",
+    )
+
     # === Commande search ===
     search_parser = subparsers.add_parser("search", help="Rechercher dans l'index")
     search_parser.add_argument(
@@ -585,6 +653,8 @@ def main():
     
     if args.command == "ingest":
         sys.exit(cmd_ingest(args))
+    elif args.command == "ingest-openlegi":
+        sys.exit(cmd_ingest_openlegi(args))
     elif args.command == "search":
         sys.exit(cmd_search(args))
     elif args.command == "lookup":
