@@ -113,116 +113,53 @@ class ExportStrategicPdf(Tool):
         total_sources: int,
         validation_passed: bool,
     ) -> Optional[str]:
-        """Generate a professional PDF from the markdown content."""
+        """Generate a professional PDF using the PRISM WeasyPrint engine."""
         try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import cm, mm
-            from reportlab.lib.colors import HexColor
-            from reportlab.platypus import (
-                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-                PageBreak, KeepTogether
+            from python.helpers.evidence_pdf_engine import markdown_to_pdf
+            
+            # Map doc_type to title
+            doc_type_labels = {
+                "market_study": "Étude de Marché",
+                "financial_forecast": "Prévisionnel Financier",
+                "pricing": "Stratégie de Pricing",
+                "go_to_market": "Plan Go-To-Market",
+            }
+            title = doc_type_labels.get(doc_type, "Document Stratégique")
+            
+            # Add metadata header to content
+            meta_header = f"""# {title}
+
+> **Evidence-Grade** — {total_sources} sources vérifiées | Validation: {'APPROVED' if validation_passed else 'PARTIAL'} | ID: {correlation_id[:8]}...
+
+---
+
+"""
+            full_content = meta_header + content
+            
+            markdown_to_pdf(
+                content=full_content,
+                output_path=output_path,
+                title=title,
+                header_right="Rapport Stratégique",
             )
-            from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
-            from reportlab.pdfgen import canvas
-            from io import BytesIO
-            
-            # Colors
-            PRIMARY_COLOR = HexColor("#1a365d")  # Dark blue
-            SECONDARY_COLOR = HexColor("#2d3748")  # Dark gray
-            ACCENT_COLOR = HexColor("#38a169")  # Green
-            
-            # Create PDF
-            doc = SimpleDocTemplate(
-                output_path,
-                pagesize=A4,
-                rightMargin=2*cm,
-                leftMargin=2*cm,
-                topMargin=2*cm,
-                bottomMargin=2*cm,
-            )
-            
-            # Styles
-            styles = getSampleStyleSheet()
-            
-            # Custom styles
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=24,
-                textColor=PRIMARY_COLOR,
-                spaceAfter=20,
-                alignment=TA_CENTER,
-            )
-            
-            h1_style = ParagraphStyle(
-                'CustomH1',
-                parent=styles['Heading1'],
-                fontSize=18,
-                textColor=PRIMARY_COLOR,
-                spaceBefore=20,
-                spaceAfter=10,
-            )
-            
-            h2_style = ParagraphStyle(
-                'CustomH2',
-                parent=styles['Heading2'],
-                fontSize=14,
-                textColor=SECONDARY_COLOR,
-                spaceBefore=15,
-                spaceAfter=8,
-            )
-            
-            body_style = ParagraphStyle(
-                'CustomBody',
-                parent=styles['Normal'],
-                fontSize=10,
-                leading=14,
-                alignment=TA_JUSTIFY,
-                spaceAfter=8,
-            )
-            
-            # Build content
-            elements = []
-            
-            # Cover page
-            elements.extend(self._create_cover_page(
-                doc_type=doc_type,
-                correlation_id=correlation_id,
-                total_sources=total_sources,
-                validation_passed=validation_passed,
-                title_style=title_style,
-                body_style=body_style,
-            ))
-            
-            elements.append(PageBreak())
-            
-            # Parse and convert markdown to reportlab elements
-            elements.extend(self._parse_markdown(
-                content=content,
-                h1_style=h1_style,
-                h2_style=h2_style,
-                body_style=body_style,
-                styles=styles,
-            ))
-            
-            # Build PDF
-            doc.build(elements)
             
             return output_path
             
-        except ImportError as e:
-            PrintStyle(font_color="yellow").print(f"⚠️ ReportLab not available: {e}")
-            # Fallback: save as markdown
-            md_path = output_path.replace(".pdf", ".md")
-            with open(md_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            return md_path
         except Exception as e:
-            PrintStyle(font_color="red").print(f"PDF generation error: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+            PrintStyle(font_color="yellow").print(f"⚠️ PRISM engine failed: {e}, trying fallback...")
+            
+            try:
+                # Fallback: save as markdown
+                md_path = output_path.replace(".pdf", ".md")
+                with open(md_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                PrintStyle(font_color="yellow").print(f"Saved as markdown: {md_path}")
+                return md_path
+            except Exception as e2:
+                PrintStyle(font_color="red").print(f"PDF generation error: {e2}")
+                import traceback
+                traceback.print_exc()
+                return None
 
     def _create_cover_page(
         self,
@@ -265,7 +202,7 @@ class ExportStrategicPdf(Tool):
         
         # Badge
         badge_text = "✅ EVIDENCE-GRADE" if validation_passed else "⚠️ PARTIAL"
-        badge_color = HexColor("#38a169") if validation_passed else HexColor("#d69e2e")
+        badge_color = HexColor("#4A7CFF") if validation_passed else HexColor("#d69e2e")
         
         badge_style = body_style.clone('badge')
         badge_style.textColor = badge_color
@@ -288,7 +225,7 @@ class ExportStrategicPdf(Tool):
         table = Table(metadata, colWidths=[6*cm, 8*cm])
         table.setStyle(TableStyle([
             ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('TEXTCOLOR', (0, 0), (0, -1), HexColor("#1a365d")),
+            ('TEXTCOLOR', (0, 0), (0, -1), HexColor("#1A1D23")),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
             ('ALIGN', (1, 0), (1, -1), 'LEFT'),
@@ -386,8 +323,9 @@ class ExportStrategicPdf(Tool):
                             table.setStyle(TableStyle([
                                 ('FONTSIZE', (0, 0), (-1, -1), 9),
                                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('BACKGROUND', (0, 0), (-1, 0), HexColor("#e2e8f0")),
-                                ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#cbd5e0")),
+                                ('BACKGROUND', (0, 0), (-1, 0), HexColor("#0D1117")),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), HexColor("#FFFFFF")),
+                                ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#E2E8F0")),
                                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                                 ('PADDING', (0, 0), (-1, -1), 6),
                             ]))
@@ -433,7 +371,7 @@ class ExportStrategicPdf(Tool):
             text = re.sub(r'`([^`]+)`', r'<font face="Courier">\1</font>', text)
             
             # Handle references
-            text = re.sub(r'\[REF-(\d+)\]', r'<font color="#2b6cb0">[REF-\1]</font>', text)
+            text = re.sub(r'\[REF-(\d+)\]', r'<font color="#4A7CFF">[REF-\1]</font>', text)
             
             try:
                 elements.append(Paragraph(text, body_style))

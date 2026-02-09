@@ -103,19 +103,20 @@ class Template:
 TEMPLATES: Dict[str, Template] = {
     
     # ─────────────────────────────────────────────────────────────────────────────
-    # STANDARD — Document professionnel polyvalent
+    # STANDARD — Document professionnel KOREV Evidence (PRISM Design System)
     # ─────────────────────────────────────────────────────────────────────────────
     "standard": Template(
         name="standard",
-        display_name="Document Standard",
-        description="Format professionnel polyvalent pour usage général",
+        display_name="Document KOREV Evidence",
+        description="Format professionnel KOREV Evidence — Charte PRISM",
         
-        primary_color="#1a365d",
-        secondary_color="#2c5282",
-        accent_color="#3182ce",
-        text_color="#2d3748",
-        light_bg="#f7fafc",
-        header_bg="#2c5282",
+        # PRISM Design System colors
+        primary_color="#1A1D23",      # Text primary (dark)
+        secondary_color="#4A7CFF",    # PRISM accent blue
+        accent_color="#4A7CFF",       # PRISM accent blue
+        text_color="#4A5568",         # Text secondary
+        light_bg="#F0F4FF",           # Accent background
+        header_bg="#0D1117",          # PRISM dark (table headers)
         
         suggested_sections=[]
     ),
@@ -126,15 +127,15 @@ TEMPLATES: Dict[str, Template] = {
     "consulting_premium": Template(
         name="consulting_premium",
         display_name="Rapport Stratégique Premium",
-        description="Format cabinet de conseil stratégique haut de gamme",
+        description="Format cabinet de conseil stratégique — Charte PRISM",
         
-        # Palette professionnelle
-        primary_color="#003B5C",
-        secondary_color="#00629B",
-        accent_color="#0091DA",
-        text_color="#1D1D1D",
-        light_bg="#F5F7FA",
-        header_bg="#003B5C",
+        # PRISM Design System — Premium variant
+        primary_color="#0D1117",
+        secondary_color="#4A7CFF",
+        accent_color="#4A7CFF",
+        text_color="#1A1D23",
+        light_bg="#F0F4FF",
+        header_bg="#0D1117",
         
         # Typographie soignée (TTF Unicode)
         title_font=DEFAULT_TITLE_FONT,

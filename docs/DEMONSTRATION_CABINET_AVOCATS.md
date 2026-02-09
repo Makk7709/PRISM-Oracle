@@ -78,22 +78,24 @@ Le mode Legal-Safe produit des analyses au format **FIRAC** :
 | **OPERATIONAL** | Conseil operationnel | Sources + Claims |
 | **BOARD** | Decision strategique | Sources + Claims + Consensus + Juridiction explicite |
 
-### 2.4 Juge binaire (7 controles)
+### 2.4 Gate d'audit contractuel (5 controles)
 
-Le juge binaire est un systeme de validation automatique qui applique 7 controles :
+La gate d'audit (`gate.py`) est un systeme de validation fail-closed qui applique 5 controles :
 
-1. **SOURCES_PRESENT** — Rules avec citations obligatoires (OPERATIONAL/BOARD)
-2. **FACTS_SEPARATED** — Liste de faits non vide
-3. **APPLICATION_PRESENT** — Analyse > 50 caracteres
-4. **CLAIMS_REQUIRED** — Claims obligatoires (OPERATIONAL/BOARD)
-5. **NO_UNSUPPORTED_CLAIMS** — Zero claim sans source
-6. **JURISDICTION_CLEAR** — Juridiction explicite (BOARD : UNKNOWN = FAIL)
-7. **ABROGATION_HANDLED** — References abrogees signalees
+1. **DISCLAIMER_OBLIGATOIRE** — Le disclaimer "PROJET — A VALIDER PAR UN JURISTE QUALIFIE" doit etre present (P0 si absent)
+2. **LEAK_GUARD** — Scan de toutes les sections contre 22 patterns P0 + 14 patterns P1 (fuite de code source, cession IP, garanties absolues, etc.)
+3. **CITATION_VERIFICATION** — Verification des references legales contre l'index Legifrance local (FTS5 + SQL fallback). Citations non trouvees = P1
+4. **TEMPLATE_STALENESS** — Verification que les templates contractuels ne sont pas obsoletes
+5. **SECTION_COMPLETENESS** — Verification que toutes les sections obligatoires sont presentes et non vides (P0 si absente)
+
+**Invariants :**
+- `P0 detecte` ⟹ `REJECT` (aucune exception)
+- `can_release = True` ⟺ `verdict = APPROVE`
+- `Exception interne` ⟹ `REJECT` (fail-closed)
 
 **Verdicts :**
-- `APPROVE` : tous les controles passent
-- `REJECT` : controle critique echoue
-- `REQUEST_INFO` : information manquante
+- `APPROVE` : zero P0, contrat liberable
+- `REJECT` : au moins un P0 detecte, export bloque
 
 ### 2.5 Consensus multi-LLM
 
@@ -139,7 +141,9 @@ REQUETE → ROUTER → LEGAL_DRAFTING_GUARDED → ACT LEAK GUARD → LEGAL_SAFE 
 
 ### 2.7 Act Leak Guard (Detection de clauses dangereuses)
 
-**16 patterns P0 (BLOQUANTS — 1 seul = contrat bloque) :**
+**22 patterns P0 (BLOQUANTS — 1 seul = contrat bloque) :**
+
+*Les 16 patterns fondamentaux + 6 patterns de renforcement V2 :*
 
 | # | Pattern | Risque |
 |---|---------|--------|
@@ -160,7 +164,9 @@ REQUETE → ROUTER → LEGAL_DRAFTING_GUARDED → ACT LEAK GUARD → LEGAL_SAFE 
 | 15 | Acces libre/illimite aux systemes | Risque securite |
 | 16 | Escrow/depot de code source chez tiers | Exposition IP |
 
-**9 patterns P1 (WARNINGS — signales, non bloquants) :**
+**14 patterns P1 (WARNINGS — signales, non bloquants) :**
+
+*Les 9 patterns fondamentaux + 5 patterns de renforcement V2 :*
 
 | # | Pattern | Risque |
 |---|---------|--------|
@@ -252,7 +258,7 @@ Chaque projet de contrat porte :
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   REDACTION   │ ──→ │  LEAK GUARD   │ ──→ │  GATE AUDIT  │
-│  (drafting)   │     │  (16 P0, 9 P1)│     │ (fail-closed)│
+│  (drafting)   │     │ (22 P0, 14 P1)│     │ (5 checks)   │
 └──────────────┘     └──────────────┘     └──────┬───────┘
                                                   │
                                            ┌──────┴──────┐
@@ -296,13 +302,13 @@ APPROVE    REJECT
 ### 3.3 Invariants de securite (non negociables)
 
 1. `P0 detecte` → `REJECT` (aucune exception)
-2. `Disclaimer absent` → `REJECT`
+2. `Disclaimer absent` → `REJECT` (P0)
 3. `can_release = True` ⟺ `verdict = APPROVE`
 4. `MULTI_AGENT_CONSENSUS` ne peut JAMAIS overrider `legal_safe`
 5. `legal_safe` a un veto **ABSOLU**
 6. `Temperature = 0` en mode juridique (exception = erreur fatale)
-7. `UNSUPPORTED claims` → `REJECT`
-8. `BOARD + UNKNOWN jurisdiction` → `REJECT`
+7. `Exception interne gate` → `REJECT` (fail-closed)
+8. `Section obligatoire absente` → `REJECT` (P0)
 
 ---
 
@@ -382,7 +388,7 @@ APPROVE    REJECT
 | AXE5-05 | Variables manquantes tracees | `[A COMPLETER: ...]` dans le texte |
 | AXE5-06 | Decision.type correct | `legal_contract` (jamais pricing/strategy) |
 | AXE5-07 | Documentation existe | README.md avec diagramme pipeline |
-| AXE5-08 | Leak Guard exhaustif | ≥16 P0 + ≥9 P1 patterns |
+| AXE5-08 | Leak Guard exhaustif | ≥22 P0 + ≥14 P1 patterns |
 
 ---
 
@@ -474,7 +480,7 @@ RESULTAT FINAL : 41 PASS / 41 TESTS — 100% REUSSITE
 
 2. **Separation des roles** — `legal_drafting_guarded` (redacteur) et `legal_safe` (juge/gate) sont strictement separes. Le juge a un veto absolu que le consensus multi-agent ne peut pas overrider.
 
-3. **Detection de clauses dangereuses** — 16 patterns P0 + 9 patterns P1 couvrent les fuites de code source, les cessions de PI, les garanties absolues, les violations RGPD, les penalites disproportionnees.
+3. **Detection de clauses dangereuses** — 22 patterns P0 + 14 patterns P1 couvrent les fuites de code source, les cessions de PI, les garanties absolues, les violations RGPD, les penalites disproportionnees.
 
 4. **Tracabilite complete** — Chaque contrat a un UUID, chaque finding a severity + pattern + context + recommendation + section + reference legale.
 
@@ -484,7 +490,7 @@ RESULTAT FINAL : 41 PASS / 41 TESTS — 100% REUSSITE
 
 | Risque | Couvert | Mecanisme |
 |--------|---------|-----------|
-| Fuite de code source | OUI | 5 patterns P0 |
+| Fuite de code source | OUI | 7 patterns P0 |
 | Cession de PI | OUI | 2 patterns P0 |
 | Transfert de savoir-faire | OUI | 1 pattern P0 |
 | Garanties absolues | OUI | 4 patterns P0 |
@@ -515,10 +521,11 @@ Les analyses juridiques passent par des LLM cloud (OpenRouter → OpenAI, Anthro
 - Les documents injectes transitent par des serveurs tiers
 - Le secret professionnel n'est garanti que si un DPA est signe avec chaque provider
 - Un deploiement ON-PREM est recommande pour les dossiers confidentiels
+- **Alternative** : l'utilisateur peut selectionner un LLM local (Mistral via Ollama) dans l'Agent Config pour eviter tout transit externe
 
 ### 7.3 Risque residuel
 
-- **Hallucination de references** : le systeme peut citer un article qui n'existe pas. Attenuation : le juge binaire exige des sources, mais ne verifie pas leur existence reelle.
+- **Hallucination de references** : le systeme peut citer un article qui n'existe pas. **Attenuation** : la gate d'audit verifie desormais les citations legales contre un index Legifrance local (FTS5 + SQL fallback). Les citations non trouvees dans l'index sont marquees P1 (warning). Couverture : ~5200 articles indexes (Codes principaux + jurisprudence Judilibre). Les articles hors perimetre de l'index ne sont pas verifies.
 - **Biais des modeles** : les LLM ont des biais inherents. Attenuation : consensus multi-LLM (3 modeles differents).
 
 ---

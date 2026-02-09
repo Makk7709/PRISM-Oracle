@@ -71,11 +71,11 @@ def create_styles(template: Optional[PDFTemplate] = None):
         h3_size = template.h3_size
         body_size = template.body_size
     else:
-        primary_color = HexColor('#1a365d')
-        secondary_color = HexColor('#2c5282')
-        accent_color = HexColor('#3182ce')
-        text_color = HexColor('#2d3748')
-        light_bg = HexColor('#f7fafc')
+        primary_color = HexColor('#1A1D23')     # PRISM text primary
+        secondary_color = HexColor('#4A7CFF')   # PRISM accent
+        accent_color = HexColor('#4A7CFF')      # PRISM accent
+        text_color = HexColor('#4A5568')         # PRISM text secondary
+        light_bg = HexColor('#F0F4FF')           # PRISM accent bg
         title_font = 'Helvetica-Bold'
         body_font = 'Helvetica'
         code_font = 'Courier'
@@ -398,9 +398,9 @@ class MarkdownToPDF:
                 light_bg = HexColor(template.light_bg)
                 text_color = HexColor(template.text_color)
             else:
-                header_bg = HexColor('#2c5282')
-                light_bg = HexColor('#f7fafc')
-                text_color = HexColor('#2d3748')
+                header_bg = HexColor('#0D1117')
+                light_bg = HexColor('#F0F4FF')
+                text_color = HexColor('#4A5568')
             
             # Create table with styles
             table = Table(data, repeatRows=1)
@@ -633,8 +633,8 @@ def create_page_callback(template: Optional[PDFTemplate] = None):
             show_footer = template.show_footer
             show_page_num = template.show_page_numbers
         else:
-            primary_color = HexColor('#1a365d')
-            accent_color = HexColor('#3182ce')
+            primary_color = HexColor('#1A1D23')
+            accent_color = HexColor('#4A7CFF')
             header_text = ""
             footer_text = ""
             confidential = ""
@@ -727,6 +727,38 @@ def generate_pdf(
         - technical: Documentation technique
         - default: Document professionnel standard
     """
+    # ═══════════════════════════════════════════════════════════════════
+    # PRIMARY: Route through PRISM WeasyPrint engine
+    # ═══════════════════════════════════════════════════════════════════
+    try:
+        from python.helpers.evidence_pdf_engine import markdown_to_pdf as _weasy_pdf
+        
+        header_map = {
+            "consulting_premium": "Rapport Stratégique",
+            "legal_formal": "Document Juridique",
+            "scientific_academic": "Publication Scientifique",
+            "patent_ip": "Brevet / PI",
+            "financial_audit": "Rapport Financier",
+            "executive_brief": "Note Executive",
+            "medical_clinical": "Document Médical",
+            "technical_doc": "Documentation Technique",
+        }
+        header_right = header_map.get(template_name or "", "Document")
+        
+        return _weasy_pdf(
+            content=content,
+            output_path=output_path,
+            title=title,
+            header_right=header_right,
+        )
+    except Exception as _e:
+        import logging
+        logging.getLogger("pdf_generator").info(f"PRISM engine unavailable ({_e}), using ReportLab")
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # FALLBACK: Legacy ReportLab rendering
+    # ═══════════════════════════════════════════════════════════════════
+    
     # Detect or get template
     if template_name:
         template = get_template(template_name)
@@ -811,6 +843,19 @@ def markdown_to_pdf_bytes(
     Returns:
         PDF as bytes
     """
+    # ═══════════════════════════════════════════════════════════════════
+    # PRIMARY: Route through PRISM WeasyPrint engine
+    # ═══════════════════════════════════════════════════════════════════
+    try:
+        from python.helpers.evidence_pdf_engine import markdown_to_pdf_bytes as _weasy_bytes
+        return _weasy_bytes(content=content, title=title)
+    except Exception as _e:
+        import logging
+        logging.getLogger("pdf_generator").info(f"PRISM engine unavailable ({_e}), using ReportLab")
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # FALLBACK: Legacy ReportLab rendering
+    # ═══════════════════════════════════════════════════════════════════
     buffer = BytesIO()
     
     # Detect or get template

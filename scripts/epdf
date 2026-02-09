@@ -1,0 +1,7 @@
+#!/bin/bash
+# ═══════════════════════════════════════════════════════════════
+# KOREV Evidence — Raccourci PDF
+# Usage:  ./scripts/epdf <fichier.md>  [options]
+# ═══════════════════════════════════════════════════════════════
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+/opt/homebrew/bin/python3.11 "$SCRIPT_DIR/evidence_pdf.py" "$@"

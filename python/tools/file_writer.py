@@ -146,50 +146,78 @@ class FileWriter(Tool):
         # Normalize template name
         normalized_template = template_map.get(template, template) if template else ""
         
+        # ═══════════════════════════════════════════════════════════════════
+        # PRIMARY: WeasyPrint engine (PRISM branded, Playfair Display)
+        # ═══════════════════════════════════════════════════════════════════
         try:
-            from python.helpers.evidence_document import parse_markdown, render_to_file
+            from python.helpers.evidence_pdf_engine import markdown_to_pdf
             
             PrintStyle(font_color="cyan").print(
-                f"[FileWriter] PDF content: {len(content)} chars, template={normalized_template or 'auto'}"
+                f"[FileWriter] PDF via PRISM engine: {len(content)} chars, template={normalized_template or 'auto'}"
             )
             
-            # Parse markdown to Document AST
-            doc = parse_markdown(
+            # Detect header_right from template
+            header_map = {
+                "consulting_premium": "Rapport Stratégique",
+                "legal_formal": "Document Juridique",
+                "scientific_academic": "Publication Scientifique",
+                "patent_ip": "Brevet / PI",
+                "financial_audit": "Rapport Financier",
+                "executive_brief": "Note Executive",
+                "medical_clinical": "Document Médical",
+                "technical_doc": "Documentation Technique",
+            }
+            header_right = header_map.get(normalized_template, "Document")
+            
+            markdown_to_pdf(
                 content=content,
+                output_path=path,
                 title=title if title else None,
-                template=normalized_template if normalized_template else None,
-                author="KOREV Evidence"
+                header_right=header_right,
             )
-            
-            # Render to file
-            render_to_file(doc, path)
             
             PrintStyle(font_color="green").print(
-                f"[FileWriter] PDF generated: {doc.template} template, {len(doc.elements)} elements"
+                f"[FileWriter] PDF generated (PRISM/WeasyPrint)"
             )
             
         except Exception as e:
-            PrintStyle(font_color="yellow").print(f"[FileWriter] New system failed: {e}, trying legacy...")
+            PrintStyle(font_color="yellow").print(f"[FileWriter] PRISM engine failed: {e}, trying legacy...")
             
-            # Fallback to legacy pdf_generator
+            # FALLBACK 1: evidence_document (ReportLab AST)
             try:
-                from python.helpers.pdf_generator import generate_pdf
+                from python.helpers.evidence_document import parse_markdown, render_to_file
                 
-                generate_pdf(
+                doc = parse_markdown(
                     content=content,
-                    output_path=path,
                     title=title if title else None,
-                    author="KOREV Evidence",
-                    template_name=normalized_template if normalized_template else None
+                    template=normalized_template if normalized_template else None,
+                    author="KOREV Evidence"
                 )
+                render_to_file(doc, path)
                 
-                PrintStyle(font_color="green").print(f"[FileWriter] PDF generated (legacy)")
+                PrintStyle(font_color="green").print(f"[FileWriter] PDF generated (evidence_document fallback)")
                 
             except Exception as e2:
-                PrintStyle(font_color="red").print(f"[FileWriter] PDF error: {e2}")
-                # Final fallback
-                self._write_text(path.replace('.pdf', '.txt'), content)
-                raise Exception(f"PDF generation failed. Created .txt instead. Error: {e2}")
+                PrintStyle(font_color="yellow").print(f"[FileWriter] evidence_document failed: {e2}, trying legacy...")
+                
+                # FALLBACK 2: legacy pdf_generator
+                try:
+                    from python.helpers.pdf_generator import generate_pdf
+                    
+                    generate_pdf(
+                        content=content,
+                        output_path=path,
+                        title=title if title else None,
+                        author="KOREV Evidence",
+                        template_name=normalized_template if normalized_template else None
+                    )
+                    
+                    PrintStyle(font_color="green").print(f"[FileWriter] PDF generated (legacy fallback)")
+                    
+                except Exception as e3:
+                    PrintStyle(font_color="red").print(f"[FileWriter] All PDF engines failed: {e3}")
+                    self._write_text(path.replace('.pdf', '.txt'), content)
+                    raise Exception(f"PDF generation failed. Created .txt instead. Error: {e3}")
     
     def _write_csv(self, path: str, content: str):
         """Create CSV file."""

@@ -396,27 +396,43 @@ class ReportJob:
                 self._export_pdf()
     
     def _export_html(self):
-        """Exporte en HTML."""
+        """Exporte en HTML avec la charte KOREV Evidence (PRISM Design System)."""
         try:
             import markdown
             md_content = self.report_path.read_text(encoding="utf-8")
+            body_html = markdown.markdown(md_content, extensions=['tables', 'fenced_code', 'toc', 'sane_lists'])
             html_content = f"""<!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="utf-8">
     <title>{self.title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {{ font-family: -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }}
-        h1, h2, h3 {{ color: #333; }}
-        code {{ background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }}
-        pre {{ background: #f4f4f4; padding: 1em; overflow-x: auto; }}
-        table {{ border-collapse: collapse; width: 100%; }}
-        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        @page {{ size: A4; margin: 20mm 22mm 25mm 22mm; }}
+        body {{ font-family: 'Inter', -apple-system, sans-serif; font-size: 10pt; line-height: 1.65; color: #4A5568; max-width: 166mm; margin: 0 auto; padding: 0; }}
+        h1 {{ font-family: 'Playfair Display', Georgia, serif; font-size: 18pt; font-weight: 600; color: #1A1D23; margin-top: 28px; margin-bottom: 10px; }}
+        h2 {{ font-family: 'Playfair Display', Georgia, serif; font-size: 13pt; font-weight: 600; color: #4A7CFF; margin-top: 22px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #E2E8F0; }}
+        h3 {{ font-family: 'Inter', sans-serif; font-size: 11pt; font-weight: 700; color: #1A1D23; margin-top: 16px; margin-bottom: 6px; }}
+        h4 {{ font-family: 'Inter', sans-serif; font-size: 10pt; font-weight: 600; color: #4A5568; }}
+        p {{ margin-bottom: 8px; }}
+        strong {{ font-weight: 600; color: #1A1D23; }}
+        a {{ color: #4A7CFF; text-decoration: none; }}
+        code {{ font-size: 8.5pt; background: #FAFBFC; padding: 1px 4px; border-radius: 3px; color: #4A7CFF; }}
+        pre {{ background: #0D1117; color: #E2E8F0; padding: 12px 14px; border-radius: 6px; font-size: 8pt; overflow-wrap: break-word; white-space: pre-wrap; }}
+        pre code {{ background: none; color: inherit; padding: 0; }}
+        table {{ width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; margin: 10px 0 14px 0; }}
+        thead th {{ background: #0D1117; color: white; font-weight: 600; text-align: left; padding: 7px 9px; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.05em; }}
+        tbody td {{ padding: 6px 9px; border-bottom: 1px solid #F1F5F9; vertical-align: top; word-wrap: break-word; }}
+        tbody tr:nth-child(even) {{ background: #FAFBFC; }}
+        blockquote {{ border-left: 3px solid #4A7CFF; padding: 10px 14px; margin: 12px 0; background: #F0F4FF; border-radius: 0 4px 4px 0; font-style: italic; }}
+        hr {{ border: none; border-top: 1px solid #E2E8F0; margin: 16px 0; }}
+        ul, ol {{ padding-left: 18px; }}
+        li {{ margin-bottom: 4px; font-size: 9.5pt; }}
         img {{ max-width: 100%; }}
     </style>
 </head>
 <body>
-{markdown.markdown(md_content, extensions=['tables', 'fenced_code'])}
+{body_html}
 </body>
 </html>"""
             html_path = self.output_dir / "report.html"
@@ -426,18 +442,30 @@ class ReportJob:
             logger.warning("markdown library not installed, skipping HTML export")
     
     def _export_pdf(self):
-        """Exporte en PDF."""
+        """Exporte en PDF via le moteur PRISM centralisé."""
         try:
-            # Essayer weasyprint d'abord
-            from weasyprint import HTML
-            html_path = self.output_dir / "report.html"
-            if not html_path.exists():
-                self._export_html()
+            from python.helpers.evidence_pdf_engine import markdown_to_pdf
+            md_content = self.report_path.read_text(encoding="utf-8")
             pdf_path = self.output_dir / "report.pdf"
-            HTML(filename=str(html_path)).write_pdf(str(pdf_path))
-            logger.info(f"PDF export: {pdf_path}")
-        except ImportError:
-            logger.warning("weasyprint not installed, skipping PDF export")
+            markdown_to_pdf(
+                content=md_content,
+                output_path=str(pdf_path),
+                title=self.title,
+                header_right="Rapport",
+            )
+            logger.info(f"PDF export (PRISM): {pdf_path}")
+        except Exception as e:
+            logger.warning(f"PRISM engine failed ({e}), trying legacy weasyprint")
+            try:
+                from weasyprint import HTML
+                html_path = self.output_dir / "report.html"
+                if not html_path.exists():
+                    self._export_html()
+                pdf_path = self.output_dir / "report.pdf"
+                HTML(filename=str(html_path)).write_pdf(str(pdf_path))
+                logger.info(f"PDF export (legacy): {pdf_path}")
+            except ImportError:
+                logger.warning("weasyprint not installed, skipping PDF export")
     
     async def _default_generate_section(self, section: ReportSection) -> str:
         """Générateur par défaut (placeholder)."""

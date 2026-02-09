@@ -155,6 +155,9 @@ def render_to_pdf(doc: Document, strict: bool = False) -> bytes:
     """
     Render Document to PDF bytes.
     
+    Primary: WeasyPrint PRISM engine (branded, Playfair Display).
+    Fallback: ReportLab (legacy).
+    
     Args:
         doc: Document AST
         strict: If True, raise on any error (for CI). If False, fallback gracefully.
@@ -162,6 +165,16 @@ def render_to_pdf(doc: Document, strict: bool = False) -> bytes:
     Returns:
         PDF as bytes
     """
+    # Try PRISM WeasyPrint engine first
+    try:
+        from python.helpers.evidence_pdf_engine import markdown_to_pdf_bytes
+        # Reconstruct markdown from AST elements (simplified)
+        md_content = _ast_to_markdown(doc)
+        return markdown_to_pdf_bytes(content=md_content, title=doc.title)
+    except Exception as e:
+        logger.info(f"WeasyPrint unavailable ({e}), using ReportLab")
+    
+    # Fallback to ReportLab
     buffer = BytesIO()
     _render_to_stream(doc, buffer, strict=strict)
     return buffer.getvalue()
@@ -170,6 +183,9 @@ def render_to_pdf(doc: Document, strict: bool = False) -> bytes:
 def render_to_file(doc: Document, path: str, strict: bool = False) -> str:
     """
     Render Document to PDF file.
+    
+    Primary: WeasyPrint PRISM engine (branded, Playfair Display).
+    Fallback: ReportLab (legacy).
     
     Args:
         doc: Document AST
@@ -181,10 +197,118 @@ def render_to_file(doc: Document, path: str, strict: bool = False) -> str:
     """
     os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
     
+    # Try PRISM WeasyPrint engine first
+    try:
+        from python.helpers.evidence_pdf_engine import markdown_to_pdf
+        md_content = _ast_to_markdown(doc)
+        return markdown_to_pdf(content=md_content, output_path=path, title=doc.title)
+    except Exception as e:
+        logger.info(f"WeasyPrint unavailable ({e}), using ReportLab")
+    
+    # Fallback to ReportLab
     with open(path, 'wb') as f:
         _render_to_stream(doc, f, strict=strict)
     
     return path
+
+
+def _ast_to_markdown(doc: Document) -> str:
+    """
+    Reconstruct Markdown from Document AST for WeasyPrint rendering.
+    Preserves the structured content while enabling HTML/CSS rendering.
+    """
+    lines = []
+    
+    for element in doc.elements:
+        if isinstance(element, Heading):
+            prefix = '#' * element.level
+            lines.append(f"{prefix} {element.text}")
+            lines.append("")
+        
+        elif isinstance(element, AstParagraph):
+            if isinstance(element.content, str):
+                lines.append(element.content)
+            elif isinstance(element.content, list):
+                # TextSpan list
+                text_parts = []
+                for span in element.content:
+                    t = span.text
+                    if span.bold:
+                        t = f"**{t}**"
+                    if span.italic:
+                        t = f"*{t}*"
+                    if span.code:
+                        t = f"`{t}`"
+                    text_parts.append(t)
+                lines.append("".join(text_parts))
+            lines.append("")
+        
+        elif isinstance(element, BulletList):
+            for item in element.items:
+                lines.append(f"- {item}")
+            lines.append("")
+        
+        elif isinstance(element, NumberedList):
+            for i, item in enumerate(element.items, element.start):
+                lines.append(f"{i}. {item}")
+            lines.append("")
+        
+        elif isinstance(element, AstTable):
+            if element.headers:
+                lines.append("| " + " | ".join(element.headers) + " |")
+                lines.append("| " + " | ".join(["---"] * len(element.headers)) + " |")
+                for row in element.rows:
+                    lines.append("| " + " | ".join(row) + " |")
+                lines.append("")
+        
+        elif isinstance(element, CodeBlock):
+            lang = element.language or ""
+            lines.append(f"```{lang}")
+            lines.append(element.code)
+            lines.append("```")
+            lines.append("")
+        
+        elif isinstance(element, BlockQuote):
+            lines.append(f"> {element.text}")
+            if element.source:
+                lines.append(f"> — {element.source}")
+            lines.append("")
+        
+        elif isinstance(element, HorizontalRule):
+            lines.append("---")
+            lines.append("")
+        
+        elif isinstance(element, AstPageBreak):
+            lines.append("")  # WeasyPrint handles page breaks via CSS
+        
+        elif isinstance(element, KeyValue):
+            lines.append(f"**{element.key}:** {element.value}")
+            lines.append("")
+        
+        elif isinstance(element, Callout):
+            prefix = {"info": "ℹ️", "warning": "⚠️", "danger": "⛔", "success": "✅"}.get(element.type, "")
+            if element.title:
+                lines.append(f"> {prefix} **{element.title}**")
+            lines.append(f"> {element.text}")
+            lines.append("")
+    
+    # Add sources if present
+    if doc.show_sources and doc.metadata.sources:
+        lines.append("---")
+        lines.append("## Sources & Références")
+        lines.append("")
+        for i, source in enumerate(doc.metadata.sources, 1):
+            parts = [f"[{i}] **{source.title}**"]
+            if source.author:
+                parts.append(f" — {source.author}")
+            if source.date:
+                parts.append(f" ({source.date})")
+            if source.url:
+                parts.append(f" [{source.url}]({source.url})")
+            lines.append("".join(parts))
+            lines.append("")
+    
+    return "\n".join(lines)
 
 
 def _render_to_stream(doc: Document, stream, strict: bool = False) -> None:

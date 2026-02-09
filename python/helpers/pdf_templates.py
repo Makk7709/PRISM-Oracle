@@ -96,13 +96,13 @@ TEMPLATES: Dict[str, PDFTemplate] = {
         display_name="KOREV Evidence Premium",
         description="Rapport stratégique premium - KOREV Evidence",
         
-        # Professional blue palette
-        primary_color="#003B5C",      # Deep navy
-        secondary_color="#00629B",    # Medium blue
-        accent_color="#0091DA",       # Bright blue
-        text_color="#1D1D1D",         # Near black
-        light_bg="#F5F7FA",
-        header_bg="#003B5C",
+        # PRISM Design System
+        primary_color="#0D1117",      # PRISM dark
+        secondary_color="#4A7CFF",    # PRISM accent
+        accent_color="#4A7CFF",       # PRISM accent
+        text_color="#1A1D23",         # PRISM text primary
+        light_bg="#F0F4FF",           # PRISM accent bg
+        header_bg="#0D1117",          # PRISM dark
         
         # Clean, professional typography
         title_font="Helvetica-Bold",
@@ -476,15 +476,16 @@ TEMPLATES: Dict[str, PDFTemplate] = {
     # ─────────────────────────────────────────────────────────────────────────────
     "default": PDFTemplate(
         name="default",
-        display_name="Document Standard",
-        description="Format professionnel polyvalent",
+        display_name="Document KOREV Evidence",
+        description="Format professionnel KOREV Evidence — Charte PRISM",
         
-        primary_color="#1a365d",
-        secondary_color="#2c5282",
-        accent_color="#3182ce",
-        text_color="#2d3748",
-        light_bg="#f7fafc",
-        header_bg="#2c5282",
+        # PRISM Design System colors
+        primary_color="#1A1D23",      # Text primary
+        secondary_color="#4A7CFF",    # PRISM accent
+        accent_color="#4A7CFF",       # PRISM accent
+        text_color="#4A5568",         # Text secondary
+        light_bg="#F0F4FF",           # Accent background
+        header_bg="#0D1117",          # PRISM dark
         
         suggested_sections=[]
     ),

@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOREV Evidence — Plateforme d'agents IA de confiance pour PME/ETI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+         * KOREV Evidence — Brochure PME/ETI
+         * Design System: PRISM-inspired, Sovereign, Premium
+         * Print-optimized for A4 PDF export
+         * ═══════════════════════════════════════════════════════════════ */
+
+        :root {
+            --prism-accent: #4A7CFF;
+            --prism-accent-light: #6B95FF;
+            --prism-accent-bg: #F0F4FF;
+            --prism-dark: #0D1117;
+            --prism-dark-surface: #161B22;
+            --prism-text-primary: #1A1D23;
+            --prism-text-secondary: #4A5568;
+            --prism-text-muted: #8B95A5;
+            --prism-border: #E2E8F0;
+            --prism-border-light: #F1F5F9;
+            --prism-bg-warm: #FAFBFC;
+            --prism-red: #E53E3E;
+            --prism-green: #38A169;
+            --prism-orange: #DD6B20;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: var(--prism-text-primary);
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * PAGE STRUCTURE
+         * ───────────────────────────────────────────────────────── */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm 22mm;
+            page-break-after: always;
+            position: relative;
+            background: white;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * COVER PAGE
+         * ───────────────────────────────────────────────────────── */
+        .cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: var(--prism-dark);
+            color: white;
+            padding: 40mm 30mm;
+        }
+
+        .cover__badge {
+            font-family: 'Inter', sans-serif;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--prism-accent-light);
+            border: 1px solid rgba(74, 124, 255, 0.3);
+            padding: 6px 16px;
+            border-radius: 4px;
+            margin-bottom: 50px;
+        }
+
+        .cover__title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 36pt;
+            font-weight: 400;
+            line-height: 1.1;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .cover__title-brand {
+            font-weight: 700;
+        }
+
+        .cover__title-evidence {
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .cover__subtitle {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 16pt;
+            font-weight: 400;
+            color: #A0AEC0;
+            margin-bottom: 60px;
+            line-height: 1.4;
+        }
+
+        .cover__tagline {
+            font-family: 'Inter', sans-serif;
+            font-size: 10pt;
+            font-weight: 400;
+            color: #718096;
+            max-width: 420px;
+            line-height: 1.7;
+            font-style: italic;
+        }
+
+        .cover__meta {
+            position: absolute;
+            bottom: 25mm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #4A5568;
+        }
+
+        .cover__meta-line {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .cover__classification {
+            font-weight: 600;
+            color: var(--prism-accent-light);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 7pt;
+            position: absolute;
+            top: 20mm;
+            right: 22mm;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * TYPOGRAPHY
+         * ───────────────────────────────────────────────────────── */
+        h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20pt;
+            font-weight: 600;
+            color: var(--prism-text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 14pt;
+            font-weight: 600;
+            color: var(--prism-accent);
+            margin-top: 24px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--prism-border);
+        }
+
+        h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 11pt;
+            font-weight: 700;
+            color: var(--prism-text-primary);
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+
+        h4 {
+            font-family: 'Inter', sans-serif;
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--prism-text-secondary);
+            margin-top: 14px;
+            margin-bottom: 6px;
+        }
+
+        p {
+            margin-bottom: 8px;
+            color: var(--prism-text-secondary);
+        }
+
+        strong {
+            font-weight: 600;
+            color: var(--prism-text-primary);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * PAGE HEADER / FOOTER
+         * ───────────────────────────────────────────────────────── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--prism-border);
+            margin-bottom: 20px;
+        }
+
+        .page-header__brand {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 10pt;
+            color: var(--prism-text-muted);
+        }
+
+        .page-header__brand b {
+            font-weight: 700;
+            color: var(--prism-text-primary);
+        }
+
+        .page-header__section {
+            font-family: 'Inter', sans-serif;
+            font-size: 8pt;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--prism-accent);
+        }
+
+        .page-footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 22mm;
+            right: 22mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 7pt;
+            color: var(--prism-text-muted);
+            border-top: 1px solid var(--prism-border-light);
+            padding-top: 8px;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * TABLES
+         * ───────────────────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 8.5pt;
+            table-layout: fixed;
+        }
+
+        thead th {
+            background: var(--prism-dark);
+            color: white;
+            font-weight: 600;
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        thead th:first-child {
+            border-radius: 4px 0 0 0;
+        }
+
+        thead th:last-child {
+            border-radius: 0 4px 0 0;
+        }
+
+        tbody td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--prism-border-light);
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        tbody tr:nth-child(even) {
+            background: var(--prism-bg-warm);
+        }
+
+        tbody tr:hover {
+            background: var(--prism-accent-bg);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * CARDS / USE CASE BLOCKS
+         * ───────────────────────────────────────────────────────── */
+        .usecase-section {
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+
+        .usecase-role {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 12pt;
+            font-weight: 600;
+            color: var(--prism-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .usecase-role-sub {
+            font-size: 8.5pt;
+            color: var(--prism-text-muted);
+            font-style: italic;
+            margin-bottom: 12px;
+        }
+
+        .usecase-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .usecase-card {
+            background: var(--prism-bg-warm);
+            border: 1px solid var(--prism-border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            border-left: 3px solid var(--prism-accent);
+        }
+
+        .usecase-card__title {
+            font-weight: 600;
+            font-size: 9pt;
+            color: var(--prism-text-primary);
+            margin-bottom: 3px;
+        }
+
+        .usecase-card__desc {
+            font-size: 8pt;
+            color: var(--prism-text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Single column variant */
+        .usecase-grid--single {
+            grid-template-columns: 1fr;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * HIGHLIGHT BOX
+         * ───────────────────────────────────────────────────────── */
+        .highlight-box {
+            background: var(--prism-accent-bg);
+            border: 1px solid rgba(74, 124, 255, 0.2);
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 14px 0;
+        }
+
+        .highlight-box--dark {
+            background: var(--prism-dark);
+            border-color: transparent;
+            color: white;
+        }
+
+        .highlight-box--dark p,
+        .highlight-box--dark strong {
+            color: white;
+        }
+
+        .highlight-box__title {
+            font-weight: 700;
+            font-size: 9pt;
+            color: var(--prism-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .highlight-box--dark .highlight-box__title {
+            color: var(--prism-accent-light);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * COMPARISON TABLE
+         * ───────────────────────────────────────────────────────── */
+        .comparison-table td:first-child {
+            font-weight: 600;
+            width: 22%;
+        }
+
+        .comparison-table .check {
+            color: var(--prism-green);
+            font-weight: 700;
+        }
+
+        .comparison-table .cross {
+            color: var(--prism-red);
+            font-weight: 700;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * JOURNEE TYPE TABLE
+         * ───────────────────────────────────────────────────────── */
+        .journee-table th:nth-child(1) { width: 8%; }
+        .journee-table th:nth-child(2) { width: 14%; }
+        .journee-table th:nth-child(3) { width: 32%; }
+        .journee-table th:nth-child(4) { width: 46%; }
+
+        /* ─────────────────────────────────────────────────────────
+         * ARCHITECTURE TABLE
+         * ───────────────────────────────────────────────────────── */
+        .arch-table th:nth-child(1) { width: 24%; }
+        .arch-table th:nth-child(2) { width: 40%; }
+        .arch-table th:nth-child(3) { width: 36%; }
+
+        /* ─────────────────────────────────────────────────────────
+         * BLOCKQUOTE / TAGLINE
+         * ───────────────────────────────────────────────────────── */
+        .tagline {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 12pt;
+            font-style: italic;
+            color: var(--prism-text-secondary);
+            text-align: center;
+            padding: 16px 30px;
+            margin: 20px 0;
+            border-top: 1px solid var(--prism-border);
+            border-bottom: 1px solid var(--prism-border);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * LIST STYLES
+         * ───────────────────────────────────────────────────────── */
+        ul {
+            padding-left: 16px;
+            margin-bottom: 8px;
+        }
+
+        ul li {
+            margin-bottom: 4px;
+            color: var(--prism-text-secondary);
+            font-size: 9pt;
+        }
+
+        ul li strong {
+            color: var(--prism-text-primary);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * PILL / TAG
+         * ───────────────────────────────────────────────────────── */
+        .pill {
+            display: inline-block;
+            font-size: 7pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background: var(--prism-accent-bg);
+            color: var(--prism-accent);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+         * PRINT ADJUSTMENTS
+         * ───────────────────────────────────────────────────────── */
+        @media print {
+            body { background: none; }
+            .page { box-shadow: none; margin: 0; }
+        }
+
+        @media screen {
+            body {
+                background: #E2E8F0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px 0;
+                gap: 20px;
+            }
+            .page {
+                box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+                border-radius: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 1 — COVER
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page cover">
+    <div class="cover__classification">USAGE INTERNE</div>
+    
+    <div class="cover__badge">Plateforme d'agents IA de confiance</div>
+    
+    <div class="cover__title">
+        <span class="cover__title-brand">KOREV</span> 
+        <span class="cover__title-evidence">Evidence</span>
+    </div>
+    
+    <div class="cover__subtitle">
+        Plateforme d'agents IA de confiance<br>pour PME/ETI
+    </div>
+    
+    <div class="cover__tagline">
+        L'expertise d'un cabinet de conseil, la rigueur d'un juriste,<br>
+        la réactivité d'une IA. Sans les honoraires.
+    </div>
+    
+    <div class="cover__meta">
+        <span class="cover__meta-line">Auteur : KOREV Evidence</span>
+        <span class="cover__meta-line">Version : 1.0 &nbsp;|&nbsp; Date : 2026-02-09</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 2 — ARCHITECTURE & DIFFÉRENCIATION
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header__brand"><b>KOREV</b> Evidence</div>
+        <div class="page-header__section">Architecture &amp; Différenciation</div>
+    </div>
+
+    <h1>1. Architecture et Différenciation Massive</h1>
+    <p>KOREV Evidence n'est pas un chatbot. C'est un système multi-agents avec validation intégrée, conçu pour les métiers où une erreur a des conséquences.</p>
+
+    <table class="arch-table">
+        <thead>
+            <tr>
+                <th>Dimension</th>
+                <th>Ce que propose KOREV Evidence</th>
+                <th>Mécanisme / Preuve</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Orchestration agents</strong></td>
+                <td>9+ agents spécialisés, hiérarchie, policy déterministe</td>
+                <td>Agent 0, délégation, multi-domaine</td>
+            </tr>
+            <tr>
+                <td><strong>Validation / responsabilité</strong></td>
+                <td>Consensus multi-LLM, fail-closed, audit trail</td>
+                <td>Quorum 2/3, refus explicite</td>
+            </tr>
+            <tr>
+                <td><strong>Sécurité / Conformité</strong></td>
+                <td>Auth Argon2id, rédaction logs, CSRF, PII, rate limiting</td>
+                <td>Testé OWASP, conforme RGPD</td>
+            </tr>
+            <tr>
+                <td><strong>Traçabilité</strong></td>
+                <td>Evidence pack, bundle d'audit, correlation IDs</td>
+                <td>Citation PMID/DOI/loi</td>
+            </tr>
+            <tr>
+                <td><strong>Limitation / intégrité</strong></td>
+                <td>Agents expriment leurs limites, refuse de simuler</td>
+                <td>Journalisation, modes prod bloqués</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box">
+        <div class="highlight-box__title">Ce qui change tout</div>
+        <p>KOREV Evidence se distingue par une <strong>confiance systémique</strong> : chaque réponse citée, traçabilité irréprochable, et barrière fail-closed qui garantit zéro hallucination non détectée — là où les IA génériques se contentent d'affirmer, Evidence préfère refuser. Avec plus de 346 tests unitaires et 8 invariants sur les process critiques, la sécurité et la fiabilité du système dépassent les standards marché.</p>
+    </div>
+
+    <h1 style="margin-top: 28px;">2. Cas d'Usage PME/ETI : Impact Métiers Concrets</h1>
+
+    <div class="usecase-section">
+        <div class="usecase-role">Dirigeant : Copilote stratégique pour la décision</div>
+        <div class="usecase-role-sub">L'intelligence d'un cabinet de conseil McKinsey, disponible en continu</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Analyse acquisition / concurrent</div>
+                <div class="usecase-card__desc">MECE options, matrice risque/rendement, DCF, financement, synthèse pour board</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Business plan &amp; viabilité</div>
+                <div class="usecase-card__desc">Modélisation P&amp;L, cash-flow, seuil de rentabilité, stress tests multi-scénarios</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Market sizing</div>
+                <div class="usecase-card__desc">TAM/SAM/SOM sourcé, top-down &amp; bottom-up, benchmarks sectoriels</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Levée de fonds</div>
+                <div class="usecase-card__desc">Comparaison BA/VC/dette/BPI, simulation dilution, term sheet type</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <span>KOREV Evidence — Confidentiel</span>
+        <span>Page 2</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 3 — CAS D'USAGE MÉTIERS (suite)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header__brand"><b>KOREV</b> Evidence</div>
+        <div class="page-header__section">Cas d'Usage PME/ETI</div>
+    </div>
+
+    <!-- COMMERCIAL -->
+    <div class="usecase-section">
+        <div class="usecase-role">Responsable commercial : Équipe de vente augmentée</div>
+        <div class="usecase-role-sub">Prospection, scripts, négociation — prêts à l'emploi</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Séquences de prospection</div>
+                <div class="usecase-card__desc">Emails + LinkedIn multi-touch sur 21 jours, personnalisés par persona et secteur</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Scripts d'appel à froid</div>
+                <div class="usecase-card__desc">3 variantes, gestion objections, techniques de closing pour décrocher un RDV</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Argumentaires &amp; battle cards</div>
+                <div class="usecase-card__desc">Problème → impact → solution → preuve. Fiches concurrentielles incluses</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Pipeline CRM &amp; forecasting</div>
+                <div class="usecase-card__desc">Design Salesforce/HubSpot, prévisions 3 scénarios, qualification BANT/MEDDIC</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MARKETING -->
+    <div class="usecase-section">
+        <div class="usecase-role">Responsable marketing : Agence intégrée</div>
+        <div class="usecase-role-sub">Stratégie, acquisition, contenu — un département marketing complet</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Positionnement &amp; messaging</div>
+                <div class="usecase-card__desc">Tone of voice, segmentation, proposition de valeur, framework "Avant/Après"</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Plan marketing annuel</div>
+                <div class="usecase-card__desc">Budget, KPIs CAC/LTV, calendrier éditorial, jalons trimestriels</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Acquisition digitale</div>
+                <div class="usecase-card__desc">Audit SEO, Google/LinkedIn Ads, email nurturing, segmentation avancée</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Content factory</div>
+                <div class="usecase-card__desc">10 posts LinkedIn/semaine, articles SEO, newsletters, landing pages optimisées</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAF -->
+    <div class="usecase-section">
+        <div class="usecase-role">DAF / RAF : Analyste financier automatisé</div>
+        <div class="usecase-role-sub">Modélisation, conformité, analyse — la rigueur sans le coût d'un cabinet</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Business plan bankable</div>
+                <div class="usecase-card__desc">Modélisation P&amp;L, bilan, cash-flow 3-5 ans, format banques/BPI</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Analyse trésorerie &amp; pricing</div>
+                <div class="usecase-card__desc">Projection 12 mois, BFR, marge par offre, recommandation arbitrage</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Analyse contrats &amp; CGV</div>
+                <div class="usecase-card__desc">Clauses à risque détectées automatiquement, grille alertes P0/P1</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Conformité RGPD &amp; droit social</div>
+                <div class="usecase-card__desc">Registre traitements, alertes obligations employeur, synthèse juridique sourcée</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <span>KOREV Evidence — Confidentiel</span>
+        <span>Page 3</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 4 — CAS D'USAGE MÉTIERS (suite) + RH + TECH
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header__brand"><b>KOREV</b> Evidence</div>
+        <div class="page-header__section">Cas d'Usage PME/ETI</div>
+    </div>
+
+    <!-- RH -->
+    <div class="usecase-section">
+        <div class="usecase-role">RH : Consultant RH à la demande</div>
+        <div class="usecase-role-sub">Recrutement, conformité sociale, formation — sans cabinet externe</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Recrutement structuré</div>
+                <div class="usecase-card__desc">Fiches de poste, grilles d'entretien STAR, scoring par compétence, benchmark salarial</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Conformité sociale</div>
+                <div class="usecase-card__desc">Obligations légales, DUERP, entretiens pro, registres — textes de loi cités</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Procédures RH</div>
+                <div class="usecase-card__desc">Rupture conventionnelle, licenciement, sanctions : étapes, délais, calculs indemnités</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Formation &amp; développement</div>
+                <div class="usecase-card__desc">Plan de compétences, financement OPCO/CPF/FNE, trames entretiens annuels</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TECH / DSI -->
+    <div class="usecase-section">
+        <div class="usecase-role">DSI / Tech : Équipe technique élargie</div>
+        <div class="usecase-role-sub">Développement, sécurité, infrastructure — le CTO augmenté</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Développement accéléré</div>
+                <div class="usecase-card__desc">APIs REST, frontends, intégrations CRM ↔ facturation, code production-ready avec tests</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Audit sécurité OWASP</div>
+                <div class="usecase-card__desc">Scan vulnérabilités, classification par criticité, plan de remédiation priorisé</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">DevOps &amp; infrastructure</div>
+                <div class="usecase-card__desc">CI/CD GitHub Actions, Docker, monitoring, choix d'outils comparé et argumenté</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Automatisation &amp; data</div>
+                <div class="usecase-card__desc">Scripts Python, nettoyage données, dashboards métier, rapprochement comptable</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUALITÉ / RSE -->
+    <div class="usecase-section">
+        <div class="usecase-role">Qualité / RSE : Auditeur permanent</div>
+        <div class="usecase-role-sub">ISO, RSE, conformité — accompagnement continu</div>
+        <div class="usecase-grid">
+            <div class="usecase-card">
+                <div class="usecase-card__title">Préparation ISO 9001</div>
+                <div class="usecase-card__desc">Gap analysis, plan d'action, procédures types, modèles documentaires</div>
+            </div>
+            <div class="usecase-card">
+                <div class="usecase-card__title">Bilan carbone &amp; CSRD</div>
+                <div class="usecase-card__desc">Estimation scope 1/2/3, reporting extra-financier, pistes de réduction</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <span>KOREV Evidence — Confidentiel</span>
+        <span>Page 4</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 5 — JOURNÉE TYPE + COMPARAISON
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header__brand"><b>KOREV</b> Evidence</div>
+        <div class="page-header__section">Impact concret &amp; Différenciation</div>
+    </div>
+
+    <h1>3. Une journée type avec Evidence</h1>
+    <p>Voici comment Evidence s'intègre dans le quotidien d'une PME de 50 personnes :</p>
+
+    <table class="journee-table">
+        <thead>
+            <tr>
+                <th>Heure</th>
+                <th>Qui</th>
+                <th>Demande à Evidence</th>
+                <th>Ce qu'Evidence délivre</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>8h30</td>
+                <td><strong>DG</strong></td>
+                <td>Memo sur les options de croissance externe pour le board</td>
+                <td>Analyse MECE de 3 cibles avec valorisation DCF, synergies et risques — 5 pages sourcées</td>
+            </tr>
+            <tr>
+                <td>9h00</td>
+                <td><strong>Commercial</strong></td>
+                <td>Préparation RDV avec un DAF d'un groupe industriel</td>
+                <td>Fiche prospect, argumentaire industrie, 10 objections/réponses, questions MEDDIC</td>
+            </tr>
+            <tr>
+                <td>10h30</td>
+                <td><strong>DAF</strong></td>
+                <td>Nouvelles CGV fournisseur : clauses à risque ?</td>
+                <td>3 patterns bloquants détectés (responsabilité, PI, résiliation), recommandations</td>
+            </tr>
+            <tr>
+                <td>11h00</td>
+                <td><strong>Marketing</strong></td>
+                <td>5 posts LinkedIn pour la semaine</td>
+                <td>5 posts avec hooks, corps, CTA, hashtags — adaptés au tone of voice</td>
+            </tr>
+            <tr>
+                <td>14h00</td>
+                <td><strong>RH</strong></td>
+                <td>Process exact pour une rupture conventionnelle</td>
+                <td>7 étapes, calcul indemnité, articles L.1237-11 à L.1237-16 du Code du travail</td>
+            </tr>
+            <tr>
+                <td>15h30</td>
+                <td><strong>DSI</strong></td>
+                <td>Audit sécurité du site e-commerce</td>
+                <td>Rapport OWASP : 12 vulnérabilités classées (3 critiques, 5 moyennes, 4 faibles)</td>
+            </tr>
+            <tr>
+                <td>17h00</td>
+                <td><strong>DG</strong></td>
+                <td>Aides disponibles pour le projet R&amp;D</td>
+                <td>Analyse CIR/CII/JEI, conditions, montants, art. 244 quater B du CGI</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h1 style="margin-top: 30px;">4. Pourquoi Evidence — et pas une IA générique</h1>
+
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th style="width: 22%">Critère</th>
+                <th style="width: 39%">IA générique (ChatGPT, etc.)</th>
+                <th style="width: 39%">KOREV Evidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Sources</strong></td>
+                <td class="cross">"D'après mes connaissances..."</td>
+                <td class="check">Chaque affirmation liée à un PMID, DOI, article de loi</td>
+            </tr>
+            <tr>
+                <td><strong>Erreurs</strong></td>
+                <td class="cross">Hallucinations silencieuses</td>
+                <td class="check">Fail-closed : refuse plutôt qu'inventer</td>
+            </tr>
+            <tr>
+                <td><strong>Domaines sensibles</strong></td>
+                <td class="cross">Même ton pour une recette et un avis juridique</td>
+                <td class="check">Agents spécialisés avec garde-fous métier</td>
+            </tr>
+            <tr>
+                <td><strong>Validation</strong></td>
+                <td class="cross">Un seul modèle, une seule réponse</td>
+                <td class="check">Consensus multi-LLM pour les réponses critiques</td>
+            </tr>
+            <tr>
+                <td><strong>Traçabilité</strong></td>
+                <td class="cross">Aucune</td>
+                <td class="check">Audit trail complet avec correlation ID</td>
+            </tr>
+            <tr>
+                <td><strong>Limites</strong></td>
+                <td class="cross">Ne dit jamais "je ne sais pas"</td>
+                <td class="check">Exprime ses limites et incertitudes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="tagline">
+        KOREV Evidence pour les PME — L'expertise d'un cabinet de conseil,<br>
+        la rigueur d'un juriste, la réactivité d'une IA. Sans les honoraires.
+    </div>
+
+    <div class="page-footer">
+        <span>KOREV Evidence — Confidentiel</span>
+        <span>Page 5</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 6 — GARANTIES DE CONFIANCE
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header__brand"><b>KOREV</b> Evidence</div>
+        <div class="page-header__section">Garanties de confiance</div>
+    </div>
+
+    <h1>5. Les garanties Evidence</h1>
+    <p>Chaque fonctionnalité de confiance est implémentée, testée et auditable dans le code source.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 26%">Garantie</th>
+                <th style="width: 40%">Ce que cela signifie</th>
+                <th style="width: 34%">Preuve technique</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Chaque affirmation sourcée</strong></td>
+                <td>PMID, DOI, article de loi, label FDA — jamais d'hallucination non tracée</td>
+                <td>Evidence Pack, citations vérifiées contre index local</td>
+            </tr>
+            <tr>
+                <td><strong>Consensus multi-LLM</strong></td>
+                <td>Les réponses critiques sont validées par vote entre plusieurs modèles d'IA</td>
+                <td>Quorum 2/3, 3 arbitres indépendants</td>
+            </tr>
+            <tr>
+                <td><strong>Fail-closed</strong></td>
+                <td>Le système refuse plutôt que d'inventer — zéro faux positif silencieux</td>
+                <td>8 invariants P0, 346+ tests unitaires</td>
+            </tr>
+            <tr>
+                <td><strong>Débat contradictoire</strong></td>
+                <td>3 rounds de confrontation pour les affirmations complexes</td>
+                <td>Collaborative debate engine</td>
+            </tr>
+            <tr>
+                <td><strong>Audit trail complet</strong></td>
+                <td>Chaque réponse traçable avec identifiant unique</td>
+                <td>Correlation IDs, bundle d'audit déterministe</td>
+            </tr>
+            <tr>
+                <td><strong>Limites assumées</strong></td>
+                <td>Chaque agent connaît ses frontières et les exprime</td>
+                <td>Classification criticité, refus documenté</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+        <div class="highlight-box__title">Privacy-First Architecture</div>
+        <ul>
+            <li><strong>Anonymisation PII</strong> dans tous les journaux d'audit (emails, téléphones, IBAN, numéros de sécurité sociale)</li>
+            <li><strong>Portabilité native</strong> : export JSON, PDF, backup ZIP de toutes vos données</li>
+            <li><strong>Suppression à la demande</strong> des conversations et mémoires</li>
+            <li><strong>Option déploiement souverain</strong> avec LLM local (Mistral/Ollama) — aucune donnée ne quitte votre infrastructure</li>
+            <li><strong>Transport sécurisé</strong> TLS/HTTPS, authentification Argon2id</li>
+        </ul>
+    </div>
+
+    <div class="highlight-box--dark highlight-box" style="margin-top: 16px;">
+        <div class="highlight-box__title">Prêt pour l'AI Act</div>
+        <p>L'AI Act européen impose dès août 2027 des obligations de traçabilité et d'auditabilité pour les systèmes IA à haut risque. KOREV Evidence intègre nativement ces exigences : audit trail, documentation des décisions, gestion des risques et supervision humaine.</p>
+    </div>
+
+    <div class="tagline" style="margin-top: 30px;">
+        L'IA qui cite ses sources, connaît ses limites,<br>et refuse plutôt que d'inventer.
+    </div>
+
+    <div class="page-footer">
+        <span>KOREV Evidence — Confidentiel</span>
+        <span>Page 6</span>
+    </div>
+</div>
+
+</body>
+</html>
