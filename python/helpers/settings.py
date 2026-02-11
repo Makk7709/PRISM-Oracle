@@ -71,6 +71,14 @@ class Settings(TypedDict):
     agent_memory_subdir: str
     agent_knowledge_subdir: str
 
+    # Chat personalization — symbiose homme-IA (docs/SPEC_CHAT_PERSONALIZATION.md)
+    chat_address_tu: bool
+    chat_tone: str
+    chat_humanization: str
+    chat_verbosity: str
+    chat_persona: str
+    chat_ai_name: str
+
     memory_recall_enabled: bool
     memory_recall_delayed: bool
     memory_recall_interval: int
@@ -818,6 +826,91 @@ def convert_out(settings: Settings) -> SettingsOutput:
         "title": "Agent Config",
         "description": "Agent parameters.",
         "fields": agent_fields,
+        "tab": "agent",
+    }
+
+    # Chat personalization — symbiose homme-IA
+    chat_personalization_fields: list[SettingsField] = []
+    chat_personalization_fields.append(
+        {
+            "id": "chat_address_tu",
+            "title": "Tutoiement",
+            "description": "Adresser l'utilisateur en le tutoyant (tu, ton, ta) ou en le vouvoyant (vous, votre).",
+            "type": "switch",
+            "value": settings["chat_address_tu"],
+        }
+    )
+    chat_personalization_fields.append(
+        {
+            "id": "chat_tone",
+            "title": "Ton",
+            "description": "Style de communication de l'assistant.",
+            "type": "select",
+            "value": settings["chat_tone"],
+            "options": [
+                {"value": "formel", "label": "Formel"},
+                {"value": "cordial", "label": "Cordial"},
+                {"value": "direct", "label": "Direct"},
+                {"value": "bienveillant", "label": "Bienveillant"},
+            ],
+        }
+    )
+    chat_personalization_fields.append(
+        {
+            "id": "chat_humanization",
+            "title": "Humanisation",
+            "description": "Niveau de naturel et fluidité du langage.",
+            "type": "select",
+            "value": settings["chat_humanization"],
+            "options": [
+                {"value": "minimal", "label": "Minimal"},
+                {"value": "modere", "label": "Modéré"},
+                {"value": "eleve", "label": "Élevé"},
+            ],
+        }
+    )
+    chat_personalization_fields.append(
+        {
+            "id": "chat_verbosity",
+            "title": "Verbosité",
+            "description": "Longueur des réponses.",
+            "type": "select",
+            "value": settings["chat_verbosity"],
+            "options": [
+                {"value": "concise", "label": "Concise"},
+                {"value": "equilibre", "label": "Équilibrée"},
+                {"value": "detaille", "label": "Détaillée"},
+            ],
+        }
+    )
+    chat_personalization_fields.append(
+        {
+            "id": "chat_persona",
+            "title": "Persona",
+            "description": "Identité de l'assistant : s'exprime au masculin, féminin ou neutre.",
+            "type": "select",
+            "value": settings["chat_persona"],
+            "options": [
+                {"value": "homme", "label": "Homme"},
+                {"value": "femme", "label": "Femme"},
+                {"value": "ia", "label": "IA (neutre)"},
+            ],
+        }
+    )
+    chat_personalization_fields.append(
+        {
+            "id": "chat_ai_name",
+            "title": "Nom de l'IA",
+            "description": "Nom sous lequel l'assistant se présente (max 30 caractères, lettres et chiffres).",
+            "type": "text",
+            "value": settings["chat_ai_name"],
+        }
+    )
+    chat_personalization_section: SettingsSection = {
+        "id": "chat_personalization",
+        "title": "Personnalisation du chat",
+        "description": "Symbiose homme-IA : ton, tutoiement/vouvoiement, humanisation et verbosité des réponses.",
+        "fields": chat_personalization_fields,
         "tab": "agent",
     }
 
@@ -1590,6 +1683,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     result: SettingsOutput = {
         "sections": [
             agent_section,
+            chat_personalization_section,
             chat_model_section,
             util_model_section,
             browser_model_section,
@@ -1877,6 +1971,12 @@ def get_default_settings() -> Settings:
         agent_profile="multitask",
         agent_memory_subdir="default",
         agent_knowledge_subdir="custom",
+        chat_address_tu=False,
+        chat_tone="cordial",
+        chat_humanization="modere",
+        chat_verbosity="equilibre",
+        chat_persona="ia",
+        chat_ai_name="",
         rfc_auto_docker=True,
         rfc_url="localhost",
         rfc_password="",
