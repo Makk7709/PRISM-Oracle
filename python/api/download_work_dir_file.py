@@ -85,9 +85,14 @@ class DownloadFile(ApiHandler):
         if not file_path:
             raise ValueError("No file path provided")
 
-        # Strip leading '/' so get_abs_path resolves relative to work dir
-        # (os.path.join ignores base when second arg is absolute)
-        relative_path = file_path.lstrip("/")
+        # Resolve the path: if it's already an absolute path inside the
+        # work directory, convert it to a relative path so get_abs_path
+        # doesn't double-prefix it.  Otherwise strip leading '/' as before.
+        base_dir = files.get_base_dir()
+        if os.path.isabs(file_path) and os.path.abspath(file_path).startswith(base_dir + os.sep):
+            relative_path = os.path.relpath(file_path, base_dir)
+        else:
+            relative_path = file_path.lstrip("/")
 
         file = await runtime.call_development_function(
             file_info.get_file_info, relative_path
