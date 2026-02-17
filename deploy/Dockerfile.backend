@@ -26,7 +26,9 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip wheel "setuptools<81" && \
     pip install --no-cache-dir --no-build-isolation openai-whisper && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --no-deps "litellm==1.79.3" && \
+    pip install --no-cache-dir aiohttp fastuuid
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 2: Runtime
