@@ -1,6 +1,6 @@
 # Manuel d'Installation KOREV Evidence
 
-## Guide Client — Version 4.0
+## Guide Client — Version 4.1
 
 ---
 
@@ -136,20 +136,23 @@ cd korev-evidence
 ### Structure du dossier
 
 ```
-korev-evidence/
+PRISM-Oracle/                          ← Dossier racine du projet
 ├── deploy/
-│   ├── Dockerfile.backend       ← Image Docker backend
-│   ├── docker-compose.yml       ← Orchestration des services
-│   ├── .env.example             ← Template de configuration
-│   ├── users.json.example       ← Template multi-utilisateurs
+│   ├── Dockerfile.backend             ← Image Docker backend
+│   ├── docker-compose.yml             ← Orchestration des services
+│   ├── .env.example                   ← Template de configuration
+│   ├── users.json.example             ← Template multi-utilisateurs
 │   └── config/
-│       └── Caddyfile            ← Configuration reverse proxy
-├── python/                      ← Code backend
-├── webui/                       ← Interface web
-├── requirements.txt             ← Dépendances Python
-├── run_ui.py                    ← Point d'entrée serveur
-└── .env.example                 ← Template config (racine)
+│       └── Caddyfile                  ← Configuration reverse proxy
+├── python/                            ← Code backend
+├── webui/                             ← Interface web
+├── tmp/                               ← Données runtime (chats, uploads, images)
+├── requirements.txt                   ← Dépendances Python
+├── run_ui.py                          ← Point d'entrée serveur
+└── .env.example                       ← Template config (racine)
 ```
+
+> **Note** : si vous utilisez l'archive, le dossier s'appelle `korev-evidence/` au lieu de `PRISM-Oracle/`.
 
 ---
 
@@ -323,7 +326,7 @@ brew install tesseract pango cairo poppler
 ## Étape 2 : Configurer et lancer
 
 ```bash
-cd korev-evidence
+cd PRISM-Oracle
 
 # Créer l'environnement virtuel
 python3 -m venv venv
@@ -415,14 +418,14 @@ Evidence devrait répondre en quelques secondes.
 ### Mode Docker
 
 ```bash
-cd deploy
+cd PRISM-Oracle/deploy
 docker compose up -d
 ```
 
 ### Mode Local
 
 ```bash
-cd korev-evidence
+cd PRISM-Oracle
 source venv/bin/activate
 python run_ui.py
 ```
@@ -431,7 +434,7 @@ python run_ui.py
 
 ### Docker
 ```bash
-cd deploy
+cd PRISM-Oracle/deploy
 docker compose down
 ```
 
@@ -446,7 +449,7 @@ docker compose down
 
 ```bash
 # Depuis la racine du projet (pas deploy/)
-cd korev-evidence
+cd PRISM-Oracle
 git pull
 
 # Reconstruire et relancer
@@ -455,12 +458,12 @@ docker compose build evidence-backend
 docker compose up -d
 ```
 
-> Les données sont persistées dans des volumes Docker. La mise à jour ne supprime pas vos conversations ni fichiers.
+> Les données (conversations, fichiers uploadés, images générées, mémoire de l'agent) sont persistées dans des volumes Docker. La mise à jour ne supprime rien.
 
 ### Mode Local
 
 ```bash
-cd korev-evidence
+cd PRISM-Oracle
 git pull
 source venv/bin/activate
 pip install -r requirements.txt --upgrade
@@ -524,6 +527,17 @@ docker compose up -d
 
 **Solution :** Actualisez la page du navigateur (F5 / Cmd+R). Un correctif récent gère le protocole `sandbox://` utilisé par certains modèles.
 
+### Mes données ont disparu après un redémarrage
+
+Les données sont stockées dans des volumes Docker persistants. Vérifiez qu'ils existent :
+```bash
+docker volume ls | grep evidence
+```
+
+Volumes attendus : `evidence-data`, `evidence-logs`, `evidence-audit`, `evidence-shared`, `evidence-tmp`, `evidence-memory`.
+
+> **Attention** : `docker compose down -v` supprime les volumes et donc **toutes** les données. N'utilisez jamais l'option `-v` sauf pour une réinitialisation complète.
+
 ---
 
 # 10. Support technique
@@ -539,6 +553,8 @@ En cas de problème :
 
 ## Commandes de diagnostic
 
+Toutes les commandes ci-dessous s'exécutent depuis le dossier `PRISM-Oracle/deploy/` :
+
 ```bash
 # État des services
 docker compose ps
@@ -551,6 +567,9 @@ docker stats --no-stream
 
 # Espace disque des volumes
 docker system df -v
+
+# Vérifier les volumes persistants
+docker volume ls | grep evidence
 ```
 
 ## Contact
@@ -559,6 +578,6 @@ docker system df -v
 
 ---
 
-*Document mis à jour le 17 février 2026*
-*Version : 4.0*
+*Document mis à jour le 8 février 2026*
+*Version : 4.1*
 *KOREV Evidence — Guide d'installation client*

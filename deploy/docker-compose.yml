@@ -48,6 +48,8 @@ services:
       - evidence-logs:/app/logs
       - evidence-audit:/app/audit
       - evidence-shared:/app/shared  # Per-user workspaces + commun
+      - evidence-tmp:/app/tmp        # Chats, uploads, images générées, settings, scheduler
+      - evidence-memory:/app/memory  # Mémoire persistante de l'agent IA
       # Monter le .env au cas où des scripts le lisent via dotenv
       - ./.env:/app/.env:ro
       # Multi-utilisateurs : décommenter et créer users.json à partir de users.json.example
@@ -215,6 +217,19 @@ volumes:
     name: evidence-shared
     labels:
       com.korev.evidence.type: "shared-workspaces"
+      com.korev.evidence.backup: "true"
+
+  evidence-tmp:
+    name: evidence-tmp
+    labels:
+      com.korev.evidence.type: "tmp-runtime"
+      com.korev.evidence.backup: "true"
+      com.korev.evidence.description: "Chats, uploads, images générées, settings, scheduler"
+
+  evidence-memory:
+    name: evidence-memory
+    labels:
+      com.korev.evidence.type: "agent-memory"
       com.korev.evidence.backup: "true"
 
 # ═══════════════════════════════════════════════════════════════════════════════
