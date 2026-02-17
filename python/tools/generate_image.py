@@ -577,10 +577,11 @@ class GenerateImage(Tool):
         # Display images with download links
         for i, img in enumerate(display_images, 1):
             output += f"![Image {i}]({img})\n\n"
-            # Add direct download link (convert img:// to /image_get URL)
+            # Add direct download link using the same img:// protocol
+            # (the frontend converts img:// and sandbox:// to /image_get?path=
+            #  and adds a download attribute to links containing "Télécharger")
             if img.startswith("img://"):
-                download_url = img.replace("img://", "/image_get?path=")
-                output += f"[⬇️ Télécharger l'image]({download_url})\n\n"
+                output += f"[⬇️ Télécharger l'image]({img})\n\n"
         
         # Add simple metadata
         output += f"*{provider}"

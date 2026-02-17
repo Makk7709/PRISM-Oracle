@@ -283,6 +283,18 @@ export function addBlankTargetsToLinks(str) {
       anchor.setAttribute("target", "_blank");
     }
 
+    // Add download attribute to image download links (Télécharger l'image)
+    const text = anchor.textContent || "";
+    if (
+      href.includes("/image_get?path=") &&
+      /t.l.charger/i.test(text)
+    ) {
+      const filenameMatch = href.match(/path=.*\/([^&]+)/);
+      if (filenameMatch) {
+        anchor.setAttribute("download", filenameMatch[1]);
+      }
+    }
+
     const rel = (anchor.getAttribute("rel") || "").split(/\s+/).filter(Boolean);
     if (!rel.includes("noopener")) rel.push("noopener");
     if (!rel.includes("noreferrer")) rel.push("noreferrer");
@@ -953,6 +965,9 @@ function convertImgFilePaths(str) {
   // Handle both img://path and img:///path (with extra slash)
   // Also handle img:////path (4 slashes case from /app/, /korev/ or /a0/ removal)
   result = result.replace(/img:\/\/\/?/g, "/image_get?path=");
+
+  // Convert sandbox:// protocol (LLM agents sometimes rewrite URLs with this scheme)
+  result = result.replace(/sandbox:\/\/\/?/g, "/image_get?path=");
   
   // Normalize any double slashes in paths after conversion
   result = result.replace(/path=\/+/g, "path=");
