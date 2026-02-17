@@ -50,8 +50,9 @@ services:
       - evidence-shared:/app/shared  # Per-user workspaces + commun
       # Monter le .env au cas où des scripts le lisent via dotenv
       - ./.env:/app/.env:ro
-      # Monter users.json si présent (multi-user auth)
-      - ./users.json:/app/deploy/users.json:ro
+      # Multi-utilisateurs : décommenter et créer users.json à partir de users.json.example
+      # Sans ce fichier, l'auth mono-user (AUTH_LOGIN/AUTH_PASSWORD dans .env) est utilisée.
+      # - ./users.json:/app/deploy/users.json:ro
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5050/healthz"]

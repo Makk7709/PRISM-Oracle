@@ -112,6 +112,7 @@ COPY --chown=evidence:evidence markdown_pdf/   ./markdown_pdf/
 
 # Fichiers racine
 COPY --chown=evidence:evidence run_ui.py       ./
+COPY --chown=evidence:evidence initialize.py   ./
 COPY --chown=evidence:evidence prepare.py      ./
 COPY --chown=evidence:evidence preload.py      ./
 COPY --chown=evidence:evidence agent.py        ./
