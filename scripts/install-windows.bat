@@ -1,184 +1,280 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════════════════════════
-REM  KOREV EVIDENCE - Installation Script (Windows)
-REM  VERSION COMPLÈTE avec toutes les customisations
+REM  KOREV EVIDENCE — Installation Windows (Docker Desktop)
 REM ═══════════════════════════════════════════════════════════════════════════════
 REM
-REM  Double-cliquez sur ce fichier pour installer et lancer KOREV Evidence
-REM  avec toutes les customisations : WebUI, typography, MCP servers, etc.
+REM  Double-cliquez sur ce fichier pour deployer KOREV Evidence.
+REM
+REM  Prerequis :
+REM    1. Docker Desktop installe et lance
+REM    2. Git installe (https://git-scm.com/download/win)
+REM
+REM  Ce script :
+REM    1. Verifie Docker Desktop et Git
+REM    2. Clone ou met a jour le depot
+REM    3. Configure le fichier .env
+REM    4. Construit l'image Docker (~15 min)
+REM    5. Demarre backend + Caddy
+REM    6. Ouvre le navigateur
 REM
 REM ═══════════════════════════════════════════════════════════════════════════════
 
 title KOREV Evidence - Installation
 
 echo.
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║          KOREV EVIDENCE - Installation Windows                ║
-echo ║                Version complete customisee                    ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+echo  ==============================================================
+echo.
+echo        KOREV EVIDENCE — Installation Windows
+echo.
+echo  ==============================================================
 echo.
 
-REM Get script directory
-set "SCRIPT_DIR=%~dp0"
-set "PROJECT_ROOT=%SCRIPT_DIR%.."
-cd /d "%PROJECT_ROOT%"
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 1 : Verifier Docker Desktop
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [1/7] Verification de Docker Desktop...
 
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 1: Check Python
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [1/6] Verification de Python...
-
-where python >nul 2>&1
+where docker >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo ❌ Python n'est pas installe.
+    echo   ERREUR: Docker n'est pas installe.
     echo.
-    echo Installez Python 3.11+ depuis:
-    echo   https://www.python.org/downloads/
-    echo.
-    echo IMPORTANT: Cochez "Add Python to PATH" lors de l'installation!
+    echo   Installez Docker Desktop depuis :
+    echo     https://www.docker.com/products/docker-desktop/
     echo.
     pause
     exit /b 1
 )
+echo   OK Docker installe
 
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-echo    Python %PYTHON_VERSION% detecte
-
-REM Verify Python 3.11+ (strict check)
-python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+docker info >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo ❌ Python 3.11 ou superieur requis ^(version actuelle: %PYTHON_VERSION%^)
-    echo.
-    echo Installez Python 3.11+ depuis:
-    echo   https://www.python.org/downloads/
+    echo   ERREUR: Docker Desktop n'est pas lance.
+    echo   Lancez Docker Desktop, attendez qu'il soit pret, puis relancez ce script.
     echo.
     pause
     exit /b 1
 )
-echo ✓ Python %PYTHON_VERSION% OK ^(3.11+ requis^)
+echo   OK Docker Desktop en cours d'execution
+
+docker compose version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERREUR: Docker Compose non disponible.
+    echo   Mettez a jour Docker Desktop.
+    echo.
+    pause
+    exit /b 1
+)
+echo   OK Docker Compose disponible
 echo.
 
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 2: Create virtual environment
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [2/6] Configuration de l'environnement virtuel...
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 2 : Verifier Git
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [2/7] Verification de Git...
 
-if exist "venv" (
-    echo ✓ Environnement virtuel existant
+where git >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo   ERREUR: Git n'est pas installe.
+    echo.
+    echo   Installez Git depuis :
+    echo     https://git-scm.com/download/win
+    echo.
+    pause
+    exit /b 1
+)
+echo   OK Git installe
+echo.
+
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 3 : Cloner ou mettre a jour le depot
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [3/7] Recuperation du code source...
+
+if exist "deploy\docker-compose.yml" (
+    echo   Depot detecte dans le repertoire courant
+    git pull 2>nul
+    echo   OK Code mis a jour
+) else if exist "PRISM-Oracle\deploy\docker-compose.yml" (
+    echo   Depot existant trouve dans PRISM-Oracle\
+    cd PRISM-Oracle
+    git pull 2>nul
+    echo   OK Code mis a jour
 ) else (
-    echo Creation de l'environnement virtuel...
-    python -m venv venv
+    echo   Clonage du depot...
+    git clone https://github.com/Makk7709/PRISM-Oracle.git
     if errorlevel 1 (
-        echo ❌ Echec de creation du venv
+        echo   ERREUR: Impossible de cloner le depot
         pause
         exit /b 1
     )
-    echo ✓ Environnement virtuel cree
-)
-echo.
-
-REM Activate venv
-call venv\Scripts\activate.bat
-
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 3: Install dependencies
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [3/6] Installation des dependances (peut prendre plusieurs minutes)...
-echo.
-
-pip install --upgrade pip --quiet
-
-if exist "requirements.txt" (
-    echo Installation des dependances principales...
-    pip install -r requirements.txt --quiet
-    echo ✓ Dependances principales installees
+    cd PRISM-Oracle
+    echo   OK Depot clone
 )
 
-if exist "requirements2.txt" (
-    echo Installation des dependances secondaires...
-    pip install -r requirements2.txt --quiet
-    echo ✓ Dependances secondaires installees
+if not exist "deploy\docker-compose.yml" (
+    echo   ERREUR: deploy\docker-compose.yml introuvable
+    pause
+    exit /b 1
 )
+if not exist "deploy\Dockerfile.backend" (
+    echo   ERREUR: deploy\Dockerfile.backend introuvable
+    pause
+    exit /b 1
+)
+echo   OK Fichiers de deploiement verifies
 echo.
 
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 4: Check .env file
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [4/6] Verification de la configuration...
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 4 : Configurer .env
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [4/7] Configuration de l'environnement...
+
+cd deploy
 
 if exist ".env" (
-    echo ✓ Fichier .env trouve
+    echo   OK Fichier .env existant detecte
 ) else (
-    echo ⚠️  Fichier .env non trouve.
     if exist ".env.example" (
-        echo Copie de .env.example vers .env...
         copy ".env.example" ".env" >nul
-        echo ✓ Fichier .env cree depuis le template
+        echo   OK Fichier .env cree depuis .env.example
     ) else (
-        echo Creation du fichier .env...
-        (
-            echo # KOREV Evidence Configuration
-            echo # Cle OpenRouter ^(requise^) - https://openrouter.ai/keys
-            echo API_KEY_OPENROUTER=
-            echo.
-            echo # Port interface web
-            echo WEB_UI_PORT=5050
-            echo ANONYMIZED_TELEMETRY=false
-        ) > .env
-        echo ✓ Fichier .env cree
+        echo   ERREUR: .env.example introuvable dans deploy\
+        pause
+        exit /b 1
     )
+)
+
+findstr /R "^API_KEY_OPENROUTER=.\{10,\}" .env >nul 2>&1
+if errorlevel 1 (
     echo.
-    echo    ════════════════════════════════════════════════════════
-    echo    ⚠️  IMPORTANT: Editez .env et ajoutez vos cles API!
-    echo    ════════════════════════════════════════════════════════
+    echo   ════════════════════════════════════════════════════════════
+    echo     IMPORTANT : Configurez votre cle API avant de continuer
+    echo   ════════════════════════════════════════════════════════════
+    echo.
+    echo   Ouvrez le fichier : deploy\.env
+    echo   Remplissez au minimum :
+    echo.
+    echo     API_KEY_OPENROUTER=sk-or-v1-votre-cle-ici
+    echo     AUTH_PASSWORD=VotreMotDePasseFort123!
+    echo.
+    echo   Obtenez une cle sur : https://openrouter.ai/keys
+    echo.
+    echo   Appuyez sur une touche quand c'est fait...
+    pause >nul
 )
 echo.
 
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 5: Install Playwright
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [5/6] Installation de Playwright (navigation web)...
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 5 : Construire l'image Docker
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [5/7] Construction de l'image Docker (10-20 min la premiere fois)...
+echo.
+echo   Telechargement des dependances et compilation...
+echo.
 
-python -c "import playwright" >nul 2>&1
-if not errorlevel 1 (
-    playwright install chromium >nul 2>&1
-    echo ✓ Playwright configure
-) else (
-    echo ⚠️  Playwright non disponible ^(optionnel^)
+docker compose build evidence-backend
+if errorlevel 1 (
+    echo.
+    echo   ERREUR: Le build a echoue.
+    echo.
+    echo   Causes frequentes :
+    echo     - Docker Desktop : Settings ^> Resources ^> augmenter RAM a 8 Go+
+    echo     - Espace disque insuffisant
+    echo     - Pas de connexion internet
+    echo.
+    echo   Pour nettoyer et reessayer :
+    echo     docker system prune -af
+    echo     docker compose build --no-cache evidence-backend
+    echo.
+    pause
+    exit /b 1
 )
 echo.
-
-REM ───────────────────────────────────────────────────────────────────────────────
-REM Step 6: Launch Evidence
-REM ───────────────────────────────────────────────────────────────────────────────
-echo [6/6] Lancement de KOREV Evidence...
-
-set WEB_UI_PORT=5050
-
-echo.
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║           ✓ INSTALLATION TERMINEE                             ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║                                                               ║
-echo ║  KOREV Evidence demarre sur:                                  ║
-echo ║  → http://localhost:5050                                      ║
-echo ║                                                               ║
-echo ║  Pour arreter: Fermez cette fenetre ou Ctrl+C                 ║
-echo ║                                                               ║
-echo ║  Pour relancer plus tard:                                     ║
-echo ║  1. Ouvrez un terminal dans le dossier                        ║
-echo ║  2. venv\Scripts\activate                                     ║
-echo ║  3. python run_ui.py                                          ║
-echo ║                                                               ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+echo   OK Image construite
 echo.
 
-REM Open browser after delay
-start "" /b cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:5050"
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 6 : Demarrer les services
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo [6/7] Demarrage des services...
 
-REM Run Evidence
-python run_ui.py
+docker compose down >nul 2>&1
+docker compose up -d evidence-backend evidence-caddy
+if errorlevel 1 (
+    echo.
+    echo   ERREUR: Echec du demarrage des services
+    echo   Verifiez les logs : docker compose logs evidence-backend
+    echo.
+    pause
+    exit /b 1
+)
+
+echo.
+echo   Attente du demarrage (60s max)...
+
+set WAITED=0
+:healthcheck_loop
+if %WAITED% GEQ 90 goto healthcheck_timeout
+timeout /t 3 /nobreak >nul
+set /a WAITED+=3
+curl -s -o nul -w "%%{http_code}" http://localhost/healthz 2>nul | findstr "200" >nul 2>&1
+if not errorlevel 1 goto healthcheck_ok
+echo|set /p=.
+goto healthcheck_loop
+
+:healthcheck_timeout
+echo.
+echo   ! Le service n'a pas repondu dans les 90s
+echo   Il peut encore etre en cours de demarrage.
+echo   Verifiez : docker compose ps
+echo   Logs : docker compose logs -f evidence-backend
+goto step7
+
+:healthcheck_ok
+echo.
+echo   OK Health check reussi (HTTP 200)
+
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  STEP 7 : Verification finale
+REM ═══════════════════════════════════════════════════════════════════════════════
+:step7
+echo.
+echo [7/7] Verification finale...
+echo.
+docker compose ps
+echo.
+
+REM ═══════════════════════════════════════════════════════════════════════════════
+REM  RESULTAT
+REM ═══════════════════════════════════════════════════════════════════════════════
+echo.
+echo  ==============================================================
+echo.
+echo       KOREV EVIDENCE — Installation Terminee !
+echo.
+echo  ==============================================================
+echo.
+echo   Acces : http://localhost
+echo.
+echo   Login : voir AUTH_LOGIN / AUTH_PASSWORD dans deploy\.env
+echo.
+echo   Commandes utiles (depuis deploy\) :
+echo     Etat    : docker compose ps
+echo     Logs    : docker compose logs -f evidence-backend
+echo     Stop    : docker compose down
+echo     Start   : docker compose up -d
+echo     Rebuild : docker compose build evidence-backend
+echo.
+echo   Les cles API peuvent aussi etre configurees depuis
+echo   l'interface web : Settings (icone engrenage).
+echo.
+echo  ==============================================================
+echo.
+
+start "" "http://localhost"
 
 pause
