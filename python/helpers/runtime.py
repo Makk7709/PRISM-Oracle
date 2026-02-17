@@ -106,10 +106,33 @@ def get_runtime_id() -> str:
 
 
 def get_persistent_id() -> str:
+    # 1. Check env var (loaded from .env or set in memory)
     id = dotenv.get_dotenv_value("KOREV_PERSISTENT_RUNTIME_ID")
+
+    # 2. Check persistent file (Docker: .env is read-only, so we persist here)
+    persistent_file = os.path.join(
+        os.environ.get("EVIDENCE_HOME", "."), "tmp", ".persistent_runtime_id"
+    )
+    if not id:
+        try:
+            if os.path.isfile(persistent_file):
+                id = open(persistent_file).read().strip()
+        except OSError:
+            pass
+
+    # 3. Generate new ID if none found
     if not id:
         id = secrets.token_hex(16)
-        dotenv.save_dotenv_value("KOREV_PERSISTENT_RUNTIME_ID", id)
+
+    # 4. Save to .env (graceful if read-only) and to persistent file
+    dotenv.save_dotenv_value("KOREV_PERSISTENT_RUNTIME_ID", id)
+    try:
+        os.makedirs(os.path.dirname(persistent_file), exist_ok=True)
+        with open(persistent_file, "w") as f:
+            f.write(id)
+    except OSError:
+        pass
+
     return id
 
 

@@ -67,6 +67,13 @@ class ImageGet(ApiHandler):
         # if metadata:
         #     return _get_file_metadata(path, filename, file_ext, image_extensions)
        
+        # Downloadable document extensions (served as attachment instead of icon)
+        downloadable_extensions = [
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".ppt", ".pptx",
+            ".odt", ".odp", ".rtf", ".txt", ".md", ".zip", ".rar", ".7z",
+            ".tar", ".gz", ".json", ".xml", ".yaml", ".yml",
+        ]
+
         if file_ext in image_extensions:
 
             # in development environment, try to serve the image from local file system if exists, otherwise from docker
@@ -100,8 +107,57 @@ class ImageGet(ApiHandler):
             response.headers["X-File-Type"] = "image"
             response.headers["X-File-Name"] = filename
             return response
+
+        elif file_ext in downloadable_extensions:
+            # Serve the actual file as a download instead of an icon
+            if runtime.is_development():
+                if files.exists(path):
+                    mime_type, _ = guess_type(filename)
+                    if not mime_type:
+                        mime_type = "application/octet-stream"
+                    response = send_file(
+                        path,
+                        mimetype=mime_type,
+                        as_attachment=True,
+                        download_name=filename,
+                    )
+                elif await runtime.call_development_function(files.exists, path):
+                    b64_content = await runtime.call_development_function(
+                        files.read_file_base64, path
+                    )
+                    file_content = base64.b64decode(b64_content)
+                    mime_type, _ = guess_type(filename)
+                    if not mime_type:
+                        mime_type = "application/octet-stream"
+                    response = send_file(
+                        io.BytesIO(file_content),
+                        mimetype=mime_type,
+                        as_attachment=True,
+                        download_name=filename,
+                    )
+                else:
+                    return _send_file_type_icon(file_ext, filename)
+            else:
+                if files.exists(path):
+                    mime_type, _ = guess_type(filename)
+                    if not mime_type:
+                        mime_type = "application/octet-stream"
+                    response = send_file(
+                        path,
+                        mimetype=mime_type,
+                        as_attachment=True,
+                        download_name=filename,
+                    )
+                else:
+                    return _send_file_type_icon(file_ext, filename)
+
+            response.headers["Cache-Control"] = "no-cache"
+            response.headers["X-File-Type"] = "document"
+            response.headers["X-File-Name"] = filename
+            return response
+
         else:
-            # Handle non-image files with fallback icons
+            # Handle unknown file types with fallback icons
             return _send_file_type_icon(file_ext, filename)
 
 

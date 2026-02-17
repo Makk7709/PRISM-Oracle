@@ -36,7 +36,8 @@ services:
       - .env
     environment:
       - EVIDENCE_ENV=production
-      - KOREV_PRODUCTION=true
+      # KOREV_PRODUCTION est lu depuis .env (false par défaut, passer à true
+      # une fois AUTH_PASSWORD migré vers un hash Argon2)
       - KOREV_BEHIND_PROXY=true
       - WEB_UI_HOST=0.0.0.0
       - WEB_UI_PORT=5050
@@ -60,8 +61,8 @@ services:
       test: ["CMD", "curl", "-sf", "http://localhost:5050/healthz"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 180s
 
     deploy:
       resources:

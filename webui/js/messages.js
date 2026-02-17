@@ -283,15 +283,17 @@ export function addBlankTargetsToLinks(str) {
       anchor.setAttribute("target", "_blank");
     }
 
-    // Add download attribute to image download links (Télécharger l'image)
+    // Add download attribute to download links (images, PDFs, documents)
     const text = anchor.textContent || "";
-    if (
-      href.includes("/image_get?path=") &&
-      /t.l.charger/i.test(text)
-    ) {
+    if (href.includes("/image_get?path=")) {
       const filenameMatch = href.match(/path=.*\/([^&]+)/);
-      if (filenameMatch) {
-        anchor.setAttribute("download", filenameMatch[1]);
+      const fname = filenameMatch ? decodeURIComponent(filenameMatch[1]) : "";
+      const docExts = /\.(pdf|docx?|xlsx?|csv|pptx?|zip|rar|7z|tar|gz|odt|odp|rtf|txt|md)$/i;
+
+      if (/t.l.charger/i.test(text) || docExts.test(fname)) {
+        if (fname) {
+          anchor.setAttribute("download", fname);
+        }
       }
     }
 

@@ -26,7 +26,7 @@ from functools import wraps
 import threading
 from typing import Optional
 
-from flask import Flask, request, Response, session, redirect, url_for, render_template_string
+from flask import Flask, request, Response, session, redirect, url_for, render_template_string, jsonify
 from werkzeug.wrappers.response import Response as BaseResponse
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -38,6 +38,10 @@ from python.helpers import runtime, dotenv, process
 from python.helpers.extract_tools import load_classes_from_folder
 from python.helpers.print_style import PrintStyle
 from python.helpers import login
+
+# Multi-user workspace (Phase 2)
+from python.helpers.user_manager import UserManager
+from python.helpers.user_workspace import WorkspaceManager
 
 # Security imports - Phase 1 P0 (no litellm dependency)
 from python.security.rate_limit import (
@@ -134,6 +138,25 @@ def create_app(
     # Store production flag for route handlers
     app.config['KOREV_PRODUCTION'] = _is_production
     
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Multi-user Workspace — Phase 2
+    # ─────────────────────────────────────────────────────────────────────────────
+    users_json = os.path.join(get_abs_path("."), "deploy", "users.json")
+    # Allow override for testing
+    if testing and os.getenv("EVIDENCE_USERS_JSON"):
+        users_json = os.getenv("EVIDENCE_USERS_JSON")
+    
+    app.config['USER_MANAGER'] = UserManager(
+        users_json,
+        strict=_is_production,
+    )
+    
+    shared_dir = os.getenv("EVIDENCE_SHARED_DIR", "")
+    if shared_dir:
+        app.config['WORKSPACE_MANAGER'] = WorkspaceManager(shared_dir)
+    else:
+        app.config['WORKSPACE_MANAGER'] = None
+    
     # Register routes
     _register_routes(app)
     
@@ -151,6 +174,8 @@ def _register_routes(app: Flask) -> None:
     async def login_handler():
         error = None
         client_ip = get_client_ip(request)
+        user_mgr: UserManager = app.config['USER_MANAGER']
+        ws_mgr: Optional[WorkspaceManager] = app.config.get('WORKSPACE_MANAGER')
         
         if request.method == 'POST':
             # Rate limiting check
@@ -168,60 +193,87 @@ def _register_routes(app: Flask) -> None:
                     response.headers[header_name] = header_value
                 return response
             
-            expected_user = dotenv.get_dotenv_value("AUTH_LOGIN")
-            stored_password = dotenv.get_dotenv_value("AUTH_PASSWORD")
-            
             submitted_user = request.form.get('username', '')
             submitted_password = request.form.get('password', '')
             
-            # Secure password verification
-            password_valid = False
-            password_needs_migration = False
-            _is_production = app.config.get('KOREV_PRODUCTION', False)
-            
-            if stored_password:
-                if is_password_hashed(stored_password):
-                    password_valid = verify_password(stored_password, submitted_password)
+            # ── Multi-user authentication (Phase 2) ──
+            if not user_mgr.is_mono_user:
+                # Multi-user mode: authenticate via UserManager
+                auth_result = user_mgr.authenticate(submitted_user, submitted_password)
+                
+                if auth_result:
+                    reset_login_rate_limit(client_ip)
+                    session['authentication'] = login.get_credentials_hash()
+                    session['username'] = auth_result['username']
+                    session['role'] = auth_result['role']
+                    
+                    # Set up workspace if configured
+                    if ws_mgr:
+                        workspace = ws_mgr.ensure_workspace(auth_result['username'])
+                        session['workspace'] = workspace
+                    
+                    return redirect(url_for('serve_index'))
                 else:
-                    if _is_production:
-                        PrintStyle.error(
-                            "SECURITY ERROR: Plaintext password detected in production mode. "
-                            "Set AUTH_PASSWORD to an Argon2 hash or disable KOREV_PRODUCTION."
-                        )
-                        error = 'Server configuration error. Contact administrator.'
-                        login_page_content = files.read_file("webui/login.html")
-                        return render_template_string(login_page_content, error=error), 500
+                    error = 'Invalid Credentials. Please try again.'
+            else:
+                # ── Mono-user fallback (backward compatible) ──
+                expected_user = dotenv.get_dotenv_value("AUTH_LOGIN")
+                stored_password = dotenv.get_dotenv_value("AUTH_PASSWORD")
+                
+                password_valid = False
+                password_needs_migration = False
+                _is_production = app.config.get('KOREV_PRODUCTION', False)
+                
+                if stored_password:
+                    if is_password_hashed(stored_password):
+                        password_valid = verify_password(stored_password, submitted_password)
                     else:
+                        # Plaintext password — accept but warn strongly
                         password_valid = hmac.compare_digest(
                             submitted_password.encode('utf-8'),
                             stored_password.encode('utf-8')
                         )
                         if password_valid:
                             password_needs_migration = True
-                            PrintStyle.warning(
-                                "WARNING: Using plaintext password. "
-                                "Run: python -c \"from python.security.auth import hash_password; "
-                                f"print(hash_password('{stored_password}'))\" "
-                                "and update AUTH_PASSWORD in .env"
-                            )
-            
-            user_valid = hmac.compare_digest(
-                submitted_user.encode('utf-8'),
-                (expected_user or '').encode('utf-8')
-            )
-            
-            if user_valid and password_valid:
-                reset_login_rate_limit(client_ip)
-                session['authentication'] = login.get_credentials_hash()
+                            if _is_production:
+                                PrintStyle.error(
+                                    "SECURITY WARNING: Plaintext password in production mode! "
+                                    "Migrate to Argon2 hash ASAP: docker exec -it evidence-backend "
+                                    "python -c \"from python.security.auth import hash_password; "
+                                    "print(hash_password('YOUR_PASSWORD'))\" "
+                                    "then update AUTH_PASSWORD in .env"
+                                )
+                            else:
+                                PrintStyle.warning(
+                                    "WARNING: Using plaintext password. "
+                                    "Run: python -c \"from python.security.auth import hash_password; "
+                                    f"print(hash_password('{stored_password}'))\" "
+                                    "and update AUTH_PASSWORD in .env"
+                                )
                 
-                if password_needs_migration:
-                    PrintStyle.warning(
-                        "REMINDER: Migrate to Argon2 password hash before production deployment."
-                    )
+                user_valid = hmac.compare_digest(
+                    submitted_user.encode('utf-8'),
+                    (expected_user or '').encode('utf-8')
+                )
                 
-                return redirect(url_for('serve_index'))
-            else:
-                error = 'Invalid Credentials. Please try again.'
+                if user_valid and password_valid:
+                    reset_login_rate_limit(client_ip)
+                    session['authentication'] = login.get_credentials_hash()
+                    session['username'] = submitted_user
+                    session['role'] = 'admin'  # Mono-user is always admin
+                    
+                    if ws_mgr:
+                        workspace = ws_mgr.ensure_workspace(submitted_user)
+                        session['workspace'] = workspace
+                    
+                    if password_needs_migration:
+                        PrintStyle.warning(
+                            "REMINDER: Migrate to Argon2 password hash before production deployment."
+                        )
+                    
+                    return redirect(url_for('serve_index'))
+                else:
+                    error = 'Invalid Credentials. Please try again.'
                 
         login_page_content = files.read_file("webui/login.html")
         return render_template_string(login_page_content, error=error)
@@ -229,7 +281,16 @@ def _register_routes(app: Flask) -> None:
     @app.route("/logout")
     async def logout_handler():
         session.pop('authentication', None)
+        session.pop('username', None)
+        session.pop('role', None)
+        session.pop('workspace', None)
         return redirect(url_for('login_handler'))
+
+    @app.route("/healthz", methods=["GET"])
+    async def healthz():
+        """Health check endpoint for Docker / load balancers.
+        Returns 200 if the server is alive and can serve requests."""
+        return jsonify({"status": "ok"}), 200
 
     @app.route("/", methods=["GET"])
     @_requires_auth

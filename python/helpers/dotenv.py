@@ -25,19 +25,25 @@ def save_dotenv_value(key: str, value: str):
     if value is None:
         value = ""
     dotenv_path = get_dotenv_file_path()
-    if not os.path.isfile(dotenv_path):
-        with open(dotenv_path, "w") as f:
-            f.write("")
-    with open(dotenv_path, "r+") as f:
-        lines = f.readlines()
-        found = False
-        for i, line in enumerate(lines):
-            if re.match(rf"^\s*{key}\s*=", line):
-                lines[i] = f"{key}={value}\n"
-                found = True
-        if not found:
-            lines.append(f"\n{key}={value}\n")
-        f.seek(0)
-        f.writelines(lines)
-        f.truncate()
-    load_dotenv()
+
+    try:
+        if not os.path.isfile(dotenv_path):
+            with open(dotenv_path, "w") as f:
+                f.write("")
+        with open(dotenv_path, "r+") as f:
+            lines = f.readlines()
+            found = False
+            for i, line in enumerate(lines):
+                if re.match(rf"^\s*{key}\s*=", line):
+                    lines[i] = f"{key}={value}\n"
+                    found = True
+            if not found:
+                lines.append(f"\n{key}={value}\n")
+            f.seek(0)
+            f.writelines(lines)
+            f.truncate()
+        load_dotenv()
+    except PermissionError:
+        # .env is read-only (Docker production: mounted with :ro)
+        # Fall back to setting the env var in memory only
+        os.environ[key] = value

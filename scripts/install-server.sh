@@ -304,9 +304,9 @@ if ! docker_compose_cmd up -d evidence-backend evidence-caddy; then
 fi
 
 echo ""
-echo -e "  ${BLUE}Attente du démarrage (health check, ~60s max)...${NC}"
+echo -e "  ${BLUE}Attente du démarrage (health check, peut prendre 2-3 min)...${NC}"
 
-MAX_WAIT=90
+MAX_WAIT=240
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     # Vérifier le health check via Caddy
@@ -323,9 +323,9 @@ echo ""
 if [ $WAITED -ge $MAX_WAIT ]; then
     log_warn "Le service n'a pas répondu dans les ${MAX_WAIT}s"
     echo ""
-    echo "  Il peut encore être en cours de démarrage."
+    echo "  Sur un VPS, le premier démarrage peut prendre 3-5 minutes."
     echo "  Vérifiez avec :"
-    echo "    docker compose ps"
+    echo "    cd deploy && docker compose ps"
     echo "    docker compose logs -f evidence-backend"
 else
     log_ok "Health check OK (HTTP 200)"
