@@ -1,0 +1,32 @@
+{
+  "users": {
+    "marie": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "jean": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "pierre": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "sophie": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "thomas": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "claire": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "admin": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "admin"
+    }
+  }
+}
