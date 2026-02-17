@@ -217,42 +217,44 @@ SMB_USER_ADMIN=admin;AdminPass!
 
 ## Étape 4 : Construire et lancer
 
-Toutes les commandes ci-dessous s'exécutent depuis le dossier `deploy/`.
+### 4.1 Méthode OVH recommandée (obligatoire)
 
-### Build de l'image
+Sur serveur OVH Linux, utilisez **uniquement** le script d'installation :
 
 ```bash
-cd deploy
-docker compose build evidence-backend
+cd PRISM-Oracle
+chmod +x scripts/install-server.sh
+./scripts/install-server.sh
 ```
 
-> La première construction prend 10-20 minutes (téléchargement des dépendances). Les constructions suivantes sont plus rapides grâce au cache.
+> Le script gère automatiquement les contrôles préalables, le build Docker, le démarrage de `evidence-backend` + `evidence-caddy`, puis la vérification de santé.
 
-### Lancement
-
-**Sans Samba (recommandé pour un premier test) :**
-```bash
-docker compose up -d evidence-backend evidence-caddy
-```
-
-**Avec tous les services :**
-```bash
-docker compose up -d
-```
-
-### Vérifier le bon fonctionnement
+### 4.2 Vérifier le bon fonctionnement après script
 
 ```bash
+cd PRISM-Oracle/deploy
+
 # Vérifier que les conteneurs tournent
 docker compose ps
 
-# Vérifier le health check
+# Vérifier le health check public
 curl http://localhost/healthz
 # Réponse attendue : {"status":"ok"}
 
 # Consulter les logs en temps réel
 docker compose logs -f evidence-backend
 ```
+
+### 4.3 Méthode manuelle (diagnostic avancé uniquement)
+
+Toutes les commandes ci-dessous s'exécutent depuis `PRISM-Oracle/deploy/`.
+
+```bash
+docker compose build evidence-backend
+docker compose up -d evidence-backend evidence-caddy
+```
+
+> La première construction prend 10-20 minutes (téléchargement des dépendances). Les constructions suivantes sont plus rapides grâce au cache.
 
 ### Résultat attendu
 
@@ -448,14 +450,12 @@ docker compose down
 ### Mode Docker
 
 ```bash
-# Depuis la racine du projet (pas deploy/)
+# Depuis la racine du projet
 cd PRISM-Oracle
 git pull
 
-# Reconstruire et relancer
-cd deploy
-docker compose build evidence-backend
-docker compose up -d
+# Rejouer la procédure OVH canonique
+./scripts/install-server.sh
 ```
 
 > Les données (conversations, fichiers uploadés, images générées, mémoire de l'agent) sont persistées dans des volumes Docker. La mise à jour ne supprime rien.
@@ -510,9 +510,20 @@ docker compose up -d
 
 **Solution :**
 1. Vérifiez les conteneurs : `docker compose ps`
-2. Attendez 60 secondes (le backend a un `start_period` de 60s)
+2. Attendez 180 secondes (le backend a un `start_period` de 180s)
 3. Testez le health check : `curl http://localhost/healthz`
 4. Consultez les logs : `docker compose logs -f`
+
+### Triage rapide OVH (3 commandes)
+
+En cas d'échec d'installation, exécutez immédiatement :
+
+```bash
+cd PRISM-Oracle/deploy
+docker compose ps
+docker compose logs --tail=200 evidence-backend
+docker compose logs --tail=100 evidence-caddy
+```
 
 ## Problèmes généraux
 

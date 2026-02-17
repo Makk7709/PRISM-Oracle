@@ -28,15 +28,16 @@ Support: ops@korev.ai
 
 ```bash
 # 1. Cloner le repo
-git clone <repo-url> evidence
-cd evidence/deploy
+git clone https://github.com/Makk7709/PRISM-Oracle.git
+cd PRISM-Oracle
 
 # 2. Configurer l'environnement
-cp .env.example .env
+cp deploy/.env.example deploy/.env
 # Éditer .env avec les clés API
 
 # 3. Installer
-./scripts/install.sh
+chmod +x scripts/install-server.sh
+./scripts/install-server.sh
 ```
 
 ### 1.3 Installation Portable (Sans Docker)
@@ -60,18 +61,18 @@ cd deploy\portable
 
 ```bash
 # Vérifier que le service est up
-curl http://127.0.0.1:5050/healthz
+curl http://localhost/healthz
 
 # Réponse attendue:
-# {"status": "healthy", "uptime_seconds": 123, ...}
+# {"status":"ok"}
 ```
 
 ### 2.2 Readiness Check
 
 ```bash
-curl http://127.0.0.1:5050/readyz
+curl http://localhost/healthz
 
-# Tous les checks doivent être "ok"
+# Si 200 est stable, reverse proxy + backend sont opérationnels
 ```
 
 ### 2.3 Smoke Test
@@ -91,9 +92,9 @@ python tools/smoke_test.py
 ```bash
 # Docker
 cd deploy
-docker-compose up -d      # Démarrer
-docker-compose down       # Arrêter
-docker-compose restart    # Redémarrer
+docker compose up -d      # Démarrer
+docker compose down       # Arrêter
+docker compose restart    # Redémarrer
 
 # Portable
 ./start.sh               # Démarrer
@@ -104,7 +105,7 @@ docker-compose restart    # Redémarrer
 
 ```bash
 # Docker
-docker-compose logs -f evidence-backend
+docker compose logs -f evidence-backend
 
 # Portable
 tail -f logs/evidence.log
@@ -144,6 +145,15 @@ tail -f logs/consensus.log
 
 ## 4. Diagnostic
 
+### 4.0 Triage rapide OVH (3 commandes)
+
+```bash
+cd PRISM-Oracle/deploy
+docker compose ps
+docker compose logs --tail=200 evidence-backend
+docker compose logs --tail=100 evidence-caddy
+```
+
 ### 4.1 Générer un Bundle de Diagnostic
 
 ```bash
@@ -169,7 +179,7 @@ curl http://127.0.0.1:5050/metrics
 
 ```bash
 # Vérifier les logs
-docker-compose logs evidence-backend
+docker compose logs evidence-backend
 
 # Vérifier les ports
 netstat -tlnp | grep 5050
@@ -270,13 +280,13 @@ docker run --rm -v evidence-data:/data -v $(pwd):/backup \
 
 ```bash
 # Arrêter Evidence
-docker-compose down
+docker compose down
 
 # Restaurer les données
 tar -xzvf evidence_backup_YYYYMMDD.tar.gz
 
 # Redémarrer
-docker-compose up -d
+docker compose up -d
 ```
 
 ---
@@ -340,8 +350,8 @@ alerts:
 
 ### Pendant Déploiement
 
-- [ ] Exécuter install.sh ou start.ps1
-- [ ] Vérifier /healthz et /readyz
+- [ ] Exécuter `scripts/install-server.sh` (OVH Linux) ou `scripts/install-windows.bat` (Windows)
+- [ ] Vérifier `/healthz` via Caddy (`curl http://localhost/healthz`)
 - [ ] Exécuter smoke_test.py
 - [ ] Vérifier les logs
 

@@ -108,8 +108,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/healthz"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
+      start_period: 60s
 
     networks:
       - evidence-net
@@ -144,13 +145,13 @@ services:
     command: >
       -n
       -p
-      -u "${SMB_USER_1:?Set SMB_USER_1 in .env (format: user;password)}"
-      -u "${SMB_USER_2:?Set SMB_USER_2 in .env}"
-      -u "${SMB_USER_3:?Set SMB_USER_3 in .env}"
-      -u "${SMB_USER_4:?Set SMB_USER_4 in .env}"
-      -u "${SMB_USER_5:?Set SMB_USER_5 in .env}"
-      -u "${SMB_USER_6:?Set SMB_USER_6 in .env}"
-      -u "${SMB_USER_ADMIN:?Set SMB_USER_ADMIN in .env}"
+      -u "${SMB_USER_1:-marie;CHANGER_CE_MDP_1}"
+      -u "${SMB_USER_2:-jean;CHANGER_CE_MDP_2}"
+      -u "${SMB_USER_3:-pierre;CHANGER_CE_MDP_3}"
+      -u "${SMB_USER_4:-sophie;CHANGER_CE_MDP_4}"
+      -u "${SMB_USER_5:-thomas;CHANGER_CE_MDP_5}"
+      -u "${SMB_USER_6:-claire;CHANGER_CE_MDP_6}"
+      -u "${SMB_USER_ADMIN:-admin;CHANGER_CE_MDP_ADMIN}"
       -s "marie;/shared/users/marie;yes;no;no;marie,admin;;;Espace Marie"
       -s "jean;/shared/users/jean;yes;no;no;jean,admin;;;Espace Jean"
       -s "pierre;/shared/users/pierre;yes;no;no;pierre,admin;;;Espace Pierre"

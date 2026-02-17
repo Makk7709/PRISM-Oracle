@@ -174,6 +174,9 @@ fi
 if [ ! -f "$DEPLOY_DIR/Dockerfile.backend" ]; then
     fail_exit "Dockerfile.backend introuvable dans $DEPLOY_DIR"
 fi
+if [ ! -f "$DEPLOY_DIR/config/Caddyfile" ]; then
+    fail_exit "Caddyfile introuvable dans $DEPLOY_DIR/config/Caddyfile"
+fi
 log_ok "Fichiers de déploiement vérifiés"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -195,8 +198,8 @@ else
 fi
 
 # Vérifier la clé API
-if grep -qE "^API_KEY_OPENROUTER=.{10,}" "$ENV_FILE" 2>/dev/null; then
-    log_ok "Clé API OpenRouter configurée"
+if grep -qE "^API_KEY_OPENROUTER=sk-or-v1-[A-Za-z0-9_-]{20,}$" "$ENV_FILE" 2>/dev/null; then
+    log_ok "Clé API OpenRouter configurée (format valide)"
 else
     echo ""
     echo -e "  ${YELLOW}══════════════════════════════════════════════════════════${NC}"
@@ -254,6 +257,11 @@ log_step 6 "Construction de l'image Docker (10-20 min la première fois)..."
 
 cd "$DEPLOY_DIR"
 
+if ! docker_compose_cmd config >/dev/null 2>&1; then
+    fail_exit "Configuration Docker Compose invalide. Vérifiez .env et docker-compose.yml"
+fi
+log_ok "Configuration Docker Compose valide"
+
 echo ""
 echo -e "  ${BLUE}Téléchargement des dépendances et compilation...${NC}"
 echo -e "  ${BLUE}Vous pouvez suivre la progression ci-dessous.${NC}"
@@ -306,7 +314,7 @@ fi
 echo ""
 echo -e "  ${BLUE}Attente du démarrage (health check, peut prendre 2-3 min)...${NC}"
 
-MAX_WAIT=240
+MAX_WAIT=360
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     # Vérifier le health check via Caddy
@@ -323,7 +331,7 @@ echo ""
 if [ $WAITED -ge $MAX_WAIT ]; then
     log_warn "Le service n'a pas répondu dans les ${MAX_WAIT}s"
     echo ""
-    echo "  Sur un VPS, le premier démarrage peut prendre 3-5 minutes."
+    echo "  Sur un VPS, le premier démarrage peut prendre 4-6 minutes."
     echo "  Vérifiez avec :"
     echo "    cd deploy && docker compose ps"
     echo "    docker compose logs -f evidence-backend"
