@@ -37,6 +37,11 @@ class FileWriter(Tool):
                 break_loop=False
             )
         
+        # ── Guard: resolve §§include() directives ──────────────────────────
+        # Some models (e.g. GPT-5.2) try to use fictional include directives
+        # instead of providing the full content. Detect and resolve them.
+        content = self._resolve_includes(content)
+        
         # Ensure output directory exists
         output_dir = files.get_abs_path("tmp/generated")
         os.makedirs(output_dir, exist_ok=True)
@@ -88,6 +93,168 @@ class FileWriter(Tool):
                 message=f"Error creating file: {e}",
                 break_loop=False
             )
+    
+    def _resolve_includes(self, content: str) -> str:
+        """
+        Resolve §§include() directives that some models generate instead of
+        providing full content. Also handles similar patterns like
+        {{include()}}, <<include()>>, @include(), etc.
+        
+        If the entire content is a single include directive pointing to a
+        readable file, replace it with the file contents.
+        If mixed content + includes, resolve inline includes.
+        """
+        import re
+        
+        # Pattern: §§include(path), {{include(path)}}, <<include(path)>>, @include(path)
+        include_pattern = re.compile(
+            r'(?:§§|@@|<<|{{|@)?\s*include\s*\(\s*([^\)]+?)\s*\)\s*(?:>>|}})?',
+            re.IGNORECASE,
+        )
+        
+        matches = list(include_pattern.finditer(content))
+        if not matches:
+            return content
+        
+        PrintStyle(font_color="yellow").print(
+            f"[FileWriter] WARNING: Detected {len(matches)} include directive(s) — "
+            f"model sent reference instead of content. Resolving..."
+        )
+        
+        # If the ENTIRE content is just one include directive, replace fully
+        if len(matches) == 1 and content.strip() == matches[0].group(0).strip():
+            file_path = matches[0].group(1).strip().strip("'\"")
+            resolved = self._read_include_file(file_path)
+            if resolved:
+                PrintStyle(font_color="green").print(
+                    f"[FileWriter] Resolved include: {len(resolved)} chars from {file_path}"
+                )
+                return resolved
+        
+        # Multiple includes or mixed content: resolve each one inline
+        result = content
+        for match in reversed(matches):  # reversed to preserve positions
+            file_path = match.group(1).strip().strip("'\"")
+            resolved = self._read_include_file(file_path)
+            if resolved:
+                result = result[:match.start()] + resolved + result[match.end():]
+                PrintStyle(font_color="green").print(
+                    f"[FileWriter] Resolved inline include: {len(resolved)} chars from {file_path}"
+                )
+        
+        return result
+    
+    # Directories from which include directives are allowed to read files.
+    # All paths are relative to the project root (files.get_base_dir()).
+    ALLOWED_INCLUDE_DIRS = (
+        "tmp/uploads",
+        "tmp/generated",
+        "docs",
+        "work_dir",
+    )
+
+    def _read_include_file(self, file_path: str) -> str | None:
+        """
+        Try to read a file referenced by an include directive.
+        
+        Security: Only files within ALLOWED_INCLUDE_DIRS (relative to the
+        project root) can be read.  Absolute paths outside the project,
+        traversal sequences, and symlinks escaping the base are all blocked.
+        """
+        from python.security.path_safety import safe_path_join, SecurityError
+        from pathlib import Path
+        import os
+
+        if not file_path or not file_path.strip():
+            return None
+
+        file_path = file_path.strip()
+        base_dir = files.get_base_dir()
+
+        # ------------------------------------------------------------------
+        # 1. If the path is absolute and inside the project, convert to
+        #    relative so it can be validated against allowed dirs.
+        # ------------------------------------------------------------------
+        if os.path.isabs(file_path):
+            try:
+                rel = os.path.relpath(file_path, base_dir)
+            except ValueError:
+                # Different drive on Windows
+                PrintStyle(font_color="red").print(
+                    f"[FileWriter] BLOCKED include (absolute path outside project): {file_path}"
+                )
+                return None
+
+            # If relpath starts with "..", the file is outside the project
+            if rel.startswith(".."):
+                PrintStyle(font_color="red").print(
+                    f"[FileWriter] BLOCKED include (path escapes project): {file_path}"
+                )
+                return None
+            file_path = rel
+
+        # ------------------------------------------------------------------
+        # 2. Try to resolve the path within each allowed directory.
+        # ------------------------------------------------------------------
+        for allowed_dir in self.ALLOWED_INCLUDE_DIRS:
+            # If file_path already starts with the allowed prefix, try it
+            # directly; otherwise try basename-only lookup.
+            candidates = []
+
+            if file_path.startswith(allowed_dir + "/") or file_path.startswith(allowed_dir + os.sep):
+                candidates.append(file_path)
+            else:
+                # Basename lookup: look for the filename in the allowed dir
+                basename = os.path.basename(file_path)
+                if basename:
+                    candidates.append(os.path.join(allowed_dir, basename))
+
+                # Also try the full relative path under the allowed dir
+                candidates.append(os.path.join(allowed_dir, file_path))
+
+            # Resolve the allowed directory to an absolute path for
+            # post-resolution containment check.
+            allowed_abs = (Path(base_dir) / allowed_dir).resolve()
+
+            for candidate_rel in candidates:
+                try:
+                    safe_abs = safe_path_join(
+                        base_dir,
+                        candidate_rel,
+                        allow_symlinks=False,
+                        must_exist=True,
+                    )
+
+                    # CRITICAL: the resolved path must land inside the
+                    # specific allowed sub-directory, not just the base dir.
+                    # This blocks traversal like tmp/uploads/../../.env
+                    try:
+                        safe_abs.relative_to(allowed_abs)
+                    except ValueError:
+                        continue
+
+                    # Must be a regular file
+                    if not safe_abs.is_file():
+                        continue
+
+                    with open(safe_abs, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    PrintStyle(font_color="cyan").print(
+                        f"[FileWriter] Resolved include: {safe_abs}"
+                    )
+                    return content
+
+                except (SecurityError, FileNotFoundError, OSError):
+                    continue
+
+        # ------------------------------------------------------------------
+        # 3. Nothing matched.
+        # ------------------------------------------------------------------
+        PrintStyle(font_color="red").print(
+            f"[FileWriter] WARNING: Could not resolve include file "
+            f"(not found in allowed dirs): {file_path}"
+        )
+        return None
     
     def _detect_extension(self, format_type: str) -> str:
         """Detect file extension from format type."""

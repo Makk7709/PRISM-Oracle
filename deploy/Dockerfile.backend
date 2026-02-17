@@ -1,91 +1,169 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                 KOREV EVIDENCE BACKEND — Dockerfile                          ║
 # ║                                                                              ║
-# ║  Image Python optimisée pour déploiement                                     ║
-# ║  Multi-stage build pour réduire la taille finale                             ║
+# ║  Image autonome (pas de base image externe)                                  ║
+# ║  Multi-stage build : Python deps → Node.js → Runtime final                  ║
 # ║                                                                              ║
+# ║  Contient : Flask backend + WebUI + MCP servers + WeasyPrint + Node.js       ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STAGE 1: Builder
+# STAGE 1: Python dependencies
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS python-deps
 
 WORKDIR /build
 
-# Installer les dépendances de build
+# Dépendances de build (compilateurs pour argon2-cffi, faiss, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier requirements
 COPY requirements.txt ./
 
-# Créer le venv et installer les dépendances
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip wheel && \
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools && \
     pip install --no-cache-dir -r requirements.txt
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 2: Runtime
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim as runtime
+FROM python:3.11-slim AS runtime
 
-# Labels pour traçabilité
-LABEL org.opencontainers.image.title="KOREV Evidence Backend"
-LABEL org.opencontainers.image.description="KOREV Evidence AI Research System"
+# Labels
+LABEL org.opencontainers.image.title="KOREV Evidence"
+LABEL org.opencontainers.image.description="KOREV Evidence — Plateforme d'agents IA de confiance"
 LABEL org.opencontainers.image.vendor="KOREV AI"
 LABEL org.opencontainers.image.version="${EVIDENCE_VERSION:-1.0.0}"
 
-# Variables d'environnement
+# ── Variables d'environnement ──
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PATH="/opt/venv/bin:$PATH" \
-    EVIDENCE_HOME=/app
+    EVIDENCE_HOME=/app \
+    # Defaults for production
+    WEB_UI_HOST=0.0.0.0 \
+    WEB_UI_PORT=5050
 
 WORKDIR /app
 
-# Utilisateur non-root pour sécurité
-RUN groupadd -r evidence && useradd -r -g evidence evidence && \
-    mkdir -p /app/data /app/logs /app/audit /app/config && \
+# ── Dépendances système runtime ──
+# WeasyPrint : libpango, libgdk-pixbuf, libffi
+# Playwright : dépendances navigateur
+# Node.js : pour les MCP servers (npx)
+# Tesseract : OCR
+# Autres : curl (healthcheck), git (version info)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # WeasyPrint + PDF
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    libcairo2 \
+    libglib2.0-0 \
+    # Fonts
+    fonts-liberation \
+    fonts-dejavu-core \
+    # Node.js (via nodesource)
+    curl \
+    gnupg \
+    # Outils
+    git \
+    # OCR (pdf2image requires poppler for PDF-to-image conversion)
+    tesseract-ocr \
+    tesseract-ocr-fra \
+    tesseract-ocr-eng \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Installer Node.js 20 LTS ──
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/* && \
+    node --version && npm --version
+
+# ── Utilisateur non-root ──
+RUN groupadd -r evidence && useradd -r -g evidence -m evidence && \
+    mkdir -p /app/data /app/logs /app/audit /app/tmp /app/memory && \
     chown -R evidence:evidence /app
 
-# Copier le venv depuis le builder
-COPY --from=builder /opt/venv /opt/venv
+# ── Copier le venv Python depuis le builder ──
+COPY --from=python-deps /opt/venv /opt/venv
 
-# Copier le code source
-COPY --chown=evidence:evidence python/ ./python/
-COPY --chown=evidence:evidence prompts/ ./prompts/
-COPY --chown=evidence:evidence agents/ ./agents/
-COPY --chown=evidence:evidence conf/ ./conf/
-COPY --chown=evidence:evidence knowledge/ ./knowledge/
-COPY --chown=evidence:evidence run_ui.py ./
-COPY --chown=evidence:evidence prepare.py ./
+# ── Copier le code source ──
+# Backend Python
+COPY --chown=evidence:evidence python/         ./python/
+COPY --chown=evidence:evidence prompts/        ./prompts/
+COPY --chown=evidence:evidence agents/         ./agents/
+COPY --chown=evidence:evidence conf/           ./conf/
+COPY --chown=evidence:evidence knowledge/      ./knowledge/
+COPY --chown=evidence:evidence tools/          ./tools/
+COPY --chown=evidence:evidence instruments/    ./instruments/
+COPY --chown=evidence:evidence lib/            ./lib/
+COPY --chown=evidence:evidence fonts/          ./fonts/
+COPY --chown=evidence:evidence legal/          ./legal/
+COPY --chown=evidence:evidence markdown_pdf/   ./markdown_pdf/
 
-# Copier le module de déploiement
-COPY --chown=evidence:evidence deploy/config/ ./config/
+# Fichiers racine
+COPY --chown=evidence:evidence run_ui.py       ./
+COPY --chown=evidence:evidence prepare.py      ./
+COPY --chown=evidence:evidence preload.py      ./
+COPY --chown=evidence:evidence agent.py        ./
+COPY --chown=evidence:evidence models.py       ./
 
-# Créer le fichier version
+# WebUI (Flask sert les fichiers statiques)
+COPY --chown=evidence:evidence webui/          ./webui/
+
+# MCP servers (configurations + code local)
+COPY --chown=evidence:evidence mcp_config.json ./
+COPY --chown=evidence:evidence mcp_servers/    ./mcp_servers/
+
+# .env.example comme référence (le vrai .env est monté en volume)
+COPY --chown=evidence:evidence .env.example    ./
+
+# Scripts utilitaires
+COPY --chown=evidence:evidence scripts/        ./scripts/
+
+# ── Installer les dépendances MCP Node.js ──
+# Certains MCP servers ont des package.json locaux
+# Note: errors here are non-fatal (some servers may not have deps)
+RUN set -e; \
+    found=0; \
+    for pkg in $(find /app/mcp_servers -name "package.json" -maxdepth 2 2>/dev/null); do \
+        dir=$(dirname "$pkg"); \
+        echo "[MCP] Installing deps in $dir ..."; \
+        cd "$dir" && npm install --production && found=$((found+1)); \
+    done; \
+    echo "[MCP] Installed deps for $found MCP server(s)"
+
+# ── Installer Playwright browsers (pour le MCP playwright) ──
+# Non-critique : si l'install échoue, le MCP playwright sera indisponible
+# mais le reste de l'application fonctionne
+RUN python -m playwright install chromium --with-deps 2>&1 \
+    && echo "[Playwright] Chromium installed successfully" \
+    || echo "[Playwright] WARNING: install failed — browser agent will be unavailable"
+
+# ── Créer le fichier version ──
 ARG BUILD_DATE
 ARG GIT_COMMIT
 ARG EVIDENCE_VERSION
-RUN echo "{\n  \"version\": \"${EVIDENCE_VERSION:-1.0.0}\",\n  \"build_date\": \"${BUILD_DATE:-unknown}\",\n  \"git_commit\": \"${GIT_COMMIT:-unknown}\"\n}" > /app/version.json
+RUN echo "{\"version\": \"${EVIDENCE_VERSION:-1.0.0}\", \"build_date\": \"${BUILD_DATE:-unknown}\", \"git_commit\": \"${GIT_COMMIT:-unknown}\"}" > /app/version.json
 
-# Passer à l'utilisateur non-root
+# ── Passer à l'utilisateur non-root ──
 USER evidence
 
-# Port exposé
+# ── Port exposé ──
 EXPOSE 5050
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5050/healthz')" || exit 1
+# ── Health check ──
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sf http://localhost:5050/healthz || exit 1
 
-# Point d'entrée
-ENTRYPOINT ["python"]
-CMD ["run_ui.py"]
+# ── Point d'entrée ──
+CMD ["python", "run_ui.py", "--host", "0.0.0.0", "--port", "5050"]

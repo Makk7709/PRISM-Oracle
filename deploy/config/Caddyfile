@@ -1,53 +1,45 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                 KOREV EVIDENCE — Caddyfile                                   ║
 # ║                                                                              ║
-# ║  Configuration reverse proxy pour frontend                                   ║
+# ║  Reverse proxy vers le backend Flask (evidence-backend:5050)                 ║
+# ║  Flask sert à la fois l'API et le WebUI statique.                           ║
 # ║                                                                              ║
+# ║  Pour HTTPS avec certificat auto-signé, remplacer :80 par :                 ║
+# ║    evidence.local {                                                          ║
+# ║        tls /etc/caddy/certs/evidence.crt /etc/caddy/certs/evidence.key      ║
+# ║        ...                                                                   ║
+# ║    }                                                                         ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 :80 {
-    # Servir les fichiers statiques du frontend
-    root * /srv
-    file_server
-    
-    # SPA: rediriger vers index.html pour les routes client
-    try_files {path} /index.html
-    
+    # Tout le trafic est relayé vers le backend Flask
+    reverse_proxy evidence-backend:5050
+
     # Compression
     encode gzip zstd
-    
+
     # Headers de sécurité
     header {
-        # Empêcher le sniffing de type MIME
         X-Content-Type-Options "nosniff"
-        
-        # Empêcher le clickjacking
         X-Frame-Options "DENY"
-        
-        # Protection XSS
         X-XSS-Protection "1; mode=block"
-        
-        # Politique de référent
         Referrer-Policy "strict-origin-when-cross-origin"
-        
-        # CSP basique
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:5050 http://127.0.0.1:5050"
-        
-        # Pas de cache pour l'index (SPA)
-        ?index.html Cache-Control "no-cache, no-store, must-revalidate"
+        Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+        # CSP: unsafe-inline requis par Alpine.js (x-data, @click, etc.)
+        # unsafe-eval requis par Alpine.js (expression evaluation)
+        # Nonces non supportés par Alpine.js sans plugin CSP.
+        # TODO: migrer vers Alpine CSP build pour éliminer unsafe-eval
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' wss: ws:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        # Pas de cache pour les pages dynamiques
+        Cache-Control "no-cache, no-store, must-revalidate"
     }
-    
-    # Proxy vers le backend API
-    handle /api/* {
-        reverse_proxy oracle-backend:5050
+
+    # Health check (Caddy répond directement, pas besoin de toucher Flask)
+    handle /healthz {
+        reverse_proxy evidence-backend:5050
     }
-    
-    # Health check endpoint
-    handle /health {
-        respond "OK" 200
-    }
-    
-    # Logging JSON
+
+    # Logging
     log {
         output stdout
         format json

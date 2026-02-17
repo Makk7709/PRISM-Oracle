@@ -27,17 +27,33 @@ class ImageGet(ApiHandler):
 
         if not path:
             raise ValueError("No path provided")
-        
-        # Normalize path: strip leading "/" to ensure it's treated as relative to project
-        # This fixes paths like "/tmp/generated_images/..." -> "tmp/generated_images/..."
+
+        # ── Normalize the user-supplied path to a safe relative path ──
+        # 1. Strip leading slashes
         path = path.lstrip("/")
 
-        # check if path is within base directory
-        if runtime.is_development():
-            in_base = files.is_in_base_dir(files.fix_dev_path(path))
-        else:
-            in_base = files.is_in_base_dir(path)
-        if not in_base:
+        # 2. Strip Docker/container prefixes (korev/, app/, a0/)
+        for prefix in ("korev/", "app/", "a0/"):
+            if path.startswith(prefix):
+                path = path[len(prefix):]
+                break
+
+        # 3. Handle absolute paths that lost their leading "/"
+        #    (e.g., browser agent sends /Users/.../tmp/chats/... which
+        #    becomes Users/.../tmp/chats/... after lstrip)
+        base_dir = files.get_base_dir()
+        base_stripped = base_dir.lstrip("/")
+        if path.startswith(base_stripped):
+            path = path[len(base_stripped):].lstrip("/")
+
+        # 4. Validate path stays within the project via safe_path_join
+        from python.security.path_safety import safe_path_join, SecurityError
+        try:
+            if runtime.is_development():
+                resolved = safe_path_join(base_dir, path, allow_symlinks=True)
+            else:
+                resolved = safe_path_join(base_dir, path, allow_symlinks=False)
+        except SecurityError:
             raise ValueError("Path is outside of allowed directory")
 
         # get file extension and info

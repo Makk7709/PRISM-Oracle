@@ -1,69 +1,77 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                  KOREV EVIDENCE — Docker Compose                               ║
+# ║                  KOREV EVIDENCE — Docker Compose (Production)                ║
 # ║                                                                              ║
-# ║  Déploiement production-ready                                                ║
-# ║  Mode: offline-first, audit complet, rollback supporté                       ║
+# ║  Architecture : Caddy (reverse proxy HTTPS) → Flask (backend + WebUI)        ║
+# ║  Tout le trafic passe par Caddy. Flask n'est PAS exposé directement.        ║
 # ║                                                                              ║
+# ║  Utilisation :                                                               ║
+# ║    1. Copier .env.example vers .env et configurer                            ║
+# ║    2. docker compose build                                                   ║
+# ║    3. docker compose up -d                                                   ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
-
-version: "3.9"
 
 services:
   # ═══════════════════════════════════════════════════════════════════════════
-  # EVIDENCE BACKEND
+  # EVIDENCE BACKEND (Flask + WebUI + MCP servers)
   # ═══════════════════════════════════════════════════════════════════════════
   evidence-backend:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
+      args:
+        BUILD_DATE: "${BUILD_DATE:-}"
+        GIT_COMMIT: "${GIT_COMMIT:-}"
+        EVIDENCE_VERSION: "${EVIDENCE_VERSION:-1.0.0}"
     image: korev/evidence-backend:${EVIDENCE_VERSION:-latest}
     container_name: evidence-backend
     restart: unless-stopped
-    
-    # Sécurité: bind localhost uniquement par défaut
-    ports:
-      - "${BIND_HOST:-127.0.0.1}:${BACKEND_PORT:-5050}:5050"
-    
-    # Variables d'environnement
+
+    # Le backend n'est PAS exposé sur le réseau hôte.
+    # Tout passe par Caddy via le réseau Docker interne.
+    # Décommentez la ligne suivante UNIQUEMENT pour le debug :
+    # ports:
+    #   - "127.0.0.1:5050:5050"
+
     env_file:
       - .env
     environment:
       - EVIDENCE_ENV=production
-      - EVIDENCE_DATA_DIR=/app/data
-      - EVIDENCE_LOGS_DIR=/app/logs
-      - EVIDENCE_AUDIT_DIR=/app/audit
+      - KOREV_PRODUCTION=true
+      - KOREV_BEHIND_PROXY=true
+      - WEB_UI_HOST=0.0.0.0
+      - WEB_UI_PORT=5050
+      - EVIDENCE_SHARED_DIR=/app/shared
       - PYTHONUNBUFFERED=1
-    
-    # Volumes persistants
+
     volumes:
       - evidence-data:/app/data
       - evidence-logs:/app/logs
       - evidence-audit:/app/audit
-      - ./config:/app/config:ro
-    
-    # Health check
+      - evidence-shared:/app/shared  # Per-user workspaces + commun
+      # Monter le .env au cas où des scripts le lisent via dotenv
+      - ./.env:/app/.env:ro
+      # Monter users.json si présent (multi-user auth)
+      - ./users.json:/app/deploy/users.json:ro
+
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/healthz')"]
+      test: ["CMD", "curl", "-sf", "http://localhost:5050/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    
-    # Ressources
+      start_period: 60s
+
     deploy:
       resources:
         limits:
-          cpus: "${CPU_LIMIT:-2.0}"
-          memory: "${MEMORY_LIMIT:-4G}"
+          cpus: "${CPU_LIMIT:-4.0}"
+          memory: "${MEMORY_LIMIT:-8G}"
         reservations:
-          cpus: "0.5"
-          memory: "512M"
-    
-    # Réseau
+          cpus: "1.0"
+          memory: "1G"
+
     networks:
       - evidence-net
-    
-    # Logging
+
     logging:
       driver: "json-file"
       options:
@@ -71,35 +79,102 @@ services:
         max-file: "5"
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # EVIDENCE FRONTEND (Build statique servi par Caddy)
+  # CADDY — Reverse proxy (HTTPS termination + headers sécurité)
   # ═══════════════════════════════════════════════════════════════════════════
-  evidence-frontend:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.frontend
-    image: korev/evidence-frontend:${EVIDENCE_VERSION:-latest}
-    container_name: evidence-frontend
+  evidence-caddy:
+    image: caddy:2-alpine
+    container_name: evidence-caddy
     restart: unless-stopped
-    
+
     ports:
-      - "${BIND_HOST:-127.0.0.1}:${FRONTEND_PORT:-8080}:80"
-    
+      - "${BIND_HOST:-0.0.0.0}:${HTTP_PORT:-80}:80"
+      - "${BIND_HOST:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+
     volumes:
       - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
-    
+      - caddy-data:/data        # Certificats auto Let's Encrypt
+      - caddy-config:/config    # Config Caddy persistante
+      # Monter les certificats auto-signés si besoin (voir guide)
+      # - ./certs:/etc/caddy/certs:ro
+
     depends_on:
       evidence-backend:
         condition: service_healthy
-    
+
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
-    
+
     networks:
       - evidence-net
-    
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SAMBA — Dossiers partagés accessibles depuis les postes Windows (SMB)
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-samba:
+    image: dperson/samba:amd64
+    container_name: evidence-samba
+    restart: unless-stopped
+
+    ports:
+      - "${BIND_HOST:-127.0.0.1}:${SMB_PORT:-445}:445"
+
+    volumes:
+      - evidence-shared:/shared
+
+    # Configuration dynamique via entrypoint
+    # -u "user;password" crée un utilisateur Samba
+    # -s "share;path;browse;readonly;guest;users;admins;writelist;comment"
+    #
+    # IMPORTANT : les identifiants Samba DOIVENT être définis dans .env
+    # Ne JAMAIS mettre de mots de passe en dur ici.
+    # Voir .env.example pour le format attendu.
+    command: >
+      -n
+      -p
+      -u "${SMB_USER_1:?Set SMB_USER_1 in .env (format: user;password)}"
+      -u "${SMB_USER_2:?Set SMB_USER_2 in .env}"
+      -u "${SMB_USER_3:?Set SMB_USER_3 in .env}"
+      -u "${SMB_USER_4:?Set SMB_USER_4 in .env}"
+      -u "${SMB_USER_5:?Set SMB_USER_5 in .env}"
+      -u "${SMB_USER_6:?Set SMB_USER_6 in .env}"
+      -u "${SMB_USER_ADMIN:?Set SMB_USER_ADMIN in .env}"
+      -s "marie;/shared/users/marie;yes;no;no;marie,admin;;;Espace Marie"
+      -s "jean;/shared/users/jean;yes;no;no;jean,admin;;;Espace Jean"
+      -s "pierre;/shared/users/pierre;yes;no;no;pierre,admin;;;Espace Pierre"
+      -s "sophie;/shared/users/sophie;yes;no;no;sophie,admin;;;Espace Sophie"
+      -s "thomas;/shared/users/thomas;yes;no;no;thomas,admin;;;Espace Thomas"
+      -s "claire;/shared/users/claire;yes;no;no;claire,admin;;;Espace Claire"
+      -s "commun;/shared/commun;yes;no;no;marie,jean,pierre,sophie,thomas,claire,admin;;;Dossier commun"
+
+    healthcheck:
+      test: ["CMD", "smbclient", "-L", "localhost", "-N"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    depends_on:
+      evidence-backend:
+        condition: service_healthy
+
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "512M"
+
+    networks:
+      - evidence-net
+
     logging:
       driver: "json-file"
       options:
@@ -115,19 +190,31 @@ volumes:
     labels:
       com.korev.evidence.type: "data"
       com.korev.evidence.backup: "true"
-  
+
   evidence-logs:
     name: evidence-logs
     labels:
       com.korev.evidence.type: "logs"
       com.korev.evidence.backup: "false"
-  
+
   evidence-audit:
     name: evidence-audit
     labels:
       com.korev.evidence.type: "audit"
       com.korev.evidence.backup: "true"
       com.korev.evidence.retention: "90d"
+
+  caddy-data:
+    name: caddy-data
+
+  caddy-config:
+    name: caddy-config
+
+  evidence-shared:
+    name: evidence-shared
+    labels:
+      com.korev.evidence.type: "shared-workspaces"
+      com.korev.evidence.backup: "true"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RÉSEAU ISOLÉ
@@ -136,6 +223,3 @@ networks:
   evidence-net:
     name: evidence-network
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16

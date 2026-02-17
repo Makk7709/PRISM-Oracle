@@ -138,10 +138,29 @@ def cosine_normalizer(val: float) -> float:
     return res
 
 
+def sanitize_filter_value(value: str) -> str:
+    """
+    Escape a value for safe embedding in a simpleeval filter expression.
+    Prevents expression injection by escaping single quotes and backslashes.
+    """
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
+def build_eq_filter(key: str, value: str) -> str:
+    """Build a safe equality filter: key == 'escaped_value'."""
+    return f"{key} == '{sanitize_filter_value(value)}'"
+
+
+def build_or_filter(key: str, values: list[str]) -> str:
+    """Build a safe OR filter: key == 'v1' or key == 'v2' or ..."""
+    parts = [build_eq_filter(key, v) for v in values]
+    return " or ".join(parts)
+
+
 def get_comparator(condition: str):
     def comparator(data: dict[str, Any]):
         try:
-            result = simple_eval(condition, {}, data)
+            result = simple_eval(condition, names=data)
             return result
         except Exception as e:
             # PrintStyle.error(f"Error evaluating condition: {e}")

@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 import json
 
-from python.helpers.vector_db import VectorDB
+from python.helpers.vector_db import VectorDB, build_eq_filter, build_or_filter
 
 os.environ["USER_AGENT"] = "@mixedbread-ai/unstructured"  # noqa E402
 from langchain_unstructured import UnstructuredLoader  # noqa E402
@@ -211,7 +211,7 @@ class DocumentQueryStore:
         # get docs from vector db
 
         chunks = await self.vector_db.search_by_metadata(
-            filter=f"document_uri == '{document_uri}'",
+            filter=build_eq_filter("document_uri", document_uri),
         )
 
         PrintStyle.standard(f"Found {len(chunks)} chunks for document: {document_uri}")
@@ -257,7 +257,7 @@ class DocumentQueryStore:
         document_uri = self.normalize_uri(document_uri)
 
         chunks = await self.vector_db.search_by_metadata(
-            filter=f"document_uri == '{document_uri}'",
+            filter=build_eq_filter("document_uri", document_uri),
         )
         if not chunks:
             return False
@@ -326,7 +326,7 @@ class DocumentQueryStore:
             List of matching document chunks
         """
         return await self.search_documents(
-            query, limit, threshold, f"document_uri == '{document_uri}'"
+            query, limit, threshold, build_eq_filter("document_uri", document_uri)
         )
 
     async def list_documents(self) -> List[str]:
@@ -392,9 +392,7 @@ class DocumentQueryHelper:
             self.progress_callback(f"Searching documents with query: {optimized_query}")
 
             normalized_uris = [self.store.normalize_uri(uri) for uri in document_uris]
-            doc_filter = " or ".join(
-                [f"document_uri == '{uri}'" for uri in normalized_uris]
-            )
+            doc_filter = build_or_filter("document_uri", normalized_uris)
 
             chunks = await self.store.search_documents(
                 query=optimized_query,
@@ -588,55 +586,40 @@ class DocumentQueryHelper:
         return "\n".join([element.page_content for element in elements])
 
     def handle_pdf_document(self, document: str, scheme: str) -> str:
+        import tempfile
         temp_file_path = ""
         PrintStyle.debug(f"[PDF] handle_pdf_document called with document={document}, scheme={scheme}")
-        if scheme == "file":
-            # Log file access attempt
-            PrintStyle.debug(f"[PDF] Attempting to read file: {document}")
-            PrintStyle.debug(f"[PDF] File exists (direct): {os.path.exists(document)}")
-            
-            # Try to resolve the path if it doesn't exist directly
-            resolved_path = document
-            if not os.path.exists(document):
-                # Try with fix_dev_path
-                resolved_path = files.fix_dev_path(document)
-                PrintStyle.debug(f"[PDF] Resolved path: {resolved_path}")
-                PrintStyle.debug(f"[PDF] Resolved exists: {os.path.exists(resolved_path)}")
-            
-            if not os.path.exists(resolved_path):
-                raise FileNotFoundError(f"PDF file not found: {document} (resolved: {resolved_path})")
-            
-            # Use the resolved path for reading
-            file_content_bytes = files.read_file_bin(resolved_path)
-            PrintStyle.debug(f"[PDF] Read {len(file_content_bytes)} bytes")
-            # Create a temporary file for PyPDFLoader since it needs a file path
-            import tempfile
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-                temp_file.write(file_content_bytes)
-                temp_file_path = temp_file.name
-        elif scheme in ["http", "https"]:
-            # download the file from the web url to a temporary file using python libraries for downloading
-            import requests
-            import tempfile
+        # Create temp file FIRST so cleanup always works
+        temp_fd = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        temp_file_path = temp_fd.name
+        temp_fd.close()
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        try:
+            if scheme == "file":
+                PrintStyle.debug(f"[PDF] Attempting to read file: {document}")
+                resolved_path = document
+                if not os.path.exists(document):
+                    resolved_path = files.fix_dev_path(document)
+                    PrintStyle.debug(f"[PDF] Resolved path: {resolved_path}")
+                if not os.path.exists(resolved_path):
+                    raise FileNotFoundError(f"PDF file not found: {document} (resolved: {resolved_path})")
+                file_content_bytes = files.read_file_bin(resolved_path)
+                PrintStyle.debug(f"[PDF] Read {len(file_content_bytes)} bytes")
+                with open(temp_file_path, "wb") as f:
+                    f.write(file_content_bytes)
+
+            elif scheme in ["http", "https"]:
+                import requests
                 response = requests.get(document, timeout=10.0)
                 if response.status_code != 200:
                     raise ValueError(
                         f"DocumentQueryHelper::handle_pdf_document: Failed to download PDF from {document}: {response.status_code}"
                     )
-                temp_file.write(response.content)
-                temp_file_path = temp_file.name
-        else:
-            raise ValueError(f"Unsupported scheme: {scheme}")
-
-        if not os.path.exists(temp_file_path):
-            raise ValueError(
-                f"DocumentQueryHelper::handle_pdf_document: Temporary file not found: {temp_file_path}"
-            )
-
-        try:
+                with open(temp_file_path, "wb") as f:
+                    f.write(response.content)
+            else:
+                raise ValueError(f"Unsupported scheme: {scheme}")
             try:
                 loader = PyPDFLoader(
                     temp_file_path,
@@ -649,7 +632,7 @@ class DocumentQueryHelper:
                 )
                 contents = ""
 
-            if not contents:
+            if not contents or not contents.strip():
                 try:
                     from python.helpers.pdf_extraction.ocr_engine import OCREngine
 
@@ -695,29 +678,28 @@ class DocumentQueryHelper:
             )
             elements = loader.load()
         elif scheme == "file":
-            # Use RFC file operations to read the file as binary
-            file_content_bytes = files.read_file_bin(document)
-            # Create a temporary file for UnstructuredLoader since it needs a file path
-            import tempfile
-            import os
+            import tempfile as _tempfile
 
-            # Get file extension to preserve it for proper processing
+            file_content_bytes = files.read_file_bin(document)
             _, ext = os.path.splitext(document)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_file:
-                temp_file.write(file_content_bytes)
-                temp_file_path = temp_file.name
+
+            # Create temp file and assign path BEFORE any operation that can fail
+            tmp = _tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            temp_file_path = tmp.name
+            tmp.close()
 
             try:
+                with open(temp_file_path, "wb") as f:
+                    f.write(file_content_bytes)
+
                 loader = UnstructuredLoader(
                     file_path=temp_file_path,
                     mode="single",
                     partition_via_api=False,
-                    # chunking_strategy="by_page",
                     strategy="hi_res",
                 )
                 elements = loader.load()
             finally:
-                # Clean up temporary file
                 os.unlink(temp_file_path)
         else:
             raise ValueError(f"Unsupported scheme: {scheme}")
