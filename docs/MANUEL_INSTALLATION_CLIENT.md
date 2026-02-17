@@ -1,20 +1,20 @@
 # Manuel d'Installation KOREV Evidence
 
-## Guide Client - Version 4.0
+## Guide Client — Version 4.0
 
 ---
 
-# Table des matieres
+# Table des matières
 
 1. [Introduction](#1-introduction)
-2. [Prerequis systeme](#2-prerequis-systeme)
-3. [Methode Recommandee : Docker (Production)](#3-methode-recommandee--docker-production)
-4. [Methode Alternative : Installation locale](#4-methode-alternative--installation-locale)
+2. [Prérequis système](#2-prérequis-système)
+3. [Méthode Recommandée : Docker (Production)](#3-méthode-recommandée--docker-production)
+4. [Méthode Alternative : Installation locale](#4-méthode-alternative--installation-locale)
 5. [Configuration initiale](#5-configuration-initiale)
 6. [Premier lancement](#6-premier-lancement)
 7. [Utilisation quotidienne](#7-utilisation-quotidienne)
-8. [Mise a jour](#8-mise-a-jour)
-9. [Depannage](#9-depannage)
+8. [Mise à jour](#8-mise-à-jour)
+9. [Dépannage](#9-dépannage)
 10. [Support technique](#10-support-technique)
 
 ---
@@ -23,64 +23,64 @@
 
 ## Qu'est-ce que KOREV Evidence ?
 
-KOREV Evidence est un assistant IA avance concu pour vous aider dans vos taches quotidiennes. Il peut :
-- Rechercher des informations scientifiques et academiques
+KOREV Evidence est un assistant IA avancé conçu pour vous aider dans vos tâches quotidiennes. Il peut :
+- Rechercher des informations scientifiques et académiques
 - Analyser des documents PDF
-- Generer et assembler des rapports PDF
-- Generer des images (publicites, infographies, storyboards)
-- Automatiser des taches complexes via des agents specialises
+- Générer et assembler des rapports PDF
+- Générer des images (publicités, infographies, storyboards)
+- Automatiser des tâches complexes via des agents spécialisés
 
-## Deux methodes d'installation
+## Deux méthodes d'installation
 
-| Methode | Recommandee | Temps estime | Difficulte |
+| Méthode | Recommandée | Temps estimé | Difficulté |
 |---------|:-----------:|:------------:|:----------:|
 | **Docker** (Production) | Oui | 15-30 min | Facile |
-| **Locale** (Developpement) | Alternative | 15-25 min | Intermediaire |
+| **Locale** (Développement) | Alternative | 20-30 min | Intermédiaire |
 
-> **Nous recommandons Docker** : installation plus simple, plus fiable, et identique sur tous les systemes. Inclut HTTPS, reverse proxy et securite production.
+> **Nous recommandons Docker** : installation plus simple, plus fiable, et identique sur tous les systèmes. Inclut HTTPS, reverse proxy et sécurité production.
 
 ---
 
-# 2. Prerequis systeme
+# 2. Prérequis système
 
 ## Configuration minimale
 
-| Composant | Serveur (recommande) | Poste local |
+| Composant | Serveur (recommandé) | Poste local |
 |-----------|----------------------|-------------|
-| **Systeme** | Ubuntu 22.04+ / Debian 12+ | Windows 10+, macOS 12+ |
-| **CPU** | 4 vCPU minimum | 4 coeurs |
+| **Système** | Ubuntu 22.04+ / Debian 12+ | Windows 10+, macOS 12+ |
+| **CPU** | 4 vCPU minimum | 4 cœurs |
 | **RAM** | 16 Go (8 Go minimum) | 8 Go minimum |
 | **Stockage** | 50 Go SSD | 20 Go disponibles |
-| **Connexion** | Internet haut debit | Internet haut debit |
+| **Connexion** | Internet haut débit | Internet haut débit |
 
 ## Logiciels requis
 
-| Methode | Logiciel |
+| Méthode | Logiciel |
 |---------|----------|
 | **Docker** | Docker Engine 24+ et Docker Compose v2 |
-| **Locale** | Python 3.11+, Node.js 20+ |
+| **Locale** | Python 3.11+, Node.js 20+, Tesseract OCR, WeasyPrint (voir section 4) |
 
 ---
 
-# 3. Methode Recommandee : Docker (Production)
+# 3. Méthode Recommandée : Docker (Production)
 
 ## Architecture
 
 ```
 Internet / LAN
-      |
-  [ Caddy ]  ← Reverse proxy (HTTPS, headers securite)
-      |
+      │
+  [ Caddy ]  ← Reverse proxy (HTTPS, headers sécurité)
+      │
   [ Flask ]  ← Backend Python + WebUI
-      |
+      │
   [ Samba ]  ← Partage de fichiers Windows (optionnel)
 ```
 
-Tous les services tournent dans des conteneurs Docker isoles, orchestres par Docker Compose.
+Tous les services tournent dans des conteneurs Docker isolés, orchestrés par Docker Compose.
 
 ---
 
-## Etape 1 : Installer Docker
+## Étape 1 : Installer Docker
 
 ### Sur Ubuntu / Debian (serveur)
 
@@ -91,35 +91,43 @@ curl -fsSL https://get.docker.com | sudo sh
 # Ajouter votre utilisateur au groupe docker
 sudo usermod -aG docker $USER
 
-# Deconnecter/reconnecter pour appliquer le groupe
+# Déconnecter/reconnecter pour appliquer le groupe
 exit
 # puis se reconnecter
 
-# Verifier l'installation
+# Vérifier l'installation
 docker --version
 docker compose version
 ```
 
 ### Sur Windows / Mac (poste local)
 
-1. Telechargez Docker Desktop : **https://www.docker.com/products/docker-desktop/**
+1. Téléchargez Docker Desktop : **https://www.docker.com/products/docker-desktop/**
 2. Installez et lancez Docker Desktop
 3. **Important** : dans Settings > Resources, allouez au minimum **8 Go de RAM**
 
----
-
-## Etape 2 : Recuperer les fichiers
-
-### Option A : Depuis Git (recommande)
+### Ouvrir les ports (serveur uniquement)
 
 ```bash
-git clone https://github.com/Makk7709/PRISM-Oracle.git -b security-phase1-p0
+# Si un pare-feu est actif (ufw, firewalld), ouvrir les ports HTTP/HTTPS :
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+```
+
+---
+
+## Étape 2 : Récupérer les fichiers
+
+### Option A : Depuis Git (recommandé)
+
+```bash
+git clone https://github.com/Makk7709/PRISM-Oracle.git
 cd PRISM-Oracle
 ```
 
 ### Option B : Depuis une archive
 
-Decompressez l'archive fournie :
+Décompressez l'archive fournie :
 ```bash
 tar xzf korev-evidence-v1.0.0.tar.gz
 cd korev-evidence
@@ -138,28 +146,28 @@ korev-evidence/
 │       └── Caddyfile            ← Configuration reverse proxy
 ├── python/                      ← Code backend
 ├── webui/                       ← Interface web
-├── requirements.txt             ← Dependances Python
-├── run_ui.py                    ← Point d'entree serveur
+├── requirements.txt             ← Dépendances Python
+├── run_ui.py                    ← Point d'entrée serveur
 └── .env.example                 ← Template config (racine)
 ```
 
 ---
 
-## Etape 3 : Configurer l'environnement
+## Étape 3 : Configurer l'environnement
 
-### 3.1 Creer le fichier .env
+### 3.1 Créer le fichier .env
 
 ```bash
 cd deploy
 cp .env.example .env
 ```
 
-### 3.2 Configurer les cles API (OBLIGATOIRE)
+### 3.2 Configurer les clés API (OBLIGATOIRE)
 
-Ouvrez `.env` avec un editeur de texte et remplissez **au minimum** :
+Ouvrez `.env` avec un éditeur de texte et remplissez **au minimum** :
 
 ```bash
-# Cle API pour les modeles IA (au moins UNE obligatoire)
+# Clé API pour les modèles IA (au moins UNE obligatoire)
 API_KEY_OPENROUTER=sk-or-v1-votre-cle-ici
 
 # Identifiants de connexion
@@ -167,25 +175,46 @@ AUTH_LOGIN=admin
 AUTH_PASSWORD=VotreMotDePasseFort123!
 ```
 
-> Voir la section [Configuration initiale](#5-configuration-initiale) pour obtenir une cle API.
+> Voir la section [Configuration initiale](#5-configuration-initiale) pour obtenir une clé API.
 
-### 3.3 Configurer Samba (optionnel)
+### 3.3 Configurer HTTPS (recommandé en production)
 
-Si vous souhaitez que les utilisateurs accedent aux fichiers depuis l'Explorateur Windows :
+Par défaut, Caddy écoute en HTTP sur le port 80. Pour activer HTTPS :
+
+1. Associez un nom de domaine à l'IP de votre serveur (DNS A record)
+2. Éditez `deploy/config/Caddyfile` — remplacez la première ligne :
+
+```
+# Avant (HTTP uniquement) :
+:80 {
+
+# Après (HTTPS automatique via Let's Encrypt) :
+evidence.votre-domaine.fr {
+```
+
+3. Caddy obtient automatiquement un certificat Let's Encrypt au premier démarrage
+
+> **Sans nom de domaine** : Caddy fonctionne en HTTP sur le port 80. L'application reste pleinement fonctionnelle, mais la connexion n'est pas chiffrée.
+
+### 3.4 Configurer Samba (optionnel)
+
+Si vous souhaitez que les utilisateurs accèdent aux fichiers depuis l'Explorateur Windows :
 
 ```bash
-# Adapter les noms et mots de passe a vos utilisateurs
+# Adapter les noms et mots de passe à vos utilisateurs
 SMB_USER_1=marie;MotDePasse1!
 SMB_USER_2=jean;MotDePasse2!
 # ... etc.
 SMB_USER_ADMIN=admin;AdminPass!
 ```
 
-> Sans configuration Samba, l'application fonctionne normalement. Samba ajoute uniquement l'acces aux fichiers partages via le reseau Windows (SMB).
+> Sans configuration Samba, l'application fonctionne normalement. Samba ajoute uniquement l'accès aux fichiers partagés via le réseau Windows (SMB).
 
 ---
 
-## Etape 4 : Construire et lancer
+## Étape 4 : Construire et lancer
+
+Toutes les commandes ci-dessous s'exécutent depuis le dossier `deploy/`.
 
 ### Build de l'image
 
@@ -194,11 +223,11 @@ cd deploy
 docker compose build evidence-backend
 ```
 
-> La premiere construction prend 10-20 minutes (telechargement des dependances). Les constructions suivantes sont plus rapides grace au cache.
+> La première construction prend 10-20 minutes (téléchargement des dépendances). Les constructions suivantes sont plus rapides grâce au cache.
 
 ### Lancement
 
-**Sans Samba (recommande pour un premier test) :**
+**Sans Samba (recommandé pour un premier test) :**
 ```bash
 docker compose up -d evidence-backend evidence-caddy
 ```
@@ -208,21 +237,21 @@ docker compose up -d evidence-backend evidence-caddy
 docker compose up -d
 ```
 
-### Verifier le bon fonctionnement
+### Vérifier le bon fonctionnement
 
 ```bash
-# Verifier que les conteneurs tournent
+# Vérifier que les conteneurs tournent
 docker compose ps
 
-# Verifier le health check
+# Vérifier le health check
 curl http://localhost/healthz
-# Reponse attendue : {"status":"ok"}
+# Réponse attendue : {"status":"ok"}
 
-# Consulter les logs en temps reel
+# Consulter les logs en temps réel
 docker compose logs -f evidence-backend
 ```
 
-### Resultat attendu
+### Résultat attendu
 
 ```
 NAME                STATUS              PORTS
@@ -230,20 +259,20 @@ evidence-backend    Up (healthy)        5050/tcp
 evidence-caddy      Up (healthy)        0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
 ```
 
-Accedez a l'interface : **http://VOTRE_IP** (ou **https://VOTRE_DOMAINE** si DNS configure)
+Accédez à l'interface : **http://VOTRE_IP** (ou **https://VOTRE_DOMAINE** si HTTPS configuré)
 
 ---
 
-# 4. Methode Alternative : Installation locale
+# 4. Méthode Alternative : Installation locale
 
-> Cette methode convient pour le developpement ou un test rapide sur un poste local.
+> Cette méthode convient pour le développement ou un test rapide sur un poste local.
 
-## Etape 1 : Installer les prerequis
+## Étape 1 : Installer les prérequis
 
 ### Python 3.11+
 
 **Windows :**
-1. Telechargez sur **https://www.python.org/downloads/**
+1. Téléchargez sur **https://www.python.org/downloads/**
 2. **IMPORTANT** : Cochez **"Add Python to PATH"**
 3. Installez
 
@@ -268,54 +297,77 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
 sudo apt install -y nodejs
 ```
 
-## Etape 2 : Configurer et lancer
+### Dépendances système (PDF, OCR, images)
+
+**Ubuntu / Debian :**
+```bash
+sudo apt install -y \
+    tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
+    libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
+    libcairo2 libffi-dev libglib2.0-0 \
+    poppler-utils \
+    fonts-liberation fonts-dejavu-core
+```
+
+**Mac :**
+```bash
+brew install tesseract pango cairo poppler
+```
+
+**Windows :**
+- Installez Tesseract OCR depuis **https://github.com/UB-Mannheim/tesseract/wiki**
+- Les dépendances WeasyPrint sont incluses via pip
+
+> Sans ces dépendances, la génération de PDF et l'OCR ne fonctionneront pas.
+
+## Étape 2 : Configurer et lancer
 
 ```bash
 cd korev-evidence
 
-# Creer l'environnement virtuel
-python3.11 -m venv venv
+# Créer l'environnement virtuel
+python3 -m venv venv
 source venv/bin/activate  # Mac/Linux
 # venv\Scripts\activate   # Windows
 
-# Installer les dependances
+# Installer les dépendances Python
 pip install -r requirements.txt
 
 # Configurer
 cp .env.example .env
-# Editer .env avec vos cles API
+# Éditer .env avec vos clés API
 
 # Lancer
 python run_ui.py
 ```
 
-Accedez a **http://localhost:5050**
+Accédez à **http://localhost:5050**
 
 ---
 
 # 5. Configuration initiale
 
-## Obtenir les cles API
+## Obtenir les clés API
 
-Evidence utilise **OpenRouter** comme fournisseur principal pour acceder a tous les modeles IA.
+Evidence utilise **OpenRouter** comme fournisseur principal pour accéder à tous les modèles IA.
 
-### Cle OpenRouter (REQUISE)
+### Clé OpenRouter (REQUISE)
 
 1. Allez sur **https://openrouter.ai/**
-2. Creez un compte ou connectez-vous
+2. Créez un compte ou connectez-vous
 3. Allez dans **Keys** (menu en haut)
 4. Cliquez sur **"Create Key"**
-5. Copiez la cle (commence par `sk-or-v1-...`)
+5. Copiez la clé (commence par `sk-or-v1-...`)
 6. Collez-la dans `.env` :
    ```
    API_KEY_OPENROUTER=sk-or-v1-votre-cle-ici
    ```
 
-### Cle OpenAI (OPTIONNEL)
+### Clé OpenAI (OPTIONNEL)
 
-Pour la generation d'images (GPT-Image, DALL-E) :
+Pour la génération d'images (GPT-Image, DALL-E) :
 1. Allez sur **https://platform.openai.com/api-keys**
-2. Creez une cle
+2. Créez une clé
 3. Collez-la dans `.env` :
    ```
    API_KEY_OPENAI=sk-votre-cle-ici
@@ -325,40 +377,40 @@ Pour la generation d'images (GPT-Image, DALL-E) :
 
 # 6. Premier lancement
 
-## Acceder a Evidence
+## Accéder à Evidence
 
 1. Ouvrez votre navigateur web
-2. Tapez l'adresse correspondant a votre installation :
+2. Tapez l'adresse correspondant à votre installation :
 
-| Methode | URL |
+| Méthode | URL |
 |---------|-----|
 | Docker (serveur) | **http://VOTRE_IP** ou **https://VOTRE_DOMAINE** |
 | Docker (local) | **http://localhost** |
 | Locale | **http://localhost:5050** |
 
-3. Connectez-vous avec les identifiants configures dans `.env` (`AUTH_LOGIN` / `AUTH_PASSWORD`)
+3. Connectez-vous avec les identifiants configurés dans `.env` (`AUTH_LOGIN` / `AUTH_PASSWORD`)
 
-## Ecran d'accueil
+## Écran d'accueil
 
 Vous devriez voir l'interface **KOREV Evidence** avec :
 - Le logo et le titre "KOREV Evidence"
 - Un champ pour taper vos questions
-- La barre laterale avec les conversations
+- La barre latérale avec les conversations
 
 ## Premier test
 
 Tapez une question :
 ```
-Bonjour, peux-tu te presenter ?
+Bonjour, peux-tu te présenter ?
 ```
 
-Evidence devrait repondre en quelques secondes.
+Evidence devrait répondre en quelques secondes.
 
 ---
 
 # 7. Utilisation quotidienne
 
-## Demarrer Evidence
+## Démarrer Evidence
 
 ### Mode Docker
 
@@ -375,7 +427,7 @@ source venv/bin/activate
 python run_ui.py
 ```
 
-## Arreter Evidence
+## Arrêter Evidence
 
 ### Docker
 ```bash
@@ -388,22 +440,22 @@ docker compose down
 
 ---
 
-# 8. Mise a jour
+# 8. Mise à jour
 
 ### Mode Docker
 
 ```bash
-cd deploy
-
-# Recuperer les derniers changements
+# Depuis la racine du projet (pas deploy/)
+cd korev-evidence
 git pull
 
 # Reconstruire et relancer
+cd deploy
 docker compose build evidence-backend
 docker compose up -d
 ```
 
-> Les donnees sont persistees dans des volumes Docker. La mise a jour ne supprime pas vos conversations ni fichiers.
+> Les données sont persistées dans des volumes Docker. La mise à jour ne supprime pas vos conversations ni fichiers.
 
 ### Mode Local
 
@@ -416,9 +468,9 @@ pip install -r requirements.txt --upgrade
 
 ---
 
-# 9. Depannage
+# 9. Dépannage
 
-## Problemes Docker
+## Problèmes Docker
 
 ### "Cannot connect to the Docker daemon"
 
@@ -427,9 +479,9 @@ pip install -r requirements.txt --upgrade
    ```bash
    sudo systemctl start docker
    ```
-2. Verifiez : `docker info`
+2. Vérifiez : `docker info`
 
-### Le conteneur ne demarre pas
+### Le conteneur ne démarre pas
 
 **Solution :**
 ```bash
@@ -440,58 +492,58 @@ docker compose logs evidence-backend
 # - "ImportError" → image corrompue, reconstruire :
 docker compose build --no-cache evidence-backend
 
-# - "Address already in use" → port occupe :
+# - "Address already in use" → port occupé :
 docker compose down
 docker compose up -d
 ```
 
-### Build echoue avec "cannot allocate memory"
+### Build échoue avec "cannot allocate memory"
 
 **Solution :**
-- Serveur : verifiez `free -h`, minimum 4 Go disponibles pendant le build
-- Docker Desktop : Settings > Resources > augmenter la memoire a 8 Go+
+- Serveur : vérifiez `free -h`, minimum 4 Go disponibles pendant le build
+- Docker Desktop : Settings > Resources > augmenter la mémoire à 8 Go+
 
 ### L'interface ne charge pas
 
 **Solution :**
-1. Verifiez les conteneurs : `docker compose ps`
+1. Vérifiez les conteneurs : `docker compose ps`
 2. Attendez 60 secondes (le backend a un `start_period` de 60s)
 3. Testez le health check : `curl http://localhost/healthz`
 4. Consultez les logs : `docker compose logs -f`
 
-## Problemes generaux
+## Problèmes généraux
 
-### "Erreur de cle API"
+### "Erreur de clé API"
 
 **Solution :**
-1. Verifiez la cle dans `.env` (pas d'espaces, pas de guillemets)
-2. Verifiez votre credit sur le compte OpenRouter/OpenAI
-3. Relancez apres modification : `docker compose restart evidence-backend`
+1. Vérifiez la clé dans `.env` (pas d'espaces, pas de guillemets)
+2. Vérifiez votre crédit sur le compte OpenRouter/OpenAI
+3. Relancez après modification : `docker compose restart evidence-backend`
 
-### Les images generees ne se telechargent pas
+### Les images générées ne se téléchargent pas
 
-**Solution :** Actualisez la page du navigateur (F5 / Cmd+R). Un correctif recent gere le protocole `sandbox://` utilise par certains modeles.
+**Solution :** Actualisez la page du navigateur (F5 / Cmd+R). Un correctif récent gère le protocole `sandbox://` utilisé par certains modèles.
 
 ---
 
 # 10. Support technique
 
-## Informations a fournir
+## Informations à fournir
 
-En cas de probleme :
-1. Systeme d'exploitation et version
-2. Methode d'installation (Docker ou locale)
+En cas de problème :
+1. Système d'exploitation et version
+2. Méthode d'installation (Docker ou locale)
 3. Sortie de `docker compose ps` et `docker compose logs --tail=50 evidence-backend`
-4. Message d'erreur exact ou capture d'ecran
+4. Message d'erreur exact ou capture d'écran
 5. Version : `cat deploy/.env | grep EVIDENCE_VERSION`
 
 ## Commandes de diagnostic
 
 ```bash
-# Etat des services
+# État des services
 docker compose ps
 
-# Logs du backend (derniers 100 lignes)
+# Logs du backend (dernières 100 lignes)
 docker compose logs --tail=100 evidence-backend
 
 # Utilisation des ressources
@@ -507,6 +559,6 @@ docker system df -v
 
 ---
 
-*Document mis a jour le 17 fevrier 2026*
+*Document mis à jour le 17 février 2026*
 *Version : 4.0*
-*KOREV Evidence - Guide d'installation client*
+*KOREV Evidence — Guide d'installation client*
