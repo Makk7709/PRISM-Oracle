@@ -339,6 +339,37 @@ class TestJudgeChecklist:
         assert result.passed_count < result.total_count
         assert 0.0 < result.pass_rate < 1.0
 
+    def test_judge_mixed_jurisdiction_is_warning_not_blocking(self):
+        """MIXED jurisdiction should warn, not force REQUEST_INFO by itself."""
+        ctx = LegalRouteContext(
+            risk_tier=LegalRiskTier.LOW,
+            scope=DecisionScope.INFO,
+            jurisdiction=Jurisdiction.MIXED,
+            requires_jurisdiction_clarification=True,
+        )
+
+        draft = LegalDraft(
+            draft_id="draft_mixed_jurisdiction",
+            query="Question juridique FR+EU",
+            facts=["Le dossier mentionne des éléments FR et EU."],
+            rules=["Article 1134 Code civil (référence de travail)"],
+            application="Application suffisamment détaillée pour relier la règle aux faits et rester exploitable.",
+            citations=["Art. 1134 C. civ."],
+            legal_context=ctx,
+        )
+
+        result = judge_legal_draft(draft)
+
+        assert result.verdict == LegalJudgeVerdict.APPROVE
+        assert MissingInfoCode.JURISDICTION_CLARIFICATION not in result.missing_info_required
+
+        jurisdiction_check = next(
+            (c for c in result.checks if c.name == "JURISDICTION_CLEAR"),
+            None
+        )
+        assert jurisdiction_check is not None
+        assert jurisdiction_check.result == JudgeCheckResult.WARN
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # P0.4 — CONSENSUS ON CONTRACT TESTS

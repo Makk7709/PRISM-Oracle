@@ -1003,9 +1003,18 @@ def judge_legal_draft(draft: LegalDraft) -> LegalJudgeResult:
     # DETERMINE VERDICT
     # ─────────────────────────────────────────────────────────────────────────
     
+    # Some missing-info signals are advisory warnings and must not fail-close.
+    non_blocking_missing_info = {
+        MissingInfoCode.JURISDICTION_CLARIFICATION,
+    }
+    blocking_missing_info = [
+        code for code in missing_info
+        if code not in non_blocking_missing_info
+    ]
+
     if critical_failures:
         verdict = LegalJudgeVerdict.REJECT
-    elif missing_info:
+    elif blocking_missing_info:
         verdict = LegalJudgeVerdict.REQUEST_INFO
     else:
         verdict = LegalJudgeVerdict.APPROVE
@@ -1014,7 +1023,7 @@ def judge_legal_draft(draft: LegalDraft) -> LegalJudgeResult:
         verdict=verdict,
         checks=checks,
         critical_failures=critical_failures,
-        missing_info_required=missing_info,
+        missing_info_required=blocking_missing_info,
         draft_id=draft.draft_id,
     )
 
