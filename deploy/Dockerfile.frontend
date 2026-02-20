@@ -1,8 +1,12 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║              KOREV EVIDENCE FRONTEND — Dockerfile                            ║
+# ║              KOREV EVIDENCE FRONTEND — Dockerfile (OBSOLÈTE)                 ║
 # ║                                                                              ║
-# ║  Build statique servi par Caddy                                              ║
-# ║  Optimisé pour déploiement (léger, sécurisé)                                 ║
+# ║  Ce Dockerfile n'est plus utilisé par docker-compose.yml.                    ║
+# ║  Caddy est maintenant une image stock (caddy:2-alpine) qui fait             ║
+# ║  reverse proxy vers le backend Flask qui sert aussi le WebUI.                ║
+# ║                                                                              ║
+# ║  Conservé pour référence uniquement.                                         ║
+# ║  Build statique servi par Caddy (architecture séparée, non utilisée)         ║
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 

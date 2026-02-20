@@ -5,14 +5,17 @@
   </script>
 </head>
 <body>
-  <div class="prism-sidebar-header" x-data>
-    <!-- Sidebar Toggle Button -->
-    <button id="toggle-sidebar" class="prism-sidebar-toggle" @click="$store.sidebar.toggle()" aria-label="Toggle Sidebar" aria-expanded="false">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="CurrentColor">
-        <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V7H3v2z"></path>
-      </svg>
-    </button>
+  <!-- Floating toggle — always visible, even when sidebar is closed -->
+  <button id="toggle-sidebar" class="prism-sidebar-toggle-float" x-data
+          :class="{ 'prism-sidebar-toggle-float--shifted': $store.sidebar.isOpen }"
+          @click="$store.sidebar.toggle()" aria-label="Toggle Sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 13h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V7H3v2z"></path>
+    </svg>
+  </button>
 
+  <!-- Brand header — only visible when sidebar is open -->
+  <div class="prism-sidebar-header" x-data :class="{ 'prism-sidebar-header--hidden': !$store.sidebar.isOpen }">
     <!-- KOREV Evidence Logo + Status -->
     <div class="prism-sidebar-brand">
       <div class="prism-sidebar-logo">
@@ -20,8 +23,10 @@
         <img src="./public/korev-evidence-logo-light.svg" alt="KOREV Evidence" width="34" height="34" class="prism-sidebar-logo-img prism-sidebar-logo-img--light" />
       </div>
       <div class="prism-sidebar-brand-info">
-        <span class="prism-sidebar-brand-name">KOREV</span>
-        <span class="prism-sidebar-brand-module">Evidence</span>
+        <div class="prism-sidebar-brand-title">
+          <span class="prism-sidebar-brand-name">KOREV</span>
+          <span class="prism-sidebar-brand-evidence">Evidence</span>
+        </div>
         <div class="prism-status prism-status--online">
           <span class="prism-status-dot"></span>
           <span>Online</span>
@@ -34,21 +39,12 @@
     /* ═══════════════════════════════════════════════════════════════════════
      * PRISM SIDEBAR HEADER
      * ═══════════════════════════════════════════════════════════════════════ */
-    .prism-sidebar-header {
-      display: flex;
-      align-items: center;
-      gap: var(--prism-space-3);
+    /* ── FLOATING TOGGLE — always accessible ────────────────────────── */
+    .prism-sidebar-toggle-float {
       position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1004;
-      padding: var(--prism-space-4);
-      width: 250px;
-      background: var(--prism-bg-surface);
-      border-bottom: 1px solid var(--prism-border-subtle);
-    }
-
-    .prism-sidebar-toggle {
+      top: 14px;
+      left: 14px;
+      z-index: 1005;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -59,23 +55,50 @@
       border-radius: var(--prism-radius-sm);
       color: var(--prism-text-secondary);
       cursor: pointer;
-      transition: all var(--prism-transition-fast);
+      transition: all var(--transition-speed, 0.3s) ease-in-out;
       flex-shrink: 0;
     }
 
-    .prism-sidebar-toggle:hover {
+    .prism-sidebar-toggle-float:hover {
       background: var(--prism-bg-elevated);
       color: var(--prism-text-primary);
       border-color: var(--prism-border-strong);
     }
 
-    .prism-sidebar-toggle:focus-visible {
+    .prism-sidebar-toggle-float:focus-visible {
       outline: none;
       box-shadow: var(--prism-focus-ring);
     }
 
-    .prism-sidebar-toggle:active {
+    .prism-sidebar-toggle-float:active {
       transform: scale(0.95);
+    }
+
+    /* When sidebar is open, shift the toggle to its original position inside the header */
+    .prism-sidebar-toggle-float--shifted {
+      /* No change needed — stays at left:14px which aligns with sidebar padding */
+    }
+
+    /* ── BRAND HEADER — slides with sidebar ──────────────────────── */
+    .prism-sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: var(--prism-space-3);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1004;
+      /* Leave room for the floating toggle */
+      padding: var(--prism-space-4);
+      padding-left: 60px;
+      width: 250px;
+      background: var(--prism-bg-surface);
+      border-bottom: 1px solid var(--prism-border-subtle);
+      transition: transform var(--transition-speed, 0.3s) ease-in-out;
+    }
+
+    .prism-sidebar-header--hidden {
+      transform: translateX(-250px);
     }
 
     /* Brand Section */
@@ -125,21 +148,30 @@
       gap: 2px;
     }
 
+    .prism-sidebar-brand-title {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      line-height: 1;
+    }
+
     .prism-sidebar-brand-name {
-      font-size: var(--prism-text-sm);
-      font-weight: 600;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
       color: var(--prism-text-primary);
       letter-spacing: 0.02em;
       line-height: 1;
     }
 
-    .prism-sidebar-brand-module {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--prism-text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-top: 1px;
+    .prism-sidebar-brand-evidence {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 14px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--prism-text-secondary);
+      letter-spacing: 0.01em;
+      line-height: 1;
     }
 
     /* Status Badge (reusing design system) */

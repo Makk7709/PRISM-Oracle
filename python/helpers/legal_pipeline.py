@@ -1592,6 +1592,13 @@ def build_legal_output(
     
     # Collect missing_info from judge
     missing_info = list(judge_result.missing_info_required)
+    non_blocking_missing_info = {
+        MissingInfoCode.JURISDICTION_CLARIFICATION,
+    }
+    blocking_missing_info = [
+        code for code in missing_info
+        if code not in non_blocking_missing_info
+    ]
     
     # ─────────────────────────────────────────────────────────────────────────
     # P0.7 INVARIANT C: Check if consensus is required
@@ -1599,6 +1606,7 @@ def build_legal_output(
     
     consensus_required = requires_consensus(ctx)
     consensus_status = consensus_result.get("status") if consensus_result else None
+    consensus_simulation = bool(consensus_result.get("simulation")) if consensus_result else False
     consensus_approved = consensus_status == "APPROVED"
     consensus_rejected = consensus_status == "REJECTED"
     consensus_no_quorum = consensus_status == "NO_CONSENSUS"
@@ -1626,7 +1634,13 @@ def build_legal_output(
     
     # Case 2: Judge requested info
     elif judge_result.verdict == LegalJudgeVerdict.REQUEST_INFO:
-        mode = LegalOutputMode.REFUSAL_REQUEST_INFO
+        # Legacy/side paths may still emit request_info for advisory-only items.
+        # Keep fail-closed for blocking items, but do not refuse on jurisdiction
+        # clarification alone.
+        if blocking_missing_info:
+            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
+        else:
+            mode = LegalOutputMode.SAFE_ANALYSIS
     
     # Case 3: Judge approved
     elif judge_result.verdict == LegalJudgeVerdict.APPROVE:
@@ -1634,29 +1648,39 @@ def build_legal_output(
         # P0.7 Invariant C: Consensus required but missing → REFUSAL (fail-closed)
         if consensus_required and not consensus_result:
             mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-            missing_info.append(MissingInfoCode.CONSENSUS_REQUIRED)
+            blocking_missing_info.append(MissingInfoCode.CONSENSUS_REQUIRED)
         
         # P0.7 Invariant C: Consensus required but rejected → REFUSAL (fail-closed)
         elif consensus_required and consensus_rejected:
             mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-            missing_info.append(MissingInfoCode.CONSENSUS_REJECTED)
+            blocking_missing_info.append(MissingInfoCode.CONSENSUS_REJECTED)
         
-        # Consensus required but no quorum → REFUSAL (fail-closed)
+        # Consensus required but no quorum.
+        # In local/dev simulation mode, allow medium/operational to degrade
+        # to SAFE_ANALYSIS instead of a hard refusal. High/board stays strict.
         elif consensus_required and consensus_no_quorum:
-            mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-            missing_info.append(MissingInfoCode.CONSENSUS_NO_QUORUM)
+            if (
+                consensus_simulation
+                and ctx is not None
+                and ctx.risk_tier == LegalRiskTier.MEDIUM
+                and ctx.scope == DecisionScope.OPERATIONAL
+            ):
+                mode = LegalOutputMode.SAFE_ANALYSIS
+            else:
+                mode = LegalOutputMode.REFUSAL_REQUEST_INFO
+                blocking_missing_info.append(MissingInfoCode.CONSENSUS_NO_QUORUM)
         
         # Consensus required but infra failure → REFUSAL (fail-closed)
         elif consensus_required and consensus_infra_failure:
             mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-            missing_info.append(MissingInfoCode.CONSENSUS_INFRA_FAILURE)
+            blocking_missing_info.append(MissingInfoCode.CONSENSUS_INFRA_FAILURE)
         
         # P0.7 Invariant F: APPROVED_POSITION only if consensus APPROVED
         elif consensus_approved:
             # P0.7 Invariant B: Check provenance for non-REFUSAL
             if draft.source_chunk_ids and not provenance_valid:
                 mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-                missing_info.append(MissingInfoCode.PROVENANCE_MISSING)
+                blocking_missing_info.append(MissingInfoCode.PROVENANCE_MISSING)
             else:
                 mode = LegalOutputMode.APPROVED_POSITION
         
@@ -1665,7 +1689,7 @@ def build_legal_output(
             # P0.7 Invariant B: Check provenance for non-REFUSAL
             if draft.source_chunk_ids and not provenance_valid:
                 mode = LegalOutputMode.REFUSAL_REQUEST_INFO
-                missing_info.append(MissingInfoCode.PROVENANCE_MISSING)
+                blocking_missing_info.append(MissingInfoCode.PROVENANCE_MISSING)
             else:
                 mode = LegalOutputMode.SAFE_ANALYSIS
         
@@ -1680,17 +1704,17 @@ def build_legal_output(
     if mode == LegalOutputMode.REFUSAL_REQUEST_INFO:
         # Build specific refusal message based on missing_info
         # CRITICAL: Different rationales for audit/compliance distinction
-        if MissingInfoCode.CONSENSUS_INFRA_FAILURE in missing_info:
+        if MissingInfoCode.CONSENSUS_INFRA_FAILURE in blocking_missing_info:
             # All arbiters unavailable - infrastructure issue, no evaluation
             answer = "Aucune évaluation juridique n'a pu être effectuée (tous les arbitres indisponibles)."
-        elif MissingInfoCode.CONSENSUS_NO_QUORUM in missing_info:
+        elif MissingInfoCode.CONSENSUS_NO_QUORUM in blocking_missing_info:
             # Evaluation done, but no 2/3 majority - disagreement
             answer = "Évaluation juridique effectuée, mais aucun quorum n'a été atteint entre les arbitres."
-        elif MissingInfoCode.CONSENSUS_REQUIRED in missing_info:
+        elif MissingInfoCode.CONSENSUS_REQUIRED in blocking_missing_info:
             answer = "Consensus requis mais non fourni. Cette décision nécessite une validation par consensus."
-        elif MissingInfoCode.CONSENSUS_REJECTED in missing_info:
+        elif MissingInfoCode.CONSENSUS_REJECTED in blocking_missing_info:
             answer = "Le consensus a rejeté cette position. La validation n'est pas possible."
-        elif MissingInfoCode.PROVENANCE_MISSING in missing_info:
+        elif MissingInfoCode.PROVENANCE_MISSING in blocking_missing_info:
             answer = "Provenance des sources incomplète. Impossible de garantir la traçabilité."
         else:
             answer = "Des informations supplémentaires sont nécessaires pour fournir une analyse juridique complète."
@@ -1731,7 +1755,7 @@ def build_legal_output(
         judge_verdict=judge_result.verdict.value,
         judge_checks=[c.to_dict() for c in judge_result.checks],
         audit_bundle_id=audit_id,
-        missing_info=missing_info,
+        missing_info=blocking_missing_info,
         risk_tier=risk_tier,
         scope=scope,
         jurisdiction=jurisdiction,

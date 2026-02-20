@@ -48,7 +48,7 @@ class PdfOcr(Tool):
             # First try direct text extraction
             text = self._extract_text_direct(abs_path)
             
-            if len(text.strip()) > 100:
+            if len(text.strip()) > 50:
                 # PDF has selectable text, no OCR needed
                 PrintStyle(font_color="green").print("[PDF OCR] Text extracted directly (not scanned)")
                 return Response(

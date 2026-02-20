@@ -517,6 +517,66 @@ class TestOutputModes:
         assert output.mode == LegalOutputMode.REFUSAL_REQUEST_INFO
         assert "REFUS" in output.get_banner()
         assert len(output.missing_info) > 0
+
+    def test_request_info_only_jurisdiction_clarification_does_not_refuse(self):
+        """Advisory jurisdiction clarification alone must not force refusal."""
+        ctx = LegalRouteContext(
+            risk_tier=LegalRiskTier.LOW,
+            scope=DecisionScope.INFO,
+            jurisdiction=Jurisdiction.MIXED,
+            requires_jurisdiction_clarification=True,
+        )
+
+        draft = LegalDraft(
+            draft_id="draft_output_mixed",
+            query="Question FR/EU",
+            facts=["Fait disponible"],
+            rules=["Article 1134 Code civil"],
+            application="Application suffisamment détaillée pour rester exploitable.",
+            citations=["Art. 1134 C. civ."],
+            legal_context=ctx,
+        )
+
+        judge_result = LegalJudgeResult(
+            verdict=LegalJudgeVerdict.REQUEST_INFO,
+            missing_info_required=[MissingInfoCode.JURISDICTION_CLARIFICATION],
+        )
+
+        output = build_legal_output(draft, judge_result, None)
+
+        assert output.mode == LegalOutputMode.SAFE_ANALYSIS
+        assert output.missing_info == []
+
+    def test_medium_operational_no_quorum_simulation_degrades_to_safe_analysis(self):
+        """In simulation, medium/operational no-quorum should not hard-refuse."""
+        ctx = LegalRouteContext(
+            risk_tier=LegalRiskTier.MEDIUM,
+            scope=DecisionScope.OPERATIONAL,
+            jurisdiction=Jurisdiction.FR,
+        )
+        draft = LegalDraft(
+            draft_id="draft_medium_no_quorum_sim",
+            query="Clause contractuelle opérationnelle",
+            facts=["Fait 1"],
+            rules=["Article 1134 Code civil"],
+            application="Application détaillée pour le cas opérationnel considéré.",
+            citations=["Art. 1134 C. civ."],
+            legal_context=ctx,
+        )
+        draft.add_cited_claim("Claim valide", "Art. 1134 C. civ.")
+
+        judge_result = LegalJudgeResult(verdict=LegalJudgeVerdict.APPROVE)
+        consensus_result = {
+            "status": "NO_CONSENSUS",
+            "proposal_id": "prop_sim_001",
+            "simulation": True,
+            "votes": {},
+        }
+
+        output = build_legal_output(draft, judge_result, consensus_result)
+
+        assert output.mode == LegalOutputMode.SAFE_ANALYSIS
+        assert MissingInfoCode.CONSENSUS_NO_QUORUM not in output.missing_info
     
     def test_audit_bundle_always_present(self):
         """Audit bundle ID always present, even in refusal."""

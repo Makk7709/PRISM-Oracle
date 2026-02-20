@@ -262,6 +262,13 @@ class LegalSafeModeExtension(Extension):
         if not ADVERSARIAL_PIPELINE_AVAILABLE:
             return False
         return is_adversarial_pipeline_enabled()
+
+    def is_strict_legal_safe_mode(self) -> bool:
+        """
+        Active le mode fail-closed strict pour éviter tout fallback LLM
+        quand une requête est détectée comme juridique.
+        """
+        return os.environ.get("LEGAL_SAFE_ALLOW_LLM_FALLBACK", "0") != "1"
     
     def _extract_contract_variables(self, user_text: str) -> dict:
         """
@@ -791,9 +798,24 @@ Le système d'analyse multi-perspectives n'a pas pu traiter votre demande.
 
 `correlation_id: {correlation_id}`
 """
-                
-                # NE PAS bloquer le LLM en cas d'échec du pipeline
-                # Laisser l'agent répondre avec ses capacités de base
+
+                if self.is_strict_legal_safe_mode():
+                    agent.set_data("_pipeline_final_response", failure_response)
+                    agent.set_data("_skip_llm", True)
+                    agent.set_data("_pipeline_was_used", True)
+                    agent.context.log.log(
+                        type="error",
+                        heading="🚫 Adversarial Pipeline FAIL-CLOSED",
+                        content=f"Pipeline failed: {str(e)[:100]}",
+                        kvps={
+                            "correlation_id": correlation_id,
+                            "llm_bypassed": True,
+                            "reason": "adversarial_pipeline_failure_fail_closed",
+                            "error": str(e)[:200],
+                        }
+                    )
+                    return
+
                 agent.context.log.log(
                     type="warning",
                     heading="⚠️ Adversarial Pipeline FAILED - LLM Fallback",
@@ -805,9 +827,6 @@ Le système d'analyse multi-perspectives n'a pas pu traiter votre demande.
                         "error": str(e)[:200],
                     }
                 )
-                
-                # Ne pas retourner - laisser le LLM répondre normalement
-                # return
         
         # ═══════════════════════════════════════════════════════════════════
         # P2/P3: ROUTE TO LEGACY LEGAL PIPELINE IF ENABLED
@@ -938,9 +957,24 @@ Le système d'analyse juridique n'a pas pu traiter votre demande.
 
 `correlation_id: {correlation_id}`
 """
-                
-                # NE PAS bloquer le LLM en cas d'échec du pipeline
-                # Laisser l'agent répondre avec ses capacités de base
+
+                if self.is_strict_legal_safe_mode():
+                    agent.set_data("_pipeline_final_response", failure_response)
+                    agent.set_data("_skip_llm", True)
+                    agent.set_data("_pipeline_was_used", True)
+                    agent.context.log.log(
+                        type="error",
+                        heading="🚫 Legal Pipeline FAIL-CLOSED",
+                        content=f"Pipeline failed: {str(e)[:100]}",
+                        kvps={
+                            "correlation_id": correlation_id,
+                            "llm_bypassed": True,
+                            "reason": "pipeline_failure_fail_closed",
+                            "error": str(e)[:200],
+                        }
+                    )
+                    return
+
                 agent.context.log.log(
                     type="warning",
                     heading="⚠️ Legal Pipeline FAILED - LLM Fallback",
@@ -952,8 +986,34 @@ Le système d'analyse juridique n'a pas pu traiter votre demande.
                         "error": str(e)[:200],
                     }
                 )
-                
-                # Ne pas set _skip_llm - laisser le LLM répondre normalement
+
+        # En mode strict, une requête juridique doit passer par un pipeline
+        # (legacy ou adversarial), sinon blocage fail-closed.
+        if self.is_strict_legal_safe_mode():
+            if not (self.should_use_adversarial_pipeline() or self.should_use_legal_pipeline()):
+                fail_closed_response = f"""# ⚠️ Analyse Juridique Indisponible
+
+> **Statut**: PIPELINE NON DISPONIBLE | **Mode**: FAIL-CLOSED
+
+La requête a été détectée comme juridique, mais aucun pipeline juridique actif
+n'est disponible (`LEGAL_PIPELINE_HOOK`/flags). Le fallback LLM est bloqué en mode strict.
+
+`correlation_id: {correlation_id}`
+"""
+                agent.set_data("_pipeline_final_response", fail_closed_response)
+                agent.set_data("_skip_llm", True)
+                agent.set_data("_pipeline_was_used", True)
+                agent.context.log.log(
+                    type="error",
+                    heading="🚫 Legal Safe bypass blocked",
+                    content="No legal pipeline available; LLM fallback blocked.",
+                    kvps={
+                        "correlation_id": correlation_id,
+                        "llm_bypassed": True,
+                        "reason": "no_legal_pipeline_available_fail_closed",
+                    }
+                )
+                return
     
     # ─────────────────────────────────────────────────────────────────────────
     # HOOK: response_stream_end

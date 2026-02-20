@@ -33,7 +33,7 @@ class UploadFile(ApiHandler):
         errors = []
         
         # Get upload directory path safely
-        upload_base = files.get_abs_path("tmp/upload")
+        upload_base = files.get_abs_path("tmp/uploads")
 
         for file in file_list:
             if not file or not file.filename:

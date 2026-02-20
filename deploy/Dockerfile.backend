@@ -29,6 +29,7 @@ RUN pip install --no-cache-dir --upgrade pip wheel "setuptools<81" && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir --no-deps "litellm==1.79.3" && \
     pip install --no-cache-dir aiohttp fastuuid && \
+    pip install --no-cache-dir weasyprint && \
     pip install --no-cache-dir uv
 
 # ═══════════════════════════════════════════════════════════════════════════════
