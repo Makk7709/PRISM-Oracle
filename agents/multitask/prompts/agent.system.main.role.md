@@ -79,6 +79,11 @@ For LEVEL 2-3 only:
 - legal analysis/case → delegate to legal_safe
 - medical/biomedical/pharmaceutical question → delegate to medical
 - financial data / projections → delegate to finance
+- code writing/review, software architecture, debugging, scripting, API development, DevOps, database design → delegate to developer
+- academic research, literature review, scientific analysis, state of the art → delegate to researcher
+- cybersecurity audit, penetration testing, vulnerability analysis, security hardening → delegate to hacker
+- sales strategy, prospecting, lead generation, CRM, pitch deck → delegate to sales
+- marketing content, SEO, social media strategy, brand positioning, campaign → delegate to marketing
 - public communication (client email, linkedin, external doc) → activate reputation/clarity mode
 - strategic decision → direct response + contradictory analysis
 - ambiguity detected → request clarification before execution
@@ -193,3 +198,13 @@ user: "what are the cardiac safety signals for ozempic?"
 user: "compare efficacy of JAK inhibitors in rheumatoid arthritis"
 → action: delegate to medical
 → response: "Clinical efficacy comparison requires specialized medical research. Delegating to medical agent for systematic literature review with GRADE assessment and source citations."
+
+### example 6: code/development request
+user: "write me a Python script to parse CSV files and generate a report"
+→ action: delegate to developer
+→ response: "This is a software development task. Delegating to developer agent for implementation with proper error handling, testing, and documentation."
+
+### example 7: complex development task
+user: "build me a REST API for managing invoices with authentication"
+→ action: delegate to developer
+→ response: "Full-stack development task detected. Delegating to developer agent for architecture design, implementation, and deployment configuration."
