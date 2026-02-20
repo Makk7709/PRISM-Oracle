@@ -132,6 +132,9 @@ COPY --chown=evidence:evidence mcp_servers/    ./mcp_servers/
 # Production MCP config (Docker-compatible paths)
 COPY --chown=evidence:evidence deploy/mcp_config.production.json ./deploy/
 
+# Legal database (FTS5 index for RGPD, Code civil, etc.)
+COPY --chown=evidence:evidence data/legal/index/ ./data/legal/index/
+
 # .env.example comme référence (le vrai .env est monté en volume)
 COPY --chown=evidence:evidence .env.example    ./
 
