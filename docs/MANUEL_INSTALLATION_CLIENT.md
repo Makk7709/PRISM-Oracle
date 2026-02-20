@@ -1,6 +1,6 @@
 # Manuel d'Installation KOREV Evidence
 
-## Guide Client — Version 4.1
+## Guide Client — Version 5.0
 
 ---
 
@@ -11,11 +11,12 @@
 3. [Méthode Recommandée : Docker (Production)](#3-méthode-recommandée--docker-production)
 4. [Méthode Alternative : Installation locale](#4-méthode-alternative--installation-locale)
 5. [Configuration initiale](#5-configuration-initiale)
-6. [Premier lancement](#6-premier-lancement)
-7. [Utilisation quotidienne](#7-utilisation-quotidienne)
-8. [Mise à jour](#8-mise-à-jour)
-9. [Dépannage](#9-dépannage)
-10. [Support technique](#10-support-technique)
+6. [Serveurs MCP (recherche et outils)](#6-serveurs-mcp-recherche-et-outils)
+7. [Premier lancement](#7-premier-lancement)
+8. [Utilisation quotidienne](#8-utilisation-quotidienne)
+9. [Mise à jour](#9-mise-à-jour)
+10. [Dépannage](#10-dépannage)
+11. [Support technique](#11-support-technique)
 
 ---
 
@@ -24,10 +25,11 @@
 ## Qu'est-ce que KOREV Evidence ?
 
 KOREV Evidence est un assistant IA avancé conçu pour vous aider dans vos tâches quotidiennes. Il peut :
-- Rechercher des informations scientifiques et académiques
-- Analyser des documents PDF
+- Rechercher des informations scientifiques et académiques (via 10+ serveurs MCP spécialisés)
+- Analyser des documents PDF et effectuer de l'OCR
 - Générer et assembler des rapports PDF
 - Générer des images (publicités, infographies, storyboards)
+- Effectuer des analyses juridiques (mode Legal Safe)
 - Automatiser des tâches complexes via des agents spécialisés
 
 ## Deux méthodes d'installation
@@ -37,7 +39,7 @@ KOREV Evidence est un assistant IA avancé conçu pour vous aider dans vos tâch
 | **Docker** (Production) | Oui | 15-30 min | Facile |
 | **Locale** (Développement) | Alternative | 20-30 min | Intermédiaire |
 
-> **Nous recommandons Docker** : installation plus simple, plus fiable, et identique sur tous les systèmes. Inclut HTTPS, reverse proxy et sécurité production.
+> **Nous recommandons Docker** : installation plus simple, plus fiable, et identique sur tous les systèmes. Inclut HTTPS, reverse proxy, sécurité production et auto-configuration des serveurs MCP.
 
 ---
 
@@ -141,9 +143,17 @@ PRISM-Oracle/                          ← Dossier racine du projet
 │   ├── Dockerfile.backend             ← Image Docker backend
 │   ├── docker-compose.yml             ← Orchestration des services
 │   ├── .env.example                   ← Template de configuration
+│   ├── mcp_config.production.json     ← Config MCP pour Docker (chemins internes)
 │   ├── users.json.example             ← Template multi-utilisateurs
 │   └── config/
-│       └── Caddyfile                  ← Configuration reverse proxy
+│       └── Caddyfile                  ← Configuration reverse proxy (CSP, headers)
+├── scripts/
+│   ├── install-server.sh              ← Script d'installation automatique Linux
+│   ├── install-windows.bat            ← Script d'installation automatique Windows
+│   └── docker-entrypoint.sh           ← Entrypoint Docker (auto-config MCP)
+├── mcp_servers/
+│   ├── semanticscholar/               ← MCP Semantic Scholar (200M+ publications)
+│   └── openalex/                      ← MCP OpenAlex (métadonnées académiques)
 ├── python/                            ← Code backend
 ├── webui/                             ← Interface web
 ├── tmp/                               ← Données runtime (chats, uploads, images)
@@ -217,9 +227,9 @@ SMB_USER_ADMIN=admin;AdminPass!
 
 ## Étape 4 : Construire et lancer
 
-### 4.1 Méthode OVH recommandée (obligatoire)
+### 4.1 Méthode recommandée : script automatique
 
-Sur serveur OVH Linux, utilisez **uniquement** le script d'installation :
+Sur un serveur Linux (Ubuntu/Debian, OVH, AWS, etc.), utilisez **le script d'installation** :
 
 ```bash
 cd PRISM-Oracle
@@ -227,9 +237,23 @@ chmod +x scripts/install-server.sh
 ./scripts/install-server.sh
 ```
 
-> Le script gère automatiquement les contrôles préalables, le build Docker, le démarrage de `evidence-backend` + `evidence-caddy`, puis la vérification de santé.
+Sur **Windows 10+** avec Docker Desktop :
 
-### 4.2 Vérifier le bon fonctionnement après script
+```batch
+cd PRISM-Oracle
+scripts\install-windows.bat
+```
+
+Le script gère automatiquement :
+- Vérification des prérequis (Docker, ports, espace disque)
+- Initialisation des sous-modules MCP (Semantic Scholar, OpenAlex)
+- Validation du fichier `.env` et des clés API
+- Build de l'image Docker (~15 min au premier lancement)
+- Démarrage des services (backend, Caddy, Samba)
+- Auto-configuration des serveurs MCP via `docker-entrypoint.sh`
+- Vérification de santé (healthcheck)
+
+### 4.2 Vérifier le bon fonctionnement
 
 ```bash
 cd PRISM-Oracle/deploy
@@ -243,6 +267,16 @@ curl http://localhost/healthz
 
 # Consulter les logs en temps réel
 docker compose logs -f evidence-backend
+```
+
+**Vérifier les serveurs MCP** (dans les logs) :
+
+```
+[entrypoint] ✓ Production MCP config installed
+[entrypoint] ✓ uvx: mcp-server-fetch ready
+[entrypoint] ✓ uvx: arxiv-mcp-server ready
+[entrypoint] ✓ Semantic Scholar MCP: OK
+✓ MCP config loaded from /app/mcp_config.json: 10 servers
 ```
 
 ### 4.3 Méthode manuelle (diagnostic avancé uniquement)
@@ -378,13 +412,80 @@ Pour la génération d'images (GPT-Image, DALL-E) :
    API_KEY_OPENAI=sk-votre-cle-ici
    ```
 
+### Clés MCP optionnelles
+
+Ces clés enrichissent les capacités de recherche d'Evidence (voir [Section 6](#6-serveurs-mcp-recherche-et-outils)) :
+
+| Service | Lien inscription | Quota gratuit |
+|---------|-----------------|---------------|
+| **Firecrawl** | https://www.firecrawl.dev | 500 crédits |
+| **Tavily** | https://tavily.com | 1 000 req/mois |
+| **Brave Search** | https://brave.com/search/api | 2 000 req/mois |
+| **PubMed (NCBI)** | https://www.ncbi.nlm.nih.gov/account/settings | Illimité |
+
 ---
 
-# 6. Premier lancement
+# 6. Serveurs MCP (recherche et outils)
 
-## Accéder à Evidence
+KOREV Evidence intègre 10 serveurs MCP (Model Context Protocol) qui enrichissent ses capacités de recherche et d'automatisation. Ils sont **auto-configurés** lors du déploiement Docker.
 
-1. Ouvrez votre navigateur web
+## Serveurs disponibles
+
+| Serveur | Fonction | Clé API | Statut Docker |
+|---------|----------|:-------:|:-------------:|
+| **Web Fetch** | Récupération de pages web | Non | Auto (uvx) |
+| **Arxiv** | Publications académiques | Non | Auto (uvx) |
+| **Semantic Scholar** | 200M+ publications scientifiques | Non | Auto (Python) |
+| **OpenAlex** | Métadonnées académiques ouvertes | Non | Auto (Node.js) |
+| **Firecrawl** | Scraping web avancé | `FIRECRAWL_API_KEY` | npx |
+| **Tavily** | Recherche web IA | `TAVILY_API_KEY` | npx |
+| **Brave Search** | Recherche web | `BRAVE_API_KEY` | npx |
+| **PubMed** | Recherche biomédicale | `NCBI_API_KEY` | npx |
+| **Playwright** | Automatisation navigateur | Non | npx |
+| **Puppeteer** | Screenshots et scraping | Non | npx |
+
+## Configuration des clés optionnelles
+
+Les serveurs sans clé API fonctionnent immédiatement. Pour activer les autres, ajoutez les clés dans `deploy/.env` :
+
+```bash
+# Firecrawl — https://www.firecrawl.dev/app/api-keys (500 crédits gratuits)
+FIRECRAWL_API_KEY=fc-xxxxxxxxxxxxxxxx
+
+# Tavily — https://tavily.com/ (1000 req/mois gratuites)
+TAVILY_API_KEY=tvly-xxxxxxxxxxxxxxxx
+
+# Brave Search — https://brave.com/search/api/ (2000 req/mois gratuites)
+BRAVE_API_KEY=BSAxxxxxxxxxxxxxxxx
+
+# PubMed / NCBI — https://www.ncbi.nlm.nih.gov/account/settings/
+NCBI_API_KEY=xxxxxxxxxxxxxxxx
+```
+
+Après modification, redémarrez le backend :
+```bash
+cd PRISM-Oracle/deploy
+docker compose restart evidence-backend
+```
+
+## Fonctionnement automatique
+
+Au démarrage du container Docker, le script `docker-entrypoint.sh` :
+
+1. Installe la config MCP production (chemins Docker internes)
+2. Vérifie les serveurs MCP locaux (Semantic Scholar, OpenAlex)
+3. Pré-télécharge les packages `uvx` et `npx` en arrière-plan
+4. Lance l'application
+
+> Les serveurs MCP s'initialisent à la demande lors du premier appel. Le premier appel à un serveur npx peut prendre 10-30 secondes (téléchargement du package).
+
+---
+
+# 7. Premier lancement
+
+## Accéder à KOREV Evidence
+
+1. Ouvrez votre navigateur web (Chrome, Firefox, Edge recommandés)
 2. Tapez l'adresse correspondant à votre installation :
 
 | Méthode | URL |
@@ -413,7 +514,7 @@ Evidence devrait répondre en quelques secondes.
 
 ---
 
-# 7. Utilisation quotidienne
+# 8. Utilisation quotidienne
 
 ## Démarrer Evidence
 
@@ -445,7 +546,7 @@ docker compose down
 
 ---
 
-# 8. Mise à jour
+# 9. Mise à jour
 
 ### Mode Docker
 
@@ -471,7 +572,7 @@ pip install -r requirements.txt --upgrade
 
 ---
 
-# 9. Dépannage
+# 10. Dépannage
 
 ## Problèmes Docker
 
@@ -525,6 +626,27 @@ docker compose logs --tail=200 evidence-backend
 docker compose logs --tail=100 evidence-caddy
 ```
 
+## Problèmes MCP
+
+### Les serveurs MCP ne se lancent pas
+
+**Vérification :**
+```bash
+docker compose logs evidence-backend | grep -i "MCP\|entrypoint"
+```
+
+**Causes courantes :**
+- `MCP config loaded: 0 servers` → Le fichier `mcp_config.json` est vide ou corrompu. L'entrypoint devrait installer la config production automatiquement. Vérifiez que `deploy/mcp_config.production.json` existe.
+- `uvx: command not found` → Le package `uv` n'est pas installé dans l'image Docker. Reconstruisez : `docker compose build --no-cache evidence-backend`
+- `Semantic Scholar MCP: server.py not found` → Les sous-modules MCP n'ont pas été initialisés. Exécutez `git submodule update --init --recursive` depuis la racine du projet et reconstruisez.
+
+### Un serveur MCP spécifique ne répond pas
+
+**Solution :**
+1. Vérifiez que la clé API est configurée dans `deploy/.env` (Firecrawl, Tavily, Brave, PubMed)
+2. Le premier appel à un serveur npx peut prendre 30 secondes (téléchargement du package)
+3. Redémarrez le backend : `docker compose restart evidence-backend`
+
 ## Problèmes généraux
 
 ### "Erreur de clé API"
@@ -551,7 +673,7 @@ Volumes attendus : `evidence-data`, `evidence-logs`, `evidence-audit`, `evidence
 
 ---
 
-# 10. Support technique
+# 11. Support technique
 
 ## Informations à fournir
 
@@ -589,6 +711,6 @@ docker volume ls | grep evidence
 
 ---
 
-*Document mis à jour le 8 février 2026*
-*Version : 4.1*
+*Document mis à jour le 20 février 2026*
+*Version : 5.0*
 *KOREV Evidence — Guide d'installation client*
