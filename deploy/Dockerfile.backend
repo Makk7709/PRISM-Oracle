@@ -28,7 +28,8 @@ RUN pip install --no-cache-dir --upgrade pip wheel "setuptools<81" && \
     pip install --no-cache-dir --no-build-isolation openai-whisper && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir --no-deps "litellm==1.79.3" && \
-    pip install --no-cache-dir aiohttp fastuuid
+    pip install --no-cache-dir aiohttp fastuuid && \
+    pip install --no-cache-dir uv
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 2: Runtime
@@ -128,11 +129,15 @@ COPY --chown=evidence:evidence webui/          ./webui/
 COPY --chown=evidence:evidence mcp_config.json ./
 COPY --chown=evidence:evidence mcp_servers/    ./mcp_servers/
 
+# Production MCP config (Docker-compatible paths)
+COPY --chown=evidence:evidence deploy/mcp_config.production.json ./deploy/
+
 # .env.example comme référence (le vrai .env est monté en volume)
 COPY --chown=evidence:evidence .env.example    ./
 
 # Scripts utilitaires
 COPY --chown=evidence:evidence scripts/        ./scripts/
+RUN chmod +x ./scripts/docker-entrypoint.sh
 
 # ── Installer les dépendances MCP Node.js ──
 # Certains MCP servers ont des package.json locaux
@@ -145,6 +150,15 @@ RUN set -e; \
         cd "$dir" && npm install --production && found=$((found+1)); \
     done; \
     echo "[MCP] Installed deps for $found MCP server(s)"
+
+# ── Installer les dépendances Python des MCP servers locaux ──
+RUN set -e; \
+    for req in $(find /app/mcp_servers -name "requirements.txt" -maxdepth 2 2>/dev/null); do \
+        dir=$(dirname "$req"); \
+        echo "[MCP-py] Installing Python deps from $req ..."; \
+        pip install --no-cache-dir -r "$req" 2>/dev/null || echo "[MCP-py] WARNING: some deps failed for $dir"; \
+    done; \
+    echo "[MCP-py] Python MCP deps installed"
 
 # ── Installer Playwright browsers (pour le MCP playwright) ──
 # Non-critique : si l'install échoue, le MCP playwright sera indisponible
@@ -170,4 +184,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=5 \
     CMD curl -sf http://localhost:5050/healthz || exit 1
 
 # ── Point d'entrée ──
+# Entrypoint script auto-configures MCP servers before starting the app
+# scripts/docker-entrypoint.sh already copied above with scripts/ directory
+ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
 CMD ["python", "run_ui.py", "--host", "0.0.0.0", "--port", "5050"]

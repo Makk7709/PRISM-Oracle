@@ -179,6 +179,27 @@ if [ ! -f "$DEPLOY_DIR/config/Caddyfile" ]; then
 fi
 log_ok "Fichiers de déploiement vérifiés"
 
+# ── Initialiser les sous-modules Git (MCP servers locaux) ──
+if [ -f "$PROJECT_ROOT/.gitmodules" ] || [ -d "$PROJECT_ROOT/mcp_servers/semanticscholar/.git" ]; then
+    log_info "Initialisation des sous-modules MCP..."
+    cd "$PROJECT_ROOT"
+    git submodule update --init --recursive 2>/dev/null \
+        && log_ok "Sous-modules MCP initialisés" \
+        || log_warn "git submodule update échoué (non fatal — les MCP locaux seront indisponibles)"
+else
+    log_info "Vérification des MCP servers locaux..."
+    if [ -f "$PROJECT_ROOT/mcp_servers/semanticscholar/server.py" ]; then
+        log_ok "MCP Semantic Scholar: présent"
+    else
+        log_warn "MCP Semantic Scholar: fichiers manquants (sous-module non initialisé)"
+    fi
+    if [ -f "$PROJECT_ROOT/mcp_servers/openalex/src/server.js" ]; then
+        log_ok "MCP OpenAlex: présent"
+    else
+        log_warn "MCP OpenAlex: fichiers manquants (sous-module non initialisé)"
+    fi
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  STEP 4 : Configurer .env
 # ═══════════════════════════════════════════════════════════════════════════════
