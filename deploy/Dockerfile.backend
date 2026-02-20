@@ -93,7 +93,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 
 # ── Utilisateur non-root ──
 RUN groupadd -r evidence && useradd -r -g evidence -m evidence && \
-    mkdir -p /app/data /app/logs /app/audit /app/tmp /app/memory && \
+    mkdir -p /app/data /app/logs /app/audit /app/tmp /app/memory /app/shared/users /app/shared/commun /app/shared/audit && \
     chown -R evidence:evidence /app
 
 # ── Copier le venv Python depuis le builder ──

@@ -43,11 +43,20 @@ class WorkspaceManager:
         self._users_dir = self._root / "users"
         self._commun_dir = self._root / "commun"
         self._audit_dir = self._root / "audit"
+        self._degraded = False
 
-        # Create top-level directories
-        self._users_dir.mkdir(parents=True, exist_ok=True)
-        self._commun_dir.mkdir(parents=True, exist_ok=True)
-        self._audit_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self._users_dir.mkdir(parents=True, exist_ok=True)
+            self._commun_dir.mkdir(parents=True, exist_ok=True)
+            self._audit_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            self._degraded = True
+            logger.warning(
+                "Cannot create shared directories at %s — "
+                "workspace features will be unavailable. "
+                "Fix volume ownership: docker volume rm evidence-shared && docker compose up -d",
+                shared_root,
+            )
 
     # ── Workspace lifecycle ──────────────────────────────────────────────
 
@@ -61,6 +70,8 @@ class WorkspaceManager:
         str
             Absolute path to the user's workspace.
         """
+        if self._degraded:
+            return str(self._users_dir / username)
         ws = self._users_dir / username
         for subdir in _USER_SUBDIRS:
             (ws / subdir).mkdir(parents=True, exist_ok=True)
