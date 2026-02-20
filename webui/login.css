@@ -84,12 +84,11 @@ body::before {
 }
 
 .logo {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
     border-radius: var(--prism-radius-md);
     margin-bottom: 1rem;
-    filter: invert(0.85);
-    opacity: 0.9;
+    opacity: 0.95;
 }
 
 h2 {
