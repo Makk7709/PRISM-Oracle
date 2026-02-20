@@ -103,17 +103,17 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
         }}
 
         /* ── COVER PAGE ──────────────────────────────────── */
+        /* WeasyPrint: no flexbox — use block layout + padding for centering */
         .cover {{
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+            position: relative;
             width: 210mm;
             height: 297mm;
             background: var(--prism-dark);
             color: white;
+            text-align: center;
+            padding-top: 90mm;
             page-break-after: always;
+            overflow: hidden;
         }}
 
         .cover__badge {{
@@ -126,6 +126,7 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             border: 1px solid rgba(74, 124, 255, 0.3);
             padding: 6px 16px;
             border-radius: 4px;
+            display: inline-block;
             margin-bottom: 40px;
         }}
 
@@ -146,13 +147,15 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 14pt;
             color: #A0AEC0;
             margin-bottom: 50px;
+            margin-left: auto;
+            margin-right: auto;
             line-height: 1.4;
             max-width: 420px;
         }}
 
         .cover__meta {{
             font-size: 8pt;
-            color: #4A5568;
+            color: #718096;
             margin-top: 80px;
         }}
 
@@ -394,13 +397,10 @@ def markdown_to_pdf(
         return output_path
     except ImportError:
         logger.error("weasyprint not installed — falling back to legacy ReportLab")
-        # Fallback to legacy if WeasyPrint not available
-        from python.helpers.pdf_generator import generate_pdf as legacy_generate_pdf
-        return legacy_generate_pdf(content=content, output_path=output_path, title=title)
+        return _reportlab_fallback(content, output_path, title)
     except Exception as e:
         logger.error(f"WeasyPrint failed: {e} — falling back to legacy ReportLab")
-        from python.helpers.pdf_generator import generate_pdf as legacy_generate_pdf
-        return legacy_generate_pdf(content=content, output_path=output_path, title=title)
+        return _reportlab_fallback(content, output_path, title)
 
 
 def markdown_to_pdf_bytes(
@@ -435,12 +435,10 @@ def markdown_to_pdf_bytes(
         return weasyprint.HTML(string=full_html).write_pdf()
     except ImportError:
         logger.error("weasyprint not installed — falling back to legacy ReportLab")
-        from python.helpers.pdf_generator import markdown_to_pdf_bytes as legacy_bytes
-        return legacy_bytes(content=content, title=title)
+        return _reportlab_fallback_bytes(content, title)
     except Exception as e:
         logger.error(f"WeasyPrint failed: {e} — falling back to legacy ReportLab")
-        from python.helpers.pdf_generator import markdown_to_pdf_bytes as legacy_bytes
-        return legacy_bytes(content=content, title=title)
+        return _reportlab_fallback_bytes(content, title)
 
 
 def html_to_pdf(html_content: str, output_path: str) -> str:
@@ -466,3 +464,60 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
     except Exception as e:
         logger.error(f"HTML to PDF bytes failed: {e}")
         raise
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPORTLAB FALLBACK (avoids circular dependency with pdf_generator.py)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _reportlab_fallback(content: str, output_path: str, title: str) -> str:
+    """Direct ReportLab fallback — does NOT call pdf_generator.generate_pdf."""
+    try:
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import cm
+
+        doc = SimpleDocTemplate(output_path, pagesize=A4,
+                                leftMargin=2.5*cm, rightMargin=2.5*cm,
+                                topMargin=2.5*cm, bottomMargin=2.5*cm,
+                                title=title)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        if title:
+            elements.append(Paragraph(title, styles['Title']))
+            elements.append(Spacer(1, 20))
+
+        for line in content.split('\n'):
+            line = line.strip()
+            if not line:
+                elements.append(Spacer(1, 6))
+            elif line.startswith('# '):
+                elements.append(Paragraph(line[2:], styles['Heading1']))
+            elif line.startswith('## '):
+                elements.append(Paragraph(line[3:], styles['Heading2']))
+            elif line.startswith('### '):
+                elements.append(Paragraph(line[4:], styles['Heading3']))
+            else:
+                safe = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                elements.append(Paragraph(safe, styles['Normal']))
+
+        doc.build(elements)
+        logger.info(f"ReportLab fallback PDF: {output_path}")
+        return output_path
+    except Exception as e:
+        logger.error(f"ReportLab fallback failed: {e}")
+        md_path = output_path.replace('.pdf', '.md')
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return md_path
+
+
+def _reportlab_fallback_bytes(content: str, title: str) -> bytes:
+    """Direct ReportLab fallback returning bytes."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
+        path = _reportlab_fallback(content, tmp.name, title)
+        with open(path, 'rb') as f:
+            return f.read()
