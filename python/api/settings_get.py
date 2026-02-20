@@ -8,5 +8,9 @@ class GetSettings(ApiHandler):
         return {"settings": set}
 
     @classmethod
+    def requires_admin(cls) -> bool:
+        return True
+
+    @classmethod
     def get_methods(cls) -> list[str]:
         return ["GET", "POST"]

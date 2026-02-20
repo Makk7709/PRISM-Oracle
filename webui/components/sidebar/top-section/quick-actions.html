@@ -52,7 +52,8 @@
       <span class="korev-nav-section-title" x-text="t('sidebar.system') || 'SYSTÈME'">SYSTÈME</span>
       
       <nav class="korev-nav-list">
-        <button class="korev-nav-item" @click="settingsModalProxy.openModal()">
+        <button class="korev-nav-item" @click="settingsModalProxy.openModal()"
+                x-show="window.__korevUserRole === 'admin'">
           <span class="korev-nav-item-text" x-text="t('sidebar.settings') || 'Paramètres'">Paramètres</span>
         </button>
         

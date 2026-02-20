@@ -494,7 +494,18 @@ Au démarrage du container Docker, le script `docker-entrypoint.sh` :
 | Docker (local) | **http://localhost** |
 | Locale | **http://localhost:5050** |
 
-3. Connectez-vous avec les identifiants configurés dans `.env` (`AUTH_LOGIN` / `AUTH_PASSWORD`)
+3. Connectez-vous avec les identifiants configurés dans `.env` (`AUTH_LOGIN` / `AUTH_PASSWORD`) ou dans `users.json` (mode multi-utilisateur)
+
+## Rôles utilisateurs
+
+| Rôle | Chat & agents | Paramètres système |
+|------|---------------|-------------------|
+| **admin** | Oui | Oui (bouton visible) |
+| **user** | Oui | Non (bouton masqué, API bloquée) |
+
+- En **mono-utilisateur** (`.env` uniquement), le compte est automatiquement `admin`.
+- En **multi-utilisateur** (`users.json`), le rôle est défini par le champ `"role"` de chaque compte.
+- Seuls les **admin** peuvent modifier les clés API, les modèles IA et la configuration MCP.
 
 ## Écran d'accueil
 
@@ -502,6 +513,7 @@ Vous devriez voir l'interface **KOREV Evidence** avec :
 - Le logo et le titre "KOREV Evidence"
 - Un champ pour taper vos questions
 - La barre latérale avec les conversations
+- Le bouton **Paramètres** (visible uniquement pour les comptes `admin`)
 
 ## Premier test
 

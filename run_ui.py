@@ -304,10 +304,12 @@ def _register_routes(app: Flask) -> None:
                 "commit_time": "unknown",
             }
         index = files.read_file("webui/index.html")
+        user_role = session.get('role', 'user')
         index = files.replace_placeholders_text(
             _content=index,
             version_no=gitinfo["version"],
-            version_time=gitinfo["commit_time"]
+            version_time=gitinfo["commit_time"],
+            user_role=user_role,
         )
         return index
 
@@ -409,6 +411,20 @@ def requires_auth(f):
     return decorated
 
 
+def requires_admin(f):
+    """Decorator that restricts access to admin-role users only."""
+    @wraps(f)
+    async def decorated(*args, **kwargs):
+        if session.get('role') != 'admin':
+            return Response(
+                json.dumps({"error": "Admin access required"}),
+                status=403,
+                mimetype="application/json",
+            )
+        return await f(*args, **kwargs)
+    return decorated
+
+
 def csrf_protect(f):
     @wraps(f)
     async def decorated(*args, **kwargs):
@@ -494,6 +510,8 @@ def run():
             handler_wrap = requires_loopback(handler_wrap)
         if handler.requires_auth():
             handler_wrap = requires_auth(handler_wrap)
+        if handler.requires_admin():
+            handler_wrap = requires_admin(handler_wrap)
         if handler.requires_api_key():
             handler_wrap = requires_api_key(handler_wrap)
         if handler.requires_csrf():
