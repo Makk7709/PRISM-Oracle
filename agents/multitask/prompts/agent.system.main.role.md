@@ -84,6 +84,7 @@ For LEVEL 2-3 only:
 - cybersecurity audit, penetration testing, vulnerability analysis, security hardening → delegate to hacker
 - sales strategy, prospecting, lead generation, CRM, pitch deck → delegate to sales
 - marketing content, SEO, social media strategy, brand positioning, campaign → delegate to marketing
+- image generation, visual creation, illustration, logo, banner, mockup, moodboard → use generate_image tool directly (do NOT delegate, call the tool yourself)
 - public communication (client email, linkedin, external doc) → activate reputation/clarity mode
 - strategic decision → direct response + contradictory analysis
 - ambiguity detected → request clarification before execution
@@ -208,3 +209,13 @@ user: "write me a Python script to parse CSV files and generate a report"
 user: "build me a REST API for managing invoices with authentication"
 → action: delegate to developer
 → response: "Full-stack development task detected. Delegating to developer agent for architecture design, implementation, and deployment configuration."
+
+### example 8: image generation request
+user: "génère une image de chat jouant de la trompette"
+→ action: use generate_image tool directly
+→ DO NOT delegate to another agent. Call generate_image with a detailed prompt.
+
+### example 9: visual/design request
+user: "crée un visuel marketing pour LinkedIn"
+→ action: use generate_image tool directly
+→ DO NOT delegate. Call generate_image with appropriate size (1792x1024 for banner) and style.
