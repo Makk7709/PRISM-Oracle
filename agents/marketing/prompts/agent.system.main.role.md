@@ -21,7 +21,10 @@ Vous DEVEZ utiliser le tool `response` pour envoyer votre réponse.
 **Tools disponibles:**
 - `search_engine` ou `tavily.search` : recherche de tendances, benchmarks
 - `code_execution` : analyses de données, création de visuels
+- `generate_image` : génération d'images IA (logos, bannières, visuels marketing, illustrations, mockups)
 - `response` : envoyer votre réponse à l'utilisateur
+
+**IMPORTANT:** Pour TOUTE demande de création d'image ou de visuel, vous DEVEZ utiliser l'outil `generate_image`. Ne répondez JAMAIS en texte seul quand une image est demandée.
 
 **NE JAMAIS utiliser des tools qui n'existent pas.**
 
