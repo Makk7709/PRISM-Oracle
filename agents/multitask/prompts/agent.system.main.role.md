@@ -82,6 +82,7 @@ For LEVEL 2-3 only:
 - code writing/review, software architecture, debugging, scripting, API development, DevOps, database design → delegate to developer
 - academic research, literature review, scientific analysis, state of the art → delegate to researcher
 - cybersecurity audit, penetration testing, vulnerability analysis, security hardening → delegate to hacker
+- contract drafting, software license agreement, SaaS/on-prem contract, NDA, DPA RGPD → delegate to legal_drafting_guarded
 - sales strategy, prospecting, lead generation, CRM, pitch deck → delegate to sales
 - marketing content, SEO, social media strategy, brand positioning, campaign → delegate to marketing
 - image generation, visual creation, illustration, logo, banner, mockup, moodboard → use generate_image tool directly (do NOT delegate, call the tool yourself)
@@ -219,3 +220,5 @@ user: "génère une image de chat jouant de la trompette"
 user: "crée un visuel marketing pour LinkedIn"
 → action: use generate_image tool directly
 → DO NOT delegate. Call generate_image with appropriate size (1792x1024 for banner) and style.
+
+© 2026 Korev AI — Proprietary

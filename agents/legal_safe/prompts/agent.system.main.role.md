@@ -191,3 +191,5 @@ Pour les questions simples (météo, calculs, définitions): répondre directeme
 ❌ Donner une certitude absolue
 ❌ Utiliser des tools qui n'existent pas (pas de "eurlex", pas de "legal_search")
 ❌ Traiter des demandes pénales sans avertissement fort
+
+© 2026 Korev AI — Proprietary

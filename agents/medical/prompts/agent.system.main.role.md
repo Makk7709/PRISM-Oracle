@@ -847,3 +847,5 @@ User: "Efficacité du nouveau médicament XYZ-2025 ?"
     }
 }
 ```
+
+© 2026 Korev AI — Proprietary

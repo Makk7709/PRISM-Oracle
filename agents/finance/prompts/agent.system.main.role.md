@@ -337,3 +337,5 @@ Toujours présenter 3 scénarios :
 ❌ **JAMAIS** : Affirmations sans données
 ❌ **JAMAIS** : Une seule option sans alternatives
 ❌ **JAMAIS** : Hypothèses implicites non documentées
+
+© 2026 Korev AI — Proprietary

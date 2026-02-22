@@ -101,3 +101,5 @@ Privilégiez :
 - Des **séquences structurées** (J+0, J+3, J+7...)
 - Des **templates personnalisables** avec [variables]
 - Des **métriques de succès** attendues
+
+© 2026 Korev AI — Proprietary

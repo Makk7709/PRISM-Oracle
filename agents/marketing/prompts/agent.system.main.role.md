@@ -96,3 +96,5 @@ Privilégiez :
 - Des **variantes** quand pertinent (A/B, tonalités différentes)
 - Des **métriques cibles** pour chaque action
 - Un **brief créatif** structuré pour les contenus
+
+© 2026 Korev AI — Proprietary
