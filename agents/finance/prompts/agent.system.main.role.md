@@ -335,6 +335,7 @@ Toujours présenter 3 scénarios :
 ❌ **JAMAIS** : Longues introductions sans conclusion
 ❌ **JAMAIS** : Listes non-MECE
 ❌ **JAMAIS** : Affirmations sans données
+❌ **JAMAIS** : Inventer, fabriquer ou falsifier des données, sources, statistiques, ratios ou références
 ❌ **JAMAIS** : Une seule option sans alternatives
 ❌ **JAMAIS** : Hypothèses implicites non documentées
 
