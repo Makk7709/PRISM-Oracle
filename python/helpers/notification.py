@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import threading
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
@@ -24,17 +25,16 @@ class NotificationItem:
     priority: NotificationPriority
     title: str
     message: str
-    detail: str  # HTML content for expandable details
+    detail: str
     timestamp: datetime
-    display_time: int = 3  # Display duration in seconds, default 3 seconds
+    display_time: int = 3
     read: bool = False
     id: str = ""
-    group: str = ""  # Group identifier for grouping related notifications
+    group: str = ""
 
     def __post_init__(self):
         if not self.id:
             self.id = str(uuid.uuid4())
-        # Ensure type is always NotificationType
         if isinstance(self.type, str):
             self.type = NotificationType(self.type)
 
@@ -60,10 +60,16 @@ class NotificationItem:
 
 class NotificationManager:
     def __init__(self, max_notifications: int = 100):
+        self._lock = threading.Lock()
         self.guid: str = str(uuid.uuid4())
+        self._next_no: int = 0
         self.updates: list[int] = []
-        self.notifications: list[NotificationItem] = []
+        self._items: dict[int, NotificationItem] = {}
         self.max_notifications = max_notifications
+
+    @property
+    def notifications(self) -> list[NotificationItem]:
+        return sorted(self._items.values(), key=lambda n: n.no)
 
     @staticmethod
     def send_notification(
@@ -90,75 +96,76 @@ class NotificationManager:
         display_time: int = 3,
         group: str = "",
     ) -> NotificationItem:
-        # Create notification item
-        item = NotificationItem(
-            manager=self,
-            no=len(self.notifications),
-            type=NotificationType(type),
-            priority=NotificationPriority(priority),
-            title=title,
-            message=message,
-            detail=detail,
-            timestamp=datetime.now(timezone.utc),
-            display_time=display_time,
-            group=group,
-        )
+        with self._lock:
+            no = self._next_no
+            self._next_no += 1
 
-        # Add to notifications
-        self.notifications.append(item)
-        self.updates.append(item.no)
+            item = NotificationItem(
+                manager=self,
+                no=no,
+                type=NotificationType(type),
+                priority=NotificationPriority(priority),
+                title=title,
+                message=message,
+                detail=detail,
+                timestamp=datetime.now(timezone.utc),
+                display_time=display_time,
+                group=group,
+            )
 
-        # Enforce limit
-        self._enforce_limit()
+            self._items[no] = item
+            self.updates.append(no)
+            self._enforce_limit()
 
         return item
 
     def _enforce_limit(self):
-        if len(self.notifications) > self.max_notifications:
-            # Remove oldest notifications
-            to_remove = len(self.notifications) - self.max_notifications
-            self.notifications = self.notifications[to_remove:]
-            # Adjust notification numbers
-            for i, notification in enumerate(self.notifications):
-                notification.no = i
-            # Adjust updates list
-            self.updates = [no - to_remove for no in self.updates if no >= to_remove]
+        if len(self._items) > self.max_notifications:
+            sorted_nos = sorted(self._items.keys())
+            to_remove = len(self._items) - self.max_notifications
+            for no in sorted_nos[:to_remove]:
+                del self._items[no]
 
     def get_recent_notifications(self, seconds: int = 30) -> list[NotificationItem]:
         cutoff = datetime.now(timezone.utc) - timedelta(seconds=seconds)
-        return [n for n in self.notifications if n.timestamp >= cutoff]
+        return [n for n in self._items.values() if n.timestamp >= cutoff]
 
     def output(self, start: int | None = None, end: int | None = None) -> list[dict]:
-        if start is None:
-            start = 0
-        if end is None:
-            end = len(self.updates)
+        with self._lock:
+            if start is None:
+                start = 0
+            if end is None:
+                end = len(self.updates)
 
-        out = []
-        seen = set()
-        for update in self.updates[start:end]:
-            if update not in seen and update < len(self.notifications):
-                out.append(self.notifications[update].output())
-                seen.add(update)
+            out = []
+            seen = set()
+            for no in self.updates[start:end]:
+                if no not in seen and no in self._items:
+                    out.append(self._items[no].output())
+                    seen.add(no)
 
-        return out
+            return out
 
     def _update_item(self, no: int, **kwargs):
-        if no < len(self.notifications):
-            item = self.notifications[no]
-            for key, value in kwargs.items():
-                if hasattr(item, key):
-                    setattr(item, key, value)
-            self.updates.append(no)
+        with self._lock:
+            if no in self._items:
+                item = self._items[no]
+                for key, value in kwargs.items():
+                    if hasattr(item, key):
+                        setattr(item, key, value)
+                self.updates.append(no)
 
     def mark_all_read(self):
-        for notification in self.notifications:
-            notification.read = True
+        with self._lock:
+            for item in self._items.values():
+                item.read = True
 
     def clear_all(self):
-        self.notifications = []
-        self.updates = []
-        self.guid = str(uuid.uuid4())
+        with self._lock:
+            self._items = {}
+            self.updates = []
+            self._next_no = 0
+            self.guid = str(uuid.uuid4())
 
     def get_notifications_by_type(self, type: NotificationType) -> list[NotificationItem]:
-        return [n for n in self.notifications if n.type == type]
+        return [n for n in self._items.values() if n.type == type]

@@ -7,7 +7,7 @@ from python.helpers import errors
 from python.helpers import runtime
 
 
-SLEEP_TIME = 60
+SLEEP_TIME = 15
 
 keep_running = True
 pause_time = 0

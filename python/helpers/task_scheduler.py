@@ -341,16 +341,18 @@ class ScheduledTask(BaseTask):
 
     def check_schedule(self, frequency_seconds: float = 60.0) -> bool:
         with self._lock:
+            if self.last_run:
+                elapsed = (datetime.now(timezone.utc) - self.last_run).total_seconds()
+                if elapsed < frequency_seconds:
+                    return False
+
             crontab = CronTab(crontab=self.schedule.to_crontab())  # type: ignore
 
-            # Get the timezone from the schedule or use UTC as fallback
             task_timezone = pytz.timezone(self.schedule.timezone or Localization.get().get_timezone())
 
-            # Get reference time in task's timezone (by default now - frequency_seconds)
             reference_time = datetime.now(timezone.utc) - timedelta(seconds=frequency_seconds)
             reference_time = reference_time.astimezone(task_timezone)
 
-            # Get next run time as seconds until next execution
             next_run_seconds: Optional[float] = crontab.next(  # type: ignore
                 now=reference_time,
                 return_datetime=False
@@ -868,10 +870,39 @@ class TaskScheduler:
                     self._printer.print(f"Fixing task state consistency: '{current_task.name}' state is not IDLE after success")
                     await self.update_task(task_uuid, state=TaskState.IDLE)
 
+                # Auto-notify on task completion
+                try:
+                    from python.helpers.notification import NotificationManager, NotificationType, NotificationPriority
+                    short_result = (result[:120] + "...") if result and len(result) > 120 else (result or "")
+                    NotificationManager.send_notification(
+                        type=NotificationType.SUCCESS,
+                        priority=NotificationPriority.HIGH,
+                        message=short_result or f"Tâche '{current_task.name}' terminée.",
+                        title=f"Tâche terminée : {current_task.name}",
+                        display_time=15,
+                        group=f"task-{task_uuid}",
+                    )
+                except Exception as ne:
+                    self._printer.print(f"Failed to send task completion notification: {ne}")
+
             except Exception as e:
                 # Error
                 self._printer.print(f"Scheduler Task '{current_task.name}' failed: {e}")
                 await current_task.on_error(str(e))
+
+                # Auto-notify on task failure
+                try:
+                    from python.helpers.notification import NotificationManager, NotificationType, NotificationPriority
+                    NotificationManager.send_notification(
+                        type=NotificationType.ERROR,
+                        priority=NotificationPriority.HIGH,
+                        message=f"Erreur : {str(e)[:150]}",
+                        title=f"Tâche échouée : {current_task.name}",
+                        display_time=30,
+                        group=f"task-{task_uuid}",
+                    )
+                except Exception as ne:
+                    self._printer.print(f"Failed to send task error notification: {ne}")
 
                 # Explicitly verify task was updated in storage after error
                 await self._tasks.reload()
