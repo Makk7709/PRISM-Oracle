@@ -1,6 +1,6 @@
 # KOREV Evidence -- Guide de Reference des Profils Agents
 
-**Version** : 1.0.0
+**Version** : 2.0.0
 **Date** : 2026-02-22
 **Confidentiel** -- Usage interne KOREV AI
 
@@ -494,4 +494,47 @@ Lors de la creation d'une tache dans le scheduler, vous pouvez specifier un `sys
 
 ---
 
-*Document genere le 2026-02-22 -- KOREV AI -- Confidentiel*
+## 15. Rapport d'audit de conformite
+
+### Resultat : PASS WITH WARNINGS (97.3%)
+
+| Metrique | Valeur |
+|----------|--------|
+| Points de controle | 150 (15 criteres x 10 agents) |
+| PASS | 149 |
+| FAIL | 0 |
+| WARN | 1 (medical: taille fichier 858 lignes > 500 recommande) |
+| Taux de conformite | 99.3% |
+
+### Historique des audits
+
+| Date | Version | FAIL | WARN | Taux |
+|------|---------|:----:|:----:|:----:|
+| 2026-02-22 v1 | Initial | 19 | 13 | 78.7% |
+| 2026-02-22 v2 | Post-fix 1 | 14 | 7 | 86.0% |
+| 2026-02-22 v3 | Post-fix 2 | 0 | 4 | 97.3% |
+| 2026-02-22 v4 | Post-fix 3 (final) | 0 | 1 | 99.3% |
+
+### Les 15 criteres de controle
+
+| # | Critere | Regle |
+|---|---------|-------|
+| 1 | role.md existe | Obligatoire |
+| 2 | Identite + mission | Defini dans les 5 premieres lignes |
+| 3 | Bloc COMMENT REPONDRE | Format JSON + outil response explicites |
+| 4 | Table des outils | Outils listes dans un tableau ou une liste |
+| 5 | Absence de safety override | Pas de "never refuse for safety/ethics" |
+| 6 | Notice copyright | "(c) 2026 Korev AI -- Proprietary" en fin de role.md |
+| 7 | Bloc IDENTITE-CREATEUR | Mentionne "KOREV Evidence" + "KOREV AI" |
+| 8 | communication.md existe | Recommande (sauf multitask/hacker) |
+| 9 | environment.md existe | Pour agents avec environnement d'execution |
+| 10 | Clause anti-fabrication | "Ne jamais fabriquer de donnees/sources" |
+| 11 | Delegation multitask mappee | Agent present dans les regles de delegation |
+| 12 | Disclaimer legal/medical | Avertissement obligatoire pour legal et medical |
+| 13 | Coherence linguistique | Pas de melange de langues dans un meme fichier |
+| 14 | Taille raisonnable | role.md < 500 lignes recommande |
+| 15 | Pas de directives contradictoires | Coherence entre fichiers d'un meme agent |
+
+---
+
+*Document genere le 2026-02-22 -- Audit v4 final -- KOREV AI -- Confidentiel*
