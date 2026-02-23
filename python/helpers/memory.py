@@ -534,8 +534,14 @@ def get_context_memory_subdir(context: AgentContext) -> str:
     if memory_subdir:
         return memory_subdir
 
-    # no project, regular memory subdir
-    return context.config.memory_subdir or "default"
+    base_subdir = context.config.memory_subdir or "default"
+
+    # Per-user memory isolation: each user gets their own memory space
+    username = getattr(context, "username", None)
+    if username:
+        return f"users/{username}/{base_subdir}"
+
+    return base_subdir
 
 
 def get_existing_memory_subdirs() -> list[str]:

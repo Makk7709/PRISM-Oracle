@@ -107,12 +107,13 @@ const model = {
     this.setupUserInteractionHandling();
   },
 
-  // Load settings from server
+  // Load settings from server (silently fails for non-admin users)
   async loadSettings() {
     try {
       const response = await fetchApi("/settings_get", { method: "POST" });
+      if (!response.ok) return;
       const data = await response.json();
-      const speechSection = data.settings.sections.find(
+      const speechSection = data.settings?.sections?.find(
         (s) => s.title === "Speech"
       );
 
@@ -124,8 +125,8 @@ const model = {
         });
       }
     } catch (error) {
-      window.toastFetchError("Failed to load speech settings", error);
-      console.error("Failed to load speech settings:", error);
+      // Non-admin users can't access settings — use defaults silently
+      console.debug("Speech settings not available (defaults used)");
     }
   },
 
