@@ -62,10 +62,10 @@ C'est un système multi-agents composé de **9+ agents spécialisés** (juridiqu
 │  ┌──────────────────────────────────────────────────────┐       │
 │  │  VOLUME PARTAGÉ (/app/shared)                         │       │
 │  │  ├── users/                                           │       │
-│  │  │   ├── marie/  {documents/, rapports/, tmp/}       │       │
-│  │  │   ├── jean/   {documents/, rapports/, tmp/}       │       │
-│  │  │   ├── ... (pierre, sophie, thomas, claire)        │       │
-│  │  │   └── admin/  {documents/, rapports/, tmp/}       │       │
+│  │  │   ├── nicolas/    {documents/, rapports/, tmp/}   │       │
+│  │  │   ├── luc/        {documents/, rapports/, tmp/}   │       │
+│  │  │   ├── ... (jeremie, coralie, dominique, laurianne, sarah) │
+│  │  │   └── amine/      {documents/, rapports/, tmp/}   │       │
 │  │  ├── commun/     ← accessible par tous               │       │
 │  │  └── audit/      ← file_operations.jsonl             │       │
 │  └──────────────────────────────────────────────────────┘       │
@@ -499,33 +499,37 @@ python3 -c "from python.security.auth import hash_password; print(hash_password(
 ```json
 {
   "users": {
-    "marie": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "jean": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "pierre": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "sophie": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "thomas": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "claire": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
-      "role": "user"
-    },
-    "admin": {
+    "amine": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
       "role": "admin"
+    },
+    "nicolas": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "luc": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "jeremie": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "coralie": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "dominique": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "laurianne": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
+    },
+    "sarah": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$HASH_GENERE_CI_DESSUS",
+      "role": "user"
     }
   }
 }
@@ -543,13 +547,14 @@ Ajouter les identifiants Samba dans `deploy/.env`. **Les logins doivent correspo
 # Utilisateurs Samba (format: "login;motdepasse")
 # Le mot de passe ici est en CLAIR (Samba l'exige). C'est le même mot de passe
 # que celui qui a été haché en Argon2 dans users.json.
-SMB_USER_1=marie;MotDePasseMarie2026!
-SMB_USER_2=jean;MotDePasseJean2026!
-SMB_USER_3=pierre;MotDePassePierre2026!
-SMB_USER_4=sophie;MotDePasseSophie2026!
-SMB_USER_5=thomas;MotDePasseThomas2026!
-SMB_USER_6=claire;MotDePasseClaire2026!
-SMB_USER_ADMIN=admin;MotDePasseAdmin2026!
+SMB_USER_1=nicolas;MotDePasseNicolas2026!
+SMB_USER_2=luc;MotDePasseLuc2026!
+SMB_USER_3=jeremie;MotDePasseJeremie2026!
+SMB_USER_4=coralie;MotDePasseCoralie2026!
+SMB_USER_5=dominique;MotDePasseDominique2026!
+SMB_USER_6=laurianne;MotDePasseLaurianne2026!
+SMB_USER_7=sarah;MotDePasseSarah2026!
+SMB_USER_ADMIN=amine;MotDePasseAmine2026!
 
 # Port SMB (445 = standard Windows, ne pas changer sauf conflit)
 SMB_PORT=445
@@ -560,30 +565,32 @@ EVIDENCE_SHARED_DIR=/app/shared
 
 ### Étape 4 — Mettre à jour les partages Samba dans `docker-compose.yml`
 
-Le fichier `deploy/docker-compose.yml` contient par défaut la configuration Samba pour **7 utilisateurs** (marie, jean, pierre, sophie, thomas, claire + admin). **Vérifiez que les noms et partages correspondent bien à vos utilisateurs réels**, et adaptez si nécessaire. Voici la configuration par défaut :
+Le fichier `deploy/docker-compose.yml` contient par défaut la configuration Samba pour **8 utilisateurs** (nicolas, luc, jeremie, coralie, dominique, laurianne, sarah + amine admin). **Vérifiez que les noms et partages correspondent bien à vos utilisateurs réels**, et adaptez si nécessaire. Voici la configuration par défaut :
 
 ```yaml
     command: >
       -n
       -p
-      -u "${SMB_USER_1:-marie;pass}"
-      -u "${SMB_USER_2:-jean;pass}"
-      -u "${SMB_USER_3:-pierre;pass}"
-      -u "${SMB_USER_4:-sophie;pass}"
-      -u "${SMB_USER_5:-thomas;pass}"
-      -u "${SMB_USER_6:-claire;pass}"
-      -u "${SMB_USER_ADMIN:-admin;pass}"
-      -s "marie;/shared/users/marie;yes;no;no;marie,admin;;;Espace Marie"
-      -s "jean;/shared/users/jean;yes;no;no;jean,admin;;;Espace Jean"
-      -s "pierre;/shared/users/pierre;yes;no;no;pierre,admin;;;Espace Pierre"
-      -s "sophie;/shared/users/sophie;yes;no;no;sophie,admin;;;Espace Sophie"
-      -s "thomas;/shared/users/thomas;yes;no;no;thomas,admin;;;Espace Thomas"
-      -s "claire;/shared/users/claire;yes;no;no;claire,admin;;;Espace Claire"
-      -s "commun;/shared/commun;yes;no;no;marie,jean,pierre,sophie,thomas,claire,admin;;;Dossier commun"
+      -u "${SMB_USER_1:-nicolas;pass}"
+      -u "${SMB_USER_2:-luc;pass}"
+      -u "${SMB_USER_3:-jeremie;pass}"
+      -u "${SMB_USER_4:-coralie;pass}"
+      -u "${SMB_USER_5:-dominique;pass}"
+      -u "${SMB_USER_6:-laurianne;pass}"
+      -u "${SMB_USER_7:-sarah;pass}"
+      -u "${SMB_USER_ADMIN:-amine;pass}"
+      -s "nicolas;/shared/users/nicolas;yes;no;no;nicolas,amine;;;Espace Nicolas"
+      -s "luc;/shared/users/luc;yes;no;no;luc,amine;;;Espace Luc"
+      -s "jeremie;/shared/users/jeremie;yes;no;no;jeremie,amine;;;Espace Jeremie"
+      -s "coralie;/shared/users/coralie;yes;no;no;coralie,amine;;;Espace Coralie"
+      -s "dominique;/shared/users/dominique;yes;no;no;dominique,amine;;;Espace Dominique"
+      -s "laurianne;/shared/users/laurianne;yes;no;no;laurianne,amine;;;Espace Laurianne"
+      -s "sarah;/shared/users/sarah;yes;no;no;sarah,amine;;;Espace Sarah"
+      -s "commun;/shared/commun;yes;no;no;nicolas,luc,jeremie,coralie,dominique,laurianne,sarah,amine;;;Dossier commun"
 ```
 
-> **Règle d'isolation :** Chaque ligne `-s` accorde l'accès à l'utilisateur concerné + admin uniquement.
-> Marie ne voit que `marie` et `commun`. Elle ne voit PAS `jean`, `pierre`, etc.
+> **Règle d'isolation :** Chaque ligne `-s` accorde l'accès à l'utilisateur concerné + amine (admin) uniquement.
+> Nicolas ne voit que `nicolas` et `commun`. Il ne voit PAS `luc`, `jeremie`, etc.
 
 ### Étape 5 — Reconstruire et relancer
 
@@ -611,16 +618,16 @@ Après le premier login de chaque utilisateur, la structure suivante est automat
 ```
 /app/shared/                      (volume Docker evidence-shared)
 ├── users/
-│   ├── marie/
-│   │   ├── documents/            ← Marie dépose ses fichiers ici (via SMB)
+│   ├── nicolas/
+│   │   ├── documents/            ← Nicolas dépose ses fichiers ici (via SMB)
 │   │   ├── rapports/             ← Evidence dépose les résultats ici
 │   │   └── tmp/                  ← fichiers temporaires Evidence
-│   ├── jean/
+│   ├── luc/
 │   │   ├── documents/
 │   │   ├── rapports/
 │   │   └── tmp/
-│   ├── ... (un dossier par utilisateur)
-│   └── admin/
+│   ├── ... (jeremie, coralie, dominique, laurianne, sarah)
+│   └── amine/
 │       ├── documents/
 │       ├── rapports/
 │       └── tmp/
@@ -634,9 +641,14 @@ Après le premier login de chaque utilisateur, la structure suivante est automat
 
 | Utilisateur | Son dossier | Dossiers des autres | Dossier commun | Audit |
 |-------------|:-----------:|:-------------------:|:--------------:|:-----:|
-| **marie** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
-| **jean** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
-| **admin** | Lecture + Écriture | Lecture + Écriture (tous) | Lecture + Écriture | Oui |
+| **nicolas** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **luc** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **jeremie** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **coralie** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **dominique** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **laurianne** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **sarah** | Lecture + Écriture | INTERDIT | Lecture + Écriture | Non |
+| **amine** (admin) | Lecture + Écriture | Lecture + Écriture (tous) | Lecture + Écriture | Oui |
 
 > **Sécurité :** L'isolation est appliquée à DEUX niveaux :
 > 1. **Côté Evidence (Python)** : le `WorkspaceManager` valide chaque accès fichier et rejette les tentatives de traversée de répertoire (`../`, symlinks, etc.)
@@ -757,42 +769,42 @@ Rédige un rapport de 2 pages sur les avantages de l'IA en entreprise et génèr
 
 **Ce test est CRITIQUE. Il valide l'isolation entre utilisateurs.**
 
-### Test A — Deux utilisateurs simultanés
+### Test A — Deux utilisateurs simultanes
 
-1. Sur le **Poste 1** : ouvrir Chrome → `http://<IP_SERVEUR>` → login avec **marie**
-2. Sur le **Poste 2** : ouvrir Chrome → `http://<IP_SERVEUR>` → login avec **jean**
+1. Sur le **Poste 1** : ouvrir Chrome → `http://<IP_SERVEUR>` → login avec **nicolas**
+2. Sur le **Poste 2** : ouvrir Chrome → `http://<IP_SERVEUR>` → login avec **luc**
 3. Vérifier que chaque session est indépendante (conversations séparées)
 4. Vérifier que les réponses arrivent sans latence excessive (<30s)
 
 ### Test B — Isolation des dossiers SMB
 
-1. Sur le **Poste 1** (Marie) : ouvrir l'Explorateur → `\\<IP_SERVEUR>\marie`
-   - Marie DOIT voir ses dossiers `documents/`, `rapports/`, `tmp/`
-   - Marie DOIT pouvoir créer un fichier test dans `documents/`
-2. Sur le **Poste 1** (Marie) : essayer d'accéder à `\\<IP_SERVEUR>\jean`
-   - Marie NE DOIT PAS avoir accès → erreur "Accès refusé"
-3. Sur le **Poste 1** (Marie) : ouvrir `\\<IP_SERVEUR>\commun`
-   - Marie DOIT pouvoir lire et écrire dans le dossier commun
+1. Sur le **Poste 1** (Nicolas) : ouvrir l'Explorateur → `\\<IP_SERVEUR>\nicolas`
+   - Nicolas DOIT voir ses dossiers `documents/`, `rapports/`, `tmp/`
+   - Nicolas DOIT pouvoir créer un fichier test dans `documents/`
+2. Sur le **Poste 1** (Nicolas) : essayer d'accéder à `\\<IP_SERVEUR>\luc`
+   - Nicolas NE DOIT PAS avoir accès → erreur "Accès refusé"
+3. Sur le **Poste 1** (Nicolas) : ouvrir `\\<IP_SERVEUR>\commun`
+   - Nicolas DOIT pouvoir lire et écrire dans le dossier commun
 
 ### Test C — Evidence lit les fichiers utilisateur
 
-1. Sur le **Poste 1** : via l'explorateur, déposer un fichier `test.txt` dans `\\<IP_SERVEUR>\marie\documents\`
-2. Dans Evidence (chat Marie) : demander "Lis le fichier test.txt dans mon dossier documents"
-3. **Résultat attendu** : Evidence lit le contenu du fichier de Marie
+1. Sur le **Poste 1** : via l'explorateur, déposer un fichier `test.txt` dans `\\<IP_SERVEUR>\nicolas\documents\`
+2. Dans Evidence (chat Nicolas) : demander "Lis le fichier test.txt dans mon dossier documents"
+3. **Résultat attendu** : Evidence lit le contenu du fichier de Nicolas
 
 ### Test D — Evidence génère un rapport dans le workspace
 
-1. Dans Evidence (chat Marie) : demander "Génère un rapport PDF sur l'IA en entreprise"
-2. **Résultat attendu** : Le PDF est généré dans `\\<IP_SERVEUR>\marie\rapports\`
-3. Vérifier que le fichier est accessible depuis l'Explorateur Windows de Marie
+1. Dans Evidence (chat Nicolas) : demander "Génère un rapport PDF sur l'IA en entreprise"
+2. **Résultat attendu** : Le PDF est généré dans `\\<IP_SERVEUR>\nicolas\rapports\`
+3. Vérifier que le fichier est accessible depuis l'Explorateur Windows de Nicolas
 
 ## 8.6. Grille de validation
 
 | # | Test | Résultat attendu | Validé ? |
 |---|------|----------|----------|
 | 1 | Page d'accueil accessible | Page KOREV Evidence avec logo | □ |
-| 2 | Login Marie | Login fonctionne avec identifiants de `users.json` | □ |
-| 3 | Login Jean (simultané) | Session indépendante de Marie | □ |
+| 2 | Login Nicolas | Login fonctionne avec identifiants de `users.json` | □ |
+| 3 | Login Luc (simultané) | Session indépendante de Nicolas | □ |
 | 4 | Chat simple | Réponse en français, cohérente | □ |
 | 5 | Recherche ArXiv | Articles retournés avec DOI | □ |
 | 6 | Exécution Python | Code exécuté, résultat affiché | □ |
@@ -800,11 +812,11 @@ Rédige un rapport de 2 pages sur les avantages de l'IA en entreprise et génèr
 | 8 | Recherche Semantic Scholar | Articles scientifiques trouvés | □ |
 | 9 | Mémoire | Evidence se souvient du contexte | □ |
 | 10 | Performance | Réponse en <30s pour une question simple | □ |
-| 11 | **SMB — Marie voit son dossier** | `\\serveur\marie` accessible | □ |
-| 12 | **SMB — Marie PAS accès à Jean** | `\\serveur\jean` → Accès refusé | □ |
+| 11 | **SMB — Nicolas voit son dossier** | `\\serveur\nicolas` accessible | □ |
+| 12 | **SMB — Nicolas PAS accès à Luc** | `\\serveur\luc` → Accès refusé | □ |
 | 13 | **SMB — Dossier commun** | `\\serveur\commun` accessible en lecture/écriture | □ |
-| 14 | **Evidence lit fichier Marie** | Fichier déposé via SMB lisible par Evidence | □ |
-| 15 | **Evidence écrit rapport Marie** | Rapport dans `rapports/` visible via SMB | □ |
+| 14 | **Evidence lit fichier Nicolas** | Fichier déposé via SMB lisible par Evidence | □ |
+| 15 | **Evidence écrit rapport Nicolas** | Rapport dans `rapports/` visible via SMB | □ |
 | 16 | **Audit trail** | `file_operations.jsonl` contient les opérations | □ |
 | 17 | **Healthcheck** | `curl http://localhost/healthz` → `{"status":"ok"}` | □ |
 
@@ -863,7 +875,7 @@ ping 192.168.1.100
 1. Ouvrir l'**Explorateur de fichiers** Windows
 2. Clic droit sur **Ce PC** → **Connecter un lecteur réseau...**
 3. Lecteur : **M:**
-4. Dossier : `\\192.168.1.100\marie` (remplacer `192.168.1.100` par l'IP du serveur et `marie` par le login de l'utilisateur)
+4. Dossier : `\\192.168.1.100\nicolas` (remplacer `192.168.1.100` par l'IP du serveur et `nicolas` par le login de l'utilisateur)
 5. Cocher **Se reconnecter lors de la connexion**
 6. Cocher **Se connecter avec d'autres informations d'identification**
 7. Entrer le login et le mot de passe **Samba** de l'utilisateur (défini dans `.env`)
@@ -937,7 +949,7 @@ Pour déployer le raccourci + les lecteurs réseau sur les 7 postes via GPO Acti
 # PARAMÈTRES À MODIFIER :
 param(
     [string]$ServerIP = "192.168.1.100",
-    [string]$Username = "",           # Login de l'utilisateur (ex: "marie")
+    [string]$Username = "",           # Login de l'utilisateur (ex: "nicolas")
     [string]$Password = ""            # Mot de passe Samba
 )
 
@@ -993,8 +1005,8 @@ Write-Host "  Login : $Username"
 
 **Utilisation :**
 ```powershell
-# En tant qu'administrateur sur le poste de Marie
-.\deploy_evidence_workstation.ps1 -ServerIP "192.168.1.100" -Username "marie" -Password "MotDePasseMarie2026!"
+# En tant qu'administrateur sur le poste de Nicolas
+.\deploy_evidence_workstation.ps1 -ServerIP "192.168.1.100" -Username "nicolas" -Password "MotDePasseNicolas2026!"
 ```
 
 ---
@@ -1189,7 +1201,7 @@ docker exec evidence-backend cat /app/shared/audit/file_operations.jsonl | tail 
 docker exec evidence-backend du -sh /app/shared/users/*/
 
 # Réinitialiser le workspace d'un utilisateur (ATTENTION : supprime ses fichiers)
-# docker exec evidence-backend rm -rf /app/shared/users/marie/tmp/*
+# docker exec evidence-backend rm -rf /app/shared/users/nicolas/tmp/*
 ```
 
 ## 11.3. Problèmes courants

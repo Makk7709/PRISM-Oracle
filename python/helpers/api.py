@@ -90,12 +90,31 @@ class ApiHandler:
         except RuntimeError:
             return None, None
 
-    # get context to run korev evidence in
+    def _is_owner(self, ctx: AgentContext, username: str | None) -> bool:
+        """True if context belongs to this user.
+
+        Rules:
+        - No auth mode (username is None): always allowed
+        - Context has no owner (legacy): allow access and adopt it
+        - Owner matches: allowed
+        - Owner mismatch: denied
+        """
+        if username is None:
+            return True
+        ctx_owner = getattr(ctx, "username", None)
+        if ctx_owner is None:
+            return True
+        return ctx_owner == username
+
     def use_context(self, ctxid: str, create_if_not_exists: bool = True):
         username, workspace = self._session_user_info()
         with self.thread_lock:
             if not ctxid:
-                first = AgentContext.first()
+                owned = [
+                    c for c in AgentContext.all()
+                    if self._is_owner(c, username)
+                ]
+                first = owned[0] if owned else None
                 if first:
                     if username and not first.username:
                         first.username = username
@@ -109,6 +128,8 @@ class ApiHandler:
                 return context
             got = AgentContext.use(ctxid)
             if got:
+                if not self._is_owner(got, username):
+                    raise Exception(f"Access denied: context {ctxid} belongs to another user")
                 if username and not got.username:
                     got.username = username
                     got.workspace = workspace

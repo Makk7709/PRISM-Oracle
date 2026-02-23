@@ -53,9 +53,9 @@ services:
       - evidence-memory:/app/memory  # Mémoire persistante de l'agent IA
       # Monter le .env au cas où des scripts le lisent via dotenv
       - ./.env:/app/.env:ro
-      # Multi-utilisateurs : décommenter et créer users.json à partir de users.json.example
+      # Multi-utilisateurs : créer users.json à partir de users.json.example
       # Sans ce fichier, l'auth mono-user (AUTH_LOGIN/AUTH_PASSWORD dans .env) est utilisée.
-      # - ./users.json:/app/deploy/users.json:ro
+      - ./users.json:/app/deploy/users.json:ro
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:5050/healthz"]
@@ -145,20 +145,22 @@ services:
     command: >
       -n
       -p
-      -u "${SMB_USER_1:-marie;CHANGER_CE_MDP_1}"
-      -u "${SMB_USER_2:-jean;CHANGER_CE_MDP_2}"
-      -u "${SMB_USER_3:-pierre;CHANGER_CE_MDP_3}"
-      -u "${SMB_USER_4:-sophie;CHANGER_CE_MDP_4}"
-      -u "${SMB_USER_5:-thomas;CHANGER_CE_MDP_5}"
-      -u "${SMB_USER_6:-claire;CHANGER_CE_MDP_6}"
-      -u "${SMB_USER_ADMIN:-admin;CHANGER_CE_MDP_ADMIN}"
-      -s "marie;/shared/users/marie;yes;no;no;marie,admin;;;Espace Marie"
-      -s "jean;/shared/users/jean;yes;no;no;jean,admin;;;Espace Jean"
-      -s "pierre;/shared/users/pierre;yes;no;no;pierre,admin;;;Espace Pierre"
-      -s "sophie;/shared/users/sophie;yes;no;no;sophie,admin;;;Espace Sophie"
-      -s "thomas;/shared/users/thomas;yes;no;no;thomas,admin;;;Espace Thomas"
-      -s "claire;/shared/users/claire;yes;no;no;claire,admin;;;Espace Claire"
-      -s "commun;/shared/commun;yes;no;no;marie,jean,pierre,sophie,thomas,claire,admin;;;Dossier commun"
+      -u "${SMB_USER_1:-nicolas;CHANGER_CE_MDP_1}"
+      -u "${SMB_USER_2:-luc;CHANGER_CE_MDP_2}"
+      -u "${SMB_USER_3:-jeremie;CHANGER_CE_MDP_3}"
+      -u "${SMB_USER_4:-coralie;CHANGER_CE_MDP_4}"
+      -u "${SMB_USER_5:-dominique;CHANGER_CE_MDP_5}"
+      -u "${SMB_USER_6:-laurianne;CHANGER_CE_MDP_6}"
+      -u "${SMB_USER_7:-sarah;CHANGER_CE_MDP_7}"
+      -u "${SMB_USER_ADMIN:-amine;CHANGER_CE_MDP_ADMIN}"
+      -s "nicolas;/shared/users/nicolas;yes;no;no;nicolas,amine;;;Espace Nicolas"
+      -s "luc;/shared/users/luc;yes;no;no;luc,amine;;;Espace Luc"
+      -s "jeremie;/shared/users/jeremie;yes;no;no;jeremie,amine;;;Espace Jeremie"
+      -s "coralie;/shared/users/coralie;yes;no;no;coralie,amine;;;Espace Coralie"
+      -s "dominique;/shared/users/dominique;yes;no;no;dominique,amine;;;Espace Dominique"
+      -s "laurianne;/shared/users/laurianne;yes;no;no;laurianne,amine;;;Espace Laurianne"
+      -s "sarah;/shared/users/sarah;yes;no;no;sarah,amine;;;Espace Sarah"
+      -s "commun;/shared/commun;yes;no;no;nicolas,luc,jeremie,coralie,dominique,laurianne,sarah,amine;;;Dossier commun"
 
     healthcheck:
       test: ["CMD", "smbclient", "-L", "localhost", "-N"]

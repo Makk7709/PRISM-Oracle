@@ -215,8 +215,8 @@ Si vous souhaitez que les utilisateurs accèdent aux fichiers depuis l'Explorate
 
 ```bash
 # Adapter les noms et mots de passe à vos utilisateurs
-SMB_USER_1=marie;MotDePasse1!
-SMB_USER_2=jean;MotDePasse2!
+SMB_USER_1=nicolas;MotDePasse1!
+SMB_USER_2=luc;MotDePasse2!
 # ... etc.
 SMB_USER_ADMIN=admin;AdminPass!
 ```

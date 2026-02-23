@@ -41,13 +41,19 @@ class Poll(ApiHandler):
 
         await scheduler.reload()
 
-        # loop AgentContext._contexts and divide into contexts and tasks
+        # Per-user isolation: each user only sees their own contexts
+        current_username, _ = self._session_user_info()
 
         ctxs = []
         tasks = []
-        processed_contexts = set()  # Track processed context IDs
+        processed_contexts = set()
 
         all_ctxs = list(AgentContext._contexts.values())
+        if current_username:
+            all_ctxs = [
+                ctx for ctx in all_ctxs
+                if getattr(ctx, "username", None) == current_username
+            ]
         # First, identify all tasks
         for ctx in all_ctxs:
             # Skip if already processed

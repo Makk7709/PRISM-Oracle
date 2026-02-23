@@ -130,6 +130,7 @@ def _serialize_context(context: AgentContext):
     return {
         "id": context.id,
         "name": context.name,
+        "username": getattr(context, "username", None),
         "created_at": (
             context.created_at.isoformat()
             if context.created_at
@@ -198,8 +199,7 @@ def _deserialize_context(data):
         paused=False,
         data=data.get("data", {}),
         output_data=data.get("output_data", {}),
-        # agent0=agent0,
-        # streaming_agent=straming_agent,
+        username=data.get("username", None),
     )
 
     agents = data.get("agents", [])
