@@ -83,21 +83,41 @@ class ApiHandler:
             PrintStyle.error(f"API error: {error}")
             return Response(response=error, status=500, mimetype="text/plain")
 
+    def _session_user_info(self) -> tuple[str | None, str | None]:
+        """Extract username and workspace from the current Flask session."""
+        try:
+            return session.get("username"), session.get("workspace")
+        except RuntimeError:
+            return None, None
+
     # get context to run korev evidence in
     def use_context(self, ctxid: str, create_if_not_exists: bool = True):
+        username, workspace = self._session_user_info()
         with self.thread_lock:
             if not ctxid:
                 first = AgentContext.first()
                 if first:
+                    if username and not first.username:
+                        first.username = username
+                        first.workspace = workspace
                     AgentContext.use(first.id)
                     return first
-                context = AgentContext(config=initialize_agent(), set_current=True)
+                context = AgentContext(
+                    config=initialize_agent(), set_current=True,
+                    username=username, workspace=workspace,
+                )
                 return context
             got = AgentContext.use(ctxid)
             if got:
+                if username and not got.username:
+                    got.username = username
+                    got.workspace = workspace
                 return got
             if create_if_not_exists:
-                context = AgentContext(config=initialize_agent(), id=ctxid, set_current=True)
+                context = AgentContext(
+                    config=initialize_agent(), id=ctxid, set_current=True,
+                    username=username, workspace=workspace,
+                )
                 return context
             else:
                 raise Exception(f"Context {ctxid} not found")

@@ -2,9 +2,18 @@
 - Working directory: {{work_dir}}
 - File uploads: {{work_dir}}/tmp/uploads/
 - Python execution: Available via code_execution tool (runtime: python)
+- Current user: {{username}}
+{% if user_workspace %}- User workspace: {{user_workspace}}
+- User documents: {{user_workspace}}/documents/
+- User reports: {{user_workspace}}/rapports/
+- User temp: {{user_workspace}}/tmp/
+{% endif %}
 
 ### File Access Rules
-- User-uploaded files are ALWAYS in: {{work_dir}}/tmp/uploads/
+{% if user_workspace %}- When saving files for the user (reports, exports, generated documents):
+  ALWAYS save to the user's workspace: {{user_workspace}}/rapports/
+- User-specific documents are in: {{user_workspace}}/documents/
+{% endif %}- User-uploaded files are ALWAYS in: {{work_dir}}/tmp/uploads/
 - ALWAYS use the full absolute path when accessing files
 - For Excel files (.xlsx): use pandas.read_excel() via code_execution
 - For CSV files: use pandas.read_csv() via code_execution

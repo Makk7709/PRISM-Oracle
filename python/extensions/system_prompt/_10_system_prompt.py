@@ -36,10 +36,18 @@ def get_main_prompt(agent: Agent):
     
     # Pass environment variables to the prompt
     work_dir = files.get_abs_path("")
+
+    # Per-user workspace info (if available)
+    ctx = agent.context
+    username = getattr(ctx, "username", None) or "default"
+    workspace = getattr(ctx, "workspace", None) or ""
+
     return agent.read_prompt(
         "agent.system.main.md",
         dockerized=runtime.is_dockerized(),
-        work_dir=work_dir
+        work_dir=work_dir,
+        username=username,
+        user_workspace=workspace,
     )
 
 

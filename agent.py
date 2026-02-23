@@ -57,6 +57,8 @@ class AgentContext:
         data: dict | None = None,
         output_data: dict | None = None,
         set_current: bool = False,
+        username: str | None = None,
+        workspace: str | None = None,
     ):
         # initialize context
         self.id = id or AgentContext.generate_id()
@@ -83,6 +85,10 @@ class AgentContext:
         self.last_message = last_message or datetime.now(timezone.utc)
         self.data = data or {}
         self.output_data = output_data or {}
+
+        # per-user workspace isolation
+        self.username = username
+        self.workspace = workspace
 
 
 
