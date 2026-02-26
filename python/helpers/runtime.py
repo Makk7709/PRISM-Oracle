@@ -85,7 +85,13 @@ def has_arg(name: str):
 
 
 def is_dockerized() -> bool:
-    return bool(get_arg("dockerized"))
+    if get_arg("dockerized"):
+        return True
+    if os.environ.get("EVIDENCE_ENV") == "production":
+        return True
+    if os.path.exists("/.dockerenv"):
+        return True
+    return False
 
 
 def is_development() -> bool:

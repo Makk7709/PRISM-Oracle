@@ -261,6 +261,7 @@ export const store = createStore("fileBrowser", model);
 
 window.openFileLink = async function (path) {
   try {
+    try { path = decodeURIComponent(path); } catch (_) {}
     const resp = await window.sendJsonData("/file_info", { path });
     if (!resp.exists) {
       window.toastFrontendError("File does not exist.", "File Error");

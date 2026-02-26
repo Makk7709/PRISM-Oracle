@@ -32,6 +32,7 @@ class BasicProjectData(TypedDict):
     description: str
     instructions: str
     color: str
+    owner: str
     memory: Literal[
         "own", "global"
     ]  # in the future we can add cutom and point to another existing folder
@@ -105,6 +106,7 @@ def _normalizeBasicData(data: BasicProjectData):
         description=data.get("description", ""),
         instructions=data.get("instructions", ""),
         color=data.get("color", ""),
+        owner=data.get("owner", ""),
         memory=data.get("memory", "own"),
         file_structure=data.get(
             "file_structure",
@@ -194,33 +196,38 @@ def save_project_header(name: str, data: BasicProjectData):
     files.write_file(abs_path, header)
 
 
-def get_active_projects_list():
-    return _get_projects_list(get_projects_parent_folder())
+def get_active_projects_list(username: str | None = None, role: str | None = None):
+    return _get_projects_list(get_projects_parent_folder(), username, role)
 
 
-def _get_projects_list(parent_dir):
-    projects = []
+def _get_projects_list(parent_dir, username: str | None = None, role: str | None = None):
+    result = []
 
-    # folders in project directory
     for name in os.listdir(parent_dir):
         try:
             abs_path = os.path.join(parent_dir, name)
             if os.path.isdir(abs_path):
                 project_data = load_basic_project_data(name)
-                projects.append(
+                project_owner = project_data.get("owner", "")
+
+                if username and role != "admin":
+                    if project_owner and project_owner != username:
+                        continue
+
+                result.append(
                     {
                         "name": name,
                         "title": project_data.get("title", ""),
                         "description": project_data.get("description", ""),
                         "color": project_data.get("color", ""),
+                        "owner": project_owner,
                     }
                 )
         except Exception as e:
             PrintStyle.error(f"Error loading project {name}: {str(e)}")
 
-    # sort projects by name
-    projects.sort(key=lambda x: x["name"])
-    return projects
+    result.sort(key=lambda x: x["name"])
+    return result
 
 
 def activate_project(context_id: str, name: str):

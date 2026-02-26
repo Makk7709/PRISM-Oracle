@@ -283,6 +283,20 @@ export function addBlankTargetsToLinks(str) {
       anchor.setAttribute("target", "_blank");
     }
 
+    // Convert internal file-system paths to download links
+    // Matches /app/tmp/generated/..., /tmp/uploads/..., /app/shared/..., file:///app/..., etc.
+    let internalPath = null;
+    const containerMatch = href.match(/^(?:file:\/\/)?(?:\/app|\/a0|\/korev)?\/(tmp\/(?:generated|uploads)\/[^\s?#]+|shared\/[^\s?#]+)/);
+    if (containerMatch) {
+      internalPath = containerMatch[1];
+    }
+    if (internalPath) {
+      anchor.setAttribute("href", "#");
+      anchor.removeAttribute("target");
+      anchor.setAttribute("onclick", `event.preventDefault(); openFileLink('${internalPath.replace(/'/g, "\\'")}');`);
+      anchor.classList.add("download-link");
+    }
+
     // Add download attribute to download links (images, PDFs, documents)
     const text = anchor.textContent || "";
     if (href.includes("/image_get?path=")) {

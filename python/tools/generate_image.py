@@ -22,14 +22,23 @@ from python.helpers.tool import Tool, Response
 from python.helpers import settings, files
 from python.helpers.print_style import PrintStyle
 
-# Directory for saving generated images
-GENERATED_IMAGES_DIR = "tmp/generated_images"
+# Base directory for saving generated images (per-user subdirectories)
+GENERATED_IMAGES_BASE_DIR = "tmp/generated_images"
 
 
 class GenerateImage(Tool):
     """
     Unified image generation tool with automatic provider selection and fallback.
     """
+
+    def _get_user_images_dir(self) -> str:
+        """Return per-user images directory path (e.g. tmp/generated_images/amine)."""
+        username = None
+        if self.agent and self.agent.context:
+            username = getattr(self.agent.context, "username", None)
+        if username:
+            return f"{GENERATED_IMAGES_BASE_DIR}/{username}"
+        return GENERATED_IMAGES_BASE_DIR
 
     async def execute(
         self,
@@ -490,8 +499,9 @@ class GenerateImage(Tool):
                 timestamp = int(time.time())
                 filename = f"generated_{timestamp}_{image_id}.png"
                 
-                # Ensure directory exists
-                save_dir = files.get_abs_path(GENERATED_IMAGES_DIR)
+                # Use per-user directory
+                user_dir = self._get_user_images_dir()
+                save_dir = files.get_abs_path(user_dir)
                 os.makedirs(save_dir, exist_ok=True)
                 
                 # Save image
@@ -504,7 +514,7 @@ class GenerateImage(Tool):
                 PrintStyle(font_color="green").print(f"[Image Gen] Image saved to: {filepath}")
                 
                 # Return path that can be served by Flask
-                return f"img://{GENERATED_IMAGES_DIR}/{filename}"
+                return f"img://{user_dir}/{filename}"
                 
         except Exception as e:
             PrintStyle(font_color="red").print(f"[Image Gen] Error downloading image: {e}")
@@ -522,8 +532,9 @@ class GenerateImage(Tool):
             timestamp = int(time.time())
             filename = f"generated_{timestamp}_{image_id}.png"
             
-            # Ensure directory exists
-            save_dir = files.get_abs_path(GENERATED_IMAGES_DIR)
+            # Use per-user directory
+            user_dir = self._get_user_images_dir()
+            save_dir = files.get_abs_path(user_dir)
             os.makedirs(save_dir, exist_ok=True)
             
             # Save image
@@ -536,7 +547,7 @@ class GenerateImage(Tool):
             PrintStyle(font_color="green").print(f"[Image Gen] Image saved to: {filepath}")
             
             # Return path that can be served by Flask
-            return f"img://{GENERATED_IMAGES_DIR}/{filename}"
+            return f"img://{user_dir}/{filename}"
             
         except Exception as e:
             PrintStyle(font_color="red").print(f"[Image Gen] Error saving base64 image: {e}")

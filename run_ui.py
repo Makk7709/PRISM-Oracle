@@ -16,6 +16,7 @@ Import cascade prevented:
 import asyncio
 from datetime import timedelta
 import hmac
+import json
 import os
 import secrets
 import hashlib
@@ -305,11 +306,13 @@ def _register_routes(app: Flask) -> None:
             }
         index = files.read_file("webui/index.html")
         user_role = session.get('role', 'user')
+        user_name = session.get('username', '')
         index = files.replace_placeholders_text(
             _content=index,
             version_no=gitinfo["version"],
             version_time=gitinfo["commit_time"],
             user_role=user_role,
+            user_name=user_name,
         )
         return index
 

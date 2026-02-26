@@ -46,11 +46,19 @@ const model = {
     }
   },
 
-  // Fetch images from the generated_images folder
+  // Fetch images from the user's generated_images folder
   async fetchImages() {
     try {
+      const username = window.__korevUserName || "";
+      const isAdmin = window.__korevUserRole === "admin";
+
+      // Per-user directory; admin sees the root (all subdirectories)
+      const basePath = (username && !isAdmin)
+        ? `tmp/generated_images/${username}`
+        : "tmp/generated_images";
+
       const response = await fetchApi(
-        `/get_work_dir_files?path=${encodeURIComponent("tmp/generated_images")}`
+        `/get_work_dir_files?path=${encodeURIComponent(basePath)}`
       );
 
       if (!response.ok) {
@@ -62,28 +70,76 @@ const model = {
       const jsonData = await response.json();
       const entries = jsonData?.data?.entries || [];
       
-      // Filter only image files and sort by date (newest first)
       const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
       
-      this.images = entries
-        .filter(entry => {
-          if (entry.is_dir) return false;
-          const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf('.'));
-          return imageExtensions.includes(ext);
-        })
-        .sort((a, b) => {
-          // Sort by modification time, newest first
-          const dateA = new Date(a.modified || 0);
-          const dateB = new Date(b.modified || 0);
-          return dateB - dateA;
-        })
-        .map(entry => ({
-          name: entry.name,
-          path: `tmp/generated_images/${entry.name}`,
-          url: `/image_get?path=tmp/generated_images/${entry.name}`,
-          size: entry.size,
-          date: entry.modified ? new Date(entry.modified) : null
-        }));
+      // For admin: also recurse into user subdirectories
+      let allImages = [];
+      
+      if (isAdmin) {
+        // Collect images at root level (legacy)
+        const rootImages = entries
+          .filter(entry => !entry.is_dir && imageExtensions.includes(
+            entry.name.toLowerCase().slice(entry.name.lastIndexOf('.'))
+          ))
+          .map(entry => ({
+            name: entry.name,
+            path: `tmp/generated_images/${entry.name}`,
+            url: `/image_get?path=tmp/generated_images/${entry.name}`,
+            size: entry.size,
+            date: entry.modified ? new Date(entry.modified) : null,
+            owner: ""
+          }));
+        allImages.push(...rootImages);
+        
+        // Fetch images from each user subdirectory
+        const subdirs = entries.filter(entry => entry.is_dir);
+        for (const dir of subdirs) {
+          try {
+            const subResp = await fetchApi(
+              `/get_work_dir_files?path=${encodeURIComponent(`tmp/generated_images/${dir.name}`)}`
+            );
+            if (subResp.ok) {
+              const subData = await subResp.json();
+              const subEntries = subData?.data?.entries || [];
+              const subImages = subEntries
+                .filter(e => !e.is_dir && imageExtensions.includes(
+                  e.name.toLowerCase().slice(e.name.lastIndexOf('.'))
+                ))
+                .map(e => ({
+                  name: e.name,
+                  path: `tmp/generated_images/${dir.name}/${e.name}`,
+                  url: `/image_get?path=tmp/generated_images/${dir.name}/${e.name}`,
+                  size: e.size,
+                  date: e.modified ? new Date(e.modified) : null,
+                  owner: dir.name
+                }));
+              allImages.push(...subImages);
+            }
+          } catch (_) { /* skip inaccessible subdirectory */ }
+        }
+      } else {
+        allImages = entries
+          .filter(entry => {
+            if (entry.is_dir) return false;
+            const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf('.'));
+            return imageExtensions.includes(ext);
+          })
+          .map(entry => ({
+            name: entry.name,
+            path: `${basePath}/${entry.name}`,
+            url: `/image_get?path=${basePath}/${entry.name}`,
+            size: entry.size,
+            date: entry.modified ? new Date(entry.modified) : null,
+            owner: username
+          }));
+      }
+      
+      // Sort by date (newest first)
+      this.images = allImages.sort((a, b) => {
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        return dateB - dateA;
+      });
         
     } catch (error) {
       console.error("Error fetching images:", error);

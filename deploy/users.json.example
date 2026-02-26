@@ -31,6 +31,18 @@
     "sarah": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
       "role": "user"
+    },
+    "christopher": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "louis": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
+    },
+    "mathias": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+      "role": "user"
     }
   }
 }

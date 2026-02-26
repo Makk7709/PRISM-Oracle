@@ -1,3 +1,4 @@
+from flask import session
 from python.helpers.api import ApiHandler, Input, Output, Request, Response
 from python.helpers import projects
 
@@ -40,12 +41,31 @@ class Projects(ApiHandler):
                 "error": str(e),
             }
 
+    def _current_user(self) -> tuple[str | None, str | None]:
+        try:
+            return session.get("username"), session.get("role")
+        except RuntimeError:
+            return None, None
+
+    def _check_project_access(self, name: str):
+        username, role = self._current_user()
+        if not username or role == "admin":
+            return
+        data = projects.load_basic_project_data(name)
+        owner = data.get("owner", "")
+        if owner and owner != username:
+            raise Exception(f"Access denied: project '{name}' belongs to another user")
+
     def get_active_projects_list(self):
-        return projects.get_active_projects_list()
+        username, role = self._current_user()
+        return projects.get_active_projects_list(username=username, role=role)
 
     def create_project(self, project: dict|None):
         if project is None:
             raise Exception("Project data is required")
+        username, _ = self._current_user()
+        if username:
+            project["owner"] = username
         data = projects.BasicProjectData(**project)
         name = projects.create_project(project["name"], data)
         return projects.load_edit_project_data(name)
@@ -53,11 +73,13 @@ class Projects(ApiHandler):
     def load_project(self, name: str|None):
         if name is None:
             raise Exception("Project name is required")
+        self._check_project_access(name)
         return projects.load_edit_project_data(name)
 
     def update_project(self, project: dict|None):
         if project is None:
             raise Exception("Project data is required")
+        self._check_project_access(project["name"])
         data = projects.EditProjectData(**project)
         name = projects.update_project(project["name"], data)
         return projects.load_edit_project_data(name)
@@ -65,13 +87,15 @@ class Projects(ApiHandler):
     def delete_project(self, name: str|None):
         if name is None:
             raise Exception("Project name is required")
+        self._check_project_access(name)
         return projects.delete_project(name)
 
     def activate_project(self, context_id: str|None, name: str|None):
         if not context_id:
             raise Exception("Context ID is required")
         if not name:
-            raise Exception("Project name is required") 
+            raise Exception("Project name is required")
+        self._check_project_access(name)
         return projects.activate_project(context_id, name)
 
     def deactivate_project(self, context_id: str|None):
@@ -82,10 +106,8 @@ class Projects(ApiHandler):
     def get_file_structure(self, name: str|None, settings: dict|None):
         if not name:
             raise Exception("Project name is required")
-        # project data
+        self._check_project_access(name)
         basic_data = projects.load_basic_project_data(name)
-        # override file structure settings
         if settings:
             basic_data["file_structure"] = settings # type: ignore
-        # get structure
         return projects.get_file_structure(name, basic_data)
