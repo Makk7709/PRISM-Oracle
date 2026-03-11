@@ -44,6 +44,14 @@ from python.helpers.criticality_router import (
     get_criticality_router,
 )
 from python.helpers.consensus_manager import DecisionType, ConsensusStatus
+from python.helpers.execution_budget import (
+    BudgetExceededError,
+    check_delegation,
+    get_or_create_state,
+    get_limits,
+    propagate_budget,
+    format_budget_exceeded_response,
+)
 
 # Import deterministic router (feature flag controlled)
 try:
@@ -254,6 +262,24 @@ class Delegation(Tool):
                 f"[{correlation_id}] - {assessment.reasons}"
             )
         
+        # ═══════════════════════════════════════════════════════════════════════
+        # DELEGATION GUARD: Check budget before creating/invoking subordinate
+        # ═══════════════════════════════════════════════════════════════════════
+        try:
+            budget_state = get_or_create_state(self.agent)
+            budget_limits = get_limits(self.agent)
+            source_profile = self.agent.config.profile or "default"
+            target_profile = agent_profile or "default"
+            check_delegation(budget_state, budget_limits, source_profile, target_profile)
+        except BudgetExceededError as e:
+            logger.warning(
+                f"DELEGATION_BLOCKED [{correlation_id}] | {e.reason.value} | {e.detail}"
+            )
+            return Response(
+                message=format_budget_exceeded_response(e),
+                break_loop=True,
+            )
+
         # Créer ou récupérer l'agent subordonné
         if (
             self.agent.get_data(Agent.DATA_NAME_SUBORDINATE) is None
@@ -275,6 +301,9 @@ class Delegation(Tool):
             sub.set_data(Agent.DATA_NAME_SUPERIOR, self.agent)
             self.agent.set_data(Agent.DATA_NAME_SUBORDINATE, sub)
             
+            # BUDGET PROPAGATION: share the same budget state with subordinate
+            propagate_budget(self.agent, sub)
+            
             # Stocker les métadonnées de consensus sur l'agent
             sub.set_data("_consensus_assessment", assessment.to_dict())
             
@@ -284,9 +313,11 @@ class Delegation(Tool):
 
         # Récupérer le subordonné
         subordinate: Agent = self.agent.get_data(Agent.DATA_NAME_SUBORDINATE)
+        # Ensure budget is always propagated (including when subordinate was reused)
+        propagate_budget(self.agent, subordinate)
         subordinate.hist_add_user_message(UserMessage(message=message, attachments=[]))
 
-        # Exécuter le monologue du subordonné
+        # Exécuter le monologue du subordonné (BudgetExceededError propagates naturally)
         result = await subordinate.monologue()
         
         PrintStyle(font_color="yellow").print(

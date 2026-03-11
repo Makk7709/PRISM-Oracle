@@ -15,6 +15,16 @@ from python.helpers import extract_tools, files, errors, history, tokens, contex
 from python.helpers import dirty_json
 from python.helpers.print_style import PrintStyle
 from python.helpers.execution_guard import check_execution_guard, ExecutionGuardResult
+from python.helpers.execution_budget import (
+    BudgetExceededError,
+    get_or_create_state,
+    get_limits,
+    check_iteration,
+    check_depth,
+    check_tool_call,
+    check_llm_call,
+    format_budget_exceeded_response,
+)
 
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -260,6 +270,14 @@ class AgentContext:
     # this wrapper ensures that superior agents are called back if the chat was loaded from file and original callstack is gone
     async def _process_chain(self, agent: "Agent", msg: "UserMessage|str", user=True):
         try:
+            # ═══════════════════════════════════════════════════════════
+            # DEPTH GUARD: prevent unbounded recursion in _process_chain
+            # ═══════════════════════════════════════════════════════════
+            from python.helpers.execution_budget import check_depth, get_or_create_state, get_limits
+            budget_state = get_or_create_state(agent)
+            budget_limits = get_limits(agent)
+            check_depth(budget_state, budget_limits, agent.agent_name)
+
             msg_template = (
                 agent.hist_add_user_message(msg)  # type: ignore
                 if user
@@ -272,6 +290,14 @@ class AgentContext:
             if superior:
                 response = await self._process_chain(superior, response, False)  # type: ignore
             return response
+        except BudgetExceededError as e:
+            self.log.log(
+                type="warning",
+                heading="LOOP_GUARD_TRIGGERED",
+                content=format_budget_exceeded_response(e),
+                kvps=e.state.to_dict(),
+            )
+            return format_budget_exceeded_response(e)
         except Exception as e:
             agent.handle_critical_exception(e)
 
@@ -362,6 +388,12 @@ class Agent:
         asyncio.run(self.call_extensions("agent_init"))
 
     async def monologue(self):
+        # ═══════════════════════════════════════════════════════════════════
+        # EXECUTION BUDGET: Get shared state and limits for loop guards
+        # ═══════════════════════════════════════════════════════════════════
+        budget_state = get_or_create_state(self)
+        budget_limits = get_limits(self)
+
         while True:
             try:
                 # loop data dictionary to pass to extensions
@@ -410,6 +442,11 @@ class Agent:
                     self.loop_data.iteration += 1
                     self.loop_data.params_temporary = {}  # clear temporary params
 
+                    # ═══════════════════════════════════════════════════════════
+                    # LOOP GUARD: check iteration budget before each cycle
+                    # ═══════════════════════════════════════════════════════════
+                    check_iteration(budget_state, budget_limits, self.agent_name)
+
                     # call message_loop_start extensions
                     await self.call_extensions(
                         "message_loop_start", loop_data=self.loop_data
@@ -452,6 +489,9 @@ class Agent:
                                 printer.stream(stream_data["chunk"])
                             # Use the potentially modified full text for downstream processing
                             await self.handle_response_stream(stream_data["full"])
+
+                        # LOOP GUARD: check LLM call budget
+                        check_llm_call(budget_state, budget_limits, self.agent_name)
 
                         # call main LLM
                         agent_response, _reasoning = await self.call_chat_model(
@@ -498,6 +538,18 @@ class Agent:
                                 return tools_result  # break the execution if the task is done
 
                     # exceptions inside message loop:
+                    except BudgetExceededError as e:
+                        # LOOP GUARD TRIGGERED — stop immediately, return explicit status
+                        self.context.log.log(
+                            type="warning",
+                            heading="LOOP_GUARD_TRIGGERED",
+                            content=format_budget_exceeded_response(e),
+                            kvps=e.state.to_dict(),
+                        )
+                        PrintStyle(font_color="red", bold=True, padding=True).print(
+                            f"LOOP_GUARD_TRIGGERED: {e.reason.value} — {e.detail}"
+                        )
+                        return format_budget_exceeded_response(e)
                     except InterventionException as e:
                         pass  # intervention message has been handled in handle_intervention(), proceed with conversation loop
                     except RepairableException as e:
@@ -518,6 +570,14 @@ class Agent:
                         )
 
             # exceptions outside message loop:
+            except BudgetExceededError as e:
+                self.context.log.log(
+                    type="warning",
+                    heading="LOOP_GUARD_TRIGGERED",
+                    content=format_budget_exceeded_response(e),
+                    kvps=e.state.to_dict(),
+                )
+                return format_budget_exceeded_response(e)
             except InterventionException as e:
                 pass  # just start over
             except Exception as e:
@@ -883,6 +943,11 @@ class Agent:
                 self.loop_data.current_tool = tool # type: ignore
                 try:
                     await self.handle_intervention()
+
+                    # LOOP GUARD: check tool call budget
+                    _budget_state = get_or_create_state(self)
+                    _budget_limits = get_limits(self)
+                    check_tool_call(_budget_state, _budget_limits, tool_name, self.agent_name)
 
                     # Call tool hooks for compatibility
                     await tool.before_execution(**tool_args)
