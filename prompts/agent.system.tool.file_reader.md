@@ -51,7 +51,9 @@ Read a PDF:
 ```
 
 **Important:**
-- Files uploaded by user are in `tmp/uploads/` folder
-- If file not found, the tool will show available files
+- Files uploaded by user via chat are in `tmp/uploads/` folder
+- Files imported via the Knowledge button are in `knowledge/custom/main/` folder
+- The tool automatically searches BOTH locations — just provide the filename
+- If file not found, the tool will show all available files (uploads + knowledge)
 - For Excel/CSV: shows column names and data
-- For PDF: extracts text content (may be empty for scanned PDFs)
+- For PDF: extracts text content (may be empty for scanned PDFs — use pdf_ocr instead)

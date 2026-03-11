@@ -1,6 +1,7 @@
 ## Environment
 - Working directory: {{work_dir}}
 - File uploads: {{work_dir}}/tmp/uploads/
+- Knowledge files: {{work_dir}}/knowledge/custom/main/
 - Python execution: Available via code_execution tool (runtime: python)
 - Current user: {{username}}
 {% if user_workspace %}- User workspace: {{user_workspace}}
@@ -14,6 +15,8 @@
   ALWAYS save to the user's workspace: {{user_workspace}}/rapports/
 - User-specific documents are in: {{user_workspace}}/documents/
 {% endif %}- User-uploaded files are ALWAYS in: {{work_dir}}/tmp/uploads/
+- Knowledge files (imported via Knowledge button) are in: {{work_dir}}/knowledge/custom/main/
+- The **file_reader** tool automatically searches BOTH uploads and knowledge folders
 - Generated files (PDFs, exports) go to: {{work_dir}}/tmp/generated/
 - ALWAYS use the full absolute path when accessing files
 - For Excel files (.xlsx): use pandas.read_excel() via code_execution
