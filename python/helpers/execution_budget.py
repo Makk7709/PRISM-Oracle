@@ -83,7 +83,7 @@ class BudgetLimits:
     max_tool_calls: int = field(default_factory=lambda: _env_int("EVIDENCE_MAX_TOOL_CALLS", 50))
     max_llm_calls: int = field(default_factory=lambda: _env_int("EVIDENCE_MAX_LLM_CALLS", 30))
     max_consensus_rounds: int = field(default_factory=lambda: _env_int("EVIDENCE_MAX_CONSENSUS_ROUNDS", 3))
-    deadline_seconds: float = field(default_factory=lambda: _env_float("EVIDENCE_DEADLINE_SECONDS", 300.0))
+    deadline_seconds: float = field(default_factory=lambda: _env_float("EVIDENCE_DEADLINE_SECONDS", 900.0))
     allow_self_delegation: bool = False
     max_delegation_revisits: int = field(default_factory=lambda: _env_int("EVIDENCE_MAX_DELEGATION_REVISITS", 1))
 
