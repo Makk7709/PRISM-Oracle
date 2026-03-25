@@ -18,6 +18,7 @@ from python.helpers.execution_guard import check_execution_guard, ExecutionGuard
 from python.helpers.execution_budget import (
     BudgetExceededError,
     get_or_create_state,
+    reset_state,
     get_limits,
     check_iteration,
     check_depth,
@@ -389,9 +390,10 @@ class Agent:
 
     async def monologue(self):
         # ═══════════════════════════════════════════════════════════════════
-        # EXECUTION BUDGET: Get shared state and limits for loop guards
+        # EXECUTION BUDGET: Fresh state for each monologue (new user message).
+        # reset_state() prevents stale started_at from prior conversations.
         # ═══════════════════════════════════════════════════════════════════
-        budget_state = get_or_create_state(self)
+        budget_state = reset_state(self)
         budget_limits = get_limits(self)
 
         while True:

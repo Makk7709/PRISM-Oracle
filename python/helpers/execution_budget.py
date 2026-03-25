@@ -305,10 +305,24 @@ def get_or_create_state(agent: Any) -> ExecutionState:
     """
     state = agent.get_data(_BUDGET_STATE_KEY)
     if state is None:
-        import uuid
-        state = ExecutionState(execution_id=str(uuid.uuid4())[:12])
+        state = _new_state()
         agent.set_data(_BUDGET_STATE_KEY, state)
     return state
+
+
+def reset_state(agent: Any) -> ExecutionState:
+    """
+    Force-create a fresh ExecutionState for a new execution cycle (e.g. new user message).
+    Must be called at the start of monologue() to avoid stale started_at timestamps.
+    """
+    state = _new_state()
+    agent.set_data(_BUDGET_STATE_KEY, state)
+    return state
+
+
+def _new_state() -> ExecutionState:
+    import uuid
+    return ExecutionState(execution_id=str(uuid.uuid4())[:12])
 
 
 def get_limits(agent: Any) -> BudgetLimits:
@@ -367,6 +381,7 @@ __all__ = [
     "check_llm_call",
     "check_consensus_round",
     "get_or_create_state",
+    "reset_state",
     "get_limits",
     "propagate_budget",
     "format_budget_exceeded_response",
