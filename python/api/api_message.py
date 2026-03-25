@@ -5,6 +5,7 @@ from agent import AgentContext, UserMessage, AgentContextType
 from python.helpers.api import ApiHandler, Request, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
+from python.helpers.path_aliases import normalize_container_path
 from werkzeug.utils import secure_filename
 from initialize import initialize_agent
 import threading
@@ -40,7 +41,7 @@ class ApiMessage(ApiHandler):
         # Handle attachments (base64 encoded)
         attachment_paths = []
         if attachments:
-            upload_folder_int = "/korev/tmp/uploads"
+            upload_folder_int = normalize_container_path("/korev/tmp/uploads")
             upload_folder_ext = files.get_abs_path("tmp/uploads")
             os.makedirs(upload_folder_ext, exist_ok=True)
 
