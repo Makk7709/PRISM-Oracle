@@ -63,6 +63,22 @@ test("rewriteInlineImagePaths converts sandbox scheme to image_get", () => {
   assert.equal(out, "![Img](/image_get?path=tmp/uploads/photo.jpeg)");
 });
 
+test("rewriteInlineImagePaths rewrites local app double-slash tmp path", () => {
+  const input = "![Img](/app//tmp/generated/Usinage_Modifie_Compactop.png)";
+  const out = rewriteInlineImagePaths(input);
+  assert.equal(
+    out,
+    "![Img](/image_get?path=tmp/generated/Usinage_Modifie_Compactop.png)"
+  );
+});
+
+test("extractInternalPathFromHref handles app double-slash local href", () => {
+  const path = extractInternalPathFromHref(
+    "/app//tmp/generated/Usinage_Modifie_Compactop.png"
+  );
+  assert.equal(path, "tmp/generated/Usinage_Modifie_Compactop.png");
+});
+
 test("extractInternalPathFromHref supports uppercase malformed host", () => {
   const path = extractInternalPathFromHref(
     "HTTPS://KOREV/tmp/uploads/scan-01.png"

@@ -18,6 +18,7 @@ export function normalizeMalformedLocalHost(value) {
   // Normalize file URLs pointing to local container prefixes.
   out = out.replace(/^file:\/\/\/?(?:app|korev|a0)\//i, "/");
   out = out.replace(/^file:\/\//i, "/");
+  out = out.replace(/^\/(?:app|korev|a0)\/+(?=tmp\/)/i, "/");
 
   return out;
 }
@@ -30,7 +31,7 @@ export function extractInternalPathFromHref(href) {
   if (/^https?:\/\//i.test(normalized)) return null;
 
   const match = normalized.match(
-    /^(?:\/)?(?:app\/|korev\/|a0\/)?(tmp\/(?:generated|uploads|generated_images)\/[^\s?#]+|shared\/[^\s?#]+)/i
+    /^(?:\/)?(?:app\/+|korev\/+|a0\/+)?(tmp\/(?:generated|uploads|generated_images)\/[^\s?#]+|shared\/[^\s?#]+)/i
   );
   return match ? match[1] : null;
 }
@@ -54,7 +55,7 @@ export function rewriteInlineImagePaths(input) {
 
   // Route local image paths through image_get for robust serving.
   out = out.replace(
-    /(^|[\s('"`>])(?:\/(?:app|korev|a0))?\/(tmp\/(?:generated_images|generated|uploads)\/[^\s"')>]+)/gi,
+    /(^|[\s('"`>])(?:\/(?:app|korev|a0))?\/+(tmp\/(?:generated_images|generated|uploads)\/[^\s"')>]+)/gi,
     (full, prefix, p1) => (IMAGE_EXT_RE.test(p1) ? `${prefix}${toImageGetPath(p1)}` : full)
   );
 
