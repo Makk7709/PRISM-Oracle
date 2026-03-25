@@ -6,7 +6,7 @@ without requiring the agent to write Python code.
 """
 
 import os
-from dataclasses import dataclass
+from typing import Optional
 from python.helpers.tool import Tool, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
@@ -20,8 +20,10 @@ class FileReader(Tool):
 
     async def execute(self, **kwargs) -> Response:
         file_path = self.args.get("path", "")
-        format_hint = self.args.get("format", "auto")
         max_rows = int(self.args.get("max_rows", 100))
+        max_chars = int(self.args.get("max_chars", 300000))
+        max_pages_arg = int(self.args.get("max_pages", 0)) if str(self.args.get("max_pages", "")).strip() else 0
+        max_pages = max_pages_arg if max_pages_arg > 0 else None
         
         if not file_path:
             return Response(
@@ -59,7 +61,7 @@ class FileReader(Tool):
             elif ext == '.csv':
                 content = self._read_csv(abs_path, max_rows)
             elif ext == '.pdf':
-                content = self._read_pdf(abs_path)
+                content = self._read_pdf(abs_path, max_pages=max_pages, max_chars=max_chars)
             elif ext in ['.txt', '.md', '.json', '.xml', '.html']:
                 content = self._read_text(abs_path)
             else:
@@ -155,7 +157,7 @@ class FileReader(Tool):
             pass
         return dirs
 
-    def _find_in_knowledge(self, path: str) -> str | None:
+    def _find_in_knowledge(self, path: str) -> Optional[str]:
         """Search for a file by name or relative path in knowledge directories."""
         basename = os.path.basename(path)
         for kn_dir in self._get_knowledge_dirs():
@@ -229,23 +231,36 @@ class FileReader(Tool):
         
         return info
     
-    def _read_pdf(self, path: str) -> str:
+    def _read_pdf(self, path: str, max_pages: Optional[int] = None, max_chars: int = 300000) -> str:
         """Read PDF file using pypdf (BSD license)."""
         try:
             from pypdf import PdfReader
 
             reader = PdfReader(path)
+            total_pages = len(reader.pages)
+            pages_to_process = total_pages if max_pages is None else min(max_pages, total_pages)
             text_parts = []
 
-            for page_num, page in enumerate(reader.pages, 1):
+            for page_num in range(pages_to_process):
+                page = reader.pages[page_num]
                 text = page.extract_text() or ""
                 if text.strip():
-                    text_parts.append(f"--- Page {page_num} ---\n{text}")
+                    text_parts.append(f"--- Page {page_num + 1} ---\n{text}")
 
             if not text_parts:
                 return "(PDF contains no extractable text - may be scanned/image-based)"
 
-            return f"Pages: {len(text_parts)}\n\n" + "\n\n".join(text_parts[:10])
+            output = (
+                f"Pages: {pages_to_process}/{total_pages}\n"
+                f"Non-empty pages: {len(text_parts)}\n\n"
+                + "\n\n".join(text_parts)
+            )
+            if len(output) > max_chars:
+                output = (
+                    output[:max_chars]
+                    + f"\n\n... (truncated to {max_chars} chars; increase `max_chars` to read full document)"
+                )
+            return output
 
         except ImportError:
             return "Error: pypdf not installed. Install with: pip install pypdf"

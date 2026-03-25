@@ -181,3 +181,87 @@ class TestFileReaderOtherFormats:
         result = reader._read_text(str(txt_file))
         assert "truncated" in result.lower()
         assert len(result) < 20000
+
+
+class TestFileReaderVolumeRegression:
+    """Strict regressions for large-document handling."""
+
+    @staticmethod
+    def _make_reader():
+        import importlib
+        import sys
+        import types
+        from dataclasses import dataclass
+        from typing import Optional
+
+        # Stub heavy Tool dependency chain (agent/models/whisper) for unit isolation.
+        if "python.helpers.tool" not in sys.modules:
+            stub = types.ModuleType("python.helpers.tool")
+
+            @dataclass
+            class Response:
+                message: str
+                break_loop: bool
+                additional: Optional[dict] = None
+
+            class Tool:
+                pass
+
+            stub.Response = Response
+            stub.Tool = Tool
+            sys.modules["python.helpers.tool"] = stub
+
+        module = importlib.import_module("python.tools.file_reader")
+        importlib.reload(module)
+        FileReader = module.FileReader
+        return FileReader.__new__(FileReader)
+
+    @staticmethod
+    def _build_multipage_pdf(path: Path, pages: int = 12):
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+
+        c = canvas.Canvas(str(path), pagesize=A4)
+        for i in range(1, pages + 1):
+            c.drawString(80, 800, f"Invoice Batch Test — Page {i}")
+            c.drawString(80, 780, f"PEFC marker page {i}")
+            c.showPage()
+        c.save()
+
+    def test_read_pdf_reads_beyond_10_pages(self, tmp_path):
+        """Regression: must not silently truncate at first 10 pages."""
+        reader = self._make_reader()
+        pdf_path = tmp_path / "twelve_pages.pdf"
+        self._build_multipage_pdf(pdf_path, pages=12)
+
+        result = reader._read_pdf(str(pdf_path))
+
+        assert "Page 10" in result
+        assert "Page 11" in result
+        assert "Page 12" in result
+
+    @pytest.mark.asyncio
+    async def test_execute_pdf_honors_max_pages_argument(self, tmp_path):
+        """When max_pages is provided, FileReader must cap pages deterministically."""
+        reader = self._make_reader()
+        pdf_path = tmp_path / "fifteen_pages.pdf"
+        self._build_multipage_pdf(pdf_path, pages=15)
+        reader.args = {"path": str(pdf_path), "max_pages": 3}
+
+        response = await reader.execute()
+
+        assert "Page 1" in response.message
+        assert "Page 3" in response.message
+        assert "Page 4" not in response.message
+
+    @pytest.mark.asyncio
+    async def test_execute_pdf_honors_max_chars_and_reports_truncation(self, tmp_path):
+        """Large output must truncate with explicit marker for auditability."""
+        reader = self._make_reader()
+        pdf_path = tmp_path / "big_chars.pdf"
+        self._build_multipage_pdf(pdf_path, pages=20)
+        reader.args = {"path": str(pdf_path), "max_chars": 350}
+
+        response = await reader.execute()
+
+        assert "truncated" in response.message.lower()

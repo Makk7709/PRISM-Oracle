@@ -176,3 +176,75 @@ class TestPdfOcrListUploads:
         ocr = self._make_ocr()
         result = ocr._list_uploads()
         assert isinstance(result, str)
+
+
+class TestPdfOcrVolumeDefaults:
+    """TDD regressions for large PDF defaults and OCR budget."""
+
+    @staticmethod
+    def _make_ocr():
+        import importlib
+        import sys
+        import types
+        from dataclasses import dataclass
+        from typing import Optional
+
+        # Stub heavy Tool dependency chain (agent/models/whisper) for unit isolation.
+        if "python.helpers.tool" not in sys.modules:
+            stub = types.ModuleType("python.helpers.tool")
+
+            @dataclass
+            class Response:
+                message: str
+                break_loop: bool
+                additional: Optional[dict] = None
+
+            class Tool:
+                pass
+
+            stub.Response = Response
+            stub.Tool = Tool
+            sys.modules["python.helpers.tool"] = stub
+
+        module = importlib.import_module("python.tools.pdf_ocr")
+        importlib.reload(module)
+        PdfOcr = module.PdfOcr
+        return PdfOcr.__new__(PdfOcr)
+
+    @staticmethod
+    def _build_multipage_pdf(path: Path, pages: int = 24):
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+
+        c = canvas.Canvas(str(path), pagesize=A4)
+        for i in range(1, pages + 1):
+            c.drawString(80, 800, f"Scanned-like page {i}")
+            c.showPage()
+        c.save()
+
+    @pytest.mark.asyncio
+    async def test_execute_ocr_without_max_pages_processes_full_document(self, tmp_path, monkeypatch):
+        """
+        If max_pages is omitted, OCR should process full document page count.
+        This prevents silent under-processing on large files.
+        """
+        ocr = self._make_ocr()
+        pdf_path = tmp_path / "twenty_four_pages.pdf"
+        self._build_multipage_pdf(pdf_path, pages=24)
+        ocr.args = {"path": str(pdf_path)}
+
+        monkeypatch.setattr(ocr, "_resolve_path", lambda p: str(pdf_path))
+        monkeypatch.setattr(ocr, "_extract_text_direct", lambda p: "")
+
+        captured = {"max_pages": None}
+
+        def fake_run_ocr(path, max_pages, language, total_timeout_s):
+            captured["max_pages"] = max_pages
+            return "OCR TEXT"
+
+        monkeypatch.setattr(ocr, "_run_ocr", fake_run_ocr)
+
+        response = await ocr.execute()
+
+        assert "PDF OCR Extraction" in response.message
+        assert captured["max_pages"] == 24

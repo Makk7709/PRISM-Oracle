@@ -9,7 +9,6 @@ This tool handles the complexity of OCR automatically:
 """
 
 import os
-import tempfile
 from python.helpers.tool import Tool, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
@@ -23,7 +22,7 @@ class PdfOcr(Tool):
 
     async def execute(self, **kwargs) -> Response:
         file_path = self.args.get("path", "")
-        max_pages = int(self.args.get("max_pages", 10))
+        max_pages_requested = int(self.args.get("max_pages", 0)) if str(self.args.get("max_pages", "")).strip() else 0
         language = self.args.get("language", "eng+fra")  # English + French by default
         
         if not file_path:
@@ -59,8 +58,10 @@ class PdfOcr(Tool):
             
             # PDF is likely scanned, use OCR
             PrintStyle(font_color="yellow").print("[PDF OCR] PDF appears scanned, running OCR...")
-            
-            ocr_text = self._run_ocr(abs_path, max_pages, language)
+
+            max_pages = self._resolve_max_pages(abs_path, max_pages_requested)
+            total_timeout_s = float(self.args.get("total_timeout_s", max(120.0, max_pages * 8.0)))
+            ocr_text = self._run_ocr(abs_path, max_pages, language, total_timeout_s)
             
             if not ocr_text.strip():
                 return Response(
@@ -77,6 +78,7 @@ class PdfOcr(Tool):
                 message=f"**PDF OCR Extraction**\n"
                         f"File: {os.path.basename(abs_path)}\n"
                         f"Pages processed: up to {max_pages}\n"
+                        f"Total timeout: {total_timeout_s:.0f}s\n"
                         f"Language: {language}\n\n"
                         f"--- Extracted Text ---\n{ocr_text}",
                 break_loop=False
@@ -134,7 +136,22 @@ class PdfOcr(Tool):
         except Exception:
             return ""
     
-    def _run_ocr(self, path: str, max_pages: int, language: str) -> str:
+    def _resolve_max_pages(self, path: str, requested_max_pages: int) -> int:
+        """Resolve OCR page budget. requested_max_pages<=0 means full document."""
+        page_count = self._get_pdf_page_count(path)
+        if requested_max_pages <= 0:
+            return page_count
+        return min(requested_max_pages, page_count)
+
+    def _get_pdf_page_count(self, path: str) -> int:
+        """Return PDF page count with safe fallback."""
+        try:
+            from pypdf import PdfReader
+            return max(1, len(PdfReader(path).pages))
+        except Exception:
+            return 10
+
+    def _run_ocr(self, path: str, max_pages: int, language: str, total_timeout_s: float) -> str:
         """Run OCR on PDF pages using centralized OCREngine."""
         try:
             from python.helpers.pdf_extraction.ocr_engine import OCREngine
@@ -151,7 +168,7 @@ class PdfOcr(Tool):
                 language=language,
                 max_pages=max_pages,
                 dpi=adaptive_dpi,
-                total_timeout_s=120.0,
+                total_timeout_s=total_timeout_s,
             )
 
             text_parts = []
