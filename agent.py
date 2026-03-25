@@ -384,6 +384,7 @@ class Agent:
 
         self.history = history.History(self)  # type: ignore[abstract]
         self.last_user_message: history.Message | None = None
+        self.last_user_attachments: list[str] = []
         self.intervention: UserMessage | None = None
         self.data: dict[str, Any] = {}  # free data object all the tools can use
 
@@ -744,6 +745,7 @@ class Agent:
         # add to history
         msg = self.hist_add_message(False, content=content)  # type: ignore
         self.last_user_message = msg
+        self.last_user_attachments = list(message.attachments or [])
         return msg
 
     def hist_add_ai_response(self, message: str):
@@ -809,9 +811,7 @@ class Agent:
         background: bool = False,
     ):
         # Route utility calls to stronger model for document-heavy workloads.
-        current_attachments = []
-        if self.last_user_message:
-            current_attachments = list(self.last_user_message.attachments or [])
+        current_attachments = self._get_current_attachments_for_utility()
 
         selected_config, route_reason = select_utility_model_config(
             utility_model_config=self.config.utility_model,
@@ -850,6 +850,26 @@ class Agent:
         )
 
         return response
+
+    def _get_current_attachments_for_utility(self) -> list[str]:
+        """
+        Return attachments for utility-model routing in a backward-compatible way.
+
+        `self.last_user_message` is a history.Message (without `attachments` attr),
+        while routing needs current user attachments for document workload detection.
+        """
+        if self.last_user_attachments:
+            return list(self.last_user_attachments)
+
+        if self.last_user_message:
+            legacy_attachments = getattr(self.last_user_message, "attachments", None)
+            if legacy_attachments:
+                try:
+                    return list(legacy_attachments)
+                except Exception:
+                    return []
+
+        return []
 
     async def call_chat_model(
         self,
