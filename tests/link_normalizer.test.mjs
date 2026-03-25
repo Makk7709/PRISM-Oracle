@@ -45,6 +45,12 @@ test("rewriteInlineImagePaths keeps external image URLs unchanged", () => {
   assert.equal(out, input);
 });
 
+test("rewriteInlineImagePaths does not rewrite external host paths containing /tmp", () => {
+  const input = "![Logo](https://example.com/tmp/generated/logo.png)";
+  const out = rewriteInlineImagePaths(input);
+  assert.equal(out, input);
+});
+
 test("rewriteInlineImagePaths converts img scheme to image_get", () => {
   const input = "![Img](img://tmp/generated_images/x.png)";
   const out = rewriteInlineImagePaths(input);

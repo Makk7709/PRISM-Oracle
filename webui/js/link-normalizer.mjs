@@ -54,8 +54,8 @@ export function rewriteInlineImagePaths(input) {
 
   // Route local image paths through image_get for robust serving.
   out = out.replace(
-    /(?:\/(?:app|korev|a0))?\/(tmp\/(?:generated_images|generated|uploads)\/[^\s"')>]+)/gi,
-    (full, p1) => (IMAGE_EXT_RE.test(p1) ? toImageGetPath(p1) : full)
+    /(^|[\s('"`>])(?:\/(?:app|korev|a0))?\/(tmp\/(?:generated_images|generated|uploads)\/[^\s"')>]+)/gi,
+    (full, prefix, p1) => (IMAGE_EXT_RE.test(p1) ? `${prefix}${toImageGetPath(p1)}` : full)
   );
 
   // Clean duplicate slashes in image_get path parameter.
