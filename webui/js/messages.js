@@ -283,13 +283,37 @@ export function addBlankTargetsToLinks(str) {
       anchor.setAttribute("target", "_blank");
     }
 
-    // Convert internal file-system paths to download links
-    // Matches /app/tmp/generated/..., /tmp/uploads/..., /app/shared/..., file:///app/..., etc.
+    // Convert internal file-system paths to download links.
+    // Accepts direct paths and malformed absolute URLs such as:
+    // - /app/tmp/generated/x.png
+    // - file:///app/tmp/generated/x.png
+    // - https://app/tmp/generated/x.png (broken host, should be treated as local path)
     let internalPath = null;
-    const containerMatch = href.match(/^(?:file:\/\/)?(?:\/app|\/a0|\/korev)?\/(tmp\/(?:generated|uploads)\/[^\s?#]+|shared\/[^\s?#]+)/);
-    if (containerMatch) {
-      internalPath = containerMatch[1];
-    }
+    const normalizeHref = (rawHref) => {
+      if (!rawHref) return "";
+      let candidate = String(rawHref).trim();
+
+      // Decode safely when possible.
+      try {
+        candidate = decodeURIComponent(candidate);
+      } catch (_e) {
+        // Keep original href when decoding fails.
+      }
+
+      // Normalize common malformed absolute URLs to plain path form.
+      candidate = candidate.replace(
+        /^(https?:\/\/)?(?:app|korev|a0)(?=\/)/i,
+        ""
+      );
+      return candidate;
+    };
+
+    const normalizedHref = normalizeHref(href);
+    const containerMatch = normalizedHref.match(
+      /^(?:file:\/\/)?(?:\/app|\/a0|\/korev)?\/?(tmp\/(?:generated|uploads|generated_images)\/[^\s?#]+|shared\/[^\s?#]+)/
+    );
+    if (containerMatch) internalPath = containerMatch[1];
+
     if (internalPath) {
       anchor.setAttribute("href", "#");
       anchor.removeAttribute("target");
@@ -974,8 +998,11 @@ function convertHTML(str) {
 }
 
 function convertImgFilePaths(str) {
-  // First, normalize Docker paths /app/, /korev/ or legacy /a0/ to nothing (remove the prefix)
-  let result = str.replace(/\/app\//g, "/").replace(/\/korev\//g, "/").replace(/\/a0\//g, "/");
+  // Normalize only local absolute paths; do not rewrite URL hosts (e.g. https://app/...).
+  let result = str
+    .replace(/(^|[^:])\/app\//g, "$1/")
+    .replace(/(^|[^:])\/korev\//g, "$1/")
+    .replace(/(^|[^:])\/a0\//g, "$1/");
   
   // Convert img:// and img:/// protocols to API endpoint
   // Handle both img://path and img:///path (with extra slash)
