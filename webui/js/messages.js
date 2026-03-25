@@ -4,6 +4,10 @@ import { marked } from "../vendor/marked/marked.esm.js";
 import { store as _messageResizeStore } from "/components/messages/resize/message-resize-store.js"; // keep here, required in html
 import { store as attachmentsStore } from "/components/chat/attachments/attachmentsStore.js";
 import { addActionButtonsToElement } from "/components/messages/action-buttons/simple-action-buttons.js";
+import {
+  extractInternalPathFromHref,
+  rewriteInlineImagePaths,
+} from "./link-normalizer.mjs";
 
 const chatHistory = document.getElementById("chat-history");
 
@@ -283,36 +287,9 @@ export function addBlankTargetsToLinks(str) {
       anchor.setAttribute("target", "_blank");
     }
 
-    // Convert internal file-system paths to download links.
-    // Accepts direct paths and malformed absolute URLs such as:
-    // - /app/tmp/generated/x.png
-    // - file:///app/tmp/generated/x.png
-    // - https://app/tmp/generated/x.png (broken host, should be treated as local path)
-    let internalPath = null;
-    const normalizeHref = (rawHref) => {
-      if (!rawHref) return "";
-      let candidate = String(rawHref).trim();
-
-      // Decode safely when possible.
-      try {
-        candidate = decodeURIComponent(candidate);
-      } catch (_e) {
-        // Keep original href when decoding fails.
-      }
-
-      // Normalize common malformed absolute URLs to plain path form.
-      candidate = candidate.replace(
-        /^(https?:\/\/)?(?:app|korev|a0)(?=\/)/i,
-        ""
-      );
-      return candidate;
-    };
-
-    const normalizedHref = normalizeHref(href);
-    const containerMatch = normalizedHref.match(
-      /^(?:file:\/\/)?(?:\/app|\/a0|\/korev)?\/?(tmp\/(?:generated|uploads|generated_images)\/[^\s?#]+|shared\/[^\s?#]+)/
-    );
-    if (containerMatch) internalPath = containerMatch[1];
+    // Convert internal file-system paths (including malformed app-host URLs)
+    // to download/open links.
+    const internalPath = extractInternalPathFromHref(href);
 
     if (internalPath) {
       anchor.setAttribute("href", "#");
@@ -998,27 +975,7 @@ function convertHTML(str) {
 }
 
 function convertImgFilePaths(str) {
-  // Normalize only local absolute paths; do not rewrite URL hosts (e.g. https://app/...).
-  let result = str
-    .replace(/(^|[^:])\/app\//g, "$1/")
-    .replace(/(^|[^:])\/korev\//g, "$1/")
-    .replace(/(^|[^:])\/a0\//g, "$1/");
-  
-  // Convert img:// and img:/// protocols to API endpoint
-  // Handle both img://path and img:///path (with extra slash)
-  // Also handle img:////path (4 slashes case from /app/, /korev/ or /a0/ removal)
-  result = result.replace(/img:\/\/\/?/g, "/image_get?path=");
-
-  // Convert sandbox:// protocol (LLM agents sometimes rewrite URLs with this scheme)
-  result = result.replace(/sandbox:\/\/\/?/g, "/image_get?path=");
-  
-  // Normalize any double slashes in paths after conversion
-  result = result.replace(/path=\/+/g, "path=");
-  
-  // Also convert standalone /tmp/... paths that aren't already converted
-  result = result.replace(/(?<![?=])\/tmp\/generated_images\/([^\s\)\"\']+)/g, "/image_get?path=tmp/generated_images/$1");
-  
-  return result;
+  return rewriteInlineImagePaths(str);
 }
 
 export function convertIcons(str) {
