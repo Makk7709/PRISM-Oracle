@@ -15,6 +15,7 @@ from python.helpers import extract_tools, files, errors, history, tokens, contex
 from python.helpers import dirty_json
 from python.helpers.print_style import PrintStyle
 from python.helpers.execution_guard import check_execution_guard, ExecutionGuardResult
+from python.helpers.document_workload import select_utility_model_config
 from python.helpers.execution_budget import (
     BudgetExceededError,
     get_or_create_state,
@@ -807,11 +808,28 @@ class Agent:
         callback: Callable[[str], Awaitable[None]] | None = None,
         background: bool = False,
     ):
-        model = self.get_utility_model()
+        # Route utility calls to stronger model for document-heavy workloads.
+        current_attachments = []
+        if self.last_user_message:
+            current_attachments = list(self.last_user_message.attachments or [])
+
+        selected_config, route_reason = select_utility_model_config(
+            utility_model_config=self.config.utility_model,
+            chat_model_config=self.config.chat_model,
+            message=message,
+            attachments=current_attachments,
+        )
+        model = models.get_chat_model(
+            selected_config.provider,
+            selected_config.name,
+            model_config=selected_config,
+            **selected_config.build_kwargs(),
+        )
 
         # call extensions
         call_data = {
             "model": model,
+            "model_route_reason": route_reason,
             "system": system,
             "message": message,
             "callback": callback,

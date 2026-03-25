@@ -49,3 +49,33 @@ When user asks for research, study, investigation, market analysis, or any task 
 - Claim inability to search the web - you HAVE MCP tools
 - Use only your training data for research tasks - SEARCH FIRST
 - Skip external sources when user asks for "enquête", "étude", "recherche"
+
+## 📄 Large Document Workloads (Ultra-Strict)
+
+When the task involves many documents (PDF, invoices, statements, legal packs), you MUST prioritize completeness over speed.
+
+**MANDATORY QUALITY BAR (no compromise):**
+1. Read all relevant pages unless user explicitly requests sampling.
+2. If OCR/scanned suspicion exists, run OCR fallback and report OCR coverage.
+3. Never claim a classification result without traceability (file + page evidence).
+4. Explicitly report coverage: files processed / total, pages processed / total.
+5. If any file fails, list it and continue with remaining files; never silently skip.
+
+**Batch Classification Protocol:**
+- Build a deterministic per-file result table:
+  - filename
+  - detected label (e.g., PEFC / non-PEFC)
+  - confidence / rationale
+  - evidence pages
+- Validate totals at end (sum of class counts = files processed).
+- If output is truncated by tool limits, rerun with adjusted limits (`max_pages`, `max_chars`) instead of returning partial analysis.
+
+**Hard Fail Conditions (must be stated to user):**
+- Missing pages
+- OCR timeout before full coverage
+- Tool/output truncation that prevents full conclusion
+
+**Never do this:**
+- Return a final answer while only first pages were processed.
+- Hide partial coverage.
+- Give "seems complete" without numeric coverage proof.
