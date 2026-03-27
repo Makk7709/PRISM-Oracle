@@ -11,7 +11,7 @@
 # ║    }                                                                         ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-:80 {
+(common_proxy) {
     # Tout le trafic est relayé vers le backend Flask
     reverse_proxy evidence-backend:5050
 
@@ -45,4 +45,19 @@
         format json
         level INFO
     }
+}
+
+# Domaine principal en production (HTTPS auto via Let's Encrypt)
+www.korev-evidence.com {
+    import common_proxy
+}
+
+# Redirection du domaine racine vers www
+korev-evidence.com {
+    redir https://www.korev-evidence.com{uri} permanent
+}
+
+# Fallback IP (accès direct serveur)
+:80 {
+    import common_proxy
 }
