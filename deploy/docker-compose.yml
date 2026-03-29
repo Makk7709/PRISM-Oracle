@@ -26,6 +26,11 @@ services:
     container_name: evidence-backend
     restart: unless-stopped
 
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
     # Le backend n'est PAS exposé sur le réseau hôte.
     # Tout passe par Caddy via le réseau Docker interne.
     # Décommentez la ligne suivante UNIQUEMENT pour le debug :
@@ -83,6 +88,64 @@ services:
         max-file: "5"
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # EVIDENCE BACKEND DEMO (instance isolée)
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-backend-demo:
+    image: korev/evidence-backend:${EVIDENCE_VERSION:-latest}
+    container_name: evidence-backend-demo
+    restart: unless-stopped
+
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+    env_file:
+      - .env
+    environment:
+      - EVIDENCE_ENV=production
+      - KOREV_BEHIND_PROXY=true
+      - WEB_UI_HOST=0.0.0.0
+      - WEB_UI_PORT=5050
+      - EVIDENCE_SHARED_DIR=/app/shared
+      - PYTHONUNBUFFERED=1
+
+    volumes:
+      - evidence-demo-data:/app/data
+      - evidence-demo-logs:/app/logs
+      - evidence-demo-audit:/app/audit
+      - evidence-demo-shared:/app/shared
+      - evidence-demo-tmp:/app/tmp
+      - evidence-demo-memory:/app/memory
+      - ./.env:/app/.env:ro
+      - ./users.demo.json:/app/deploy/users.json:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5050/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT_DEMO:-2.0}"
+          memory: "${MEMORY_LIMIT_DEMO:-4G}"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+
+    networks:
+      - evidence-net
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # CADDY — Reverse proxy (HTTPS termination + headers sécurité)
   # ═══════════════════════════════════════════════════════════════════════════
   evidence-caddy:
@@ -103,6 +166,8 @@ services:
 
     depends_on:
       evidence-backend:
+        condition: service_healthy
+      evidence-backend-demo:
         condition: service_healthy
 
     healthcheck:
@@ -130,7 +195,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${BIND_HOST:-127.0.0.1}:${SMB_PORT:-445}:445"
+      - "${SMB_BIND_HOST:-127.0.0.1}:${SMB_PORT:-445}:445"
 
     volumes:
       - evidence-shared:/shared
@@ -235,6 +300,42 @@ volumes:
     labels:
       com.korev.evidence.type: "agent-memory"
       com.korev.evidence.backup: "true"
+
+  evidence-demo-data:
+    name: evidence-demo-data
+    labels:
+      com.korev.evidence.type: "data-demo"
+      com.korev.evidence.backup: "false"
+
+  evidence-demo-logs:
+    name: evidence-demo-logs
+    labels:
+      com.korev.evidence.type: "logs-demo"
+      com.korev.evidence.backup: "false"
+
+  evidence-demo-audit:
+    name: evidence-demo-audit
+    labels:
+      com.korev.evidence.type: "audit-demo"
+      com.korev.evidence.backup: "false"
+
+  evidence-demo-shared:
+    name: evidence-demo-shared
+    labels:
+      com.korev.evidence.type: "shared-workspaces-demo"
+      com.korev.evidence.backup: "false"
+
+  evidence-demo-tmp:
+    name: evidence-demo-tmp
+    labels:
+      com.korev.evidence.type: "tmp-runtime-demo"
+      com.korev.evidence.backup: "false"
+
+  evidence-demo-memory:
+    name: evidence-demo-memory
+    labels:
+      com.korev.evidence.type: "agent-memory-demo"
+      com.korev.evidence.backup: "false"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RÉSEAU ISOLÉ

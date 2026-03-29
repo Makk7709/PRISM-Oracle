@@ -46,7 +46,6 @@ class Poll(ApiHandler):
 
         ctxs = []
         tasks = []
-        processed_contexts = set()
 
         all_ctxs = list(AgentContext._contexts.values())
         if current_username:
@@ -54,59 +53,92 @@ class Poll(ApiHandler):
                 ctx for ctx in all_ctxs
                 if getattr(ctx, "username", None) == current_username
             ]
-        # First, identify all tasks
-        for ctx in all_ctxs:
-            # Skip if already processed
-            if ctx.id in processed_contexts:
-                continue
 
+        # Build visible scheduler tasks from durable storage.
+        raw_tasks = scheduler.serialize_all_tasks()
+        visible_tasks = []
+        needs_save = False
+        for task_data in raw_tasks:
+            if not current_username:
+                visible_tasks.append(task_data)
+                continue
+            owner = task_data.get("username")
+            if owner == current_username:
+                visible_tasks.append(task_data)
+                continue
+            if owner:
+                continue
+            # Legacy migration path: adopt unowned task if its context is owned.
+            task_ctx_id = task_data.get("context_id")
+            task_ctx = AgentContext.get(task_ctx_id) if task_ctx_id else None
+            if task_ctx and getattr(task_ctx, "username", None) == current_username:
+                task_obj = scheduler.get_task_by_uuid(task_data.get("uuid", ""))
+                if task_obj:
+                    await scheduler.update_task(task_obj.uuid, username=current_username)
+                    needs_save = True
+                task_data["username"] = current_username
+                visible_tasks.append(task_data)
+        if needs_save:
+            await scheduler.save()
+
+        task_context_ids = {
+            task_data.get("context_id")
+            for task_data in visible_tasks
+            if task_data.get("context_id")
+        }
+
+        for ctx in all_ctxs:
             # Skip BACKGROUND contexts as they should be invisible to users
             if ctx.type == AgentContextType.BACKGROUND:
-                processed_contexts.add(ctx.id)
                 continue
+            if ctx.id in task_context_ids:
+                continue
+            ctxs.append(ctx.output())
 
-            # Create the base context data that will be returned
-            context_data = ctx.output()
-
-            context_task = scheduler.get_task_by_uuid(ctx.id)
-            # Determine if this is a task-dedicated context by checking if a task with this UUID exists
-            is_task_context = (
-                context_task is not None and context_task.context_id == ctx.id
-            )
-
-            if not is_task_context:
-                ctxs.append(context_data)
+        for task_details in visible_tasks:
+            context_data = {}
+            task_ctx_id = task_details.get("context_id")
+            task_ctx = AgentContext.get(task_ctx_id) if task_ctx_id else None
+            if task_ctx and task_ctx.type != AgentContextType.BACKGROUND:
+                context_data = task_ctx.output()
             else:
-                # If this is a task, get task details from the scheduler
-                task_details = scheduler.serialize_task(ctx.id)
-                if task_details:
-                    # Add task details to context_data with the same field names
-                    # as used in scheduler endpoints to maintain UI compatibility
-                    context_data.update({
-                        "task_name": task_details.get("name"),  # name is for context, task_name for the task name
-                        "uuid": task_details.get("uuid"),
-                        "state": task_details.get("state"),
-                        "type": task_details.get("type"),
-                        "system_prompt": task_details.get("system_prompt"),
-                        "prompt": task_details.get("prompt"),
-                        "last_run": task_details.get("last_run"),
-                        "last_result": task_details.get("last_result"),
-                        "attachments": task_details.get("attachments", []),
-                        "context_id": task_details.get("context_id"),
-                    })
+                # Fallback when context is not loaded in memory: keep task visible/retrievable.
+                context_data = {
+                    "id": task_details.get("uuid"),
+                    "name": task_details.get("name"),
+                    "created_at": task_details.get("created_at"),
+                    "no": 0,
+                    "log_guid": "",
+                    "log_version": 0,
+                    "log_length": 0,
+                    "paused": False,
+                    "last_message": task_details.get("updated_at") or task_details.get("created_at"),
+                }
 
-                    # Add type-specific fields
-                    if task_details.get("type") == "scheduled":
-                        context_data["schedule"] = task_details.get("schedule")
-                    elif task_details.get("type") == "planned":
-                        context_data["plan"] = task_details.get("plan")
-                    else:
-                        context_data["token"] = task_details.get("token")
+            # Add task details to context_data with the same field names
+            # as used in scheduler endpoints to maintain UI compatibility
+            context_data.update({
+                "task_name": task_details.get("name"),  # name is for context, task_name for the task name
+                "uuid": task_details.get("uuid"),
+                "state": task_details.get("state"),
+                "type": task_details.get("type"),
+                "system_prompt": task_details.get("system_prompt"),
+                "prompt": task_details.get("prompt"),
+                "last_run": task_details.get("last_run"),
+                "last_result": task_details.get("last_result"),
+                "attachments": task_details.get("attachments", []),
+                "context_id": task_details.get("context_id"),
+            })
 
-                tasks.append(context_data)
+            # Add type-specific fields
+            if task_details.get("type") == "scheduled":
+                context_data["schedule"] = task_details.get("schedule")
+            elif task_details.get("type") == "planned":
+                context_data["plan"] = task_details.get("plan")
+            else:
+                context_data["token"] = task_details.get("token")
 
-            # Mark as processed
-            processed_contexts.add(ctx.id)
+            tasks.append(context_data)
 
         # Sort tasks and chats by their creation date, descending
         ctxs.sort(key=lambda x: x["created_at"], reverse=True)

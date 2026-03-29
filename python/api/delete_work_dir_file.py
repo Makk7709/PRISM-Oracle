@@ -2,6 +2,7 @@ from python.helpers.api import ApiHandler, Input, Output, Request, Response
 from python.helpers.file_browser import FileBrowser
 from python.helpers import files, runtime
 from python.api import get_work_dir_files
+from typing import Optional
 
 # Security imports - Phase 1 P0
 from python.security.path_safety import (
@@ -22,6 +23,7 @@ class DeleteWorkDirFile(ApiHandler):
     
     async def process(self, input: Input, request: Request) -> Output:
         file_path = input.get("path", "")
+        _, workspace = self._session_user_info()
         
         # Security validation - Phase 1 P0
         # Strip leading "/" to treat as relative path within project
@@ -34,24 +36,26 @@ class DeleteWorkDirFile(ApiHandler):
         current_path = input.get("currentPath", "")
 
         # Perform deletion with path validation
-        res = await runtime.call_development_function(delete_file_secure, file_path)
+        res = await runtime.call_development_function(delete_file_secure, file_path, workspace)
 
         if res:
             # Get updated file list
-            result = await runtime.call_development_function(get_work_dir_files.get_files, current_path)
+            result = await runtime.call_development_function(
+                get_work_dir_files.get_files, current_path, workspace
+            )
             return {"data": result}
         else:
             raise Exception("File not found or could not be deleted")
 
 
-async def delete_file_secure(file_path: str) -> bool:
+async def delete_file_secure(file_path: str, workspace: Optional[str] = None) -> bool:
     """
     Securely delete a file with path validation.
     
     Returns True if deleted, False if not found.
     Raises SecurityError if path validation fails.
     """
-    browser = FileBrowser()
+    browser = FileBrowser(base_dir=workspace or files.get_base_dir())
     
     # Additional validation: ensure path stays within base_dir
     # The FileBrowser.delete_file already does this, but we add belt-and-suspenders

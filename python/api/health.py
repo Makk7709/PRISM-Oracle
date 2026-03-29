@@ -1,5 +1,4 @@
 from python.helpers.api import ApiHandler, Request, Response
-from python.helpers import errors, git
 
 class HealthCheck(ApiHandler):
 
@@ -16,11 +15,4 @@ class HealthCheck(ApiHandler):
         return ["GET", "POST"]
 
     async def process(self, input: dict, request: Request) -> dict | Response:
-        gitinfo = None
-        error = None
-        try:
-            gitinfo = git.get_git_info()
-        except Exception as e:
-            error = errors.error_text(e)
-
-        return {"gitinfo": gitinfo, "error": error}
+        return {"status": "ok"}

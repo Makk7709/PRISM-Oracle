@@ -1,9 +1,10 @@
 from abc import abstractmethod
 import json
+import os
 import threading
 from typing import Union, TypedDict, Dict, Any
 from attr import dataclass
-from flask import Request, Response, jsonify, Flask, session, request, send_file
+from flask import Request, Response, jsonify, Flask, session, request, send_file, g
 from agent import AgentContext
 from initialize import initialize_agent
 from python.helpers.print_style import PrintStyle
@@ -80,7 +81,17 @@ class ApiHandler:
             # return exceptions with 500
         except Exception as e:
             error = format_error(e)
-            PrintStyle.error(f"API error: {error}")
+            try:
+                request_id = getattr(g, "request_id", "-")
+            except RuntimeError:
+                request_id = "-"
+            PrintStyle.error(f"API error [{request_id}] {request.path}: {error}")
+            if os.getenv("KOREV_PRODUCTION", "false").lower() == "true":
+                return Response(
+                    response='{"error":"Internal server error"}',
+                    status=500,
+                    mimetype="application/json",
+                )
             return Response(response=error, status=500, mimetype="text/plain")
 
     def _session_user_info(self) -> tuple[str | None, str | None]:

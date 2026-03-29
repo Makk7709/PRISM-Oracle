@@ -127,6 +127,8 @@ class BaseTask(BaseModel):
     attachments: list[str] = Field(default_factory=list)
     project_name: str | None = Field(default=None)
     project_color: str | None = Field(default=None)
+    username: str | None = Field(default=None)
+    workspace: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_run: datetime | None = None
@@ -147,6 +149,8 @@ class BaseTask(BaseModel):
                last_run: datetime | None = None,
                last_result: str | None = None,
                context_id: str | None = None,
+               username: str | None = None,
+               workspace: str | None = None,
                **kwargs):
         with self._lock:
             if name is not None:
@@ -172,6 +176,12 @@ class BaseTask(BaseModel):
                 self.updated_at = datetime.now(timezone.utc)
             if context_id is not None:
                 self.context_id = context_id
+                self.updated_at = datetime.now(timezone.utc)
+            if username is not None:
+                self.username = username
+                self.updated_at = datetime.now(timezone.utc)
+            if workspace is not None:
+                self.workspace = workspace
                 self.updated_at = datetime.now(timezone.utc)
             for key, value in kwargs.items():
                 if value is not None:
@@ -250,6 +260,8 @@ class AdHocTask(BaseTask):
         token: str,
         attachments: list[str] = list(),
         context_id: str | None = None,
+        username: str | None = None,
+        workspace: str | None = None,
         project_name: str | None = None,
         project_color: str | None = None
     ):
@@ -259,6 +271,8 @@ class AdHocTask(BaseTask):
                    attachments=attachments,
                    token=token,
                    context_id=context_id,
+                   username=username,
+                   workspace=workspace,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -272,6 +286,8 @@ class AdHocTask(BaseTask):
                last_result: str | None = None,
                context_id: str | None = None,
                token: str | None = None,
+               username: str | None = None,
+               workspace: str | None = None,
                **kwargs):
         super().update(name=name,
                        state=state,
@@ -282,6 +298,8 @@ class AdHocTask(BaseTask):
                        last_result=last_result,
                        context_id=context_id,
                        token=token,
+                       username=username,
+                       workspace=workspace,
                        **kwargs)
 
 
@@ -299,6 +317,8 @@ class ScheduledTask(BaseTask):
         attachments: list[str] = list(),
         context_id: str | None = None,
         timezone: str | None = None,
+        username: str | None = None,
+        workspace: str | None = None,
         project_name: str | None = None,
         project_color: str | None = None,
     ):
@@ -314,6 +334,8 @@ class ScheduledTask(BaseTask):
                    attachments=attachments,
                    schedule=schedule,
                    context_id=context_id,
+                   username=username,
+                   workspace=workspace,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -327,6 +349,8 @@ class ScheduledTask(BaseTask):
                last_result: str | None = None,
                context_id: str | None = None,
                schedule: TaskSchedule | None = None,
+               username: str | None = None,
+               workspace: str | None = None,
                **kwargs):
         super().update(name=name,
                        state=state,
@@ -337,6 +361,8 @@ class ScheduledTask(BaseTask):
                        last_result=last_result,
                        context_id=context_id,
                        schedule=schedule,
+                       username=username,
+                       workspace=workspace,
                        **kwargs)
 
     def check_schedule(self, frequency_seconds: float = 60.0) -> bool:
@@ -382,6 +408,8 @@ class PlannedTask(BaseTask):
         plan: TaskPlan,
         attachments: list[str] = list(),
         context_id: str | None = None,
+        username: str | None = None,
+        workspace: str | None = None,
         project_name: str | None = None,
         project_color: str | None = None
     ):
@@ -391,6 +419,8 @@ class PlannedTask(BaseTask):
                    plan=plan,
                    attachments=attachments,
                    context_id=context_id,
+                   username=username,
+                   workspace=workspace,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -404,6 +434,8 @@ class PlannedTask(BaseTask):
                last_result: str | None = None,
                context_id: str | None = None,
                plan: TaskPlan | None = None,
+               username: str | None = None,
+               workspace: str | None = None,
                **kwargs):
         super().update(name=name,
                        state=state,
@@ -414,6 +446,8 @@ class PlannedTask(BaseTask):
                        last_result=last_result,
                        context_id=context_id,
                        plan=plan,
+                       username=username,
+                       workspace=workspace,
                        **kwargs)
 
     def check_schedule(self, frequency_seconds: float = 60.0) -> bool:
@@ -734,7 +768,13 @@ class TaskScheduler:
             raise ValueError(f"Task {task.name} has no context ID")
 
         config = initialize_agent()
-        context: AgentContext = AgentContext(config, id=task.context_id, name=task.name)
+        context: AgentContext = AgentContext(
+            config,
+            id=task.context_id,
+            name=task.name,
+            username=task.username,
+            workspace=task.workspace,
+        )
         # context.id = task.context_id
         # initial name before renaming is same as task name
         # context.name = task.name
@@ -1098,6 +1138,8 @@ def serialize_task(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> Dict[s
         "next_run": serialize_datetime(task.get_next_run()),
         "last_result": task.last_result,
         "context_id": task.context_id,
+        "username": task.username,
+        "workspace": task.workspace,
         "dedicated_context": task.is_dedicated(),
         "project": {
             "name": task.project_name,
@@ -1169,6 +1211,8 @@ def deserialize_task(task_data: Dict[str, Any], task_class: Optional[Type[T]] = 
         "last_run": parse_datetime(task_data.get("last_run")),
         "last_result": task_data.get("last_result"),
         "context_id": task_data.get("context_id"),
+        "username": task_data.get("username"),
+        "workspace": task_data.get("workspace"),
     }
 
     # Add type-specific fields

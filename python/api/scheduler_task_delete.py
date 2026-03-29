@@ -27,10 +27,13 @@ class SchedulerTaskDelete(ApiHandler):
         task = scheduler.get_task_by_uuid(task_id)
         if not task:
             return {"error": f"Task with ID {task_id} not found"}
+        current_username, _ = self._session_user_info()
+        if current_username and task.username != current_username:
+            return {"error": f"Task with ID {task_id} not found"}
 
         context = None
         if task.context_id:
-            context = self.use_context(task.context_id)
+            context = AgentContext.get(task.context_id)
 
         # If the task is running, update its state to IDLE first
         if task.state == TaskState.RUNNING:

@@ -22,6 +22,7 @@ class SchedulerTaskCreate(ApiHandler):
 
         scheduler = TaskScheduler.get()
         await scheduler.reload()
+        current_username, current_workspace = self._session_user_info()
 
         # Get common fields from input
         name = input.get("name")
@@ -99,6 +100,8 @@ class SchedulerTaskCreate(ApiHandler):
                 attachments=attachments,
                 context_id=task_context_id,
                 timezone=timezone,
+                username=current_username,
+                workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
             )
@@ -117,6 +120,8 @@ class SchedulerTaskCreate(ApiHandler):
                 plan=task_plan,
                 attachments=attachments,
                 context_id=task_context_id,
+                username=current_username,
+                workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
             )
@@ -130,6 +135,8 @@ class SchedulerTaskCreate(ApiHandler):
                 token=token,
                 attachments=attachments,
                 context_id=task_context_id,
+                username=current_username,
+                workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
             )

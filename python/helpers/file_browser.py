@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 import shutil
 import base64
 import subprocess
@@ -20,10 +21,9 @@ class FileBrowser:
 
     MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
-    def __init__(self):
-        # Use the project's base directory for relative paths
-        base_dir = files.get_base_dir()
-        self.base_dir = Path(base_dir)
+    def __init__(self, base_dir: Optional[str] = None):
+        # By default, use project root. For user-scoped APIs, pass workspace root.
+        self.base_dir = Path(base_dir).resolve() if base_dir else Path(files.get_base_dir())
 
     def _check_file_size(self, file) -> bool:
         try:

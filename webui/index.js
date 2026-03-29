@@ -1,6 +1,10 @@
 import * as msgs from "/js/messages.js";
 import * as api from "/js/api.js";
 import * as css from "/js/css.js";
+import {
+  applyLandingState,
+  shouldResumeLastSession,
+} from "/js/session-landing.mjs";
 import { sleep } from "/js/sleep.js";
 import { store as attachmentsStore } from "/components/chat/attachments/attachmentsStore.js";
 import { store as speechStore } from "/components/chat/speech/speech-store.js";
@@ -30,6 +34,7 @@ let autoScroll = true;
 let context = null;
 globalThis.resetCounter = 0; // Used by stores and getChatBasedId
 let skipOneSpeech = false;
+const uiBootConfig = { resumeLastSession: false };
 
 // Sidebar toggle logic is now handled by sidebar-store.js
 
@@ -362,23 +367,7 @@ export async function poll() {
         }
       }
     } else {
-      const welcomeStore =
-        globalThis.Alpine && typeof globalThis.Alpine.store === "function"
-          ? globalThis.Alpine.store("welcomeStore")
-          : null;
-      const welcomeVisible = Boolean(welcomeStore && welcomeStore.isVisible);
-      
-      // Check if user explicitly wants to stay on welcome screen
-      const showWelcome = localStorage.getItem("korev_show_welcome");
-
-      // No context selected, try to select the first available item unless welcome screen is active
-      if (!welcomeVisible && showWelcome !== "true" && contexts.length > 0) {
-        const firstChatId = chatsStore.firstId();
-        if (firstChatId) {
-          setContext(firstChatId);
-          chatsStore.setSelected(firstChatId);
-        }
-      }
+      // No implicit chat restore when no context is selected.
     }
 
     lastLogVersion = response.log_version;
@@ -451,6 +440,24 @@ function updateProgress(progress, active) {
   if (progressBarEl.innerHTML != progress) {
     progressBarEl.innerHTML = progress;
   }
+}
+
+function forceLandingOnBoot() {
+  applyLandingState(window.sessionStorage, window.localStorage);
+  context = null;
+  lastLogGuid = "";
+  lastLogVersion = 0;
+  lastSpokenNo = 0;
+  chatsStore.setSelected("");
+  tasksStore.setSelected("");
+  if (chatHistory) {
+    chatHistory.innerHTML = "";
+  }
+  if (chatInput) {
+    chatInput.value = "";
+    adjustTextareaHeight();
+  }
+  attachmentsStore.clearAttachments();
 }
 
 globalThis.pauseAgent = async function (paused) {
@@ -625,6 +632,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (chatHistory) {
     chatHistory.addEventListener("scroll", updateAfterScroll);
+  }
+
+  if (!shouldResumeLastSession(uiBootConfig.resumeLastSession)) {
+    forceLandingOnBoot();
   }
 
   // Start polling for updates

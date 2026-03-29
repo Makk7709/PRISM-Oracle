@@ -21,13 +21,14 @@ import os
 import secrets
 import hashlib
 import time
+import uuid
 import socket
 import struct
 from functools import wraps
 import threading
 from typing import Optional
 
-from flask import Flask, request, Response, session, redirect, url_for, render_template_string, jsonify
+from flask import Flask, request, Response, session, redirect, url_for, render_template_string, jsonify, g
 from werkzeug.wrappers.response import Response as BaseResponse
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -47,6 +48,7 @@ from python.helpers.user_workspace import WorkspaceManager
 # Security imports - Phase 1 P0 (no litellm dependency)
 from python.security.rate_limit import (
     check_login_rate_limit,
+    check_api_rate_limit,
     reset_login_rate_limit,
     rate_limit_response,
     get_limiter,
@@ -99,6 +101,7 @@ def create_app(
     """
     app = Flask("app", static_folder=get_abs_path("./webui"), static_url_path="/")
     app.secret_key = secret_key or os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
+    app.logger.setLevel(logging.INFO)
     
     # ─────────────────────────────────────────────────────────────────────────────
     # Security Configuration - Phase 1 P0 Hardening
@@ -170,6 +173,18 @@ def create_app(
 
 def _register_routes(app: Flask) -> None:
     """Register all routes on the Flask app."""
+
+    @app.before_request
+    def attach_request_id():
+        rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+        g.request_id = rid
+
+    @app.after_request
+    def add_security_headers(resp):
+        rid = getattr(g, "request_id", None)
+        if rid:
+            resp.headers["X-Request-ID"] = rid
+        return resp
     
     @app.route("/login", methods=["GET", "POST"])
     async def login_handler():
@@ -207,14 +222,27 @@ def _register_routes(app: Flask) -> None:
                     session['authentication'] = login.get_credentials_hash()
                     session['username'] = auth_result['username']
                     session['role'] = auth_result['role']
+                    session.permanent = True
                     
                     # Set up workspace if configured
                     if ws_mgr:
                         workspace = ws_mgr.ensure_workspace(auth_result['username'])
                         session['workspace'] = workspace
+                    app.logger.info(
+                        "login_success user=%s ip=%s request_id=%s",
+                        auth_result['username'],
+                        client_ip,
+                        getattr(g, "request_id", "-"),
+                    )
                     
                     return redirect(url_for('serve_index'))
                 else:
+                    app.logger.warning(
+                        "login_failed user=%s ip=%s request_id=%s",
+                        submitted_user,
+                        client_ip,
+                        getattr(g, "request_id", "-"),
+                    )
                     error = 'Invalid Credentials. Please try again.'
             else:
                 # ── Mono-user fallback (backward compatible) ──
@@ -262,6 +290,7 @@ def _register_routes(app: Flask) -> None:
                     session['authentication'] = login.get_credentials_hash()
                     session['username'] = submitted_user
                     session['role'] = 'admin'  # Mono-user is always admin
+                    session.permanent = True
                     
                     if ws_mgr:
                         workspace = ws_mgr.ensure_workspace(submitted_user)
@@ -271,9 +300,21 @@ def _register_routes(app: Flask) -> None:
                         PrintStyle.warning(
                             "REMINDER: Migrate to Argon2 password hash before production deployment."
                         )
+                    app.logger.info(
+                        "login_success user=%s ip=%s request_id=%s",
+                        submitted_user,
+                        client_ip,
+                        getattr(g, "request_id", "-"),
+                    )
                     
                     return redirect(url_for('serve_index'))
                 else:
+                    app.logger.warning(
+                        "login_failed user=%s ip=%s request_id=%s",
+                        submitted_user,
+                        client_ip,
+                        getattr(g, "request_id", "-"),
+                    )
                     error = 'Invalid Credentials. Please try again.'
                 
         login_page_content = files.read_file("webui/login.html")
@@ -281,10 +322,13 @@ def _register_routes(app: Flask) -> None:
 
     @app.route("/logout")
     async def logout_handler():
-        session.pop('authentication', None)
-        session.pop('username', None)
-        session.pop('role', None)
-        session.pop('workspace', None)
+        app.logger.info(
+            "logout user=%s ip=%s request_id=%s",
+            session.get('username', ''),
+            get_client_ip(request),
+            getattr(g, "request_id", "-"),
+        )
+        session.clear()
         return redirect(url_for('login_handler'))
 
     @app.route("/healthz", methods=["GET"])
@@ -428,6 +472,22 @@ def requires_admin(f):
     return decorated
 
 
+def api_rate_limit(f):
+    """Global per-IP rate limit for API handlers."""
+    @wraps(f)
+    async def decorated(*args, **kwargs):
+        client_ip = get_client_ip(request)
+        allowed, retry_after = check_api_rate_limit(client_ip)
+        if not allowed:
+            body, status, response_headers = rate_limit_response(retry_after)
+            response = Response(body, status=status, mimetype="text/plain")
+            for header_name, header_value in response_headers.items():
+                response.headers[header_name] = header_value
+            return response
+        return await f(*args, **kwargs)
+    return decorated
+
+
 def csrf_protect(f):
     @wraps(f)
     async def decorated(*args, **kwargs):
@@ -511,6 +571,7 @@ def run():
 
         if handler.requires_loopback():
             handler_wrap = requires_loopback(handler_wrap)
+        handler_wrap = api_rate_limit(handler_wrap)
         if handler.requires_auth():
             handler_wrap = requires_auth(handler_wrap)
         if handler.requires_admin():

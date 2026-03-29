@@ -29,6 +29,9 @@ class SchedulerTaskUpdate(ApiHandler):
 
         if not task:
             return {"error": f"Task with ID {task_id} not found"}
+        current_username, _ = self._session_user_info()
+        if current_username and task.username != current_username:
+            return {"error": f"Task with ID {task_id} not found"}
 
         # Update fields if provided using the task's update method
         update_params = {}

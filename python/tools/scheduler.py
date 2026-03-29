@@ -53,6 +53,12 @@ class SchedulerTool(Tool):
             color = None
         return project_slug, color
 
+    def _resolve_task_owner(self) -> tuple[str | None, str | None]:
+        context = self.agent.context
+        if not context:
+            return (None, None)
+        return (getattr(context, "username", None), getattr(context, "workspace", None))
+
     async def list_tasks(self, **kwargs) -> Response:
         state_filter: list[str] | None = kwargs.get("state", None)
         type_filter: list[str] | None = kwargs.get("type", None)
@@ -60,6 +66,9 @@ class SchedulerTool(Tool):
         next_run_after_filter: int | None = kwargs.get("next_run_after", None)
 
         tasks: list[ScheduledTask | AdHocTask | PlannedTask] = TaskScheduler.get().get_tasks()
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username:
+            tasks = [task for task in tasks if task.username == owner_username]
         filtered_tasks = []
         for task in tasks:
             if state_filter and task.state not in state_filter:
@@ -79,6 +88,9 @@ class SchedulerTool(Tool):
         if not name:
             return Response(message="Task name is required", break_loop=False)
         tasks: list[ScheduledTask | AdHocTask | PlannedTask] = TaskScheduler.get().find_task_by_name(name)
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username:
+            tasks = [task for task in tasks if task.username == owner_username]
         if not tasks:
             return Response(message=f"Task not found: {name}", break_loop=False)
         return Response(message=json.dumps([serialize_task(task) for task in tasks], indent=4), break_loop=False)
@@ -90,6 +102,9 @@ class SchedulerTool(Tool):
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
             return Response(message=f"Task not found: {task_uuid}", break_loop=False)
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username and task.username != owner_username:
+            return Response(message=f"Task not found: {task_uuid}", break_loop=False)
         return Response(message=json.dumps(serialize_task(task), indent=4), break_loop=False)
 
     async def run_task(self, **kwargs) -> Response:
@@ -99,6 +114,9 @@ class SchedulerTool(Tool):
         task_context: str | None = kwargs.get("context", None)
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
+            return Response(message=f"Task not found: {task_uuid}", break_loop=False)
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username and task.username != owner_username:
             return Response(message=f"Task not found: {task_uuid}", break_loop=False)
         await TaskScheduler.get().run_task_by_uuid(task_uuid, task_context)
         if task.context_id == self.agent.context.id:
@@ -114,6 +132,9 @@ class SchedulerTool(Tool):
 
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
+            return Response(message=f"Task not found: {task_uuid}", break_loop=False)
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username and task.username != owner_username:
             return Response(message=f"Task not found: {task_uuid}", break_loop=False)
 
         context = None
@@ -169,6 +190,7 @@ class SchedulerTool(Tool):
             return Response(message="Invalid cron expression: " + task_schedule.to_crontab(), break_loop=False)
 
         project_slug, project_color = self._resolve_project_metadata()
+        owner_username, owner_workspace = self._resolve_task_owner()
 
         task = ScheduledTask.create(
             name=name,
@@ -177,6 +199,8 @@ class SchedulerTool(Tool):
             attachments=attachments,
             schedule=task_schedule,
             context_id=None if dedicated_context else self.agent.context.id,
+            username=owner_username,
+            workspace=owner_workspace,
             project_name=project_slug,
             project_color=project_color,
         )
@@ -192,6 +216,7 @@ class SchedulerTool(Tool):
         dedicated_context: bool = kwargs.get("dedicated_context", False)
 
         project_slug, project_color = self._resolve_project_metadata()
+        owner_username, owner_workspace = self._resolve_task_owner()
 
         task = AdHocTask.create(
             name=name,
@@ -200,6 +225,8 @@ class SchedulerTool(Tool):
             attachments=attachments,
             token=token,
             context_id=None if dedicated_context else self.agent.context.id,
+            username=owner_username,
+            workspace=owner_workspace,
             project_name=project_slug,
             project_color=project_color,
         )
@@ -230,6 +257,7 @@ class SchedulerTool(Tool):
         )
 
         project_slug, project_color = self._resolve_project_metadata()
+        owner_username, owner_workspace = self._resolve_task_owner()
 
         # Create planned task with task plan
         task = PlannedTask.create(
@@ -239,6 +267,8 @@ class SchedulerTool(Tool):
             attachments=attachments,
             plan=task_plan,
             context_id=None if dedicated_context else self.agent.context.id,
+            username=owner_username,
+            workspace=owner_workspace,
             project_name=project_slug,
             project_color=project_color
         )
@@ -253,6 +283,9 @@ class SchedulerTool(Tool):
         scheduler = TaskScheduler.get()
         task: ScheduledTask | AdHocTask | PlannedTask | None = scheduler.get_task_by_uuid(task_uuid)
         if not task:
+            return Response(message=f"Task not found: {task_uuid}", break_loop=False)
+        owner_username, _ = self._resolve_task_owner()
+        if owner_username and task.username != owner_username:
             return Response(message=f"Task not found: {task_uuid}", break_loop=False)
 
         if task.context_id == self.agent.context.id:

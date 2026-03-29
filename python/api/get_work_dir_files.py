@@ -16,19 +16,14 @@ class GetWorkDirFiles(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         current_path = request.args.get("path", "")
         if current_path == "$WORK_DIR":
-            # if runtime.is_development():
-            #     current_path = "work_dir"
-            # else:
-            #     current_path = "root"
-            current_path = "/korev"
+            current_path = ""
 
-        # browser = FileBrowser()
-        # result = browser.get_files(current_path)
-        result = await runtime.call_development_function(get_files, current_path)
+        _, workspace = self._session_user_info()
+        result = await runtime.call_development_function(get_files, current_path, workspace)
 
         return {"data": result}
 
 
-async def get_files(path):
-    browser = FileBrowser()
+async def get_files(path, workspace=None):
+    browser = FileBrowser(base_dir=workspace or files.get_base_dir())
     return browser.get_files(path)

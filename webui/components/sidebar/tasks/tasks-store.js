@@ -30,7 +30,13 @@ const model = {
   // Update selected task and persist for tab restore
   setSelected(taskId) {
     this.selected = taskId || "";
-    try { localStorage.setItem("lastSelectedTask", this.selected); } catch {}
+    try {
+      if (this.selected) {
+        localStorage.setItem("lastSelectedTask", this.selected);
+      } else {
+        localStorage.removeItem("lastSelectedTask");
+      }
+    } catch {}
   },
 
   // Returns true if a task with the given id exists in the current list

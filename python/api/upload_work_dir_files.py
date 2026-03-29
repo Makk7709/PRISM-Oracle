@@ -1,4 +1,5 @@
 import base64
+from typing import Optional
 from werkzeug.datastructures import FileStorage
 from python.helpers.api import ApiHandler, Request, Response
 from python.helpers.file_browser import FileBrowser
@@ -14,17 +15,20 @@ class UploadWorkDirFiles(ApiHandler):
 
         current_path = request.form.get("path", "")
         uploaded_files = request.files.getlist("files[]")
+        _, workspace = self._session_user_info()
 
         # browser = FileBrowser()
         # successful, failed = browser.save_files(uploaded_files, current_path)
 
-        successful, failed = await upload_files(uploaded_files, current_path)
+        successful, failed = await upload_files(uploaded_files, current_path, workspace)
 
         if not successful and failed:
             raise Exception("All uploads failed")
 
         # result = browser.get_files(current_path)
-        result = await runtime.call_development_function(get_work_dir_files.get_files, current_path)
+        result = await runtime.call_development_function(
+            get_work_dir_files.get_files, current_path, workspace
+        )
 
         return {
             "message": (
@@ -38,7 +42,9 @@ class UploadWorkDirFiles(ApiHandler):
         }
 
 
-async def upload_files(uploaded_files: list[FileStorage], current_path: str):
+async def upload_files(
+    uploaded_files: list[FileStorage], current_path: str, workspace: Optional[str] = None
+):
     if runtime.is_development():
         successful = []
         failed = []
@@ -46,19 +52,21 @@ async def upload_files(uploaded_files: list[FileStorage], current_path: str):
             file_content = file.stream.read()
             base64_content = base64.b64encode(file_content).decode("utf-8")
             if await runtime.call_development_function(
-                upload_file, current_path, file.filename, base64_content
+                upload_file, current_path, file.filename, base64_content, workspace
             ):
                 successful.append(file.filename)
             else:
                 failed.append(file.filename)
     else:
-        browser = FileBrowser()
+        browser = FileBrowser(base_dir=workspace or files.get_base_dir())
         successful, failed = browser.save_files(uploaded_files, current_path)
 
     return successful, failed
 
 
-async def upload_file(current_path: str, filename: str, base64_content: str):
-    browser = FileBrowser()
+async def upload_file(
+    current_path: str, filename: str, base64_content: str, workspace: Optional[str] = None
+):
+    browser = FileBrowser(base_dir=workspace or files.get_base_dir())
     return browser.save_file_b64(current_path, filename, base64_content)
 

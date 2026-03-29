@@ -28,19 +28,8 @@ const model = {
   },
 
   init() {
-    // Check if user wants to stay on welcome screen
-    const showWelcome = localStorage.getItem("korev_show_welcome");
-    if (showWelcome === "true") {
-      // User wants welcome screen, don't auto-select any chat
-      return;
-    }
-    
-    // Initialize from localStorage
-    const lastSelectedChat = localStorage.getItem("lastSelectedChat");
-    if (lastSelectedChat) {
-      this.selectChat(lastSelectedChat);
-      // this.selected = lastSelectedChat;
-    }
+    // Intentionally no auto-restore at boot.
+    // Session starts on neutral landing for controlled UX.
   },
 
   // Update contexts from polling
@@ -286,9 +275,15 @@ const model = {
     this.selectedContext = this.contexts.find((ctx) => ctx.id === contextId);
     // if not found in contexts, try to find in tasks < not nice, will need refactor later
     if(!this.selectedContext) this.selectedContext = tasksStore.tasks.find((ctx) => ctx.id === contextId);
-    localStorage.setItem("lastSelectedChat", contextId);
+    if (contextId) {
+      localStorage.setItem("lastSelectedChat", contextId);
+    } else {
+      localStorage.removeItem("lastSelectedChat");
+    }
     // Clear welcome screen flag when selecting a chat
-    localStorage.removeItem("korev_show_welcome");
+    if (contextId) {
+      localStorage.removeItem("korev_show_welcome");
+    }
   },
 
   // Restart the backend
