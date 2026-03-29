@@ -153,16 +153,24 @@ class UserManager:
         stored_hash = user_info.get("password_hash", "")
 
         if is_password_hashed(stored_hash):
-            # Argon2 verification
             if verify_password(stored_hash, password):
-                return {"username": username, "role": user_info.get("role", "user")}
+                return {
+                    "username": username,
+                    "role": user_info.get("role", "user"),
+                    "organization": user_info.get("organization"),
+                    "org_role": user_info.get("org_role", "MEMBER"),
+                }
             return None
         else:
-            # Plaintext comparison (dev/mono-user mode only)
             if hmac.compare_digest(
                 password.encode("utf-8"), stored_hash.encode("utf-8")
             ):
-                return {"username": username, "role": user_info.get("role", "user")}
+                return {
+                    "username": username,
+                    "role": user_info.get("role", "user"),
+                    "organization": user_info.get("organization"),
+                    "org_role": user_info.get("org_role", "MEMBER"),
+                }
             return None
 
     # ── User listing ─────────────────────────────────────────────────────
@@ -177,6 +185,27 @@ class UserManager:
         if info is None:
             return None
         return info.get("role", "user")
+
+    def get_organization(self, username: str) -> Optional[str]:
+        """Get the organization for a user, or None if not found."""
+        info = self._users.get(username)
+        if info is None:
+            return None
+        return info.get("organization")
+
+    def get_org_role(self, username: str) -> Optional[str]:
+        """Get the org_role for a user, or None if not found."""
+        info = self._users.get(username)
+        if info is None:
+            return None
+        return info.get("org_role", "MEMBER")
+
+    def get_org_members(self, organization: str) -> list[str]:
+        """Get all usernames belonging to an organization."""
+        return [
+            uname for uname, info in self._users.items()
+            if info.get("organization") == organization
+        ]
 
 
 def _dummy_verify() -> None:

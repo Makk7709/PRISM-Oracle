@@ -129,6 +129,7 @@ class BaseTask(BaseModel):
     project_color: str | None = Field(default=None)
     username: str | None = Field(default=None)
     workspace: str | None = Field(default=None)
+    organization: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_run: datetime | None = None
@@ -263,7 +264,8 @@ class AdHocTask(BaseTask):
         username: str | None = None,
         workspace: str | None = None,
         project_name: str | None = None,
-        project_color: str | None = None
+        project_color: str | None = None,
+        organization: str | None = None,
     ):
         return cls(name=name,
                    system_prompt=system_prompt,
@@ -274,7 +276,8 @@ class AdHocTask(BaseTask):
                    username=username,
                    workspace=workspace,
                    project_name=project_name,
-                   project_color=project_color)
+                   project_color=project_color,
+                   organization=organization)
 
     def update(self,
                name: str | None = None,
@@ -321,8 +324,8 @@ class ScheduledTask(BaseTask):
         workspace: str | None = None,
         project_name: str | None = None,
         project_color: str | None = None,
+        organization: str | None = None,
     ):
-        # Set timezone in schedule if provided
         if timezone is not None:
             schedule.timezone = timezone
         else:
@@ -337,7 +340,8 @@ class ScheduledTask(BaseTask):
                    username=username,
                    workspace=workspace,
                    project_name=project_name,
-                   project_color=project_color)
+                   project_color=project_color,
+                   organization=organization)
 
     def update(self,
                name: str | None = None,
@@ -411,7 +415,8 @@ class PlannedTask(BaseTask):
         username: str | None = None,
         workspace: str | None = None,
         project_name: str | None = None,
-        project_color: str | None = None
+        project_color: str | None = None,
+        organization: str | None = None,
     ):
         return cls(name=name,
                    system_prompt=system_prompt,
@@ -422,7 +427,8 @@ class PlannedTask(BaseTask):
                    username=username,
                    workspace=workspace,
                    project_name=project_name,
-                   project_color=project_color)
+                   project_color=project_color,
+                   organization=organization)
 
     def update(self,
                name: str | None = None,
@@ -1140,6 +1146,7 @@ def serialize_task(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> Dict[s
         "context_id": task.context_id,
         "username": task.username,
         "workspace": task.workspace,
+        "organization": task.organization,
         "dedicated_context": task.is_dedicated(),
         "project": {
             "name": task.project_name,

@@ -34,8 +34,11 @@ class ApiResetChat(ApiHandler):
                     mimetype="application/json"
                 )
 
-            # Check if context exists
-            context = AgentContext.use(context_id)
+            # Check if context exists and is authorized
+            try:
+                context = self.use_context(context_id, create_if_not_exists=False)
+            except Exception:
+                context = None
             if not context:
                 return Response(
                     '{"error": "Chat context not found"}',

@@ -29,12 +29,14 @@ class Message(ApiHandler):
             message_id = request.form.get("message_id", None)
             attachments = request.files.getlist("attachments")
             attachment_paths = []
+            username, _ = self._session_user_info()
+            user_key = username or "anonymous"
 
             from python.helpers import runtime
             # In Docker: use /app/tmp/uploads (legacy /korev normalized)
-            upload_folder_ext = files.get_abs_path("tmp/uploads")
+            upload_folder_ext = files.get_abs_path("tmp/uploads", user_key)
             if runtime.is_dockerized():
-                upload_folder_int = normalize_container_path("/korev/tmp/uploads")
+                upload_folder_int = normalize_container_path(f"/korev/tmp/uploads/{user_key}")
             else:
                 upload_folder_int = upload_folder_ext
 

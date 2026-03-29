@@ -84,18 +84,22 @@ class DownloadFile(ApiHandler):
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:
             raise ValueError("No file path provided")
+        _, workspace = self._session_user_info()
+        allowed, _ = self._authorize_workspace_access(workspace, action="workspace_download_file")
+        if not allowed:
+            raise Exception("Access denied")
 
         # Resolve the path: if it's already an absolute path inside the
         # work directory, convert it to a relative path so get_abs_path
         # doesn't double-prefix it.  Otherwise strip leading '/' as before.
-        base_dir = files.get_base_dir()
+        base_dir = workspace or files.get_base_dir()
         if os.path.isabs(file_path) and os.path.abspath(file_path).startswith(base_dir + os.sep):
             relative_path = os.path.relpath(file_path, base_dir)
         else:
             relative_path = file_path.lstrip("/")
 
         file = await runtime.call_development_function(
-            file_info.get_file_info, relative_path
+            file_info.get_file_info, relative_path, base_dir
         )
 
         if not file["exists"]:

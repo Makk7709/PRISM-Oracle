@@ -3,6 +3,7 @@ import os
 from python.helpers.api import ApiHandler, Request, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
+from python.security.path_safety import safe_path_join, SecurityError
 import json
 
 
@@ -46,22 +47,32 @@ class ApiFilesGet(ApiHandler):
 
             for path in paths:
                 try:
-                    # Convert internal paths to external paths
-                    # Support /app/ (Docker runtime), /korev/ (data), and legacy /a0/ paths
-                    if path.startswith("/app/tmp/uploads/") or path.startswith("/korev/tmp/uploads/") or path.startswith("/a0/tmp/uploads/"):
-                        # Internal path - convert to external
-                        filename = path.replace("/app/tmp/uploads/", "").replace("/korev/tmp/uploads/", "").replace("/a0/tmp/uploads/", "")
-                        external_path = files.get_abs_path("tmp/uploads", filename)
-                        filename = os.path.basename(external_path)
-                    elif path.startswith("/app/") or path.startswith("/korev/") or path.startswith("/a0/"):
-                        # Other internal KOREV Evidence paths
-                        relative_path = path.replace("/app/", "").replace("/korev/", "").replace("/a0/", "")
-                        external_path = files.get_abs_path(relative_path)
-                        filename = os.path.basename(external_path)
-                    else:
-                        # Assume it's already an external/absolute path
-                        external_path = path
-                        filename = os.path.basename(path)
+                    relative_path = path.lstrip("/")
+                    for prefix in ("app/", "korev/", "a0/"):
+                        if relative_path.startswith(prefix):
+                            relative_path = relative_path[len(prefix):]
+                            break
+
+                    # API-key scope is restricted to temporary generated files.
+                    if not (
+                        relative_path.startswith("tmp/uploads/")
+                        or relative_path.startswith("tmp/chats/")
+                    ):
+                        PrintStyle.warning(f"Denied file outside API scope: {path}")
+                        continue
+
+                    try:
+                        resolved = safe_path_join(
+                            files.get_base_dir(),
+                            relative_path,
+                            allow_symlinks=False,
+                        )
+                    except SecurityError:
+                        PrintStyle.warning(f"Denied unsafe path: {path}")
+                        continue
+
+                    external_path = str(resolved)
+                    filename = os.path.basename(external_path)
 
                     # Check if file exists
                     if not os.path.exists(external_path):

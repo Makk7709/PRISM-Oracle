@@ -24,24 +24,23 @@ class DeleteWorkDirFile(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         file_path = input.get("path", "")
         _, workspace = self._session_user_info()
+        allowed, _ = self._authorize_workspace_access(workspace, action="workspace_delete_file")
+        if not allowed:
+            raise Exception("Access denied")
+        base = workspace
         
-        # Security validation - Phase 1 P0
-        # Strip leading "/" to treat as relative path within project
         file_path = file_path.lstrip("/")
         
-        # Reject obvious traversal attempts early
         if ".." in file_path:
             raise Exception("Invalid path: traversal not allowed")
         
         current_path = input.get("currentPath", "")
 
-        # Perform deletion with path validation
-        res = await runtime.call_development_function(delete_file_secure, file_path, workspace)
+        res = await runtime.call_development_function(delete_file_secure, file_path, base)
 
         if res:
-            # Get updated file list
             result = await runtime.call_development_function(
-                get_work_dir_files.get_files, current_path, workspace
+                get_work_dir_files.get_files, current_path, base
             )
             return {"data": result}
         else:

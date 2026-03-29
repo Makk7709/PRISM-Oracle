@@ -4,6 +4,7 @@ from python.helpers.api import ApiHandler, Request, Response, send_file
 from python.helpers import files, runtime
 import io
 from mimetypes import guess_type
+from agent import AgentContext
 
 
 class ImageGet(ApiHandler):
@@ -45,6 +46,30 @@ class ImageGet(ApiHandler):
         base_stripped = base_dir.lstrip("/")
         if path.startswith(base_stripped):
             path = path[len(base_stripped):].lstrip("/")
+
+        principal = self._principal()
+        if principal.is_authenticated:
+            allowed = False
+            workspace = (principal.workspace or "").lstrip("/")
+            if workspace and (path == workspace or path.startswith(f"{workspace}/")):
+                allowed = True
+            if path.startswith("tmp/uploads/") and principal.username:
+                user_prefix = f"tmp/uploads/{principal.username}/"
+                if path.startswith(user_prefix):
+                    allowed = True
+            if path.startswith("tmp/chats/"):
+                parts = path.split("/")
+                if len(parts) >= 3:
+                    ctxid = parts[2]
+                    ctx = AgentContext.get(ctxid)
+                    if ctx:
+                        ctx_allowed, _ = self._authorize_context_access(
+                            ctx, action="image_get_chat_file"
+                        )
+                        if ctx_allowed:
+                            allowed = True
+            if not allowed:
+                raise ValueError("Access denied")
 
         # 4. Validate path stays within the project via safe_path_join
         from python.security.path_safety import safe_path_join, SecurityError

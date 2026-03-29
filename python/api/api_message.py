@@ -41,8 +41,10 @@ class ApiMessage(ApiHandler):
         # Handle attachments (base64 encoded)
         attachment_paths = []
         if attachments:
-            upload_folder_int = normalize_container_path("/korev/tmp/uploads")
-            upload_folder_ext = files.get_abs_path("tmp/uploads")
+            username, _ = self._session_user_info()
+            user_key = username or "api"
+            upload_folder_int = normalize_container_path(f"/korev/tmp/uploads/{user_key}")
+            upload_folder_ext = files.get_abs_path("tmp/uploads", user_key)
             os.makedirs(upload_folder_ext, exist_ok=True)
 
             for attachment in attachments:
@@ -69,12 +71,23 @@ class ApiMessage(ApiHandler):
 
         # Get or create context
         if context_id:
-            context = AgentContext.use(context_id)
+            try:
+                context = self.use_context(context_id, create_if_not_exists=False)
+            except Exception:
+                context = None
             if not context:
                 return Response('{"error": "Context not found"}', status=404, mimetype="application/json")
         else:
             config = initialize_agent()
-            context = AgentContext(config=config, type=AgentContextType.USER)
+            username, workspace = self._session_user_info()
+            organization, _ = self._session_org_info()
+            context = AgentContext(
+                config=config,
+                type=AgentContextType.USER,
+                username=username,
+                workspace=workspace,
+                organization=organization,
+            )
             AgentContext.use(context.id)
             context_id = context.id
 

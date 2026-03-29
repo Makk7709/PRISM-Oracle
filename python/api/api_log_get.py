@@ -31,8 +31,11 @@ class ApiLogGet(ApiHandler):
         if not context_id:
             return Response('{"error": "context_id is required"}', status=400, mimetype="application/json")
 
-        # Get context
-        context = AgentContext.use(context_id)
+        # Get context with authorization enforcement
+        try:
+            context = self.use_context(context_id, create_if_not_exists=False)
+        except Exception:
+            context = None
         if not context:
             return Response('{"error": "Context not found"}', status=404, mimetype="application/json")
 

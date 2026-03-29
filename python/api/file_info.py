@@ -2,11 +2,16 @@ import os
 from python.helpers.api import ApiHandler, Input, Output, Request, Response
 from python.helpers import files, runtime
 from typing import TypedDict
+from python.security.path_safety import safe_path_join, SecurityError
 
 class FileInfoApi(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         path = input.get("path", "")
-        info = await runtime.call_development_function(get_file_info, path)
+        _, workspace = self._session_user_info()
+        allowed, _ = self._authorize_workspace_access(workspace, action="workspace_file_info")
+        if not allowed:
+            raise Exception("Access denied")
+        info = await runtime.call_development_function(get_file_info, path, workspace)
         return info
 
 class FileInfo(TypedDict):
@@ -25,8 +30,12 @@ class FileInfo(TypedDict):
     file_ext: str
     message: str
 
-async def get_file_info(path: str) -> FileInfo:
-    abs_path = files.get_abs_path(path)
+async def get_file_info(path: str, base_dir: str | None = None) -> FileInfo:
+    root = base_dir or files.get_base_dir()
+    try:
+        abs_path = str(safe_path_join(root, path.lstrip("/"), allow_symlinks=False))
+    except SecurityError:
+        abs_path = files.get_abs_path("__invalid__path__")
     exists = os.path.exists(abs_path)
     message = ""
 

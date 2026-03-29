@@ -131,6 +131,7 @@ def _serialize_context(context: AgentContext):
         "id": context.id,
         "name": context.name,
         "username": getattr(context, "username", None),
+        "organization": getattr(context, "organization", None),
         "created_at": (
             context.created_at.isoformat()
             if context.created_at
@@ -181,11 +182,10 @@ def _deserialize_context(data):
 
     context = AgentContext(
         config=config,
-        id=data.get("id", None),  # get new id
+        id=data.get("id", None),
         name=data.get("name", None),
         created_at=(
             datetime.fromisoformat(
-                # older chats may not have created_at - backcompat
                 data.get("created_at", datetime.fromtimestamp(0).isoformat())
             )
         ),
@@ -200,6 +200,7 @@ def _deserialize_context(data):
         data=data.get("data", {}),
         output_data=data.get("output_data", {}),
         username=data.get("username", None),
+        organization=data.get("organization", None),
     )
 
     agents = data.get("agents", [])

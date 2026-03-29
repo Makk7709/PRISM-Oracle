@@ -55,6 +55,7 @@ from python.security.rate_limit import (
 )
 from python.security.auth import verify_password, is_password_hashed, hash_password
 from python.security.ip import get_client_ip
+from python.security.security_audit import log_security_event
 
 # disable logging
 import logging
@@ -222,9 +223,10 @@ def _register_routes(app: Flask) -> None:
                     session['authentication'] = login.get_credentials_hash()
                     session['username'] = auth_result['username']
                     session['role'] = auth_result['role']
+                    session['organization'] = auth_result.get('organization')
+                    session['org_role'] = auth_result.get('org_role', 'MEMBER')
                     session.permanent = True
                     
-                    # Set up workspace if configured
                     if ws_mgr:
                         workspace = ws_mgr.ensure_workspace(auth_result['username'])
                         session['workspace'] = workspace
@@ -234,6 +236,14 @@ def _register_routes(app: Flask) -> None:
                         client_ip,
                         getattr(g, "request_id", "-"),
                     )
+                    log_security_event(
+                        action="login",
+                        decision="ALLOW",
+                        user=auth_result["username"],
+                        organization=auth_result.get("organization"),
+                        resource_type="session",
+                        resource_id=getattr(g, "request_id", "-"),
+                    )
                     
                     return redirect(url_for('serve_index'))
                 else:
@@ -242,6 +252,15 @@ def _register_routes(app: Flask) -> None:
                         submitted_user,
                         client_ip,
                         getattr(g, "request_id", "-"),
+                    )
+                    log_security_event(
+                        action="login",
+                        decision="DENY",
+                        user=submitted_user or None,
+                        organization=None,
+                        resource_type="session",
+                        resource_id=getattr(g, "request_id", "-"),
+                        reason="invalid_credentials",
                     )
                     error = 'Invalid Credentials. Please try again.'
             else:
@@ -306,6 +325,14 @@ def _register_routes(app: Flask) -> None:
                         client_ip,
                         getattr(g, "request_id", "-"),
                     )
+                    log_security_event(
+                        action="login",
+                        decision="ALLOW",
+                        user=submitted_user,
+                        organization=session.get("organization"),
+                        resource_type="session",
+                        resource_id=getattr(g, "request_id", "-"),
+                    )
                     
                     return redirect(url_for('serve_index'))
                 else:
@@ -315,6 +342,15 @@ def _register_routes(app: Flask) -> None:
                         client_ip,
                         getattr(g, "request_id", "-"),
                     )
+                    log_security_event(
+                        action="login",
+                        decision="DENY",
+                        user=submitted_user or None,
+                        organization=None,
+                        resource_type="session",
+                        resource_id=getattr(g, "request_id", "-"),
+                        reason="invalid_credentials",
+                    )
                     error = 'Invalid Credentials. Please try again.'
                 
         login_page_content = files.read_file("webui/login.html")
@@ -322,11 +358,21 @@ def _register_routes(app: Flask) -> None:
 
     @app.route("/logout")
     async def logout_handler():
+        username = session.get('username', '')
+        organization = session.get("organization")
         app.logger.info(
             "logout user=%s ip=%s request_id=%s",
-            session.get('username', ''),
+            username,
             get_client_ip(request),
             getattr(g, "request_id", "-"),
+        )
+        log_security_event(
+            action="logout",
+            decision="ALLOW",
+            user=username or None,
+            organization=organization,
+            resource_type="session",
+            resource_id=getattr(g, "request_id", "-"),
         )
         session.clear()
         return redirect(url_for('login_handler'))

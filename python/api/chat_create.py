@@ -11,7 +11,12 @@ class CreateChat(ApiHandler):
         new_ctxid = input.get("new_context", guids.generate_id()) # given or new guid
 
         # context instance - get or create
-        current_context = AgentContext.get(current_ctxid)
+        current_context = None
+        if current_ctxid:
+            try:
+                current_context = self.use_context(current_ctxid, create_if_not_exists=False)
+            except Exception:
+                current_context = None
         
         # get/create new context
         new_context = self.use_context(new_ctxid)

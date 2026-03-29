@@ -9,6 +9,13 @@ from agent import AgentContext
 from initialize import initialize_agent
 from python.helpers.print_style import PrintStyle
 from python.helpers.errors import format_error
+from python.security.authorization import (
+    AccessPrincipal,
+    can_access_context,
+    can_access_task,
+    can_access_workspace,
+)
+from python.security.security_audit import log_security_event
 from werkzeug.serving import make_server
 
 Input = dict
@@ -101,24 +108,109 @@ class ApiHandler:
         except RuntimeError:
             return None, None
 
-    def _is_owner(self, ctx: AgentContext, username: str | None) -> bool:
-        """True if context belongs to this user.
+    def _session_org_info(self) -> tuple[str | None, str | None]:
+        """Extract organization and org_role from the current Flask session."""
+        try:
+            return session.get("organization"), session.get("org_role")
+        except RuntimeError:
+            return None, None
 
-        Rules:
-        - No auth mode (username is None): always allowed
-        - Context has no owner (legacy): allow access and adopt it
-        - Owner matches: allowed
-        - Owner mismatch: denied
-        """
-        if username is None:
-            return True
-        ctx_owner = getattr(ctx, "username", None)
-        if ctx_owner is None:
-            return True
-        return ctx_owner == username
+    def _principal(self) -> AccessPrincipal:
+        username, workspace = self._session_user_info()
+        organization, org_role = self._session_org_info()
+        role = None
+        try:
+            role = session.get("role")
+        except RuntimeError:
+            role = None
+        return AccessPrincipal(
+            username=username,
+            organization=organization,
+            org_role=org_role,
+            role=role,
+            workspace=workspace,
+        )
+
+    def _is_admin(self) -> bool:
+        """True if the current session user has admin role."""
+        try:
+            return session.get("role") == "admin"
+        except RuntimeError:
+            return False
+
+    def _is_org_owner(self) -> bool:
+        """True if the current session user is OWNER of their organization."""
+        try:
+            return session.get("org_role") == "OWNER"
+        except RuntimeError:
+            return False
+
+    def _is_owner(self, ctx: AgentContext, username: str | None) -> bool:
+        """Compatibility helper backed by centralized authorization policy."""
+        principal = self._principal()
+        allowed, _ = can_access_context(
+            principal,
+            ctx_owner=getattr(ctx, "username", None),
+            ctx_org=getattr(ctx, "organization", None),
+        )
+        return allowed
+
+    def _authorize_context_access(self, ctx: AgentContext, action: str) -> tuple[bool, str]:
+        principal = self._principal()
+        allowed, reason = can_access_context(
+            principal,
+            ctx_owner=getattr(ctx, "username", None),
+            ctx_org=getattr(ctx, "organization", None),
+        )
+        log_security_event(
+            action=action,
+            decision="ALLOW" if allowed else "DENY",
+            user=principal.username,
+            organization=principal.organization,
+            resource_type="context",
+            resource_id=getattr(ctx, "id", None),
+            reason=reason,
+        )
+        return allowed, reason
+
+    def _authorize_task_access(self, task: Any, action: str) -> tuple[bool, str]:
+        principal = self._principal()
+        allowed, reason = can_access_task(
+            principal,
+            task_owner=getattr(task, "username", None),
+            task_org=getattr(task, "organization", None),
+        )
+        log_security_event(
+            action=action,
+            decision="ALLOW" if allowed else "DENY",
+            user=principal.username,
+            organization=principal.organization,
+            resource_type="task",
+            resource_id=getattr(task, "uuid", None),
+            reason=reason,
+        )
+        return allowed, reason
+
+    def _authorize_workspace_access(self, target_workspace: str | None, action: str) -> tuple[bool, str]:
+        principal = self._principal()
+        allowed, reason = can_access_workspace(
+            principal,
+            target_workspace=target_workspace,
+        )
+        log_security_event(
+            action=action,
+            decision="ALLOW" if allowed else "DENY",
+            user=principal.username,
+            organization=principal.organization,
+            resource_type="workspace",
+            resource_id=target_workspace,
+            reason=reason,
+        )
+        return allowed, reason
 
     def use_context(self, ctxid: str, create_if_not_exists: bool = True):
         username, workspace = self._session_user_info()
+        organization, _ = self._session_org_info()
         with self.thread_lock:
             if not ctxid:
                 owned = [
@@ -127,28 +219,25 @@ class ApiHandler:
                 ]
                 first = owned[0] if owned else None
                 if first:
-                    if username and not first.username:
-                        first.username = username
-                        first.workspace = workspace
                     AgentContext.use(first.id)
                     return first
                 context = AgentContext(
                     config=initialize_agent(), set_current=True,
                     username=username, workspace=workspace,
+                    organization=organization,
                 )
                 return context
             got = AgentContext.use(ctxid)
             if got:
-                if not self._is_owner(got, username):
-                    raise Exception(f"Access denied: context {ctxid} belongs to another user")
-                if username and not got.username:
-                    got.username = username
-                    got.workspace = workspace
+                allowed, reason = self._authorize_context_access(got, action="context_use")
+                if not allowed:
+                    raise Exception(f"Context {ctxid} not found")
                 return got
             if create_if_not_exists:
                 context = AgentContext(
                     config=initialize_agent(), id=ctxid, set_current=True,
                     username=username, workspace=workspace,
+                    organization=organization,
                 )
                 return context
             else:

@@ -6,6 +6,7 @@ from python.helpers.task_scheduler import (
 from python.helpers.projects import load_basic_project_data
 from python.helpers.localization import Localization
 from python.helpers.print_style import PrintStyle
+from python.security.security_audit import log_security_event
 import random
 
 
@@ -23,6 +24,7 @@ class SchedulerTaskCreate(ApiHandler):
         scheduler = TaskScheduler.get()
         await scheduler.reload()
         current_username, current_workspace = self._session_user_info()
+        current_org, _ = self._session_org_info()
 
         # Get common fields from input
         name = input.get("name")
@@ -104,6 +106,7 @@ class SchedulerTaskCreate(ApiHandler):
                 workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
+                organization=current_org,
             )
         elif plan:
             # Create a planned task
@@ -124,6 +127,7 @@ class SchedulerTaskCreate(ApiHandler):
                 workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
+                organization=current_org,
             )
         else:
             # Create an ad-hoc task
@@ -139,6 +143,7 @@ class SchedulerTaskCreate(ApiHandler):
                 workspace=current_workspace,
                 project_name=project_slug,
                 project_color=project_color,
+                organization=current_org,
             )
             # Verify token after creation
             if isinstance(task, AdHocTask):
@@ -146,6 +151,14 @@ class SchedulerTaskCreate(ApiHandler):
 
         # Add the task to the scheduler
         await scheduler.add_task(task)
+        log_security_event(
+            action="task_create",
+            decision="ALLOW",
+            user=current_username,
+            organization=current_org,
+            resource_type="task",
+            resource_id=task.uuid,
+        )
 
         # Verify the task was added correctly - retrieve by UUID to check persistence
         saved_task = scheduler.get_task_by_uuid(task.uuid)

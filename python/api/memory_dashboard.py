@@ -114,7 +114,10 @@ class MemoryDashboard(ApiHandler):
                 # Fallback to default if no context available
                 return {"success": True, "memory_subdir": "default"}
 
-            context = AgentContext.use(context_id)
+            try:
+                context = self.use_context(context_id, create_if_not_exists=False)
+            except Exception:
+                context = None
             if not context:
                 return {"success": True, "memory_subdir": "default"}
 

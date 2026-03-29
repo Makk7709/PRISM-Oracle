@@ -5,6 +5,7 @@ from agent import AgentContext, AgentContextType
 from python.helpers.task_scheduler import TaskScheduler
 from python.helpers.localization import Localization
 from python.helpers.dotenv import get_dotenv_value
+from python.security.authorization import can_access_context, can_access_task
 
 
 class Poll(ApiHandler):
@@ -41,45 +42,32 @@ class Poll(ApiHandler):
 
         await scheduler.reload()
 
-        # Per-user isolation: each user only sees their own contexts
-        current_username, _ = self._session_user_info()
+        principal = self._principal()
 
         ctxs = []
         tasks = []
 
         all_ctxs = list(AgentContext._contexts.values())
-        if current_username:
-            all_ctxs = [
-                ctx for ctx in all_ctxs
-                if getattr(ctx, "username", None) == current_username
-            ]
+        all_ctxs = [
+            ctx for ctx in all_ctxs
+            if can_access_context(
+                principal,
+                ctx_owner=getattr(ctx, "username", None),
+                ctx_org=getattr(ctx, "organization", None),
+            )[0]
+        ]
 
-        # Build visible scheduler tasks from durable storage.
         raw_tasks = scheduler.serialize_all_tasks()
         visible_tasks = []
-        needs_save = False
         for task_data in raw_tasks:
-            if not current_username:
-                visible_tasks.append(task_data)
+            allowed, _ = can_access_task(
+                principal,
+                task_owner=task_data.get("username"),
+                task_org=task_data.get("organization"),
+            )
+            if not allowed:
                 continue
-            owner = task_data.get("username")
-            if owner == current_username:
-                visible_tasks.append(task_data)
-                continue
-            if owner:
-                continue
-            # Legacy migration path: adopt unowned task if its context is owned.
-            task_ctx_id = task_data.get("context_id")
-            task_ctx = AgentContext.get(task_ctx_id) if task_ctx_id else None
-            if task_ctx and getattr(task_ctx, "username", None) == current_username:
-                task_obj = scheduler.get_task_by_uuid(task_data.get("uuid", ""))
-                if task_obj:
-                    await scheduler.update_task(task_obj.uuid, username=current_username)
-                    needs_save = True
-                task_data["username"] = current_username
-                visible_tasks.append(task_data)
-        if needs_save:
-            await scheduler.save()
+            visible_tasks.append(task_data)
 
         task_context_ids = {
             task_data.get("context_id")

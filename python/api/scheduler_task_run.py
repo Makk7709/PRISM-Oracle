@@ -32,10 +32,9 @@ class SchedulerTaskRun(ApiHandler):
         if not task:
             self._printer.error(f"SchedulerTaskRun: Task with ID '{task_id}' not found")
             return {"error": f"Task with ID '{task_id}' not found"}
-        current_username, _ = self._session_user_info()
-        if current_username and task.username != current_username:
-            self._printer.error(f"SchedulerTaskRun: Task with ID '{task_id}' not found")
-            return {"error": f"Task with ID '{task_id}' not found"}
+        allowed, _ = self._authorize_task_access(task, action="task_run")
+        if not allowed:
+            return {"error": "Task not found"}
 
         # Check if task is already running
         if task.state == TaskState.RUNNING:

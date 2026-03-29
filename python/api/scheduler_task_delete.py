@@ -3,6 +3,7 @@ from python.helpers.task_scheduler import TaskScheduler, TaskState
 from python.helpers.localization import Localization
 from agent import AgentContext
 from python.helpers import persist_chat
+from python.security.security_audit import log_security_event
 
 
 class SchedulerTaskDelete(ApiHandler):
@@ -27,8 +28,8 @@ class SchedulerTaskDelete(ApiHandler):
         task = scheduler.get_task_by_uuid(task_id)
         if not task:
             return {"error": f"Task with ID {task_id} not found"}
-        current_username, _ = self._session_user_info()
-        if current_username and task.username != current_username:
+        allowed, _ = self._authorize_task_access(task, action="task_delete")
+        if not allowed:
             return {"error": f"Task with ID {task_id} not found"}
 
         context = None
@@ -51,5 +52,14 @@ class SchedulerTaskDelete(ApiHandler):
 
         # Remove the task
         await scheduler.remove_task_by_uuid(task_id)
+        principal = self._principal()
+        log_security_event(
+            action="task_delete",
+            decision="ALLOW",
+            user=principal.username,
+            organization=principal.organization,
+            resource_type="task",
+            resource_id=task_id,
+        )
 
         return {"success": True, "message": f"Task {task_id} deleted successfully"}

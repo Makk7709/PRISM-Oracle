@@ -19,7 +19,11 @@ class GetWorkDirFiles(ApiHandler):
             current_path = ""
 
         _, workspace = self._session_user_info()
-        result = await runtime.call_development_function(get_files, current_path, workspace)
+        allowed, _ = self._authorize_workspace_access(workspace, action="workspace_list_files")
+        if not allowed:
+            raise Exception("Access denied")
+        base = workspace
+        result = await runtime.call_development_function(get_files, current_path, base)
 
         return {"data": result}
 
