@@ -22,6 +22,21 @@ log_err()   { echo "[entrypoint] ✗ $*" >&2; }
 setup_mcp_config() {
     if [ -f "$MCP_CONFIG_PROD" ]; then
         cp "$MCP_CONFIG_PROD" "$MCP_CONFIG_TARGET"
+        if [ -z "${BRAVE_API_KEY:-}" ]; then
+            python - <<'PY'
+import json
+from pathlib import Path
+
+target = Path("/app/mcp_config.json")
+if target.exists():
+    data = json.loads(target.read_text(encoding="utf-8"))
+    servers = data.get("mcpServers", {})
+    if isinstance(servers, dict) and "brave-search" in servers:
+        del servers["brave-search"]
+        target.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
+PY
+            log_warn "BRAVE_API_KEY missing: brave-search MCP disabled"
+        fi
         log_info "Production MCP config installed"
     else
         log_warn "No production MCP config found at $MCP_CONFIG_PROD"
@@ -42,9 +57,8 @@ prewarm_npx_packages() {
     local packages=(
         "firecrawl-mcp"
         "tavily-mcp"
-        "pubmed-mcp-server"
         "@playwright/mcp"
-        "@anthropic-ai/mcp-server-brave-search"
+        "@modelcontextprotocol/server-brave-search"
         "@modelcontextprotocol/server-puppeteer@0.6.2"
     )
 
@@ -91,7 +105,8 @@ prewarm_uvx_packages() {
 # ─────────────────────────────────────────────────────────────────────────────
 verify_local_mcp_servers() {
     local ss_server="/app/mcp_servers/semanticscholar/server.py"
-    local oa_server="/app/mcp_servers/openalex/src/server.js"
+    local oa_server="/app/mcp_servers/openalex/server_mcp.py"
+    local pubmed_server="/app/mcp_servers/pubmed/server.py"
 
     if [ -f "$ss_server" ]; then
         if python -c "import sys; sys.path.insert(0,'/app/mcp_servers/semanticscholar'); import server" 2>/dev/null; then
@@ -104,7 +119,7 @@ verify_local_mcp_servers() {
     fi
 
     if [ -f "$oa_server" ]; then
-        if node -e "require('/app/mcp_servers/openalex/src/server.js')" 2>/dev/null; then
+        if python -m py_compile /app/mcp_servers/openalex/server_mcp.py 2>/dev/null; then
             log_info "OpenAlex MCP: OK"
         else
             if [ -f "/app/mcp_servers/openalex/package.json" ]; then
@@ -114,7 +129,17 @@ verify_local_mcp_servers() {
             fi
         fi
     else
-        log_warn "OpenAlex MCP: server.js not found at $oa_server"
+        log_warn "OpenAlex MCP: server_mcp.py not found at $oa_server"
+    fi
+
+    if [ -f "$pubmed_server" ]; then
+        if python -m py_compile /app/mcp_servers/pubmed/server.py 2>/dev/null; then
+            log_info "PubMed MCP: OK"
+        else
+            log_warn "PubMed MCP: import failed"
+        fi
+    else
+        log_warn "PubMed MCP: server.py not found at $pubmed_server"
     fi
 }
 

@@ -24,8 +24,8 @@
         "openalex": {
             "name": "OpenAlex Academic",
             "type": "stdio",
-            "command": "node",
-            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/openalex/src/server.js"],
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/openalex/server_mcp.py"],
             "description": "Métadonnées académiques ouvertes (auteurs, institutions, citations)"
         },
         "firecrawl": {
@@ -51,8 +51,8 @@
         "pubmed": {
             "name": "PubMed Biomedical",
             "type": "stdio",
-            "command": "npx",
-            "args": ["-y", "pubmed-mcp-server"],
+            "command": "/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/venv/bin/python",
+            "args": ["/Users/aminemohamed/Desktop/APP/KOREV_Oracle/KOREV_Oracle/mcp_servers/pubmed/server.py"],
             "env": {
                 "NCBI_API_KEY": "${NCBI_API_KEY}"
             },
@@ -76,7 +76,7 @@
             "name": "Brave Search",
             "type": "stdio",
             "command": "npx",
-            "args": ["-y", "@anthropic-ai/mcp-server-brave-search"],
+            "args": ["-y", "@modelcontextprotocol/server-brave-search"],
             "env": {
                 "BRAVE_API_KEY": "${BRAVE_API_KEY}"
             },
