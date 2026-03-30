@@ -87,3 +87,18 @@ def can_access_workspace(
         return False, "workspace_mismatch_denied"
 
     return True, "workspace_owner_access"
+
+
+def validate_task_scope(
+    *,
+    task_owner: Optional[str],
+    task_org: Optional[str],
+    task_workspace: Optional[str],
+) -> tuple[bool, str]:
+    if not task_owner:
+        return False, "task_missing_owner"
+    if not task_org:
+        return False, "task_missing_organization"
+    if not task_workspace:
+        return False, "task_missing_workspace"
+    return True, "task_scope_valid"
