@@ -13,16 +13,38 @@
         <h3 class="section-header" x-text="t('sidebar.chats')">Chats</h3>
         <ul class="config-list chats-config-list" x-show="$store.chats.contexts.length > 0">
           <template x-for="context in $store.chats.contexts" :key="context.id">
-            <li>
+            <li x-data="{ editing: false, editTitle: '' }">
               <div :class="{'chat-container': true, 'chat-selected': context.id === $store.chats.selected}"
-                @click="$store.chats.selectChat(context.id)">
+                @click="if (!editing) $store.chats.selectChat(context.id)">
                 <div class="chat-list-button">
                   <span class="project-color-ball"
                     :style="context.project?.color ? { backgroundColor: context.project.color } : { border: '1px solid var(--color-border)' }"></span>
-                  <span class="chat-name" :title="context.name ? context.name : 'Chat #' + context.no"
-                    x-text="context.name ? context.name : 'Chat #' + context.no"></span>
+
+                  <!-- Display mode -->
+                  <span class="chat-name" x-show="!editing"
+                    :title="context.name ? context.name : 'Chat #' + context.no"
+                    x-text="context.name ? context.name : 'Chat #' + context.no"
+                    @dblclick.stop="editing = true; editTitle = context.name || ''; $nextTick(() => $el.parentElement.querySelector('.chat-rename-input')?.focus())"></span>
+
+                  <!-- Edit mode -->
+                  <input x-show="editing" x-cloak
+                    class="chat-rename-input"
+                    type="text"
+                    maxlength="120"
+                    :value="editTitle"
+                    @input="editTitle = $event.target.value"
+                    @keydown.enter.stop="if (editTitle.trim()) { $store.chats.renameChat(context.id, editTitle); editing = false; } else { editing = false; }"
+                    @keydown.escape.stop="editing = false"
+                    @blur="if (editing && editTitle.trim()) { $store.chats.renameChat(context.id, editTitle); } editing = false;"
+                    @click.stop>
                 </div>
-                <button class="edit-button" @click.stop="$store.chats.killChat(context.id)">X</button>
+                <div class="chat-actions">
+                  <button class="rename-button" x-show="!editing"
+                    @click.stop="editing = true; editTitle = context.name || ''; $nextTick(() => $el.closest('li').querySelector('.chat-rename-input')?.focus())"
+                    title="Rename">&#9998;</button>
+                  <button class="edit-button" @click.stop="$store.chats.killChat(context.id)"
+                    title="Delete">X</button>
+                </div>
               </div>
             </li>
           </template>
@@ -108,27 +130,65 @@
       overflow: hidden;
       text-overflow: ellipsis;
       font-size: var(--font-size-small);
+      cursor: default;
     }
 
+    .chat-rename-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-primary, #6366f1);
+      color: inherit;
+      font-size: var(--font-size-small);
+      font-family: inherit;
+      padding: 2px 0;
+      outline: none;
+    }
+
+    .chat-rename-input:focus {
+      border-bottom-color: #818cf8;
+    }
+
+    .chat-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+      margin-right: 4px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .chat-container:hover .chat-actions {
+      opacity: 1;
+    }
+
+    .rename-button,
     .edit-button {
       flex-shrink: 0;
-      margin-right: 8px;
       background-color: transparent;
       border: 1px solid var(--color-border);
       border-radius: 0.1875rem;
       color: var(--color-primary);
       cursor: pointer;
-      padding: 0.125rem 0.5rem;
+      padding: 0.125rem 0.375rem;
       transition: all var(--transition-speed) ease-in-out;
-      width: 2rem;
-      height: 2rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
+    .rename-button:hover,
     .edit-button:hover {
       border-color: var(--color-primary);
       background-color: #32455690;
     }
 
+    .rename-button:active,
     .edit-button:active {
       background-color: #131a2090;
       color: rgba(253, 253, 253, 0.35);
