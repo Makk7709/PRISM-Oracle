@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 import threading
 import uuid
@@ -6,6 +8,7 @@ from enum import Enum
 from typing import Any, Optional
 from python.helpers.persistence.stores import get_notification_store, NotificationStore
 from python.observability.runtime import ObservabilityMetrics, log_observability_event
+from python.helpers.organization import normalize_org_id
 
 
 class NotificationType(Enum):
@@ -267,7 +270,7 @@ class NotificationManager:
             return False
         return (
             item.target_username == target_username
-            and item.target_organization == target_organization
+            and normalize_org_id(item.target_organization) == normalize_org_id(target_organization)
         )
 
     def output(
@@ -392,7 +395,7 @@ class NotificationManager:
                 no: item for no, item in self._items.items()
                 if not (
                     item.target_username == target_username
-                    and item.target_organization == target_organization
+                    and normalize_org_id(item.target_organization) == normalize_org_id(target_organization)
                 )
             }
             self.updates = list(

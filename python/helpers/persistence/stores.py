@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import threading
@@ -8,6 +10,12 @@ from typing import Any, Callable, Optional
 
 from python.helpers.files import get_abs_path, make_dirs, read_file, write_file
 from python.observability.runtime import ObservabilityMetrics, log_observability_event
+from python.helpers.organization import normalize_org_id
+
+
+def _org_eq(a, b) -> bool:
+    """Normalized organization comparison for store filtering."""
+    return normalize_org_id(a) == normalize_org_id(b)
 
 
 def _now_iso() -> str:
@@ -235,7 +243,7 @@ class InMemoryNotificationStore(NotificationStore):
     def _scoped(self, username: str, organization: str) -> list[dict[str, Any]]:
         return [
             n for _, n in sorted(self._items.items(), key=lambda kv: kv[0])
-            if n.get("target_username") == username and n.get("target_organization") == organization
+            if n.get("target_username") == username and _org_eq(n.get("target_organization"), organization)
         ]
 
     def list_scoped(self, *, username: str, organization: str) -> list[dict[str, Any]]:
@@ -250,7 +258,7 @@ class InMemoryNotificationStore(NotificationStore):
                 item = self._items.get(no)
                 if not item:
                     continue
-                if item.get("target_username") == username and item.get("target_organization") == organization:
+                if item.get("target_username") == username and _org_eq(item.get("target_organization"), organization):
                     out.append(item)
             return out
 
@@ -261,7 +269,7 @@ class InMemoryNotificationStore(NotificationStore):
             for no, item in self._items.items():
                 if item.get("id") not in ids:
                     continue
-                if item.get("target_username") != username or item.get("target_organization") != organization:
+                if item.get("target_username") != username or not _org_eq(item.get("target_organization"), organization):
                     continue
                 if item.get("read"):
                     continue
@@ -276,7 +284,7 @@ class InMemoryNotificationStore(NotificationStore):
         with self._lock:
             changed = 0
             for no, item in self._items.items():
-                if item.get("target_username") != username or item.get("target_organization") != organization:
+                if item.get("target_username") != username or not _org_eq(item.get("target_organization"), organization):
                     continue
                 if item.get("read"):
                     continue
@@ -291,7 +299,7 @@ class InMemoryNotificationStore(NotificationStore):
         with self._lock:
             to_delete = [
                 no for no, item in self._items.items()
-                if item.get("target_username") == username and item.get("target_organization") == organization
+                if item.get("target_username") == username and _org_eq(item.get("target_organization"), organization)
             ]
             for no in to_delete:
                 del self._items[no]
@@ -309,7 +317,7 @@ class InMemoryNotificationStore(NotificationStore):
                 item = self._items.get(no)
                 if not item:
                     continue
-                if item.get("target_username") == username and item.get("target_organization") == organization:
+                if item.get("target_username") == username and _org_eq(item.get("target_organization"), organization):
                     count += 1
             return count
 

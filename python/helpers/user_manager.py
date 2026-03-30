@@ -21,6 +21,11 @@ from python.security.auth import (
     is_password_hashed,
     hash_password,
 )
+from python.helpers.organization import (
+    normalize_org_id,
+    get_registry,
+    initialize_registry_from_users,
+)
 
 logger = logging.getLogger("user_manager")
 
@@ -85,6 +90,7 @@ class UserManager:
         self._users = users_dict
         self._is_mono_user = False
         self._is_auth_required = True
+        initialize_registry_from_users(users_dict)
         logger.info(f"Loaded {len(self._users)} users from users.json")
 
     def _fallback_mono_user(self) -> None:
@@ -187,11 +193,16 @@ class UserManager:
         return info.get("role", "user")
 
     def get_organization(self, username: str) -> Optional[str]:
-        """Get the organization for a user, or None if not found."""
+        """Get the display organization name for a user, or None if not found."""
         info = self._users.get(username)
         if info is None:
             return None
         return info.get("organization")
+
+    def get_organization_id(self, username: str) -> str:
+        """Get the canonical normalized org slug for a user."""
+        raw = self.get_organization(username)
+        return normalize_org_id(raw)
 
     def get_org_role(self, username: str) -> Optional[str]:
         """Get the org_role for a user, or None if not found."""
@@ -201,10 +212,11 @@ class UserManager:
         return info.get("org_role", "MEMBER")
 
     def get_org_members(self, organization: str) -> list[str]:
-        """Get all usernames belonging to an organization."""
+        """Get all usernames belonging to an organization (matches by normalized slug)."""
+        target_id = normalize_org_id(organization)
         return [
             uname for uname, info in self._users.items()
-            if info.get("organization") == organization
+            if normalize_org_id(info.get("organization")) == target_id
         ]
 
 

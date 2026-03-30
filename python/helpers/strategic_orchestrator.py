@@ -1126,13 +1126,11 @@ def export_strategic_pdf_for_context(
     except Exception:
         return None
 
+    from python.helpers.organization import normalize_org_id
     workspace = getattr(agent.context, "workspace", None)
-    organization = (
-        (getattr(agent.context, "organization", None) or "unknown-org")
-        .strip()
-        .lower()
-        .replace(" ", "-")
-    )
+    organization = normalize_org_id(
+        getattr(agent.context, "organization", None)
+    ) or "unknown-org"
     username = (getattr(agent.context, "username", None) or "anonymous").strip().lower()
     if not workspace and username and username != "anonymous":
         workspace = files.get_abs_path("shared/users", username)

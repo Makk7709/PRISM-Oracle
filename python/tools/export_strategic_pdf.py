@@ -59,8 +59,18 @@ class ExportStrategicPdf(Tool):
             if not filename.endswith(".pdf"):
                 filename += ".pdf"
             
-            # Output directory
-            output_dir = Path(__file__).parent.parent.parent / "docs" / "reports"
+            # Output directory: per-user + per-organization strategic folder
+            # to keep enterprise segregation explicit and deterministic.
+            from python.helpers.organization import normalize_org_id
+            workspace = getattr(self.agent.context, "workspace", None)
+            organization = normalize_org_id(
+                getattr(self.agent.context, "organization", None)
+            ) or "unknown-org"
+            username = (getattr(self.agent.context, "username", None) or "anonymous").strip().lower()
+            if workspace:
+                output_dir = Path(workspace) / "reports" / "strategic" / organization / username
+            else:
+                output_dir = Path(__file__).parent.parent.parent / "docs" / "reports"
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / filename
             
@@ -78,10 +88,16 @@ class ExportStrategicPdf(Tool):
             
             if pdf_path:
                 PrintStyle(font_color="green", bold=True).print(f"✅ PDF generated: {pdf_path}")
+                if workspace:
+                    rel = "/" + str(Path(pdf_path).relative_to(Path(workspace))).replace("\\", "/")
+                else:
+                    rel = str(pdf_path)
+                download_url = f"/download_work_dir_file?path={rel}"
                 return Response(
                     message=f"✅ **PDF exporté avec succès**\n\n"
                             f"📄 **Fichier:** `{filename}`\n"
                             f"📍 **Emplacement:** `{pdf_path}`\n\n"
+                            f"[📥 Télécharger le dossier]({download_url})\n\n"
                             f"Le document inclut:\n"
                             f"- Couverture Big 4\n"
                             f"- Table des matières\n"

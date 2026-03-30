@@ -4,6 +4,7 @@ from typing import Any
 import uuid
 from agent import Agent, AgentConfig, AgentContext, AgentContextType
 from python.helpers import files, history
+from python.helpers.organization import normalize_org_id
 import json
 from initialize import initialize_agent
 
@@ -127,11 +128,12 @@ def _serialize_context(context: AgentContext):
     data = {k: v for k, v in context.data.items() if not k.startswith("_")}
     output_data = {k: v for k, v in context.output_data.items() if not k.startswith("_")}
 
+    raw_org = getattr(context, "organization", None)
     return {
         "id": context.id,
         "name": context.name,
         "username": getattr(context, "username", None),
-        "organization": getattr(context, "organization", None),
+        "organization": normalize_org_id(raw_org) or raw_org,
         "created_at": (
             context.created_at.isoformat()
             if context.created_at
@@ -180,6 +182,9 @@ def _deserialize_context(data):
     config = initialize_agent()
     log = _deserialize_log(data.get("log", None))
 
+    raw_org = data.get("organization", None)
+    org_normalized = normalize_org_id(raw_org) or raw_org
+
     context = AgentContext(
         config=config,
         id=data.get("id", None),
@@ -200,7 +205,7 @@ def _deserialize_context(data):
         data=data.get("data", {}),
         output_data=data.get("output_data", {}),
         username=data.get("username", None),
-        organization=data.get("organization", None),
+        organization=org_normalized,
     )
 
     agents = data.get("agents", [])

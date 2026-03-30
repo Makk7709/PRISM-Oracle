@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from python.helpers.organization import normalize_org_id
+
 
 @dataclass(frozen=True)
 class AccessPrincipal:
@@ -20,6 +22,11 @@ class AccessPrincipal:
     def is_org_owner(self) -> bool:
         return self.org_role == "OWNER"
 
+    @property
+    def organization_id(self) -> str:
+        """Canonical normalized org slug for comparisons."""
+        return normalize_org_id(self.organization)
+
 
 def can_access_context(
     principal: AccessPrincipal,
@@ -27,20 +34,18 @@ def can_access_context(
     ctx_owner: Optional[str],
     ctx_org: Optional[str],
 ) -> tuple[bool, str]:
-    # API key / no-user flows are allowed only for unscoped contexts.
     if not principal.is_authenticated:
         if ctx_owner is None and ctx_org is None:
             return True, "anonymous_unscoped_context"
         return False, "anonymous_cannot_access_scoped_context"
 
-    # Fail closed for legacy/unscoped contexts in authenticated mode.
     if not ctx_org:
         return False, "context_missing_organization"
 
     if not principal.organization:
         return False, "user_missing_organization"
 
-    if ctx_org != principal.organization:
+    if normalize_org_id(ctx_org) != principal.organization_id:
         return False, "cross_organization_denied"
 
     if principal.is_org_owner:
@@ -61,7 +66,6 @@ def can_access_task(
     task_owner: Optional[str],
     task_org: Optional[str],
 ) -> tuple[bool, str]:
-    # Same authorization model as contexts.
     return can_access_context(
         principal,
         ctx_owner=task_owner,
