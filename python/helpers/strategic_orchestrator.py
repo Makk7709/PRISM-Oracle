@@ -16,8 +16,6 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import os
 import re
@@ -25,8 +23,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
-from uuid import uuid4
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from python.helpers import files
 
 if TYPE_CHECKING:
@@ -784,14 +781,13 @@ async def _call_chat_model(agent: "Agent", system: str, message: str) -> str:
             cfg.provider, cfg.name, model_config=cfg, **cfg.build_kwargs()
         )
 
-        async def _noop(_c: str, _t: str) -> None:
-            pass
+        rate_cb = getattr(agent, "rate_limiter_callback", None)
 
         response, _reasoning = await model.unified_call(
             system_message=system,
             user_message=message,
             response_callback=None,
-            rate_limiter_callback=None,
+            rate_limiter_callback=rate_cb,
         )
         return response
     except Exception as exc:
@@ -1042,8 +1038,8 @@ async def _consolidate_via_llm(
     total_sources = sum(r.sources_count for r in responses if r.success)
     successful_agents = sum(1 for r in responses if r.success)
 
-    consolidation_system = f"""Tu es un Senior Partner d'un cabinet de conseil stratégique de premier plan (McKinsey, BCG, Bain).
-Tu consolides les analyses de {successful_agents} agents spécialisés en un dossier stratégique premium unique.
+    consolidation_system = f"""Tu es un Senior Partner d'un cabinet de conseil stratégique de premier plan.
+Tu consolides les analyses de {successful_agents} agents spécialisés en un dossier stratégique premium unique sous la marque KOREV Evidence.
 
 ## TON RÔLE
 - Synthétiser, enrichir et structurer — pas copier-coller.
