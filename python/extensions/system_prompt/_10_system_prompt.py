@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 from python.helpers.extension import Extension
 from python.helpers.mcp_handler import MCPConfig
@@ -14,13 +15,14 @@ class SystemPrompt(Extension):
         loop_data: LoopData = LoopData(),
         **kwargs: Any
     ):
-        # append main system prompt and tools
+        date_block = get_date_anchor(self.agent)
         main = get_main_prompt(self.agent)
         tools = get_tools_prompt(self.agent)
         mcp_tools = get_mcp_tools_prompt(self.agent)
         secrets_prompt = get_secrets_prompt(self.agent)
         project_prompt = get_project_prompt(self.agent)
 
+        system_prompt.append(date_block)
         system_prompt.append(main)
         system_prompt.append(tools)
         if mcp_tools:
@@ -29,6 +31,27 @@ class SystemPrompt(Extension):
             system_prompt.append(secrets_prompt)
         if project_prompt:
             system_prompt.append(project_prompt)
+
+
+def get_date_anchor(agent: Agent) -> str:
+    """Inject the current date prominently into the system prompt so every
+    agent uses today as the temporal reference for any timeline, projection
+    or regulatory citation."""
+    from python.helpers.localization import Localization
+
+    now = datetime.now(timezone.utc)
+    local_str = Localization.get().utc_dt_to_localtime_str(
+        now, sep=" ", timespec="seconds"
+    )
+    if local_str and "+" in local_str:
+        local_str = local_str.split("+")[0]
+
+    year = now.strftime("%Y")
+    return agent.read_prompt(
+        "agent.system.date_anchor.md",
+        current_datetime=local_str,
+        current_year=year,
+    )
 
 
 def get_main_prompt(agent: Agent):

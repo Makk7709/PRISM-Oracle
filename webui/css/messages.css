@@ -168,25 +168,46 @@
  * MESSAGE TYPES — KOREV Sovereign Palette
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Default — clean surface */
+/* Default — recessed like agent thinking */
 .message-default {
-  background: var(--prism-bg-surface);
+  background: #111114;
   border-color: var(--prism-border-subtle);
 }
 
-/* Agent — accent left border */
+.message-default .message-body {
+  color: var(--prism-text-secondary);
+  font-size: 14px;
+}
+
+/* Agent — "Encre" depth: recessed thinking layer */
 .message-agent {
-  background: var(--prism-bg-surface);
-  border-left: 3px solid var(--prism-accent);
+  background: #111114;
+  border-left: 3px solid #4f46e5;
   padding-left: calc(var(--prism-space-4) - 2px);
 }
 
-/* Agent Response — primary response style */
+.message-agent .msg-heading h4 {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--prism-text-muted);
+}
+
+.message-agent .message-body {
+  color: var(--prism-text-secondary);
+  font-size: 14px;
+}
+
+/* Agent Response — "Cristal" elevated delivery layer */
 .message-agent-response {
   min-width: 200px;
-  background: var(--prism-bg-surface);
-  border-left: 3px solid var(--prism-accent);
+  background: linear-gradient(135deg, #16161b 0%, #141418 100%);
+  border-left: 3px solid #6366f1;
   padding-left: calc(var(--prism-space-4) - 2px);
+  box-shadow: 0 1px 6px rgba(99, 102, 241, 0.08);
+}
+
+.message-agent-response .message-body {
+  color: var(--prism-text-primary);
 }
 
 /* Agent Delegation — indigo accent */
@@ -692,9 +713,14 @@
   border-color: var(--prism-border);
 }
 
-.message-agent-response:hover,
 .message-agent:hover {
+  border-left-color: #6366f1;
+  background: #131316;
+}
+
+.message-agent-response:hover {
   border-left-color: #8b5cf6;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.12);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -702,16 +728,43 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .light-mode .message-default {
-  background: var(--prism-bg-surface);
+  background: #f0f0f3;
+}
+
+.light-mode .message-default .message-body {
+  color: var(--prism-text-secondary);
 }
 
 .light-mode .message-user {
   background: linear-gradient(135deg, var(--prism-bg-surface-2) 0%, var(--prism-bg-surface) 100%);
 }
 
-.light-mode .message-agent,
+.light-mode .message-agent {
+  background: #f0f0f3;
+  border-left-color: #a5b4fc;
+}
+
+.light-mode .message-agent .message-body {
+  color: var(--prism-text-secondary);
+}
+
 .light-mode .message-agent-response {
-  background: var(--prism-bg-surface);
+  background: linear-gradient(135deg, #fafafe 0%, #ffffff 100%);
+  border-left-color: #6366f1;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.06);
+}
+
+.light-mode .message-agent-response .message-body {
+  color: var(--prism-text-primary);
+}
+
+.light-mode .message-agent:hover {
+  background: #ededf0;
+  border-left-color: #818cf8;
+}
+
+.light-mode .message-agent-response:hover {
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
 }
 
 .light-mode .message-agent-delegation {

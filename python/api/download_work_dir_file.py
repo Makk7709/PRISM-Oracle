@@ -83,11 +83,11 @@ class DownloadFile(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:
-            raise ValueError("No file path provided")
+            return Response('{"error":"No file path provided"}', status=400, mimetype="application/json")
         _, workspace = self._session_user_info()
         allowed, _ = self._authorize_workspace_access(workspace, action="workspace_download_file")
         if not allowed:
-            raise Exception("Access denied")
+            return Response('{"error":"File not found"}', status=404, mimetype="application/json")
 
         # Resolve the path: if it's already an absolute path inside the
         # work directory, convert it to a relative path so get_abs_path
@@ -97,13 +97,26 @@ class DownloadFile(ApiHandler):
             relative_path = os.path.relpath(file_path, base_dir)
         else:
             relative_path = file_path.lstrip("/")
+            for container_prefix in ("app/", "korev/", "a0/"):
+                if relative_path.startswith(container_prefix):
+                    relative_path = relative_path[len(container_prefix):]
+                    break
 
         file = await runtime.call_development_function(
             file_info.get_file_info, relative_path, base_dir
         )
 
+        # Legacy fallback: if file not found in workspace, try global
+        # base dir for pre-scoping files (e.g. /app/tmp/generated/).
         if not file["exists"]:
-            raise Exception(f"File {file_path} not found")
+            app_base = files.get_base_dir()
+            if app_base != base_dir:
+                file = await runtime.call_development_function(
+                    file_info.get_file_info, relative_path, app_base
+                )
+
+        if not file["exists"]:
+            return Response('{"error":"File not found"}', status=404, mimetype="application/json")
 
         if file["is_dir"]:
             zip_file = await runtime.call_development_function(files.zip_dir, file["abs_path"])
@@ -132,7 +145,7 @@ class DownloadFile(ApiHandler):
                     file["abs_path"],
                     download_name=os.path.basename(file["file_name"])
                 )
-        raise Exception(f"File {file_path} not found")
+        return Response('{"error":"File not found"}', status=404, mimetype="application/json")
 
 
 async def fetch_file(path):

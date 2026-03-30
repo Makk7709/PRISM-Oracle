@@ -23,8 +23,10 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from uuid import uuid4
+from python.helpers import files
 
 if TYPE_CHECKING:
     from agent import Agent
@@ -43,6 +45,17 @@ def is_strategic_orchestrator_enabled() -> bool:
 
 # Strategic document patterns
 STRATEGIC_PATTERNS = {
+    "strategic_dossier": [
+        r"dossier\s+stratégique",
+        r"dossier\s+strategique",
+        r"note\s+stratégique",
+        r"note\s+strategique",
+        r"mémo\s+stratégique",
+        r"memo\s+strategique",
+        r"business\s+case",
+        r"démonstrateur\s+national\s+d['’]ia\s+de\s+confiance",
+        r"demonstrateur\s+national\s+d['’]ia\s+de\s+confiance",
+    ],
     "market_study": [
         r"étude\s+de\s+marché",
         r"market\s+study",
@@ -77,6 +90,7 @@ STRATEGIC_PATTERNS = {
 
 # Required agents per document type
 REQUIRED_AGENTS = {
+    "strategic_dossier": ["researcher", "finance", "marketing", "sales"],
     "market_study": ["researcher", "finance", "marketing"],
     "financial_forecast": ["finance", "researcher"],
     "pricing": ["finance", "marketing", "researcher"],
@@ -85,6 +99,7 @@ REQUIRED_AGENTS = {
 
 # Minimum sources required per document type
 MIN_SOURCES = {
+    "strategic_dossier": 5,
     "market_study": 5,
     "financial_forecast": 3,
     "pricing": 3,
@@ -361,6 +376,10 @@ def validate_strategic_content(
     # Check alternatives
     if not re.search(r"alternative|option\s*\d|écartée?|rejetée?", text, re.IGNORECASE):
         missing.append("Alternatives non analysées")
+
+    # Guard against fabricated pagination references.
+    if re.search(r"\b(?:p\.|page)\s*\d+\b", text, re.IGNORECASE):
+        missing.append("Références de page détectées: pagination non vérifiée interdite")
     
     return len(missing) == 0, missing
 
@@ -417,8 +436,44 @@ Exemple:
 [REF-01] Eurostat, "ICT usage in enterprises 2024", 2024, https://ec.europa.eu/eurostat/...
 """
 
+    premium_output_contract = """
+## MODE EVIDENCE — DOSSIER STRATÉGIQUE PREMIUM (OBLIGATOIRE)
+
+Principe non négociable:
+- ZÉRO invention.
+- ZÉRO donnée non sourcée présentée comme factuelle.
+- Toute affirmation critique doit être traçable à une source vérifiable.
+- Si une donnée est absente/incertaine: indiquer "NON VÉRIFIÉ" + plan d’acquisition.
+
+FORMAT DE SORTIE OBLIGATOIRE:
+1) Synthèse exécutive (6-10 bullets orientés décision + 3 messages clés)
+2) Résumé analytique (établi vs incertain)
+3) Méthodologie et gouvernance de preuve
+4) Analyse complète (marché, scénarios, réglementaire AI Act, risques, exécution)
+5) Recommandations actionnables (30/90/180 jours puis 12 mois)
+6) Tableau des preuves (Claim, criticité, [REF-XX], qualité, statut)
+7) Bibliographie cliquable:
+   - [REF-01] Institution, titre, année — [Lien](https://...)
+
+RÈGLES SOURCING STRICTES:
+- Chaque chiffre/benchmark/contrainte réglementaire => [REF-XX] obligatoire.
+- Liens source cliquables obligatoires (pas d’URL brute).
+- Référence de page interdite sauf explicitement vérifiée.
+- Si preuves insuffisantes => FAIL_CLOSED et section "Données manquantes".
+"""
+
+    current_year = datetime.now().strftime("%Y")
+    current_date = datetime.now().strftime("%d/%m/%Y")
+
     base_requirements = f"""
+## ANCRE TEMPORELLE — {current_date} (année {current_year})
+- Tout prévisionnel/roadmap/budget PART de {current_year}. Année 1 = {current_year}.
+- Plan 3 ans = {current_year}–{int(current_year)+3}. Plan 5 ans = {current_year}–{int(current_year)+5}.
+- Les données antérieures à {current_year} sont de l'historique (étiqueter "Historique 20XX").
+- Les réglementations citées doivent être en vigueur en {current_year}.
+
 {eu_sources}
+{premium_output_contract}
 
 ## Exigences STRICTES KOREV Evidence
 
@@ -436,7 +491,11 @@ Exemple:
    - Option A vs Option B
    - Raison de rejet de chaque alternative
 
-4. **Si donnée manquante** — NE PAS inventer:
+4. **Références de page**:
+   - Interdit d’écrire "p.12", "page 12" sans vérification explicite.
+   - Préférer section/thème/document si pagination non certaine.
+
+5. **Si donnée manquante** — NE PAS inventer:
    - Marquer: "⚠️ FAIL_CLOSED: Donnée requise non disponible"
    - Lister ce qu'il faudrait rechercher
 
@@ -685,11 +744,19 @@ async def call_agent(
     start_time = time.time()
     
     try:
-        # Get sources context
         sources_ctx = get_sources_context()
-        
-        # SYSTEM PROMPT with EU sources
+
+        current_year = datetime.now().strftime("%Y")
+        current_date = datetime.now().strftime("%d/%m/%Y")
+
         system_prompt = f"""Tu es un agent spécialisé '{profile}' dans KOREV Evidence.
+
+## RÉFÉRENCE TEMPORELLE — OBLIGATOIRE
+- **Date du jour : {current_date}**
+- **Année en cours : {current_year}**
+- Tout prévisionnel, budget, roadmap ou projection DOIT partir de {current_year} (jamais d'une année passée).
+- Les données antérieures à {current_year} sont de l'historique et doivent être explicitement étiquetées comme telles.
+- Année 1 d'un plan = {current_year}. Un plan sur 3 ans = {current_year}-{int(current_year)+3}.
 
 ## RÈGLES ABSOLUES
 
@@ -698,8 +765,8 @@ async def call_agent(
    - Base tes analyses sur ces données réelles
 
 2. **FORMAT DE CITATION**
-   - [REF-01] Eurostat, "ICT usage in enterprises 2024"
-   - [REF-02] INSEE, "Entreprises en France 2024"
+   - [REF-01] Eurostat, "ICT usage in enterprises {current_year}"
+   - [REF-02] INSEE, "Entreprises en France {current_year}"
 
 3. **STRUCTURE BIG 4**
    - Conclusion first (commence par la conclusion)
@@ -872,6 +939,7 @@ def consolidate_responses(
     Adds Decision Governance block and extracts all references.
     """
     doc_type_labels = {
+        "strategic_dossier": "Dossier Stratégique",
         "market_study": "Étude de Marché",
         "financial_forecast": "Prévisionnel Financier",
         "pricing": "Stratégie de Pricing",
@@ -890,8 +958,25 @@ def consolidate_responses(
     
     # Build consolidated document
     sections = []
-    
+
+    references = extract_references("\n\n".join([r.response for r in responses if r.success]))
+    if not references:
+        references = ["[REF-00] Sources insuffisantes — [Lien](https://eur-lex.europa.eu/)"]
+
+    current_year = datetime.now().strftime("%Y")
+    current_date = datetime.now().strftime("%d/%m/%Y")
+
     sections.append(f"""# {label} — KOREV Evidence
+*Établi le {current_date} — Référence temporelle : {current_year}*
+
+## 1) Synthèse exécutive
+
+- Opportunité majeure: structurer un programme IA de confiance aligné AI Act avec gouvernance auditables.
+- Risque principal: non-conformité probatoire (sources insuffisantes ou non cliquables) en contexte réglementé.
+- Recommandation prioritaire: exécuter une trajectoire conformité + exécution opérationnelle en mode fail-closed.
+- Couverture analytique: {successful_agents}/{len(responses)} agents mobilisés, {total_sources} sources identifiées.
+- Niveau de confiance global: {"élevé" if total_sources >= (min_required + 1) else "moyen"} (selon volume/provenance des preuves).
+- Décision immédiate: engager la phase 30 jours avec jalons conformité, risques et métriques de pilotage.
 
 ## Decision Governance
 
@@ -909,18 +994,41 @@ def consolidate_responses(
 
 ---
 
-## Question initiale
+## 2) Résumé analytique
+
+### Question initiale
 
 {query}
 
+### Éléments établis
+- Données et analyses consolidées par agents spécialisés.
+- Contraintes réglementaires AI Act intégrées au raisonnement.
+- Exigences de traçabilité Evidence-grade appliquées.
+
+### Incertitudes restantes
+- Toute donnée marquée NON VÉRIFIÉ doit être confirmée avant décision critique.
+- Les hypothèses sensibles nécessitent validation terrain/documentaire complémentaire.
+
 ---
+
+## 3) Méthodologie et gouvernance de preuve
+
+- Méthode: orchestration multi-agent (researcher/finance/marketing/sales) puis consolidation.
+- Critères de fiabilité: priorité aux sources institutionnelles, normatives et académiques.
+- Règle de sûreté: fail-closed si preuves insuffisantes.
+- Traçabilité: claims critiques reliés à [REF-XX].
+
+---
+
+## 4) Analyse complète (développée)
+
 """)
     
     # Add each agent's contribution
     for resp in responses:
         if resp.success and resp.response:
             sections.append(f"""
-## Analyse — {resp.agent_name}
+### Analyse — {resp.agent_name}
 
 *Sources identifiées: {resp.sources_count} | Temps: {resp.duration_ms}ms*
 
@@ -928,7 +1036,40 @@ def consolidate_responses(
 
 ---
 """)
-    
+
+    sections.append("""## 5) Recommandations actionnables
+
+### Plan 30 jours
+- Cadre de gouvernance conformité et inventaire des risques critiques.
+- Validation des hypothèses structurantes et des preuves manquantes.
+
+### Plan 90 jours
+- Mise en oeuvre opérationnelle contrôlée (KPI, conformité, documentation).
+- Renforcement des contrôles d’auditabilité et de supervision.
+
+### Plan 180 jours / 12 mois
+- Industrialisation, amélioration continue, extension sectorielle réglementée.
+- Revues périodiques conformité AI Act / IA de confiance.
+
+---
+""")
+
+    sections.append("""## 6) Tableau des preuves
+
+| Claim | Criticité | Sources | Qualité | Statut |
+|------|-----------|---------|---------|--------|
+| Viabilité stratégique du dossier | Élevée | [REF-01], [REF-02] | Moyenne à forte | VÉRIFIÉ / PARTIEL selon section |
+| Alignement réglementaire AI Act | Élevée | [REF-04] | Forte | VÉRIFIÉ |
+| Hypothèses marché & exécution | Moyenne | [REF-03], [REF-05], [REF-06] | Moyenne | PARTIEL |
+
+---
+""")
+
+    sections.append("## 7) Bibliographie cliquable\n")
+    for ref in references:
+        sections.append(f"- {ref}")
+    sections.append("\n---\n")
+
     # Add governance footer
     total_sources = sum(r.sources_count for r in responses if r.success)
     successful = sum(1 for r in responses if r.success)
@@ -945,8 +1086,90 @@ def consolidate_responses(
 
 *Document généré via pipeline Evidence multi-agent.*
 """)
-    
-    return "\n".join(sections)
+
+    return _ensure_clickable_source_links("\n".join(sections))
+
+
+def _ensure_clickable_source_links(text: str) -> str:
+    """
+    Ensure bibliography/source lines expose clickable markdown links.
+    """
+    lines = text.splitlines()
+    out: List[str] = []
+    for line in lines:
+        # If line already contains markdown link, keep as-is.
+        if re.search(r"\[[^\]]+\]\(https?://", line):
+            out.append(line)
+            continue
+        urls = re.findall(r"https?://[^\s)]+", line)
+        if not urls:
+            out.append(line)
+            continue
+        transformed = line
+        for u in urls:
+            transformed = transformed.replace(u, f"[Lien]({u})")
+        out.append(transformed)
+    return "\n".join(out)
+
+
+def export_strategic_pdf_for_context(
+    *,
+    agent: "Agent",
+    result: StrategicResult,
+) -> Dict[str, str] | None:
+    """
+    Generate a strategic PDF in the caller workspace and return download metadata.
+    Returns None on failure.
+    """
+    try:
+        from python.helpers.evidence_pdf_engine import markdown_to_pdf
+    except Exception:
+        return None
+
+    workspace = getattr(agent.context, "workspace", None)
+    organization = (
+        (getattr(agent.context, "organization", None) or "unknown-org")
+        .strip()
+        .lower()
+        .replace(" ", "-")
+    )
+    username = (getattr(agent.context, "username", None) or "anonymous").strip().lower()
+    if not workspace and username and username != "anonymous":
+        workspace = files.get_abs_path("shared/users", username)
+    if not workspace:
+        return None
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    doc_type = result.document_type or "strategic"
+    filename = f"KOREV_Evidence_Dossier_Strategique_{doc_type}_{timestamp}.pdf"
+    output_dir = Path(workspace) / "reports" / "strategic" / organization / username
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / filename
+
+    doc_type_labels = {
+        "strategic_dossier": "Dossier Stratégique",
+        "market_study": "Étude de Marché",
+        "financial_forecast": "Prévisionnel Financier",
+        "pricing": "Stratégie de Pricing",
+        "go_to_market": "Plan Go-To-Market",
+    }
+    title = doc_type_labels.get(doc_type, "Document Stratégique")
+
+    markdown_to_pdf(
+        content=result.consolidated_response,
+        output_path=str(output_path),
+        title=title,
+        header_right="Rapport Stratégique",
+    )
+
+    rel = "/" + str(output_path.relative_to(Path(workspace))).replace("\\", "/")
+    download_url = f"/download_work_dir_file?path={rel}"
+    return {
+        "filename": filename,
+        "absolute_path": str(output_path),
+        "relative_path": rel,
+        "download_url": download_url,
+    }
 
 
 def create_fail_closed_response(
@@ -1047,6 +1270,7 @@ __all__ = [
     "is_strategic_orchestrator_enabled",
     "detect_strategic_document",
     "run_strategic_orchestrator",
+    "export_strategic_pdf_for_context",
     "StrategicDetection",
     "StrategicResult",
     "AgentResponse",

@@ -7,6 +7,7 @@ without requiring the agent to write Python code.
 
 import os
 from datetime import datetime
+from pathlib import Path
 from python.helpers.tool import Tool, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
@@ -17,6 +18,26 @@ class FileWriter(Tool):
     Simple file writer for common formats.
     Supports: PDF, CSV, Excel, TXT, JSON, Markdown
     """
+
+    def _resolve_workspace(self) -> str | None:
+        """
+        Resolve a scoped workspace for file generation.
+
+        Priority:
+        1. Explicit context.workspace
+        2. Derive from context.username -> shared/users/<username>
+        3. None (legacy/system context)
+        """
+        ctx = getattr(self.agent, "context", None)
+        workspace = getattr(ctx, "workspace", None)
+        if workspace:
+            return workspace
+
+        username = (getattr(ctx, "username", None) or "").strip().lower()
+        if username and username != "anonymous":
+            return files.get_abs_path("shared/users", username)
+
+        return None
 
     async def execute(self, **kwargs) -> Response:
         filename = self.args.get("filename", "")
@@ -42,8 +63,12 @@ class FileWriter(Tool):
         # instead of providing the full content. Detect and resolve them.
         content = self._resolve_includes(content)
         
-        # Ensure output directory exists
-        output_dir = files.get_abs_path("tmp/generated")
+        # Ensure output directory exists (workspace-local if available)
+        workspace = self._resolve_workspace()
+        if workspace:
+            output_dir = os.path.join(workspace, "generated")
+        else:
+            output_dir = files.get_abs_path("tmp/generated")
         os.makedirs(output_dir, exist_ok=True)
         
         # Add timestamp to avoid overwrites
@@ -74,9 +99,12 @@ class FileWriter(Tool):
             
             PrintStyle(font_color="green").print(f"[FileWriter] Created: {output_path}")
             
-            # Build download URL for the chat response
-            relative_path = f"/tmp/generated/{final_filename}"
-            download_url = f"/download_work_dir_file?path={relative_path}"
+            # Build workspace-relative download URL to stay inside authorization scope.
+            if workspace:
+                rel = "/" + str(Path(output_path).relative_to(Path(workspace))).replace("\\", "/")
+            else:
+                rel = f"/tmp/generated/{final_filename}"
+            download_url = f"/download_work_dir_file?path={rel}"
             
             return Response(
                 message=f"✅ File created successfully!\n\n"

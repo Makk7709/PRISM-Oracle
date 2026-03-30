@@ -247,13 +247,28 @@ const model = {
     }
   },
 
-  downloadFile(file) {
-    const link = document.createElement("a");
-    link.href = `/download_work_dir_file?path=${encodeURIComponent(file.path)}`;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  async downloadFile(file) {
+    try {
+      const resp = await fetchApi(
+        `/download_work_dir_file?path=${encodeURIComponent(file.path)}`,
+        { method: "GET", credentials: "same-origin" }
+      );
+      if (!resp || !resp.ok) {
+        window.toastFrontendError("Download failed.", "File Error");
+        return;
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      window.toastFrontendError("Download error: " + e.message, "File Error");
+    }
   },
 };
 
@@ -262,6 +277,13 @@ export const store = createStore("fileBrowser", model);
 window.openFileLink = async function (path) {
   try {
     try { path = decodeURIComponent(path); } catch (_) {}
+    // Defensive normalization: callers may still pass a full download URL.
+    if (typeof path === "string") {
+      const match = path.match(/^\/?download_work_dir_file\?path=([^&]+)/i);
+      if (match) {
+        try { path = decodeURIComponent(match[1]); } catch (_) { path = match[1]; }
+      }
+    }
     const resp = await window.sendJsonData("/file_info", { path });
     if (!resp.exists) {
       window.toastFrontendError("File does not exist.", "File Error");
