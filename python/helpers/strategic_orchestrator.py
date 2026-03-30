@@ -5,10 +5,11 @@
 ║  Pipeline déterministe pour documents stratégiques:                          ║
 ║  - Détection automatique (étude de marché, prévisionnel, etc.)              ║
 ║  - Appel séquentiel des agents spécialisés (researcher → finance)           ║
+║  - Consolidation LLM dynamique (pas de template générique)                  ║
 ║  - Validation des sources et du contenu                                      ║
 ║  - FAIL_CLOSED si standards Evidence non respectés                           ║
 ║                                                                              ║
-║  Version: 1.0.0                                                              ║
+║  Version: 2.0.0                                                              ║
 ║  © 2026 Korev AI — Proprietary                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -388,6 +389,40 @@ def validate_strategic_content(
 # AGENT PROMPTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _extract_key_content(text: str, max_chars: int = 2500) -> str:
+    """
+    Extract high-value lines from an agent response for inter-agent context.
+
+    Prioritises lines containing references, numbers, tables, and conclusions
+    over generic prose.  Falls back to a head truncation if nothing matches.
+    """
+    if len(text) <= max_chars:
+        return text
+
+    priority_lines: List[str] = []
+    normal_lines: List[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        is_high = bool(
+            re.search(r"\[REF-\d+\]", stripped)
+            or re.search(r"\d[\d.,]+\s*(%|EUR|M€|Mds|k€|\$)", stripped)
+            or re.search(r"^\|", stripped)
+            or re.search(r"^[-*]\s+\*\*", stripped)
+            or re.search(r"(TAM|SAM|SOM|CAGR|ARPA|CAC|LTV|hypothèse|scénario)", stripped, re.IGNORECASE)
+        )
+        (priority_lines if is_high else normal_lines).append(line)
+
+    selected = "\n".join(priority_lines)
+    if len(selected) < max_chars and normal_lines:
+        remaining = max_chars - len(selected) - 20
+        filler = "\n".join(normal_lines)[:remaining]
+        selected = selected + "\n\n" + filler if selected else filler
+
+    return selected[:max_chars]
+
+
 def get_agent_prompt(
     document_type: str,
     agent_profile: str,
@@ -405,9 +440,12 @@ def get_agent_prompt(
     """
     context = ""
     if previous_responses:
-        context = "\n\n## Analyses précédentes:\n"
+        context = "\n\n## Analyses précédentes (à intégrer et développer):\n"
         for resp in previous_responses:
-            context += f"\n### {resp.agent_name} ({resp.profile}):\n{resp.response[:500]}...\n"
+            if not resp.success or not resp.response:
+                continue
+            summary = _extract_key_content(resp.response, max_chars=2500)
+            context += f"\n### {resp.agent_name} ({resp.profile}) — {resp.sources_count} sources:\n{summary}\n"
     
     # EU-specific sources list
     eu_sources = """
@@ -730,6 +768,42 @@ def get_sources_context() -> str:
     return "\n".join(lines)
 
 
+async def _call_chat_model(agent: "Agent", system: str, message: str) -> str:
+    """
+    Call the CHAT model (not utility) for strategic-grade output.
+
+    The utility model is intentionally lightweight (memory, summaries).
+    Strategic dossiers require the user's primary chat model for depth.
+    Falls back to utility model if chat model call fails.
+    """
+    try:
+        from models import get_chat_model
+
+        cfg = agent.config.chat_model
+        model = get_chat_model(
+            cfg.provider, cfg.name, model_config=cfg, **cfg.build_kwargs()
+        )
+
+        async def _noop(_c: str, _t: str) -> None:
+            pass
+
+        response, _reasoning = await model.unified_call(
+            system_message=system,
+            user_message=message,
+            response_callback=None,
+            rate_limiter_callback=None,
+        )
+        return response
+    except Exception as exc:
+        logger.warning(
+            "Strategic call_chat_model failed (%s), falling back to utility model",
+            exc,
+        )
+        return await agent.call_utility_model(
+            system=system, message=message, background=False,
+        )
+
+
 async def call_agent(
     agent: "Agent",
     profile: str,
@@ -737,12 +811,12 @@ async def call_agent(
     correlation_id: str,
 ) -> AgentResponse:
     """
-    Call a specialized agent and capture response.
-    
-    Includes EU verified sources in prompt for Evidence-grade output.
+    Call a specialized agent via the CHAT model for strategic-grade depth.
+
+    Includes EU verified sources and strict depth requirements.
     """
     start_time = time.time()
-    
+
     try:
         sources_ctx = get_sources_context()
 
@@ -750,6 +824,7 @@ async def call_agent(
         current_date = datetime.now().strftime("%d/%m/%Y")
 
         system_prompt = f"""Tu es un agent spécialisé '{profile}' dans KOREV Evidence.
+Tu produis un dossier stratégique de niveau cabinet de conseil haut de gamme.
 
 ## RÉFÉRENCE TEMPORELLE — OBLIGATOIRE
 - **Date du jour : {current_date}**
@@ -775,30 +850,37 @@ async def call_agent(
 
 {sources_ctx}
 
+## EXIGENCES DE PROFONDEUR (NON NÉGOCIABLE)
+
+- Ta réponse DOIT faire au minimum 1500 mots.
+- Chaque section doit contenir au moins 3 paragraphes développés avec argumentation.
+- Chaque affirmation chiffrée doit être accompagnée d'un contexte d'interprétation (pourquoi ce chiffre est significatif, quelle tendance il révèle, quel impact il a).
+- Les tableaux doivent contenir au minimum 5 lignes de données exploitables.
+- INTERDIT de résumer en 3 bullets ce qui mérite 3 paragraphes.
+- Tu écris pour des dirigeants, des investisseurs et des professions réglementées. La superficialité est inacceptable.
+- Si une section ne peut pas être développée faute de données, explique POURQUOI et propose un plan d'acquisition des données manquantes.
+
 Correlation ID: {correlation_id}"""
 
-        # Enhanced prompt with sources
         enhanced_prompt = f"""{prompt}
 
-RAPPEL: Utilise les sources EU fournies ([REF-01] à [REF-06]) dans ta réponse.
-Calcule TAM/SAM/SOM basé sur les données réelles.
+RAPPEL CRITIQUE:
+- Utilise les sources EU fournies ([REF-01] à [REF-06]) dans ta réponse.
+- Calcule TAM/SAM/SOM basé sur les données réelles.
+- Ta réponse DOIT être exhaustive et développée (minimum 1500 mots).
+- Ne sacrifie JAMAIS la profondeur pour la concision.
 """
 
-        # Call the agent's utility model with enriched prompt
-        response = await agent.call_utility_model(
-            system=system_prompt,
-            message=enhanced_prompt,
-            background=False,
-        )
-        
+        response = await _call_chat_model(agent, system_prompt, enhanced_prompt)
+
         duration_ms = int((time.time() - start_time) * 1000)
         sources = count_sources(response)
-        
+
         logger.info(
             f"[{correlation_id}] Agent {profile} responded: "
             f"{len(response)} chars, {sources} sources, {duration_ms}ms"
         )
-        
+
         return AgentResponse(
             agent_name=f"Evidence-{profile}",
             profile=profile,
@@ -807,13 +889,13 @@ Calcule TAM/SAM/SOM basé sur les données réelles.
             duration_ms=duration_ms,
             success=True,
         )
-        
+
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
         logger.error(f"[{correlation_id}] Agent {profile} failed: {e}")
         import traceback
         traceback.print_exc()
-        
+
         return AgentResponse(
             agent_name=f"Evidence-{profile}",
             profile=profile,
@@ -833,21 +915,20 @@ async def run_strategic_orchestrator(
 ) -> StrategicResult:
     """
     Run the full strategic orchestration pipeline.
-    
-    1. Call required agents in sequence
-    2. Consolidate responses
+
+    1. Call required agents in sequence (via chat model)
+    2. Consolidate via LLM synthesis (dynamic, not template)
     3. Validate against Evidence standards
     4. Return result or FAIL_CLOSED
     """
     start_time = time.time()
     responses: List[AgentResponse] = []
-    
+
     logger.info(
         f"[{correlation_id}] Starting strategic orchestration: "
         f"type={detection.document_type}, agents={detection.required_agents}"
     )
-    
-    # Call each required agent
+
     for profile in detection.required_agents:
         prompt = get_agent_prompt(
             document_type=detection.document_type,
@@ -855,43 +936,40 @@ async def run_strategic_orchestrator(
             user_query=query,
             previous_responses=responses,
         )
-        
+
         response = await call_agent(agent, profile, prompt, correlation_id)
         responses.append(response)
-        
-        # If critical agent fails, continue but log warning
+
         if not response.success:
             logger.warning(
                 f"[{correlation_id}] Agent {profile} failed, continuing..."
             )
-    
-    # Count total sources
+
     total_sources = sum(r.sources_count for r in responses)
-    
-    # Consolidate responses
-    consolidated = consolidate_responses(
+
+    # Dynamic LLM consolidation with template fallback
+    consolidated = await _consolidate_via_llm(
+        agent=agent,
         responses=responses,
         document_type=detection.document_type,
         query=query,
         correlation_id=correlation_id,
     )
-    
-    # Validate content
+
     is_valid, missing = validate_strategic_content(
         text=consolidated,
         document_type=detection.document_type,
         min_sources=detection.min_sources,
     )
-    
+
     duration_ms = int((time.time() - start_time) * 1000)
-    
-    # Build result
+
     if is_valid:
         logger.info(
             f"[{correlation_id}] Strategic validation PASSED: "
             f"{total_sources} sources, {duration_ms}ms"
         )
-        
+
         return StrategicResult(
             success=True,
             document_type=detection.document_type,
@@ -906,14 +984,14 @@ async def run_strategic_orchestrator(
         logger.warning(
             f"[{correlation_id}] Strategic validation FAILED: {missing}"
         )
-        
+
         fail_response = create_fail_closed_response(
             detection=detection,
             responses=responses,
             missing=missing,
             correlation_id=correlation_id,
         )
-        
+
         return StrategicResult(
             success=False,
             document_type=detection.document_type,
@@ -925,6 +1003,145 @@ async def run_strategic_orchestrator(
             correlation_id=correlation_id,
             duration_ms=duration_ms,
         )
+
+
+async def _consolidate_via_llm(
+    agent: "Agent",
+    responses: List[AgentResponse],
+    document_type: str,
+    query: str,
+    correlation_id: str,
+) -> str:
+    """
+    Consolidate agent responses into a premium document via the chat model.
+
+    Falls back to the static template if the LLM consolidation call fails.
+    """
+    doc_type_labels = {
+        "strategic_dossier": "Dossier Stratégique",
+        "market_study": "Étude de Marché",
+        "financial_forecast": "Prévisionnel Financier",
+        "pricing": "Stratégie de Pricing",
+        "go_to_market": "Plan Go-to-Market",
+    }
+    label = doc_type_labels.get(document_type, document_type)
+    current_year = datetime.now().strftime("%Y")
+    current_date = datetime.now().strftime("%d/%m/%Y")
+
+    agent_contributions = ""
+    for resp in responses:
+        if resp.success and resp.response:
+            agent_contributions += f"\n\n--- AGENT: {resp.agent_name} ({resp.profile}) | {resp.sources_count} sources ---\n{resp.response}\n"
+
+    if not agent_contributions.strip():
+        return consolidate_responses(
+            responses=responses, document_type=document_type,
+            query=query, correlation_id=correlation_id,
+        )
+
+    total_sources = sum(r.sources_count for r in responses if r.success)
+    successful_agents = sum(1 for r in responses if r.success)
+
+    consolidation_system = f"""Tu es un Senior Partner d'un cabinet de conseil stratégique de premier plan (McKinsey, BCG, Bain).
+Tu consolides les analyses de {successful_agents} agents spécialisés en un dossier stratégique premium unique.
+
+## TON RÔLE
+- Synthétiser, enrichir et structurer — pas copier-coller.
+- Produire un document cohérent, profond, argumenté, prêt pour un board/investisseur.
+- Chaque section doit être spécifique au sujet traité (PAS de texte générique).
+
+## DATE: {current_date} — ANNÉE: {current_year}
+- Tout prévisionnel part de {current_year}. Année 1 = {current_year}.
+
+## EXIGENCES DE PROFONDEUR
+- Le document final DOIT faire au minimum 3000 mots.
+- Chaque section doit contenir au minimum 3 paragraphes développés.
+- Les recommandations doivent être SPÉCIFIQUES au sujet (pas "améliorer la gouvernance" mais des actions concrètes avec KPI).
+- Les tableaux doivent contenir au minimum 5 lignes de données.
+"""
+
+    consolidation_prompt = f"""## DEMANDE INITIALE DU CLIENT
+
+{query}
+
+## ANALYSES DES AGENTS SPÉCIALISÉS
+
+{agent_contributions}
+
+## CONSIGNES DE CONSOLIDATION
+
+Produis le dossier final avec cette structure EXACTE:
+
+# {label} — KOREV Evidence
+*Établi le {current_date} — Référence temporelle : {current_year}*
+
+## 1) Synthèse exécutive
+- 8-12 bullets orientés décision, SPÉCIFIQUES au sujet (pas de générique).
+- 3 messages clés pour le décideur.
+- Recommandation principale en gras.
+
+## 2) Résumé analytique
+### Question initiale
+{query}
+### Éléments établis (avec [REF-XX])
+### Incertitudes restantes (avec plan d'acquisition des données)
+
+## 3) Méthodologie et gouvernance de preuve
+- Agents mobilisés: {successful_agents}/{len(responses)}
+- Sources totales: {total_sources}
+- Méthode détaillée (pas une ligne générique, explique le raisonnement)
+
+## 4) Analyse complète (développée)
+Reprends et ENRICHIS chaque analyse agent. Développe chaque sous-section avec:
+- Contexte et enjeux spécifiques
+- Données chiffrées avec [REF-XX]
+- Interprétation et implications
+- Limites et incertitudes
+
+## 5) Recommandations actionnables
+### Plan 30 jours (actions concrètes, KPI, responsables)
+### Plan 90 jours (jalons, métriques, risques)
+### Plan 180 jours / 12 mois (vision, scale, indicateurs)
+
+## 6) Tableau des preuves
+| Claim | Criticité | Sources | Qualité | Statut |
+Remplis avec les VRAIS claims et sources trouvés par les agents.
+
+## 7) Bibliographie cliquable
+- [REF-XX] Institution, "Titre", année — [Lien](URL)
+Compile TOUTES les références des agents.
+
+## Decision Governance
+| Paramètre | Valeur |
+|-----------|--------|
+| Type | `{document_type}` |
+| Mode | `MULTI_AGENT_CONSENSUS` |
+| Agents sollicités | {len(responses)} |
+| Agents ayant répondu | {successful_agents} |
+| Sources totales | {total_sources} |
+| Correlation ID | `{correlation_id}` |
+
+*Document généré via pipeline Evidence multi-agent.*
+
+RAPPEL: Minimum 3000 mots. Chaque section développée. Zéro texte générique.
+"""
+
+    try:
+        raw = await _call_chat_model(agent, consolidation_system, consolidation_prompt)
+        if raw and len(raw) > 500:
+            logger.info(
+                f"[{correlation_id}] LLM consolidation OK: {len(raw)} chars"
+            )
+            return _ensure_clickable_source_links(raw)
+    except Exception as exc:
+        logger.warning(
+            f"[{correlation_id}] LLM consolidation failed ({exc}), using template fallback"
+        )
+
+    return consolidate_responses(
+        responses=responses, document_type=document_type,
+        query=query, correlation_id=correlation_id,
+    )
 
 
 def consolidate_responses(
