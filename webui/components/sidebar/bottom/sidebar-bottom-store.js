@@ -6,17 +6,18 @@ const model = {
   commitTime: "",
 
   get versionLabel() {
-    return this.versionNo && this.commitTime
-      ? `Version ${this.versionNo} ${this.commitTime}`
-      : "";
+    if (!this.versionNo) return "";
+    if (this.commitTime) {
+      return `${this.versionNo} · ${this.commitTime}`;
+    }
+    return this.versionNo;
   },
 
   init() {
-    // Load version info from global scope (exposed in index.html)
     const gi = globalThis.gitinfo;
-    if (gi && gi.version && gi.commit_time) {
+    if (gi && gi.version && gi.version !== "unknown") {
       this.versionNo = gi.version;
-      this.commitTime = gi.commit_time;
+      this.commitTime = gi.commit_time && gi.commit_time !== "unknown" ? gi.commit_time : "";
     }
   },
 };
