@@ -4,7 +4,7 @@ import os
 import threading
 from typing import Union, TypedDict, Dict, Any
 from attr import dataclass
-from flask import Request, Response, jsonify, Flask, session, request, send_file, g
+from flask import Request, Response, jsonify, Flask, session, request, send_file, g, current_app
 from agent import AgentContext
 from initialize import initialize_agent
 from python.helpers.print_style import PrintStyle
@@ -15,7 +15,26 @@ from python.security.authorization import (
     can_access_task,
     can_access_workspace,
 )
-from python.security.security_audit import log_security_event
+try:
+    from python.observability.runtime import ObservabilityMetrics, log_observability_event
+except Exception:  # pragma: no cover - compatibility for deployments without observability module
+    class ObservabilityMetrics:  # type: ignore[override]
+        @staticmethod
+        def get():
+            class _Noop:
+                @staticmethod
+                def incr(*args, **kwargs):
+                    return None
+
+            return _Noop()
+
+    def log_observability_event(**kwargs):
+        return None
+try:
+    from python.security.security_audit import log_security_event
+except Exception:  # pragma: no cover - legacy deployments without audit module
+    def log_security_event(**kwargs):
+        return None
 from werkzeug.serving import make_server
 
 Input = dict
@@ -101,26 +120,96 @@ class ApiHandler:
                 )
             return Response(response=error, status=500, mimetype="text/plain")
 
+    def _resolve_session_scope(self) -> dict[str, str | None]:
+        """
+        Resolve session scope from session source-of-truth and durable user metadata.
+        Keeps fail-closed semantics: if organization cannot be resolved, returns None for it.
+        """
+        username = session.get("username")
+        workspace = session.get("workspace")
+        organization = session.get("organization")
+        org_role = session.get("org_role")
+        role = session.get("role")
+
+        if username:
+            cfg = None
+            try:
+                cfg = self.app.config
+            except Exception:
+                try:
+                    cfg = current_app.config
+                except Exception:
+                    cfg = None
+            user_mgr = cfg.get("USER_MANAGER") if cfg else None
+            ws_mgr = cfg.get("WORKSPACE_MANAGER") if cfg else None
+
+            if not organization and user_mgr:
+                try:
+                    organization = user_mgr.get_organization(username)
+                    if organization:
+                        session["organization"] = organization
+                except Exception:
+                    organization = organization
+
+            if not org_role and user_mgr:
+                try:
+                    org_role = user_mgr.get_org_role(username)
+                    if org_role:
+                        session["org_role"] = org_role
+                except Exception:
+                    org_role = org_role
+
+            if not workspace and ws_mgr:
+                try:
+                    workspace = ws_mgr.ensure_workspace(username)
+                    if workspace:
+                        session["workspace"] = workspace
+                except Exception:
+                    workspace = workspace
+            if not organization:
+                log_observability_event(
+                    event_type="invalid_session_scope",
+                    status="DENY",
+                    username=username,
+                    organization=organization,
+                    reason="missing_organization_after_scope_resolution",
+                )
+                ObservabilityMetrics.get().incr("notifications_denied_total")
+
+        return {
+            "username": username,
+            "workspace": workspace,
+            "organization": organization,
+            "org_role": org_role,
+            "role": role,
+        }
+
     def _session_user_info(self) -> tuple[str | None, str | None]:
         """Extract username and workspace from the current Flask session."""
         try:
-            return session.get("username"), session.get("workspace")
+            scope = self._resolve_session_scope()
+            return scope.get("username"), scope.get("workspace")
         except RuntimeError:
             return None, None
 
     def _session_org_info(self) -> tuple[str | None, str | None]:
         """Extract organization and org_role from the current Flask session."""
         try:
-            return session.get("organization"), session.get("org_role")
+            scope = self._resolve_session_scope()
+            return scope.get("organization"), scope.get("org_role")
         except RuntimeError:
             return None, None
 
     def _principal(self) -> AccessPrincipal:
-        username, workspace = self._session_user_info()
-        organization, org_role = self._session_org_info()
-        role = None
+        username, workspace = None, None
+        organization, org_role, role = None, None, None
         try:
-            role = session.get("role")
+            scope = self._resolve_session_scope()
+            username = scope.get("username")
+            workspace = scope.get("workspace")
+            organization = scope.get("organization")
+            org_role = scope.get("org_role")
+            role = scope.get("role")
         except RuntimeError:
             role = None
         return AccessPrincipal(
@@ -171,6 +260,16 @@ class ApiHandler:
             resource_id=getattr(ctx, "id", None),
             reason=reason,
         )
+        if not allowed:
+            ObservabilityMetrics.get().incr("cross_tenant_denied_total")
+            log_observability_event(
+                event_type="cross_tenant_access_denied",
+                status="DENY",
+                username=principal.username,
+                organization=principal.organization,
+                task_uuid=getattr(ctx, "id", None),
+                reason=reason,
+            )
         return allowed, reason
 
     def _authorize_task_access(self, task: Any, action: str) -> tuple[bool, str]:
@@ -189,6 +288,16 @@ class ApiHandler:
             resource_id=getattr(task, "uuid", None),
             reason=reason,
         )
+        if not allowed:
+            ObservabilityMetrics.get().incr("cross_tenant_denied_total")
+            log_observability_event(
+                event_type="cross_tenant_access_denied",
+                status="DENY",
+                username=principal.username,
+                organization=principal.organization,
+                task_uuid=getattr(task, "uuid", None),
+                reason=reason,
+            )
         return allowed, reason
 
     def _authorize_workspace_access(self, target_workspace: str | None, action: str) -> tuple[bool, str]:
@@ -206,12 +315,52 @@ class ApiHandler:
             resource_id=target_workspace,
             reason=reason,
         )
+        if not allowed:
+            ObservabilityMetrics.get().incr("cross_tenant_denied_total")
+            log_observability_event(
+                event_type="cross_tenant_access_denied",
+                status="DENY",
+                username=principal.username,
+                organization=principal.organization,
+                reason=reason,
+                metadata={"workspace": target_workspace},
+            )
         return allowed, reason
 
     def use_context(self, ctxid: str, create_if_not_exists: bool = True):
         username, workspace = self._session_user_info()
         organization, _ = self._session_org_info()
         with self.thread_lock:
+            def _new_context(*, config, id=None, set_current=False):
+                try:
+                    kwargs = {
+                        "config": config,
+                        "set_current": set_current,
+                        "username": username,
+                        "workspace": workspace,
+                        "organization": organization,
+                    }
+                    if id is not None:
+                        kwargs["id"] = id
+                    return AgentContext(**kwargs)
+                except TypeError:
+                    # Backward compatibility for deployments where AgentContext
+                    # does not yet support organization constructor argument.
+                    kwargs = {
+                        "config": config,
+                        "set_current": set_current,
+                        "username": username,
+                        "workspace": workspace,
+                    }
+                    if id is not None:
+                        kwargs["id"] = id
+                    context = AgentContext(**kwargs)
+                    try:
+                        setattr(context, "organization", organization)
+                    except Exception:
+                        pass
+                    return context
+
             if not ctxid:
                 owned = [
                     c for c in AgentContext.all()
@@ -219,12 +368,15 @@ class ApiHandler:
                 ]
                 first = owned[0] if owned else None
                 if first:
+                    if username and getattr(first, "username", None) == username and not getattr(first, "workspace", None):
+                        first.workspace = workspace
+                    if organization and getattr(first, "organization", None) == organization and not getattr(first, "workspace", None):
+                        first.workspace = workspace
                     AgentContext.use(first.id)
                     return first
-                context = AgentContext(
-                    config=initialize_agent(), set_current=True,
-                    username=username, workspace=workspace,
-                    organization=organization,
+                context = _new_context(
+                    config=initialize_agent(),
+                    set_current=True,
                 )
                 return context
             got = AgentContext.use(ctxid)
@@ -232,12 +384,16 @@ class ApiHandler:
                 allowed, reason = self._authorize_context_access(got, action="context_use")
                 if not allowed:
                     raise Exception(f"Context {ctxid} not found")
+                if username and getattr(got, "username", None) == username and not getattr(got, "workspace", None):
+                    got.workspace = workspace
+                if organization and getattr(got, "organization", None) == organization and not getattr(got, "workspace", None):
+                    got.workspace = workspace
                 return got
             if create_if_not_exists:
-                context = AgentContext(
-                    config=initialize_agent(), id=ctxid, set_current=True,
-                    username=username, workspace=workspace,
-                    organization=organization,
+                context = _new_context(
+                    config=initialize_agent(),
+                    id=ctxid,
+                    set_current=True,
                 )
                 return context
             else:

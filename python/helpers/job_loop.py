@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime
 import time
+import os
+import fcntl
 from python.helpers.task_scheduler import TaskScheduler
 from python.helpers.print_style import PrintStyle
 from python.helpers import errors
@@ -11,12 +13,39 @@ SLEEP_TIME = 15
 
 keep_running = True
 pause_time = 0
+_scheduler_lock_fd = None
+
+
+def _acquire_scheduler_process_lock() -> bool:
+    """
+    Ensure only one process executes scheduler ticks for JSON-backed storage.
+    Returns False when another process already owns the scheduler lock.
+    """
+    global _scheduler_lock_fd
+    if _scheduler_lock_fd is not None:
+        return True
+    lock_file = os.getenv("EVIDENCE_SCHEDULER_LOCK_FILE", "/tmp/evidence_scheduler.lock")
+    try:
+        fd = open(lock_file, "a+", encoding="utf-8")
+        fcntl.flock(fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _scheduler_lock_fd = fd
+        return True
+    except BlockingIOError:
+        return False
+    except Exception as e:
+        PrintStyle().error(f"[JobLoop] Failed to acquire scheduler lock: {errors.error_text(e)}")
+        return False
 
 
 async def run_loop():
     global pause_time, keep_running
+    has_scheduler_lock = _acquire_scheduler_process_lock()
     
     PrintStyle(font_color="green").print("[JobLoop] Starting scheduler loop...")
+    if not has_scheduler_lock:
+        PrintStyle(font_color="yellow").print(
+            "[JobLoop] Scheduler lock is already held by another process; this process will not execute ticks"
+        )
 
     while True:
         try:
@@ -38,7 +67,7 @@ async def run_loop():
                 resume_loop()
             
             # Run scheduler tick if not paused
-            if keep_running:
+            if keep_running and has_scheduler_lock:
                 PrintStyle(font_color="cyan").print(f"[JobLoop] Running scheduler tick at {datetime.now().strftime('%H:%M:%S')}")
                 try:
                     await scheduler_tick()

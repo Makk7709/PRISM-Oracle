@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 import os
 import random
 import threading
+import json
 from urllib.parse import urlparse
 import uuid
 from enum import Enum
@@ -23,6 +24,14 @@ from python.helpers.defer import DeferredTask
 from python.helpers.files import get_abs_path, make_dirs, read_file, write_file
 from python.helpers.localization import Localization
 from python.helpers import projects
+from python.helpers.persistence.stores import get_task_store, TaskStore
+from python.observability.runtime import ObservabilityMetrics, log_observability_event
+from python.security.authorization import validate_task_scope
+try:
+    from python.security.security_audit import log_security_event
+except Exception:  # pragma: no cover - legacy deployments without audit module
+    def log_security_event(**kwargs):
+        return None
 import pytz
 from typing import Annotated
 
@@ -134,6 +143,8 @@ class BaseTask(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_run: datetime | None = None
     last_result: str | None = None
+    migration_state: str | None = Field(default="current")
+    quarantine_reason: str | None = Field(default=None)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -510,13 +521,9 @@ class SchedulerTaskList(BaseModel):
 
     @classmethod
     def get(cls) -> "SchedulerTaskList":
-        path = get_abs_path(SCHEDULER_FOLDER, "tasks.json")
         if cls.__instance is None:
-            if not exists(path):
-                make_dirs(path)
-                cls.__instance = asyncio.run(cls(tasks=[]).save())
-            else:
-                cls.__instance = cls.model_validate_json(read_file(path))
+            cls.__instance = cls(tasks=[])
+            asyncio.run(cls.__instance.reload())
         else:
             asyncio.run(cls.__instance.reload())
         return cls.__instance
@@ -524,20 +531,121 @@ class SchedulerTaskList(BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._lock = threading.RLock()
+        self._store: TaskStore = get_task_store()
 
     async def reload(self) -> "SchedulerTaskList":
-        path = get_abs_path(SCHEDULER_FOLDER, "tasks.json")
-        if exists(path):
-            with self._lock:
-                data = self.__class__.model_validate_json(read_file(path))
-                self.tasks.clear()
-                self.tasks.extend(data.tasks)
+        with self._lock:
+            raw_tasks = self._store.list_tasks()
+            loaded: list[Annotated[Union[ScheduledTask, AdHocTask, PlannedTask], Field(discriminator="type")]] = []
+            for task_data in raw_tasks:
+                try:
+                    loaded.append(deserialize_task(task_data))
+                except Exception:
+                    continue
+            self.tasks.clear()
+            self.tasks.extend(loaded)
+            changed = self._migrate_and_quarantine_legacy_tasks()
+            if changed:
+                await self.save()
         return self
+
+    def _hydrate_scope_from_context_file(self, task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> bool:
+        if not task.context_id:
+            return False
+        chat_path = get_abs_path("tmp/chats", task.context_id, "chat.json")
+        if not exists(chat_path):
+            return False
+        try:
+            data = json.loads(read_file(chat_path))
+        except Exception:
+            return False
+        changed = False
+        if not task.username and data.get("username"):
+            task.username = data.get("username")
+            changed = True
+        if not task.organization and data.get("organization"):
+            task.organization = data.get("organization")
+            changed = True
+        if not task.workspace and task.username:
+            task.workspace = get_abs_path("shared/users", task.username)
+            changed = True
+        return changed
+
+    def _migrate_and_quarantine_legacy_tasks(self) -> bool:
+        changed = False
+        now = datetime.now(timezone.utc)
+        for task in self.tasks:
+            if self._hydrate_scope_from_context_file(task):
+                changed = True
+                task.migration_state = "migrated_scope_from_context"
+                log_security_event(
+                    action="legacy_task_scope_migrated",
+                    decision="ALLOW",
+                    user=task.username,
+                    organization=task.organization,
+                    resource_type="task",
+                    resource_id=task.uuid,
+                )
+            valid, reason = validate_task_scope(
+                task_owner=task.username,
+                task_org=task.organization,
+                task_workspace=task.workspace,
+            )
+            if valid:
+                continue
+            if task.state != TaskState.DISABLED or not (task.last_result or "").startswith("BLOCKED_SCOPE"):
+                task.state = TaskState.DISABLED
+                previous = task.last_result or ""
+                task.last_result = (
+                    f"{previous}\n---\nBLOCKED_SCOPE: {reason}".strip()
+                    if previous
+                    else f"BLOCKED_SCOPE: {reason}"
+                )
+                task.updated_at = now
+                task.migration_state = f"quarantined_{reason}"
+                task.quarantine_reason = reason
+                changed = True
+                log_security_event(
+                    action="legacy_task_quarantined",
+                    decision="DENY",
+                    user=task.username,
+                    organization=task.organization,
+                    resource_type="task",
+                    resource_id=task.uuid,
+                    reason=reason,
+                )
+                ObservabilityMetrics.get().incr("tasks_quarantined_total")
+                log_observability_event(
+                    event_type="task_quarantined",
+                    status="DENY",
+                    username=task.username,
+                    organization=task.organization,
+                    task_uuid=task.uuid,
+                    correlation_id=f"task:{task.uuid}",
+                    reason=reason,
+                )
+        return changed
 
     async def add_task(self, task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> "SchedulerTaskList":
         with self._lock:
+            valid, reason = validate_task_scope(
+                task_owner=task.username,
+                task_org=task.organization,
+                task_workspace=task.workspace,
+            )
+            if not valid:
+                raise ValueError(f"Task rejected: {reason}")
             self.tasks.append(task)
             await self.save()
+            ObservabilityMetrics.get().incr("tasks_created_total")
+            log_observability_event(
+                event_type="task_created",
+                status="ALLOW",
+                username=task.username,
+                organization=task.organization,
+                task_uuid=task.uuid,
+                correlation_id=f"task:{task.uuid}",
+            )
         return self
 
     async def save(self) -> "SchedulerTaskList":
@@ -555,28 +663,8 @@ class SchedulerTaskList(BaseModel):
                             f"Fixed: Generated new token '{task.token}' for task {task.name}"
                         )
 
-            path = get_abs_path(SCHEDULER_FOLDER, "tasks.json")
-            if not exists(path):
-                make_dirs(path)
-
-            # Get the JSON string before writing
-            json_data = self.model_dump_json()
-
-            # Debug: check if 'null' appears as token value in JSON
-            if '"type": "adhoc"' in json_data and '"token": null' in json_data:
-                PrintStyle(italic=True, font_color="red", padding=False).print(
-                    "ERROR: Found null token in JSON output for an adhoc task"
-                )
-
-            write_file(path, json_data)
-
-            # Debug: Verify after saving
-            if exists(path):
-                loaded_json = read_file(path)
-                if '"type": "adhoc"' in loaded_json and '"token": null' in loaded_json:
-                    PrintStyle(italic=True, font_color="red", padding=False).print(
-                        "ERROR: Null token persisted in JSON file for an adhoc task"
-                    )
+            serialized_tasks = serialize_tasks(self.tasks)
+            self._store.put_tasks(serialized_tasks)
 
         return self
 
@@ -628,7 +716,13 @@ class SchedulerTaskList(BaseModel):
             await self.reload()
             return [
                 task for task in self.tasks
-                if task.check_schedule() and task.state == TaskState.IDLE
+                if task.check_schedule()
+                and task.state == TaskState.IDLE
+                and validate_task_scope(
+                    task_owner=task.username,
+                    task_org=task.organization,
+                    task_workspace=task.workspace,
+                )[0]
             ]
 
     def get_task_by_uuid(self, task_uuid: str) -> Union[ScheduledTask, AdHocTask, PlannedTask] | None:
@@ -646,6 +740,7 @@ class SchedulerTaskList(BaseModel):
     async def remove_task_by_uuid(self, task_uuid: str) -> "SchedulerTaskList":
         with self._lock:
             self.tasks = [task for task in self.tasks if task.uuid != task_uuid]
+            self._store.delete_task(task_uuid)
             await self.save()
         return self
 
@@ -774,13 +869,29 @@ class TaskScheduler:
             raise ValueError(f"Task {task.name} has no context ID")
 
         config = initialize_agent()
-        context: AgentContext = AgentContext(
-            config,
-            id=task.context_id,
-            name=task.name,
-            username=task.username,
-            workspace=task.workspace,
-        )
+        try:
+            context: AgentContext = AgentContext(
+                config,
+                id=task.context_id,
+                name=task.name,
+                username=task.username,
+                workspace=task.workspace,
+                organization=task.organization,
+            )
+        except TypeError:
+            # Backward compatibility for deployments whose AgentContext
+            # constructor does not yet support organization.
+            context = AgentContext(
+                config,
+                id=task.context_id,
+                name=task.name,
+                username=task.username,
+                workspace=task.workspace,
+            )
+            try:
+                setattr(context, "organization", task.organization)
+            except Exception:
+                pass
         # context.id = task.context_id
         # initial name before renaming is same as task name
         # context.name = task.name
@@ -826,15 +937,82 @@ class TaskScheduler:
             if task_snapshot.state == TaskState.RUNNING:
                 self._printer.print(f"Scheduler Task '{task_snapshot.name}' already running, skipping")
                 return
+            valid, reason = validate_task_scope(
+                task_owner=task_snapshot.username,
+                task_org=task_snapshot.organization,
+                task_workspace=task_snapshot.workspace,
+            )
+            if not valid:
+                self._printer.print(f"Scheduler Task '{task_snapshot.name}' blocked: {reason}")
+                await self.update_task(
+                    task_uuid,
+                    state=TaskState.DISABLED,
+                    last_result=f"BLOCKED_SCOPE: {reason}",
+                    updated_at=datetime.now(timezone.utc),
+                    quarantine_reason=reason,
+                )
+                log_security_event(
+                    action="task_execution_blocked_missing_scope",
+                    decision="DENY",
+                    user=task_snapshot.username,
+                    organization=task_snapshot.organization,
+                    resource_type="task",
+                    resource_id=task_uuid,
+                    reason=reason,
+                )
+                ObservabilityMetrics.get().incr("tasks_quarantined_total")
+                log_observability_event(
+                    event_type="task_blocked_missing_scope",
+                    status="DENY",
+                    username=task_snapshot.username,
+                    organization=task_snapshot.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                    reason=reason,
+                )
+                return
 
-            # Atomically fetch and check the task's current state
-            current_task = await self.update_task_checked(task_uuid, lambda task: task.state != TaskState.RUNNING, state=TaskState.RUNNING)
+            # Distributed claim (transactional store) to avoid double execution
+            log_observability_event(
+                event_type="task_claim_attempt",
+                status="ATTEMPT",
+                username=task_snapshot.username,
+                organization=task_snapshot.organization,
+                task_uuid=task_uuid,
+                correlation_id=f"task:{task_uuid}",
+            )
+            claimed = self._tasks._store.claim_task(task_uuid)
+            if not claimed:
+                self._printer.print(f"Scheduler Task '{task_snapshot.name}' already claimed by another worker")
+                ObservabilityMetrics.get().incr("tasks_claim_conflicts_total")
+                log_observability_event(
+                    event_type="task_claim_conflict",
+                    status="DENY",
+                    username=task_snapshot.username,
+                    organization=task_snapshot.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                    reason="already_claimed",
+                )
+                return
+            ObservabilityMetrics.get().incr("tasks_claimed_total")
+            log_observability_event(
+                event_type="task_claim_success",
+                status="ALLOW",
+                username=task_snapshot.username,
+                organization=task_snapshot.organization,
+                task_uuid=task_uuid,
+                correlation_id=f"task:{task_uuid}",
+            )
+
+            # Reload after claim and read current task snapshot
+            await self._tasks.reload()
+            current_task = self.get_task_by_uuid(task_uuid)
             if not current_task:
                 self._printer.print(f"Scheduler Task with UUID '{task_uuid}' not found or updated by another process")
                 return
             if current_task.state != TaskState.RUNNING:
-                # This means the update failed due to state conflict
-                self._printer.print(f"Scheduler Task '{current_task.name}' state is '{current_task.state}', skipping")
+                self._printer.print(f"Scheduler Task '{current_task.name}' not in RUNNING state after claim, skipping")
                 return
 
             await current_task.on_run()
@@ -844,6 +1022,14 @@ class TaskScheduler:
 
             try:
                 self._printer.print(f"Scheduler Task '{current_task.name}' started")
+                log_observability_event(
+                    event_type="task_execution_started",
+                    status="ALLOW",
+                    username=current_task.username,
+                    organization=current_task.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                )
 
                 context = await self._get_chat_context(current_task)
                 AgentContext.use(context.id)
@@ -927,9 +1113,24 @@ class TaskScheduler:
                         title=f"Tâche terminée : {current_task.name}",
                         display_time=15,
                         group=f"task-{task_uuid}",
+                        target_username=current_task.username,
+                        target_organization=current_task.organization,
+                        task_uuid=task_uuid,
+                        correlation_id=f"task:{task_uuid}",
+                        source="scheduler_task_success",
+                        severity="high",
                     )
                 except Exception as ne:
                     self._printer.print(f"Failed to send task completion notification: {ne}")
+                ObservabilityMetrics.get().incr("tasks_completed_total")
+                log_observability_event(
+                    event_type="task_execution_completed",
+                    status="ALLOW",
+                    username=current_task.username,
+                    organization=current_task.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                )
 
             except Exception as e:
                 # Error
@@ -946,9 +1147,25 @@ class TaskScheduler:
                         title=f"Tâche échouée : {current_task.name}",
                         display_time=30,
                         group=f"task-{task_uuid}",
+                        target_username=current_task.username,
+                        target_organization=current_task.organization,
+                        task_uuid=task_uuid,
+                        correlation_id=f"task:{task_uuid}",
+                        source="scheduler_task_error",
+                        severity="high",
                     )
                 except Exception as ne:
                     self._printer.print(f"Failed to send task error notification: {ne}")
+                ObservabilityMetrics.get().incr("tasks_failed_total")
+                log_observability_event(
+                    event_type="task_execution_failed",
+                    status="DENY",
+                    username=current_task.username,
+                    organization=current_task.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                    reason=str(e),
+                )
 
                 # Explicitly verify task was updated in storage after error
                 await self._tasks.reload()
@@ -1147,6 +1364,8 @@ def serialize_task(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> Dict[s
         "username": task.username,
         "workspace": task.workspace,
         "organization": task.organization,
+        "migration_state": task.migration_state,
+        "quarantine_reason": task.quarantine_reason,
         "dedicated_context": task.is_dedicated(),
         "project": {
             "name": task.project_name,
@@ -1220,6 +1439,9 @@ def deserialize_task(task_data: Dict[str, Any], task_class: Optional[Type[T]] = 
         "context_id": task_data.get("context_id"),
         "username": task_data.get("username"),
         "workspace": task_data.get("workspace"),
+        "organization": task_data.get("organization"),
+        "migration_state": task_data.get("migration_state", "current"),
+        "quarantine_reason": task_data.get("quarantine_reason"),
     }
 
     # Add type-specific fields

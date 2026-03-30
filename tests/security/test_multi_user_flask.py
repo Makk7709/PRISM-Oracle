@@ -28,11 +28,15 @@ def users_json_dir(tmp_path):
         "users": {
             "marie": {
                 "password_hash": hash_password("MariePass123!"),
-                "role": "user"
+                "role": "user",
+                "organization": "dica",
+                "org_role": "MEMBER",
             },
             "admin": {
                 "password_hash": hash_password("AdminPass789!"),
-                "role": "admin"
+                "role": "admin",
+                "organization": "korev-ai",
+                "org_role": "OWNER",
             }
         }
     }
@@ -107,6 +111,8 @@ class TestMultiUserFlaskLogin:
         with multi_client.session_transaction() as sess:
             assert sess.get("username") == "marie"
             assert sess.get("role") == "user"
+            assert sess.get("organization") == "dica"
+            assert sess.get("org_role") == "MEMBER"
 
     def test_session_contains_workspace(self, multi_client, shared_dir):
         """After login with EVIDENCE_SHARED_DIR, session has workspace path."""

@@ -55,7 +55,11 @@ from python.security.rate_limit import (
 )
 from python.security.auth import verify_password, is_password_hashed, hash_password
 from python.security.ip import get_client_ip
-from python.security.security_audit import log_security_event
+try:
+    from python.security.security_audit import log_security_event
+except Exception:  # pragma: no cover - legacy deployments without audit module
+    def log_security_event(**kwargs):
+        return None
 
 # disable logging
 import logging
@@ -179,6 +183,40 @@ def _register_routes(app: Flask) -> None:
     def attach_request_id():
         rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex
         g.request_id = rid
+
+    @app.before_request
+    def hydrate_session_scope():
+        """
+        Ensure authenticated sessions always carry full scope metadata when resolvable.
+        Keep fail-closed behavior: missing organization remains missing if not mappable.
+        """
+        if "authentication" not in session:
+            return
+        username = session.get("username")
+        if not username:
+            return
+        user_mgr: UserManager | None = app.config.get("USER_MANAGER")
+        ws_mgr: Optional[WorkspaceManager] = app.config.get("WORKSPACE_MANAGER")
+        if user_mgr:
+            if not session.get("organization"):
+                try:
+                    org = user_mgr.get_organization(username)
+                    if org:
+                        session["organization"] = org
+                except Exception:
+                    pass
+            if not session.get("org_role"):
+                try:
+                    org_role = user_mgr.get_org_role(username)
+                    if org_role:
+                        session["org_role"] = org_role
+                except Exception:
+                    pass
+        if ws_mgr and not session.get("workspace"):
+            try:
+                session["workspace"] = ws_mgr.ensure_workspace(username)
+            except Exception:
+                pass
 
     @app.after_request
     def add_security_headers(resp):
@@ -309,6 +347,8 @@ def _register_routes(app: Flask) -> None:
                     session['authentication'] = login.get_credentials_hash()
                     session['username'] = submitted_user
                     session['role'] = 'admin'  # Mono-user is always admin
+                    session['organization'] = user_mgr.get_organization(submitted_user)
+                    session['org_role'] = user_mgr.get_org_role(submitted_user) or "OWNER"
                     session.permanent = True
                     
                     if ws_mgr:

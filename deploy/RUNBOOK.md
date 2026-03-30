@@ -128,6 +128,20 @@ tail -f logs/consensus.log
 # 4. Rollback auto si échec
 ```
 
+### 3.5 Validation post-déploiement (scheduler + notifications)
+
+```bash
+# Smoke test multi-user + concurrence (bloquant)
+export SMOKE_USER_A="admin_user_a"
+export SMOKE_PASS_A="***"
+export SMOKE_USER_B="admin_user_b"
+export SMOKE_PASS_B="***"
+./scripts/post_deploy_validate.sh --base-url https://www.korev-evidence.com
+
+# Vérification alertes observabilité (bloquant si seuil dépassé)
+python3 scripts/observability_alert_check.py --base-url https://www.korev-evidence.com
+```
+
 ### 3.4 Rollback Manuel
 
 ```bash

@@ -3,7 +3,11 @@ from python.helpers.task_scheduler import TaskScheduler, TaskState
 from python.helpers.localization import Localization
 from agent import AgentContext
 from python.helpers import persist_chat
-from python.security.security_audit import log_security_event
+try:
+    from python.security.security_audit import log_security_event
+except Exception:  # pragma: no cover - legacy deployments without audit module
+    def log_security_event(**kwargs):
+        return None
 
 
 class SchedulerTaskDelete(ApiHandler):

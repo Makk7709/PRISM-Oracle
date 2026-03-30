@@ -13,7 +13,7 @@ class _FakeNotificationManager:
     guid = "notif-guid"
     updates = []
 
-    def output(self, start=0):
+    def output(self, start=0, target_username=None, target_organization=None):
         return []
 
 
@@ -71,6 +71,7 @@ def test_poll_returns_owned_task_without_loaded_context(monkeypatch):
                 "uuid": "task-1",
                 "context_id": "task-1",
                 "username": "jeremie",
+                "organization": "dica",
                 "name": "Reminder Jeremie",
                 "state": "idle",
                 "type": "scheduled",
@@ -99,6 +100,8 @@ def test_poll_returns_owned_task_without_loaded_context(monkeypatch):
 
     with app.test_request_context("/poll", method="POST"):
         session["username"] = "jeremie"
+        session["organization"] = "dica"
+        session["org_role"] = "MEMBER"
         result = asyncio.run(handler.process({"context": "", "log_from": 0, "notifications_from": 0}, SimpleNamespace()))
 
     assert "tasks" in result
@@ -115,6 +118,7 @@ def test_poll_hides_tasks_from_other_users(monkeypatch):
                 "uuid": "task-1",
                 "context_id": "task-1",
                 "username": "alice",
+                "organization": "other",
                 "name": "Alice reminder",
                 "state": "idle",
                 "type": "scheduled",
@@ -143,6 +147,8 @@ def test_poll_hides_tasks_from_other_users(monkeypatch):
 
     with app.test_request_context("/poll", method="POST"):
         session["username"] = "jeremie"
+        session["organization"] = "dica"
+        session["org_role"] = "MEMBER"
         result = asyncio.run(handler.process({"context": "", "log_from": 0, "notifications_from": 0}, SimpleNamespace()))
 
     assert "tasks" in result
@@ -172,6 +178,8 @@ def test_scheduler_task_create_persists_task_owner(monkeypatch):
     with app.test_request_context("/scheduler_task_create", method="POST"):
         session["username"] = "jeremie"
         session["workspace"] = "/app/shared/users/jeremie"
+        session["organization"] = "dica"
+        session["org_role"] = "MEMBER"
         result = asyncio.run(
             handler.process(
                 {
@@ -187,4 +195,5 @@ def test_scheduler_task_create_persists_task_owner(monkeypatch):
     assert result.get("ok") is True
     task = captured["task"]
     assert task.username == "jeremie"
+    assert task.organization == "dica"
     assert task.workspace == "/app/shared/users/jeremie"

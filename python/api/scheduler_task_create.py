@@ -6,7 +6,13 @@ from python.helpers.task_scheduler import (
 from python.helpers.projects import load_basic_project_data
 from python.helpers.localization import Localization
 from python.helpers.print_style import PrintStyle
-from python.security.security_audit import log_security_event
+from python.observability.runtime import log_observability_event, ObservabilityMetrics
+try:
+    from python.security.security_audit import log_security_event
+except Exception:  # pragma: no cover - legacy deployments without audit module
+    def log_security_event(**kwargs):
+        return None
+from python.security.authorization import validate_task_scope
 import random
 
 
@@ -25,6 +31,29 @@ class SchedulerTaskCreate(ApiHandler):
         await scheduler.reload()
         current_username, current_workspace = self._session_user_info()
         current_org, _ = self._session_org_info()
+        scope_ok, scope_reason = validate_task_scope(
+            task_owner=current_username,
+            task_org=current_org,
+            task_workspace=current_workspace,
+        )
+        if not scope_ok:
+            ObservabilityMetrics.get().incr("notifications_denied_total")
+            log_observability_event(
+                event_type="missing_scope_detected",
+                status="DENY",
+                username=current_username,
+                organization=current_org,
+                reason=scope_reason,
+            )
+            log_security_event(
+                action="task_create",
+                decision="DENY",
+                user=current_username,
+                organization=current_org,
+                resource_type="task",
+                reason=scope_reason,
+            )
+            return {"error": f"Task creation denied: {scope_reason}"}
 
         # Get common fields from input
         name = input.get("name")
