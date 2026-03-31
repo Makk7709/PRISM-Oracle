@@ -30,10 +30,30 @@ export function extractInternalPathFromHref(href) {
   // Never rewrite real external hosts.
   if (/^https?:\/\//i.test(normalized)) return null;
 
-  const match = normalized.match(
-    /^(?:\/)?(?:app\/+|korev\/+|a0\/+)?(tmp\/(?:generated|uploads|generated_images)\/[^\s?#]+|shared\/[^\s?#]+)/i
+  // Support links produced as /download_work_dir_file?path=<internal-path>.
+  // We convert them back to the underlying internal path for openFileLink().
+  const downloadMatch = normalized.match(
+    /^\/?download_work_dir_file\?path=([^&]+)/i
   );
-  return match ? match[1] : null;
+  if (downloadMatch) {
+    const raw = safeDecode(downloadMatch[1] || "").replace(/^\/+/, "");
+    return raw || null;
+  }
+
+  const match = normalized.match(
+    /^(?:\/)?(?:app\/+|korev\/+|a0\/+)?((?:tmp\/(?:generated|uploads|generated_images)|shared|reports|generated|work_dir)\/[^\s?#]+)/i
+  );
+  if (match) return match[1];
+
+  // Catch any remaining internal PDF/document path the AI might generate.
+  // If the href is a local path (starts with /) ending in a known doc extension
+  // and not an external URL, treat it as an internal file link.
+  const docPathMatch = normalized.match(
+    /^(?:\/)?(?:app\/+|korev\/+|a0\/+)?([^\s?#]+\.(?:pdf|docx?|xlsx?|csv|pptx?|zip|odt|rtf|txt|md))$/i
+  );
+  if (docPathMatch) return docPathMatch[1];
+
+  return null;
 }
 
 function toImageGetPath(localPath) {

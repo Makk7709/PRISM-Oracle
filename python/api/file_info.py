@@ -74,13 +74,9 @@ async def get_file_info(path: str, base_dir: str | None = None) -> FileInfo:
 
     # Backward compatibility for legacy download links generated as
     # /tmp/generated/<file> before strict workspace scoping.
-    # Strategy:
-    #   1. Try workspace-local generated/<filename>
-    #   2. Try global /app/tmp/generated/<filename> (read-only legacy volume)
     if not exists and normalized.startswith("tmp/generated/"):
         legacy_name = os.path.basename(normalized)
         if legacy_name:
-            # 1. workspace-local generated/
             if base_dir:
                 try:
                     generated_abs = str(
@@ -92,7 +88,6 @@ async def get_file_info(path: str, base_dir: str | None = None) -> FileInfo:
                         message = ""
                 except SecurityError:
                     pass
-            # 2. global /app/tmp/generated/ (pre-scoping legacy files)
             if not exists:
                 app_base = files.get_base_dir()
                 try:
@@ -106,27 +101,38 @@ async def get_file_info(path: str, base_dir: str | None = None) -> FileInfo:
                 except SecurityError:
                     pass
 
-    # Filename-only fallback: search workspace + global generated dirs
-    if not exists and "/" not in normalized:
-        legacy_name = normalized
-        search_dirs = []
-        if base_dir:
-            search_dirs.append(os.path.join(root, "generated"))
-            search_dirs.append(os.path.join(root, "reports"))
-        app_base = files.get_base_dir()
-        search_dirs.append(os.path.join(app_base, "tmp", "generated"))
-        for search_dir in search_dirs:
-            if not os.path.isdir(search_dir):
-                continue
-            for dirpath, _, filenames in os.walk(search_dir):
-                if legacy_name in filenames:
-                    candidate = os.path.join(dirpath, legacy_name)
-                    abs_path = candidate
-                    exists = True
-                    message = ""
+    # ──────────────────────────────────────────────────────────────────
+    # DEEP FILENAME SEARCH: if the exact path didn't resolve, extract
+    # the filename and search the entire workspace + global dirs for it.
+    # This handles cases where the AI generates a link with a different
+    # subdirectory than where the file was actually written (e.g.
+    # link says /reports/strategic/... but file is in /generated/).
+    # ──────────────────────────────────────────────────────────────────
+    if not exists:
+        filename_to_find = os.path.basename(normalized)
+        if filename_to_find and "." in filename_to_find:
+            search_roots = []
+            if base_dir:
+                search_roots.append(root)
+            app_base = files.get_base_dir()
+            if app_base != root:
+                for subdir in ("tmp/generated", "tmp/uploads", "shared"):
+                    candidate_root = os.path.join(app_base, subdir)
+                    if os.path.isdir(candidate_root):
+                        search_roots.append(candidate_root)
+
+            for search_root in search_roots:
+                if not os.path.isdir(search_root):
+                    continue
+                for dirpath, _, filenames in os.walk(search_root):
+                    if filename_to_find in filenames:
+                        candidate = os.path.join(dirpath, filename_to_find)
+                        abs_path = candidate
+                        exists = True
+                        message = ""
+                        break
+                if exists:
                     break
-            if exists:
-                break
 
     return {
         "input_path": path,
