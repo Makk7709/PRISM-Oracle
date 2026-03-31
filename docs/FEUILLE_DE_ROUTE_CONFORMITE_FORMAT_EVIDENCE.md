@@ -619,8 +619,9 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 **Verdict test E2E strategique** : **SUCCES** — Tous les modules SESSION 6.1 (SessionEnvelope, PipelineTracker, audit metadata, profil humain, organisation) sont **visibles et fonctionnels en production** sur le chemin pipeline strategique.
 
-**Point d'attention** :
+**Points d'attention** :
 - `evidence_version` affiche "unknown" — le resolver git/settings ne parvient pas a resoudre la version en environnement Docker. A corriger (bug mineur, non bloquant pour la conformite).
+- **UX CRITIQUE** : Le pipeline strategique a pris **~17 minutes** (1019s) sans aucun feedback visible pour l'utilisateur. L'interface reste sur "generating" sans indication de progression → l'utilisateur croit a un freeze. **Necessite un systeme de feedback temps reel** (progression agents, etape en cours, temps estime). Voir SESSION 9 tache 9.11.
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 6
 
@@ -840,6 +841,9 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 9.8 | Tests E2E automatises : 5 types de requetes (legal, strategique, medical, general, multi-agent) | ⬜ | |
 | 9.9 | Benchmark performance : overhead < 200ms sur le chemin critique | ⬜ | |
 | 9.10 | Deployer en staging et valider avec test E2E reel | ⬜ | |
+| 9.11 | **UX : Feedback de progression temps reel pour pipelines longs** — Informer l'utilisateur de l'avancement pendant l'execution (agent en cours, etape X/N, temps ecoule/estime). Sans ca, un pipeline de 17min ressemble a un freeze. Options : SSE events, WebSocket updates, ou messages intermediaires streames dans le chat. | ⬜ | **PRIORITE HAUTE** — Constat direct utilisateur lors du test E2E S6.1 (dossier strategique ~17min sans feedback) |
+| 9.12 | Concevoir les messages de progression : format, frequence, granularite (par agent ? par phase ?). Ex: "🔍 Agent researcher en cours (2/4)... 107 sources analysees" | ⬜ | UX : eviter le spam, privilegier les jalons significatifs |
+| 9.13 | Integrer les events de progression avec `PipelineTracker` (S3) : emettre un event a chaque `start_step()` / `complete_step()` | ⬜ | Le tracker connait deja les agents — il suffit d'emettre |
 
 ### Criteres de validation SESSION 9
 - [ ] Rapport genere automatiquement a chaque fin de session
@@ -848,6 +852,8 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 - [ ] Fail-safe prouve (crash du renderer ne bloque pas la reponse)
 - [ ] Overhead < 200ms mesure
 - [ ] Tests E2E passent sur 5 types de requetes
+- [ ] **Feedback de progression visible** : un pipeline de 4 agents affiche au minimum l'agent en cours et l'etape X/N
+- [ ] L'utilisateur ne voit jamais un ecran fige pendant plus de 30 secondes sans indication d'activite
 - [ ] Auto-audit contradictoire execute
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 9
@@ -883,7 +889,14 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > 7. MONITORING — Si la generation echoue silencieusement, y a-t-il
 >    un log, un compteur ? Un echec silencieux = ECHEC d'observabilite.
 >
-> 8. VERDICT — Note /10. Tout effet de bord sur la reponse = 0/10.
+> 8. FEEDBACK UX — Lance un pipeline strategique (4 agents, ~10-17min).
+>    L'utilisateur voit-il une indication de progression AVANT la fin ?
+>    Si l'ecran reste sur "generating" pendant plus de 30 secondes sans
+>    mise a jour visible, c'est un ECHEC UX. Un utilisateur non-technique
+>    fermera l'onglet en croyant a un bug. Verifie : frequence des
+>    messages, granularite (par agent ? par phase ?), temps estime affiche.
+>
+> 9. VERDICT — Note /10. Tout effet de bord sur la reponse = 0/10.
 > ```
 
 ---
@@ -1178,6 +1191,6 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | ✅ |
 | 7 | **Cabler S5+S4+Metadata** (grid+taxonomy+meta) + fix version resolver + couverture audit LLM classique | 0/10 | — | — | ⬜ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | ⬜ |
-| 9 | **E2E + Production** (stockage+PDF+fail-safe) | 0/10 | — | — | ⬜ |
+| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | ⬜ |
 | 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | ⬜ |
 | **GLOBAL** | — | — | — | — | ⬜ |
