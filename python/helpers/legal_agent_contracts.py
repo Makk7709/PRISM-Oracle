@@ -431,6 +431,11 @@ class SourceNote:
     correlation_id: Optional[str] = None
     # P5: Legal text version
     legal_version: Optional[LegalTextVersion] = None
+    # SESSION 4: Source taxonomy (retrocompatible — defaults None)
+    source_type_fr: Optional[str] = None
+    source_origin: Optional[str] = None
+    reliability_percent: Optional[int] = None
+    agent_attribution: Optional[str] = None
     
     def __post_init__(self):
         # Convert dict to LegalTextVersion if needed
@@ -531,6 +536,14 @@ class SourceNote:
         }
         if self.legal_version:
             result["legal_version"] = self.legal_version.to_dict()
+        if self.source_type_fr is not None:
+            result["source_type_fr"] = self.source_type_fr
+        if self.source_origin is not None:
+            result["source_origin"] = self.source_origin
+        if self.reliability_percent is not None:
+            result["reliability_percent"] = self.reliability_percent
+        if self.agent_attribution is not None:
+            result["agent_attribution"] = self.agent_attribution
         return result
     
     @classmethod

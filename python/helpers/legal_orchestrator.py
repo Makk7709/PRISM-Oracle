@@ -458,6 +458,28 @@ def build_source_notes_from_retrieval(
             elif not isinstance(prov, dict):
                 prov = {}
             
+            # Taxonomy classification (SESSION 4)
+            _taxonomy_kwargs = {}
+            try:
+                from python.helpers.source_taxonomy import classify_source
+                _src_url = prov.get("origin_url", "")
+                _src_pub = prov.get("source") or prov.get("publisher", "")
+                _src_title = result.citation if hasattr(result, "citation") else None
+                _src_excerpt = result.text[:500] if result.text else None
+                _type_fr, _origin, _reliability = classify_source(
+                    title=_src_title,
+                    excerpt=_src_excerpt,
+                    publisher=_src_pub,
+                    url=_src_url,
+                )
+                _taxonomy_kwargs = {
+                    "source_type_fr": _type_fr.value,
+                    "source_origin": _origin.value,
+                    "reliability_percent": _reliability,
+                }
+            except Exception:
+                pass
+
             # Create SourceNote
             source_note = SourceNote.create(
                 origin_url=prov.get("origin_url", f"https://unknown/{result.chunk_id}"),
@@ -471,6 +493,7 @@ def build_source_notes_from_retrieval(
                 license_tag=prov.get("license_name"),
                 title=result.citation,
                 correlation_id=correlation_id,
+                **_taxonomy_kwargs,
             )
             source_notes[result.chunk_id] = source_note
             

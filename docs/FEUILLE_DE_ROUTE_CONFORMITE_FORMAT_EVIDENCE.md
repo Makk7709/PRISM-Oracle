@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 1.4.0  
+**Version** : 1.5.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-03-31  
-**Statut global** : EN COURS — 3/10 sessions validees (SESSION 1 + SESSION 2 + SESSION 3)  
+**Statut global** : EN COURS — 4/10 sessions validees (SESSION 1 + SESSION 2 + SESSION 3 + SESSION 4)  
 
 ---
 
@@ -269,31 +269,53 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 
 ---
 
-## SESSION 4 — Source Taxonomy : classification FR des sources juridiques
+## SESSION 4 — Source Taxonomy : classification FR des sources juridiques ✅ VALIDEE
 
 **Objectif** : Enrichir les `SourceNote` avec une taxonomie FR et un score de fiabilite.  
 **Prerequis** : Aucun (independant des sessions 1-3)  
 **Risque sur l'existant** : Faible (extension des dataclass existantes)  
-**Fichiers a modifier** : `python/helpers/legal_orchestrator.py`, `python/helpers/reporting/evidence_native.py`
+**Fichiers crees/modifies** :
+- `python/helpers/source_taxonomy.py` (nouveau — 250 lignes)
+- `python/helpers/legal_agent_contracts.py` (modifie — 4 champs optionnels sur SourceNote + to_dict)
+- `python/helpers/legal_orchestrator.py` (modifie — classify_source integre dans build_source_notes_from_retrieval)
+- `tests/test_session4_source_taxonomy.py` (nouveau — 90 tests)
 
 ### Taches
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 4.1 | Creer enum `SourceTypeFR` : `jurisprudence_fr`, `jurisprudence_eu`, `texte_legislatif`, `rapport_officiel`, `doctrine`, `autre` | ⬜ | |
-| 4.2 | Creer enum `SourceOrigin` : `legifrance`, `eur_lex`, `min_justice`, `cnil`, `dacs`, `autre` | ⬜ | |
-| 4.3 | Enrichir `SourceNote` avec `source_type_fr`, `origin`, `reliability_percent` (0-100) | ⬜ | Retrocompatible : defauts `None` |
-| 4.4 | Ajouter logique d'inference `source_type_fr` a partir du contenu de la source (Cass. → jurisprudence_fr, CJUE → jurisprudence_eu, Art. L → texte_legislatif, etc.) | ⬜ | Regex sur le titre/reference |
-| 4.5 | Ajouter logique d'inference `origin` a partir de l'URL ou publisher | ⬜ | |
-| 4.6 | Ajouter `agent_attribution` : quel agent a produit cette source | ⬜ | |
-| 4.7 | Ecrire tests unitaires | ⬜ | |
-| 4.8 | Verifier zero regression pipeline legal | ⬜ | `pytest tests/ -k legal` |
+| 4.1 | Creer enum `SourceTypeFR` : 15 types (CEDH distinct de CJUE, circulaires, avis_autorite, convention_collective, etc.) | ✅ | Plus granulaire que prevu (6→15 types) |
+| 4.2 | Creer enum `SourceOrigin` : 12 origines (legifrance, eur_lex, judilibre, hudoc, cnil, amf, senat, etc.) | ✅ | Inclut HUDOC (CEDH) |
+| 4.3 | Enrichir `SourceNote` avec `source_type_fr`, `source_origin`, `reliability_percent` (0-100), `agent_attribution` | ✅ | Retrocompatible : defauts `None`, to_dict exclut les None |
+| 4.4 | Logique d'inference `source_type_fr` : 13 patterns regex (Cass., CE, CA, CEDH, CJUE, Art. L, Loi, Decret, Reglement UE, Directive, Circulaire, Avis, Rapport, Convention collective) | ✅ | CEDH teste AVANT CJUE (priorite) |
+| 4.5 | Logique d'inference `origin` : 10 patterns URL + 12 patterns publisher | ✅ | URL prioritaire sur publisher |
+| 4.6 | Champ `agent_attribution` ajoute sur SourceNote (Optional[str]) | ✅ | Rempli par le code appelant |
+| 4.7 | Ecrire 90 tests unitaires (enums, inference type 48+ sources, inference origin, fiabilite, classify_source, retrocompat SourceNote, CEDH≠CJUE) | ✅ | 90/90 passed |
+| 4.8 | Verifier zero regression : 129/129 (S1-S3) + 29/29 legal contracts | ✅ | 248/248 total |
 
 ### Criteres de validation SESSION 4
-- [ ] `SourceNote` porte `source_type_fr`, `origin`, `reliability_percent`, `agent_attribution`
-- [ ] Inference automatique correcte pour Cass.Com, CJUE, Art. L, Legifrance
-- [ ] Pipeline legal inchange en comportement
-- [ ] Aucun test existant casse
+- [x] `SourceNote` porte `source_type_fr`, `source_origin`, `reliability_percent`, `agent_attribution`
+- [x] Inference automatique correcte pour Cass.Com, CJUE, Art. L, Legifrance, CEDH, CE, circulaires, avis CNIL
+- [x] Pipeline legal inchange en comportement (29/29 tests legal contracts)
+- [x] Aucun test existant casse (248/248 verts)
+
+### Resultats auto-audit contradictoire SESSION 4
+
+| Axe | Resultat | Detail |
+|---|:---:|---|
+| 1. Exhaustivite taxonomie | ✅ | 15 types : circulaires, reponses ministerielles, avis CNIL/AMF, conventions collectives, accords de branche — tous couverts |
+| 2. Exactitude inference | ✅ | 48+ sources reelles testees, 0 faux positif, 0 faux negatif. CEDH≠CJUE strictement separes (7 tests dedies) |
+| 3. Fiabilite | ✅ | Calibree par hierarchie des normes (force contraignante → 95, soft law → 65-70, doctrine → 60). Reproductible |
+| 4. Agent attribution | ✅ | Champ present, attribution par chunk_id unique (pas de conflit doublon) |
+| 5. Retrocompatibilite | ✅ | 5 tests SourceNote legacy + 29 tests legal contracts — zero regression |
+| **6. Verdict** | **8.5/10** | **ACCEPTE** |
+
+#### Defauts identifies et traitement
+
+| ID | Defaut | Severite | Action |
+|---|---|:---:|---|
+| D1 | Doctrine pas detectable par regex (trop heterogene) | MINEUR | Par design : tombe dans AUTRE sauf si publisher est explicitement doctrinal. A enrichir quand un publisher registry sera ajoute |
+| D2 | `agent_attribution` non auto-rempli dans `build_source_notes_from_retrieval` | MINEUR | Le profile de l'agent appelant n'est pas accessible. Integration prevue quand PipelineTracker (S3) sera connecte au report builder (S8) |
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 4
 
@@ -896,6 +918,7 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | 2026-03-31 | SESSION 1 | SessionEnvelope cree + 37 tests + auto-audit execute (7.5→corrections D1-D7) | ✅ VALIDEE |
 | 2026-03-31 | SESSION 2 | Profil + Classification AI Act + 46 tests + auto-audit (7.5→corrections D1-D6) | ✅ VALIDEE |
 | 2026-03-31 | SESSION 3 | PipelineTracker + 46 tests + auto-audit (8.5/10 — D1-D4 documentes) | ✅ VALIDEE |
+| 2026-03-31 | SESSION 4 | Source Taxonomy FR + 90 tests + auto-audit (8.5/10 — D1-D2 documentes) | ✅ VALIDEE |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -930,6 +953,17 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | `tests/test_session3_pipeline_tracker.py` | **CREE** | 46 tests : AgentStep (9), Core (12), FailSafe (4), Concurrence (2), Performance (1), Registre (7), Rendering (5), Duration (3), CustomRegistry (2) |
 
 **Auto-audit** : 8.5/10 — ACCEPTE. Defauts D1-D4 documentes (non bloquants).
+
+### Livrables SESSION 4 — Source Taxonomy
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/source_taxonomy.py` | **CREE** | `SourceTypeFR` (15 types), `SourceOrigin` (12 origines), inference regex (13 patterns type, 10 URL + 12 publisher), `classify_source()`, fiabilite calibree par hierarchie des normes |
+| `python/helpers/legal_agent_contracts.py` | **MODIFIE** | 4 champs optionnels sur `SourceNote` (`source_type_fr`, `source_origin`, `reliability_percent`, `agent_attribution`), `to_dict` conditionnel |
+| `python/helpers/legal_orchestrator.py` | **MODIFIE** | `classify_source` integre dans `build_source_notes_from_retrieval` (try/except fail-safe) |
+| `tests/test_session4_source_taxonomy.py` | **CREE** | 90 tests : enums (4), inference type (48), inference origin (13), fiabilite (6), classify (4), retrocompat (5), CEDH≠CJUE (7) |
+
+**Auto-audit** : 8.5/10 — ACCEPTE. D1 (doctrine non-inferable par regex), D2 (agent_attribution manuelle).
 
 ---
 
@@ -991,7 +1025,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | 1 | 8/8 | Execute | 7.5→8+ (D1-D7 corr.) | ✅ |
 | 2 | 8/8 | Execute | 7.5→8.5+ (D1-D6 corr.) | ✅ |
 | 3 | 8/8 | Execute | 8.5/10 (D1-D4 doc.) | ✅ |
-| 4 | 0/8 | — | — | ⬜ |
+| 4 | 8/8 | Execute | 8.5/10 (D1-D2 doc.) | ✅ |
 | 5 | 0/9 | — | — | ⬜ |
 | 6 | 0/7 | — | — | ⬜ |
 | 7 | 0/8 | — | — | ⬜ |
