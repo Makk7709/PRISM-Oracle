@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 2.2.0  
+**Version** : 2.3.0  
 **Cree le** : 2026-03-31  
-**Derniere mise a jour** : 2026-03-11  
-**Statut global** : EN COURS — 6.1/10 sessions validees (SESSION 1-6.1) · PIVOT SCENARIO B actif  
+**Derniere mise a jour** : 2026-04-01  
+**Statut global** : EN COURS — 6.1/10 sessions validees (SESSION 1-6.1) · PIVOT SCENARIO B actif · Test E2E strategique VALIDE en production  
 
 ---
 
@@ -578,6 +578,50 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | E. Zero regression | ✅ | 297/297 passed |
 | **Verdict** | **10/10** | **ACCEPTE — Tous defauts corriges** |
 
+### Test E2E production — SESSION 6.1
+
+**Date** : 2026-04-01  
+**Environnement** : OVH VPS (evidence-backend, Docker, commit `6bac1fa6`)
+
+#### Test 1 : Requete LEGAL (CDI cadre Lead IA)
+
+| Aspect | Resultat | Detail |
+|---|:---:|---|
+| Detection pipeline | ✅ | `is_strategic=False` — correctement route comme legal (7+ patterns `LEGAL_EXCLUSION_PATTERNS`) |
+| Flux utilise | ⚠️ | LLM classique + `call_subordinate` (Evidence-1), PAS pipeline short-circuit |
+| Contenu genere | ✅ | CDI complet 20+ articles (non-concurrence, PI, RGPD, AI Act) |
+| Metadonnees audit | ❌ | **NON VISIBLES** — `_pipeline_final_response` jamais defini pour le flux LLM classique |
+| Doublons UI | ⚠️ | Reponses apparaissent en double (main agent + sub-agent) — probleme pre-existant |
+
+**Diagnostic** : Les metadonnees d'audit S6.1 ne couvrent que le chemin pipeline short-circuit (`_pipeline_final_response`). Les requetes passant par le flux LLM classique (legales via `call_subordinate`) ne sont pas couvertes.
+
+**Impact** : L'audit metadata fonctionne pour les dossiers strategiques mais pas pour les documents legaux. Extension de la couverture a prevoir en SESSION 7 (hook `message_loop_end` ou `response` tool).
+
+#### Test 2 : Requete STRATEGIQUE (dossier cibles commercialisation)
+
+**Date** : 2026-04-01  
+**Prompt** : "fais moi un dossier strategique sur les cibles a attaquer en premier pour la com..."  
+**Correlation ID** : `ee255409-d810-4785-a730-63689d9f8335`
+
+| Aspect | Resultat | Detail |
+|---|:---:|---|
+| Detection pipeline | ✅ | `is_strategic=True, type=strategic_dossier` — correctement route vers pipeline strategique |
+| Pipeline multi-agent | ✅ | 4 agents actives : researcher (107 src, 175s), finance (124 src, 217s), marketing (107 src, 163s), sales (110 src, 177s) |
+| Consolidation LLM | ✅ | 43 821 chars fusionnes |
+| Short-circuit LLM | ✅ | `llm_bypassed=True` — pipeline a court-circuite le flux normal |
+| **SessionEnvelope** | **✅** | `KRV-SES-20260331-E93A470`, hash SHA-256 `bb78b23e...`, duree 1019.7s |
+| **Profil humain (D1)** | **✅** | `Profil utilisateur: Admin` (pas "legal_safe" — UserManager resolu correctement) |
+| **Organisation (D3)** | **✅** | `Organisation: Korev AI` visible dans le tableau d'audit |
+| **PipelineTracker** | **✅** | 4 agents avec roles, statuts ✅, durees individuelles + agents non actives listes |
+| **Audit metadata** | **✅** | 3 sections appendues : Identite de la session, Pipeline d'execution, Agents non actives |
+| Validation strategique | ⚠️ | `FAIL_CLOSED` — critere "Alternatives non analysees" non rempli. Mecanisme de qualite fonctionne comme prevu |
+| Version Evidence | ⚠️ | `unknown (non resolu)` — le resolver de version ne trouve pas la valeur. **Fix a prevoir** |
+
+**Verdict test E2E strategique** : **SUCCES** — Tous les modules SESSION 6.1 (SessionEnvelope, PipelineTracker, audit metadata, profil humain, organisation) sont **visibles et fonctionnels en production** sur le chemin pipeline strategique.
+
+**Point d'attention** :
+- `evidence_version` affiche "unknown" — le resolver git/settings ne parvient pas a resoudre la version en environnement Docker. A corriger (bug mineur, non bloquant pour la conformite).
+
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 6
 
 > **Prompt a executer obligatoirement avant de valider cette session.**
@@ -640,14 +684,16 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
+| 7.0 | **FIX** : Corriger le resolver `evidence_version` en environnement Docker (`unknown` → version reelle). Diagnostiquer `gitinfo.version` / `settings.evidence_version` dans le conteneur. | ⬜ | Bug identifie en test E2E production (S6.1 Test 2) |
 | 7.1 | Recuperer `SessionEnvelope` et `PipelineTracker` depuis `agent.data`, recuperer `RouteDecision` depuis le router, appeler `ComplianceGrid.evaluate()` | ⬜ | Dans l'extension `message_loop_end` |
 | 7.2 | Injecter `ComplianceGrid.to_report_table()` dans le rapport final | ⬜ | Bloc "Grille de conformite reglementaire" |
 | 7.3 | Enrichir le rendu des sources : si `SourceNote` a `source_type_fr` et `reliability_percent`, les afficher dans la table des sources du rapport | ⬜ | Modifier le renderer existant des sources |
 | 7.4 | Creer `ReportMetadata` dataclass minimal : `session_id`, `model_primary`, `agents_activated`, `confidence_score`, `processing_time_ms`, `ai_act_category`, `data_residency` | ⬜ | Assembler depuis envelope + tracker + route_decision |
 | 7.5 | Creer `ReportMetadata.from_session()` factory + `to_json()` + `to_markdown_block()` | ⬜ | |
 | 7.6 | Injecter `ReportMetadata.to_markdown_block()` dans le rapport | ⬜ | Bloc "Metadonnees techniques" |
-| 7.7 | Ecrire tests unitaires + tests d'integration | ⬜ | |
-| 7.8 | Verifier zero regression | ⬜ | |
+| 7.7 | Etendre la couverture audit metadata au flux LLM classique (`call_subordinate` / `message_loop_end`) — pas seulement pipeline short-circuit | ⬜ | Gap identifie en test E2E production (S6.1 Test 1 — legal) |
+| 7.8 | Ecrire tests unitaires + tests d'integration | ⬜ | |
+| 7.9 | Verifier zero regression | ⬜ | |
 
 ### Criteres de validation SESSION 7
 - [ ] Un dossier strategique juridique affiche la grille conformite AI Act (5 articles, statuts honnetes)
@@ -993,6 +1039,8 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-03-11 | — | **PIVOT SCENARIO B** : sessions 6-10 reecrites pour prioriser le cablage. v2.0.0 | Plan restructure |
 | 2026-03-11 | SESSION 6 | Cablage SessionEnvelope + PipelineTracker dans le flux reel + 25 tests + auto-audit | ❌ REJET (7/10 — C1 critique) |
 | 2026-03-11 | SESSION 6.1 | Corrections audit hostile : C1 (hook placement), D1 (human profile), D3 (organisation), D4 (cache). +15 tests. Audit re-execute 10/10. 297/297 tests. | ✅ VALIDEE |
+| 2026-04-01 | SESSION 6.1 | **Test E2E production — LEGAL** : detection correcte (non-strategique), audit metadata NON visible (flux LLM classique). Gap identifie. | ⚠️ CONSTATE |
+| 2026-04-01 | SESSION 6.1 | **Test E2E production — STRATEGIQUE** : 4 agents (researcher, finance, marketing, sales), SessionEnvelope + PipelineTracker + audit metadata **VISIBLES**. Profil=Admin, Org=Korev AI. FAIL_CLOSED sur validation (par design). `evidence_version=unknown` — fix prevu S7. | ✅ **SUCCES LIVE** |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1128,7 +1176,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | ⚡ | **TEST MI-PARCOURS** | — | E2E reel | **0/5 cables** | ⚠️ |
 | 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | ❌ |
 | 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | ✅ |
-| 7 | **Cabler S5+S4+Metadata** (grid+taxonomy+meta) | 0/8 | — | — | ⬜ |
+| 7 | **Cabler S5+S4+Metadata** (grid+taxonomy+meta) + fix version resolver + couverture audit LLM classique | 0/10 | — | — | ⬜ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | ⬜ |
 | 9 | **E2E + Production** (stockage+PDF+fail-safe) | 0/10 | — | — | ⬜ |
 | 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | ⬜ |
