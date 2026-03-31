@@ -151,6 +151,12 @@
             font-weight: 400;
             font-style: italic;
             margin-left: 0.15em;
+            display: inline-block;
+            padding-right: 0.15em;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .korev-home__subtitle {
@@ -292,16 +298,15 @@
         }
 
         .korev-home__action--primary {
-            background: var(--prism-accent);
-            border: 1px solid var(--prism-accent);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
             color: white;
         }
 
         .korev-home__action--primary:hover {
-            background: var(--prism-accent-hover);
-            border-color: var(--prism-accent-hover);
             transform: translateY(-2px);
-            box-shadow: var(--prism-shadow-soft);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(99, 102, 241, 0.15);
+            border-color: rgba(139, 92, 246, 0.5);
         }
 
         .korev-home__action--secondary {
