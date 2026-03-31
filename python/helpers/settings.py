@@ -148,6 +148,8 @@ class Settings(TypedDict):
 
     update_check_enabled: bool
 
+    environment_label: str
+
 class PartialSettings(Settings, total=False):
     pass
 
@@ -2015,6 +2017,7 @@ def get_default_settings() -> Settings:
         secrets="",
         litellm_global_kwargs={},
         update_check_enabled=True,
+        environment_label="",
     )
 
 
