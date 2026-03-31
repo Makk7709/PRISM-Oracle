@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 1.5.0  
+**Version** : 1.6.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-03-31  
-**Statut global** : EN COURS — 4/10 sessions validees (SESSION 1 + SESSION 2 + SESSION 3 + SESSION 4)  
+**Statut global** : EN COURS — 5/10 sessions validees (SESSION 1-5)  
 
 ---
 
@@ -365,31 +365,53 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 
 ---
 
-## SESSION 5 — Grille de conformite AI Act
+## SESSION 5 — Grille de conformite AI Act ✅ VALIDEE
 
 **Objectif** : Generer automatiquement la grille Article / Exigence / Statut.  
 **Prerequis** : SESSION 1 (SessionEnvelope), SESSION 3 (PipelineTracker)  
 **Risque sur l'existant** : Nul (ajout pur)  
-**Fichiers a creer** : `python/helpers/compliance_grid.py` (nouveau)
+**Fichiers crees** :
+- `python/helpers/compliance_grid.py` (nouveau — 300 lignes)
+- `tests/test_session5_compliance_grid.py` (nouveau — 38 tests)
 
 ### Taches
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 5.1 | Definir la liste des articles applicables : Art. 13 (Transparence), Art. 14 (Supervision humaine), Art. 17 (Systeme qualite), Art. 9 (Gestion des risques), RGPD Art. 30 (Registre traitements) | ⬜ | |
-| 5.2 | Creer `ComplianceCheck` dataclass : `article`, `exigence`, `status` (conforme/non_conforme/partiel), `evidence` (preuve technique) | ⬜ | |
-| 5.3 | Creer `ComplianceGrid` class avec `evaluate(session_envelope, pipeline_tracker)` | ⬜ | |
-| 5.4 | Art. 13 : statut `conforme` si `TraceStep` presents dans le raisonnement | ⬜ | Preuve : "Raisonnement complet trace" |
-| 5.5 | Art. 14 : statut `conforme` si `requires_human_review` evalue | ⬜ | Preuve : "Validation enregistree avec horodatage" |
-| 5.6 | Art. 17 : statut `conforme` si logs structures + hash integrite | ⬜ | Preuve : "Log signe + conserve 5 ans" |
-| 5.7 | Art. 9 : statut `conforme` si `confidence_score` calcule + seuil | ⬜ | Preuve : "Score de confiance + seuil minimal" |
-| 5.8 | RGPD Art. 30 : statut `conforme` si metadata de traitement enregistrees | ⬜ | Preuve : "Registre traitements mis a jour" |
-| 5.9 | Ecrire tests unitaires | ⬜ | |
+| 5.1 | Definir articles + `ComplianceStatus` enum (conforme/partiel/non_conforme/non_applicable) | ✅ | 4 statuts honnetes |
+| 5.2 | Creer `ComplianceCheck` dataclass : `article`, `exigence`, `status`, `evidence`, `gaps` | ✅ | Champ `gaps` obligatoire pour PARTIEL |
+| 5.3 | Creer `ComplianceGrid` avec `evaluate(envelope, tracker, route_decision, ...)` | ✅ | 7 parametres, overall_status derive |
+| 5.4 | Art. 13 Transparence : **PARTIEL** — TraceStep existe mais export lisible incomplet | ✅ | Pas de CONFORME : to_safe_dict() n'expose que le count |
+| 5.5 | Art. 14 Supervision humaine : **PARTIEL** — mecanisme existe, registre formel absent | ✅ | Distingue session avec/sans review declenchee |
+| 5.6 | Art. 17 Systeme qualite : **PARTIEL** — logs+hash+PRISM oui, monitoring+correction non | ✅ | 4/5 composants QMS manquants |
+| 5.7 | Art. 9 Gestion des risques : **PARTIEL** — confidence+criticality oui, risk registry non | ✅ | Integre ai_act_category et data_sensitivity |
+| 5.8 | RGPD Art. 30 : **PARTIEL/NON_CONFORME** — metadata oui, registre formel non | ✅ | NON_CONFORME si pas d'envelope |
+| 5.9 | Ecrire 38 tests (enum, check, art13-14-17-9-30, grid, anti-washing, to_dict) | ✅ | Test `test_no_check_is_conforme_anti_washing` |
 
 ### Criteres de validation SESSION 5
-- [ ] `ComplianceGrid.evaluate()` retourne 5 checks
-- [ ] Chaque check a une preuve technique reelle (pas de placeholder)
-- [ ] Statut derive automatiquement des donnees de session
+- [x] `ComplianceGrid.evaluate()` retourne 5 checks
+- [x] Chaque check a une preuve technique reelle (pas de placeholder)
+- [x] Statut derive automatiquement des donnees de session
+- [x] **ZERO check CONFORME** (anti-compliance-washing prouve par test)
+
+### Resultats auto-audit contradictoire SESSION 5
+
+| Axe | Resultat | Detail |
+|---|:---:|---|
+| 1. Art. 13 Transparence | ✅ | PARTIEL honnete : traces existent mais export utilisateur incomplet |
+| 2. Art. 14 Supervision | ✅ | PARTIEL honnete : mecanisme existe, pas de registre formel |
+| 3. Art. 17 Qualite | ✅ | PARTIEL honnete : logs oui, QMS complet non (monitoring, correction absents) |
+| 4. Art. 9 Risques | ✅ | PARTIEL honnete : confidence + criticality oui, risk registry formel non |
+| 5. RGPD Art. 30 | ✅ | PARTIEL/NON_CONFORME honnete : metadata oui, registre Art. 30 formel non |
+| 6. Statut honnete | ✅ | 0 CONFORME sur 5 articles. Test anti-washing explicite |
+| **7. Verdict** | **9/10** | **ACCEPTE** — Zero compliance washing |
+
+#### Defauts identifies et traitement
+
+| ID | Defaut | Severite | Action |
+|---|---|:---:|---|
+| D1 | Art. 14 pourrait distinguer NON_APPLICABLE vs PARTIEL selon contexte | MINEUR | Retourne PARTIEL car mecanisme existe — acceptable |
+| D2 | Pas de ponderation des articles dans overall_status | INFO | Par design : chaque article traite individuellement |
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 5
 
@@ -919,6 +941,7 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | 2026-03-31 | SESSION 2 | Profil + Classification AI Act + 46 tests + auto-audit (7.5→corrections D1-D6) | ✅ VALIDEE |
 | 2026-03-31 | SESSION 3 | PipelineTracker + 46 tests + auto-audit (8.5/10 — D1-D4 documentes) | ✅ VALIDEE |
 | 2026-03-31 | SESSION 4 | Source Taxonomy FR + 90 tests + auto-audit (8.5/10 — D1-D2 documentes) | ✅ VALIDEE |
+| 2026-03-31 | SESSION 5 | Grille AI Act + 38 tests + auto-audit (9/10 — zero compliance washing) | ✅ VALIDEE |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -964,6 +987,17 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | `tests/test_session4_source_taxonomy.py` | **CREE** | 90 tests : enums (4), inference type (48), inference origin (13), fiabilite (6), classify (4), retrocompat (5), CEDH≠CJUE (7) |
 
 **Auto-audit** : 8.5/10 — ACCEPTE. D1 (doctrine non-inferable par regex), D2 (agent_attribution manuelle).
+
+### Livrables SESSION 5 — Grille de conformite AI Act
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/compliance_grid.py` | **CREE** | `ComplianceStatus` (4 statuts), `ComplianceCheck` (article, exigence, status, evidence, gaps), `ComplianceGrid.evaluate()` (5 articles), evaluateurs Art. 13/14/17/9/RGPD30, `to_report_table()`, `to_dict()`, `overall_status` conservateur |
+| `tests/test_session5_compliance_grid.py` | **CREE** | 38 tests : enum (2), check (2), art13 (6), art14 (4), art17 (5), art9 (4), rgpd30 (4), grid (11 dont anti-washing) |
+
+**Principe** : zero compliance washing. Aucun article ne retourne CONFORME — tous sont PARTIEL ou NON_CONFORME avec gaps explicites. Test `test_no_check_is_conforme_anti_washing` le prouve.
+
+**Auto-audit** : 9/10 — ACCEPTE. Meilleure note de toutes les sessions.
 
 ---
 
@@ -1026,7 +1060,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | 2 | 8/8 | Execute | 7.5→8.5+ (D1-D6 corr.) | ✅ |
 | 3 | 8/8 | Execute | 8.5/10 (D1-D4 doc.) | ✅ |
 | 4 | 8/8 | Execute | 8.5/10 (D1-D2 doc.) | ✅ |
-| 5 | 0/9 | — | — | ⬜ |
+| 5 | 9/9 | Execute | 9/10 (zero washing) | ✅ |
 | 6 | 0/7 | — | — | ⬜ |
 | 7 | 0/8 | — | — | ⬜ |
 | 8 | 0/14 | — | — | ⬜ |
