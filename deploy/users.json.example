@@ -2,11 +2,13 @@
   "users": {
     "amine": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "admin"
+      "role": "admin",
+      "profile": "Administrateur — Direction"
     },
     "nicolas": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
+      "role": "user",
+      "profile": "Analyste — Niveau 2"
     },
     "luc": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",

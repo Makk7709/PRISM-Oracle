@@ -35,6 +35,8 @@ from .routing_contract import (
     ConfidenceLevel,
     AgentVerdict,
     RiskSeverity,
+    AIActCategory,
+    DataSensitivity,
     # Contracts
     RouteIntent,
     RouteDecision,
@@ -42,6 +44,11 @@ from .routing_contract import (
     AgentRisk,
     AgentAssumption,
     AgentArtifact,
+    # Mappings
+    INTENT_TO_AI_ACT,
+    INTENT_TO_SENSITIVITY,
+    get_ai_act_category,
+    get_data_sensitivity,
     # Validation
     validate_route_decision,
     validate_agent_result,
@@ -180,6 +187,12 @@ __all__ = [
     "ConfidenceLevel",
     "AgentVerdict",
     "RiskSeverity",
+    "AIActCategory",
+    "DataSensitivity",
+    "INTENT_TO_AI_ACT",
+    "INTENT_TO_SENSITIVITY",
+    "get_ai_act_category",
+    "get_data_sensitivity",
     "RouteIntent",
     "RouteDecision",
     "AgentResult",

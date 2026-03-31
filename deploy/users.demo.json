@@ -4,13 +4,15 @@
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$r6N+/PnDfyjOY7rIRIT0CA$BDHYhZHThM7S3eOWcMtcz1GoDk0YO8owuGXIlGYNKXQ",
       "role": "admin",
       "organization": "demo-org",
-      "org_role": "OWNER"
+      "org_role": "OWNER",
+      "profile": "Demo Admin — Evaluation"
     },
     "demo-user": {
       "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$RL8UJ92UEJ11KT9smxMfnA$6fol0lSDaq/DMAyDIPb0HNpmMOE9VjlARdJCxzkNSt8",
       "role": "user",
       "organization": "demo-org",
-      "org_role": "MEMBER"
+      "org_role": "MEMBER",
+      "profile": "Demo User — Evaluation"
     }
   }
 }

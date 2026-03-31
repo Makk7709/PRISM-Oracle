@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 1.2.0  
+**Version** : 1.3.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-03-31  
-**Statut global** : EN COURS  
+**Statut global** : EN COURS — 2/10 sessions validees (SESSION 1 + SESSION 2)  
 
 ---
 
@@ -113,20 +113,21 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 2.1 | Ajouter champ optionnel `profile` dans `users.json` schema (ex: `"Analyste — Niveau 2"`) | ⬜ | Retrocompatible : defaut `null` |
-| 2.2 | Ajouter `get_user_profile(username)` dans `UserManager` | ⬜ | Retourne `profile` ou `"{role}"` par defaut |
-| 2.3 | Enrichir `RouteDecision` avec `data_sensitivity` (enum: `public`, `internal`, `confidential`, `restricted`) | ⬜ | Deduit du type de route |
-| 2.4 | Enrichir `RouteDecision` avec `ai_act_category` (enum: `minimal_risk`, `moderate_risk`, `high_risk`, `unacceptable`) | ⬜ | Mapping route → categorie |
-| 2.5 | Creer mapping `route_type → ai_act_category` dans `routing_contract.py` | ⬜ | Legal/medical = `high_risk`, strategic = `moderate_risk`, general = `minimal_risk` |
-| 2.6 | Creer mapping `route_type → data_sensitivity` | ⬜ | Legal/medical/contract = `confidential` |
-| 2.7 | Ecrire tests unitaires pour les nouveaux champs | ⬜ | |
-| 2.8 | Verifier zero regression | ⬜ | |
+| 2.1 | Ajouter champ optionnel `profile` dans `users.json` schema (ex: `"Analyste — Niveau 2"`) | ✅ | `users.json.example` + `users.demo.json` mis a jour |
+| 2.2 | Ajouter `get_user_profile(username)` dans `UserManager` | ✅ | Fallback role.capitalize() si absent/null/"" |
+| 2.3 | Enrichir `RouteDecision` avec `data_sensitivity` (enum: `public`, `internal`, `confidential`, `restricted`) | ✅ | Auto-derive via `max(sensibilite)` multi-intent (D4 fix) |
+| 2.4 | Enrichir `RouteDecision` avec `ai_act_category` (enum: `minimal_risk`, `limited_risk`, `high_risk`, `unacceptable`) | ✅ | Auto-derive depuis primary intent |
+| 2.5 | Creer mapping `IntentName → ai_act_category` dans `routing_contract.py` | ✅ | Citations Annexe III corrigees (D1 fix) |
+| 2.6 | Creer mapping `IntentName → data_sensitivity` | ✅ | Marketing reclassifie INTERNAL (D3 fix) |
+| 2.7 | Ecrire tests unitaires — 46 tests | ✅ | Mapping, profil, coherence croisee, serialisation |
+| 2.8 | Verifier zero regression | ✅ | 0 regression (1 echec pre-existant rebrand) |
 
 ### Criteres de validation SESSION 2
-- [ ] `UserManager.get_user_profile("amine")` retourne un profil
-- [ ] `RouteDecision` porte `ai_act_category` et `data_sensitivity`
-- [ ] Mapping coherent pour chaque type de route
-- [ ] Aucun test existant casse
+- [x] `UserManager.get_user_profile("amine")` retourne un profil
+- [x] `RouteDecision` porte `ai_act_category` et `data_sensitivity`
+- [x] Mapping coherent pour chaque type de route (9/9 IntentName couvertes)
+- [x] Aucun test existant casse
+- [x] Auto-audit contradictoire execute : score 7.5→corrections D1-D6 appliquees
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 2
 
@@ -869,6 +870,30 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | 2026-03-31 | — | Audit initial : 21 EXISTE, 15 PARTIEL, 25 ABSENT | Feuille de route creee |
 | 2026-03-31 | — | Ajout auto-audits contradictoires (10 sessions + 1 global) + protocole d'execution + compteur de sante | v1.1.0 |
 | 2026-03-31 | SESSION 1 | SessionEnvelope cree + 37 tests + auto-audit execute (7.5→corrections D1-D7) | ✅ VALIDEE |
+| 2026-03-31 | SESSION 2 | Profil + Classification AI Act + 46 tests + auto-audit (7.5→corrections D1-D6) | ✅ VALIDEE |
+
+### Livrables SESSION 1 — SessionEnvelope
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/session_envelope.py` | **CREE** | Dataclass SessionEnvelope (13 champs), generateur session_id `KRV-SES-YYYYMMDD-XXXXXXX`, hash SHA-256 (separateur null byte, sentinel None), `duration_seconds` property, logging warnings |
+| `python/helpers/settings.py` | **MODIFIE** | Ajout `environment_label: str` dans Settings TypedDict + valeur par defaut `""` |
+| `tests/test_session_envelope.py` | **CREE** | 37 tests : format, instanciation, duree, integrite, resolution (mocked), edge cases, serialisation |
+
+**Commit** : `aefd19b5` — deploye sur OVH le 2026-03-31
+
+### Livrables SESSION 2 — Profil + Classification
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/router/routing_contract.py` | **MODIFIE** | Enums `AIActCategory` + `DataSensitivity`, mappings `INTENT_TO_AI_ACT` + `INTENT_TO_SENSITIVITY` (9/9 IntentName), fonctions `get_ai_act_category()` + `get_data_sensitivity()`, champs auto-derives sur `RouteDecision`, logique `max(sensibilite)` multi-intent |
+| `python/helpers/router/__init__.py` | **MODIFIE** | Exports des 6 nouveaux symboles |
+| `python/helpers/user_manager.py` | **MODIFIE** | Ajout `get_user_profile()` — fallback `role.capitalize()` si profile absent/null/vide |
+| `deploy/users.json.example` | **MODIFIE** | Champ `profile` ajoute (2 exemples) |
+| `deploy/users.demo.json` | **MODIFIE** | Champ `profile` ajoute (2 utilisateurs demo) |
+| `tests/test_session2_profile_classification.py` | **CREE** | 46 tests : mappings AI Act, sensibilite, RouteDecision auto-derive, profil utilisateur, coherence croisee, serialisation |
+
+**Corrections audit contradictoire** : citations Annexe III (D1), Art. 50 (D2), marketing INTERNAL (D3), `max(sensibilite)` multi-intent conforme RGPD Art. 9 (D4), test tie-breaking (D6)
 
 ---
 
@@ -928,7 +953,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | Session | Taches | Auto-audit | Note | Statut |
 |:---:|:---:|:---:|:---:|:---:|
 | 1 | 8/8 | Execute | 7.5→8+ (D1-D7 corr.) | ✅ |
-| 2 | 0/8 | — | — | ⬜ |
+| 2 | 8/8 | Execute | 7.5→8.5+ (D1-D6 corr.) | ✅ |
 | 3 | 0/8 | — | — | ⬜ |
 | 4 | 0/8 | — | — | ⬜ |
 | 5 | 0/9 | — | — | ⬜ |

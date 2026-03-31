@@ -211,6 +211,22 @@ class UserManager:
             return None
         return info.get("org_role", "MEMBER")
 
+    def get_user_profile(self, username: str) -> str:
+        """Get the display profile for a user.
+
+        Returns the explicit `profile` field if set, otherwise falls back
+        to the capitalised `role` (e.g. "Admin", "User").
+        Never raises — returns "User" on any failure.
+        """
+        info = self._users.get(username)
+        if info is None:
+            return "User"
+        profile = info.get("profile")
+        if profile:
+            return profile
+        role = info.get("role", "user")
+        return role.capitalize()
+
     def get_org_members(self, organization: str) -> list[str]:
         """Get all usernames belonging to an organization (matches by normalized slug)."""
         target_id = normalize_org_id(organization)

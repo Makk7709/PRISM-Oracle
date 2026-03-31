@@ -44,6 +44,76 @@ class ConfidenceLevel(str, Enum):
     LOW = "low"         # < 0.5
 
 
+class AIActCategory(str, Enum):
+    """Classification AI Act (Reglement UE 2024/1689).
+
+    Annexe III, point 8(a) : administration de la justice.
+    Annexe III, point 5(a) : evaluation de solvabilite.
+    Art. 6(1) + Annexe I, section A : dispositifs medicaux.
+    """
+    MINIMAL_RISK = "minimal_risk"
+    LIMITED_RISK = "limited_risk"
+    HIGH_RISK = "high_risk"
+    UNACCEPTABLE = "unacceptable"
+
+
+class DataSensitivity(str, Enum):
+    """Niveau de sensibilite des donnees traitees (RGPD Art. 9, Art. 30)."""
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    CONFIDENTIAL = "confidential"
+    RESTRICTED = "restricted"
+
+
+# ── Mappings IntentName → classifications ────────────────────────────────────
+#
+# AI Act — Annexe III, point 8(a) : systemes destines a etre utilises
+# par les autorites judiciaires pour rechercher et interpreter les faits
+# et le droit → high_risk (legal_safe).
+# Art. 6(1) + Annexe I, section A, point 11 : dispositifs medicaux au
+# sens du Reglement (UE) 2017/745 → high_risk (medical).
+# Annexe III, point 5(a) : evaluation de solvabilite des personnes
+# physiques ou etablissement de note de credit → high_risk (finance).
+# Art. 50 : systemes a risque limite = obligations de transparence
+# → limited_risk (researcher, contradictor).
+# Aucun intent ne tombe dans les pratiques interdites Art. 5(1).
+# General / developer / marketing / sales = minimal_risk.
+
+INTENT_TO_AI_ACT: dict = {
+    IntentName.LEGAL_SAFE: AIActCategory.HIGH_RISK,
+    IntentName.MEDICAL: AIActCategory.HIGH_RISK,
+    IntentName.FINANCE: AIActCategory.HIGH_RISK,
+    IntentName.RESEARCHER: AIActCategory.LIMITED_RISK,
+    IntentName.CONTRADICTOR: AIActCategory.LIMITED_RISK,
+    IntentName.DEVELOPER: AIActCategory.MINIMAL_RISK,
+    IntentName.MARKETING: AIActCategory.MINIMAL_RISK,
+    IntentName.SALES: AIActCategory.MINIMAL_RISK,
+    IntentName.MULTITASK: AIActCategory.MINIMAL_RISK,
+}
+
+INTENT_TO_SENSITIVITY: dict = {
+    IntentName.LEGAL_SAFE: DataSensitivity.CONFIDENTIAL,
+    IntentName.MEDICAL: DataSensitivity.RESTRICTED,
+    IntentName.FINANCE: DataSensitivity.CONFIDENTIAL,
+    IntentName.RESEARCHER: DataSensitivity.INTERNAL,
+    IntentName.CONTRADICTOR: DataSensitivity.INTERNAL,
+    IntentName.DEVELOPER: DataSensitivity.INTERNAL,
+    IntentName.MARKETING: DataSensitivity.INTERNAL,
+    IntentName.SALES: DataSensitivity.INTERNAL,
+    IntentName.MULTITASK: DataSensitivity.INTERNAL,
+}
+
+
+def get_ai_act_category(intent: IntentName) -> AIActCategory:
+    """Resout la categorie AI Act pour un intent donne."""
+    return INTENT_TO_AI_ACT.get(intent, AIActCategory.MINIMAL_RISK)
+
+
+def get_data_sensitivity(intent: IntentName) -> DataSensitivity:
+    """Resout la sensibilite des donnees pour un intent donne."""
+    return INTENT_TO_SENSITIVITY.get(intent, DataSensitivity.INTERNAL)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ROUTE INTENT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -122,6 +192,17 @@ class RouteDecision:
     route_id: str = ""
     input_hash: str = ""
     
+    # Compliance classification (SESSION 2)
+    ai_act_category: Optional[AIActCategory] = None
+    data_sensitivity: Optional[DataSensitivity] = None
+    
+    _SENSITIVITY_ORDER = {
+        DataSensitivity.PUBLIC: 0,
+        DataSensitivity.INTERNAL: 1,
+        DataSensitivity.CONFIDENTIAL: 2,
+        DataSensitivity.RESTRICTED: 3,
+    }
+
     def __post_init__(self):
         """Set derived fields."""
         if self.routing_strength >= 0.8:
@@ -130,6 +211,15 @@ class RouteDecision:
             self.confidence_level = ConfidenceLevel.MEDIUM
         else:
             self.confidence_level = ConfidenceLevel.LOW
+        
+        if self.ai_act_category is None and self.intents:
+            primary = max(self.intents, key=lambda x: x.score)
+            self.ai_act_category = get_ai_act_category(primary.name)
+        if self.data_sensitivity is None and self.intents:
+            self.data_sensitivity = max(
+                (get_data_sensitivity(i.name) for i in self.intents),
+                key=lambda s: self._SENSITIVITY_ORDER.get(s, 0),
+            )
     
     @property
     def primary_intent(self) -> Optional[IntentName]:
@@ -164,6 +254,8 @@ class RouteDecision:
             "injection_blocked": self.injection_blocked,
             "route_id": self.route_id,
             "input_hash": self.input_hash,
+            "ai_act_category": self.ai_act_category.value if self.ai_act_category else None,
+            "data_sensitivity": self.data_sensitivity.value if self.data_sensitivity else None,
         }
     
     def to_json(self) -> str:
@@ -173,6 +265,8 @@ class RouteDecision:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RouteDecision":
         """Deserialize from dict."""
+        ai_cat = data.get("ai_act_category")
+        sens = data.get("data_sensitivity")
         return cls(
             verdict=RouteVerdict(data["verdict"]),
             intents=[RouteIntent.from_dict(i) for i in data.get("intents", [])],
@@ -187,6 +281,8 @@ class RouteDecision:
             injection_attempt=data.get("injection_attempt", ""),
             route_id=data.get("route_id", ""),
             input_hash=data.get("input_hash", ""),
+            ai_act_category=AIActCategory(ai_cat) if ai_cat else None,
+            data_sensitivity=DataSensitivity(sens) if sens else None,
         )
     
     def compute_hash(self) -> str:
