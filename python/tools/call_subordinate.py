@@ -78,6 +78,8 @@ except ImportError:
     def _canonicalize_text(text: str) -> str:
         return text.lower().strip()
 
+from python.helpers.pipeline_tracker import PipelineTracker
+
 logger = logging.getLogger("delegation_tool")
 
 
@@ -317,8 +319,25 @@ class Delegation(Tool):
         propagate_budget(self.agent, subordinate)
         subordinate.hist_add_user_message(UserMessage(message=message, attachments=[]))
 
+        # Observer : tracker d'execution de l'agent subordonne
+        _tracker = self.agent.get_data("_pipeline_tracker")
+        if _tracker is None:
+            _tracker = PipelineTracker()
+            self.agent.set_data("_pipeline_tracker", _tracker)
+        _tracker.start_step(agent_profile or "default")
+
         # Exécuter le monologue du subordonné (BudgetExceededError propagates naturally)
-        result = await subordinate.monologue()
+        _sub_success = True
+        _sub_error: Optional[str] = None
+        try:
+            result = await subordinate.monologue()
+        except Exception as _sub_exc:
+            _sub_success = False
+            _sub_error = str(_sub_exc)
+            _tracker.complete_step(agent_profile or "default", success=False, error=_sub_error)
+            raise
+        else:
+            _tracker.complete_step(agent_profile or "default", success=True)
         
         PrintStyle(font_color="yellow").print(
             f"🔍 AUDIT: subordinate.monologue() returned result (len={len(result) if result else 0}): "

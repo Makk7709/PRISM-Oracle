@@ -25,6 +25,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from python.helpers import files
+from python.helpers.pipeline_tracker import PipelineTracker
 
 if TYPE_CHECKING:
     from agent import Agent
@@ -143,6 +144,7 @@ class StrategicResult:
     fail_reason: Optional[str] = None
     correlation_id: str = ""
     duration_ms: int = 0
+    pipeline_tracker: Optional["PipelineTracker"] = field(default=None, repr=False)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -920,6 +922,9 @@ async def run_strategic_orchestrator(
     start_time = time.time()
     responses: List[AgentResponse] = []
 
+    # Observer : instancier un PipelineTracker pour cette orchestration
+    tracker = PipelineTracker()
+
     logger.info(
         f"[{correlation_id}] Starting strategic orchestration: "
         f"type={detection.document_type}, agents={detection.required_agents}"
@@ -933,7 +938,9 @@ async def run_strategic_orchestrator(
             previous_responses=responses,
         )
 
+        tracker.start_step(profile)
         response = await call_agent(agent, profile, prompt, correlation_id)
+        tracker.complete_step(profile, success=response.success, error=response.error)
         responses.append(response)
 
         if not response.success:
@@ -960,6 +967,12 @@ async def run_strategic_orchestrator(
 
     duration_ms = int((time.time() - start_time) * 1000)
 
+    logger.info(
+        f"[{correlation_id}] Pipeline tracker summary: {tracker.summary()}, "
+        f"total_agent_ms={tracker.total_duration_ms()}, "
+        f"non_activated={tracker.get_non_activated()}"
+    )
+
     if is_valid:
         logger.info(
             f"[{correlation_id}] Strategic validation PASSED: "
@@ -975,6 +988,7 @@ async def run_strategic_orchestrator(
             validation_passed=True,
             correlation_id=correlation_id,
             duration_ms=duration_ms,
+            pipeline_tracker=tracker,
         )
     else:
         logger.warning(
@@ -998,6 +1012,7 @@ async def run_strategic_orchestrator(
             fail_reason="; ".join(missing),
             correlation_id=correlation_id,
             duration_ms=duration_ms,
+            pipeline_tracker=tracker,
         )
 
 

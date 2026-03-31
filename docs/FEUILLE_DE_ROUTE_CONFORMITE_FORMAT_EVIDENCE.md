@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 1.3.0  
+**Version** : 1.4.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-03-31  
-**Statut global** : EN COURS — 2/10 sessions validees (SESSION 1 + SESSION 2)  
+**Statut global** : EN COURS — 3/10 sessions validees (SESSION 1 + SESSION 2 + SESSION 3)  
 
 ---
 
@@ -172,31 +172,55 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 
 ---
 
-## SESSION 3 — Pipeline Tracker : suivi d'execution des agents
+## SESSION 3 — Pipeline Tracker : suivi d'execution des agents ✅ VALIDEE
 
 **Objectif** : Tracker les agents actives, leur role, statut, duree, et lister les agents non actives.  
 **Prerequis** : SESSION 1  
 **Risque sur l'existant** : Faible (wrapper observer, pas de modification du flux existant)  
-**Fichiers a creer/modifier** : `python/helpers/pipeline_tracker.py` (nouveau)
+**Fichiers crees/modifies** :
+- `python/helpers/pipeline_tracker.py` (nouveau — 280 lignes)
+- `python/helpers/strategic_orchestrator.py` (modifie — observer autour de `call_agent`)
+- `python/tools/call_subordinate.py` (modifie — observer autour de `subordinate.monologue()`)
+- `tests/test_session3_pipeline_tracker.py` (nouveau — 46 tests)
 
 ### Taches
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 3.1 | Creer `AgentStep` dataclass : `agent_name`, `role_description`, `status` (pending/running/completed/failed), `started_at`, `completed_at`, `duration_ms` | ⬜ | |
-| 3.2 | Creer `PipelineTracker` class avec `start_step()`, `complete_step()`, `get_activated()`, `get_non_activated()` | ⬜ | |
-| 3.3 | Definir la liste exhaustive des agents du systeme : `orchestrator`, `legal_safe`, `legal_drafting`, `researcher`, `medical`, `finance`, `developer`, `hacker`, `sales`, `marketing`, `multitask`, `strategic` | ⬜ | |
-| 3.4 | `get_non_activated()` = liste totale - agents actives | ⬜ | |
-| 3.5 | Integrer `PipelineTracker` dans `strategic_orchestrator.py` (observer, pas de modification du flux) | ⬜ | Wrap autour de `call_agent` |
-| 3.6 | Integrer `PipelineTracker` dans `call_subordinate.py` (observer) | ⬜ | Wrap autour de delegation |
-| 3.7 | Ecrire tests unitaires | ⬜ | |
-| 3.8 | Verifier que les orchestrateurs existants ne sont pas impactes | ⬜ | |
+| 3.1 | Creer `AgentStep` dataclass : `agent_name`, `role_description`, `status` (pending/running/completed/failed/skipped), `started_at`, `completed_at`, `duration_ms` | ✅ | `time.monotonic()` pour precision |
+| 3.2 | Creer `PipelineTracker` class avec `start_step()`, `complete_step()`, `skip_step()`, `get_activated()`, `get_non_activated()`, `to_report_table()`, `to_dict()` | ✅ | Thread-safe (threading.Lock) |
+| 3.3 | Definir la liste exhaustive des agents : 11 profils (`default`, `developer`, `finance`, `hacker`, `legal_drafting_guarded`, `legal_safe`, `marketing`, `medical`, `multitask`, `researcher`, `sales`) + decouverte dynamique filesystem | ✅ | `_discover_agents_from_filesystem()` + registre statique |
+| 3.4 | `get_non_activated()` = registre complet - agents actives (tries alphabetiquement) | ✅ | |
+| 3.5 | Integrer `PipelineTracker` dans `strategic_orchestrator.py` (observer autour de `call_agent`) | ✅ | Tracker stocke sur `StrategicResult.pipeline_tracker` |
+| 3.6 | Integrer `PipelineTracker` dans `call_subordinate.py` (observer autour de `monologue()`) | ✅ | Tracker stocke sur `agent.data["_pipeline_tracker"]`, reutilise si existant |
+| 3.7 | Ecrire 46 tests unitaires (AgentStep, Core, FailSafe, Concurrence, Performance, Registre, Rendering, Duration, CustomRegistry) | ✅ | 46/46 passed |
+| 3.8 | Verifier zero regression (SESSION 1 : 37/37, SESSION 2 : 46/46) | ✅ | 83/83 passed |
 
 ### Criteres de validation SESSION 3
-- [ ] `PipelineTracker` collecte les agents actives avec duree
-- [ ] `get_non_activated()` retourne la liste complementaire
-- [ ] Integration non-intrusive (observer pattern)
-- [ ] Aucun test existant casse
+- [x] `PipelineTracker` collecte les agents actives avec duree (`time.monotonic()`)
+- [x] `get_non_activated()` retourne la liste complementaire (registre - actives, trie)
+- [x] Integration non-intrusive (observer pattern, `try/except` fail-safe)
+- [x] Aucun test existant casse (129/129 tests total)
+
+### Resultats auto-audit contradictoire SESSION 3
+
+| Axe | Resultat | Detail |
+|---|:---:|---|
+| 1. Exactitude durees | ✅ | `time.monotonic()` (wall-clock, immune NTP). Pas de divergence avec `AgentResponse.duration_ms` |
+| 2. Liste exhaustive | ✅ | 11 agents = `agents/` filesystem. `contradictor` = intent, pas profil. Decouverte dynamique couvre ajouts futurs |
+| 3. Concurrence | ✅ | 20 threads simultanes, entrelacement S(A)/S(B)/C(A)/C(B) — 0 race, 0 crash |
+| 4. Impact performance | ✅ | start+complete < 1ms (test `test_start_complete_overhead_under_1ms`) |
+| 5. Fail-safe | ✅ | 5/5 edge cases geres : double start, complete sans start, double complete, crash agent, erreur interne |
+| **6. Verdict** | **8.5/10** | **ACCEPTE** |
+
+#### Defauts identifies et traitement
+
+| ID | Defaut | Severite | Action |
+|---|---|:---:|---|
+| D1 | `time.time()` dans strategic_orchestrator vs `time.monotonic()` dans tracker | FAIBLE | Documente. Refactor futur possible |
+| D2 | `contradictor` (IntentName) absent du registre agents | INFO | Intentionnel : intent, pas profil. Decouverte filesystem le detectera si dossier cree |
+| D3 | `SKIPPED` pas d'icone dans `to_report_table` | NEGLIGEABLE | Steps SKIPPED exclus de `get_activated()`, jamais dans le tableau |
+| D4 | Tracker reutilise si deja present dans `agent.data` | OK | Correct par design |
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 3
 
@@ -871,6 +895,7 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | 2026-03-31 | — | Ajout auto-audits contradictoires (10 sessions + 1 global) + protocole d'execution + compteur de sante | v1.1.0 |
 | 2026-03-31 | SESSION 1 | SessionEnvelope cree + 37 tests + auto-audit execute (7.5→corrections D1-D7) | ✅ VALIDEE |
 | 2026-03-31 | SESSION 2 | Profil + Classification AI Act + 46 tests + auto-audit (7.5→corrections D1-D6) | ✅ VALIDEE |
+| 2026-03-31 | SESSION 3 | PipelineTracker + 46 tests + auto-audit (8.5/10 — D1-D4 documentes) | ✅ VALIDEE |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -894,6 +919,17 @@ Sessions parallelisables : **1+4** peuvent demarrer en parallele. **2, 3** des q
 | `tests/test_session2_profile_classification.py` | **CREE** | 46 tests : mappings AI Act, sensibilite, RouteDecision auto-derive, profil utilisateur, coherence croisee, serialisation |
 
 **Corrections audit contradictoire** : citations Annexe III (D1), Art. 50 (D2), marketing INTERNAL (D3), `max(sensibilite)` multi-intent conforme RGPD Art. 9 (D4), test tie-breaking (D6)
+
+### Livrables SESSION 3 — Pipeline Tracker
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/pipeline_tracker.py` | **CREE** | `AgentStep` dataclass (7 champs + `_start_monotonic`), `PipelineTracker` class (thread-safe, Lock), `StepStatus` enum (5 etats), registre 11 agents + decouverte filesystem, `to_report_table()` + `to_dict()` |
+| `python/helpers/strategic_orchestrator.py` | **MODIFIE** | Import `PipelineTracker`, observer autour de `call_agent()` dans `run_strategic_orchestrator`, champ `pipeline_tracker` sur `StrategicResult` |
+| `python/tools/call_subordinate.py` | **MODIFIE** | Import `PipelineTracker`, observer autour de `subordinate.monologue()`, tracker stocke sur `agent.data["_pipeline_tracker"]` (reutilise si existant) |
+| `tests/test_session3_pipeline_tracker.py` | **CREE** | 46 tests : AgentStep (9), Core (12), FailSafe (4), Concurrence (2), Performance (1), Registre (7), Rendering (5), Duration (3), CustomRegistry (2) |
+
+**Auto-audit** : 8.5/10 — ACCEPTE. Defauts D1-D4 documentes (non bloquants).
 
 ---
 
@@ -954,7 +990,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 |:---:|:---:|:---:|:---:|:---:|
 | 1 | 8/8 | Execute | 7.5→8+ (D1-D7 corr.) | ✅ |
 | 2 | 8/8 | Execute | 7.5→8.5+ (D1-D6 corr.) | ✅ |
-| 3 | 0/8 | — | — | ⬜ |
+| 3 | 8/8 | Execute | 8.5/10 (D1-D4 doc.) | ✅ |
 | 4 | 0/8 | — | — | ⬜ |
 | 5 | 0/9 | — | — | ⬜ |
 | 6 | 0/7 | — | — | ⬜ |
