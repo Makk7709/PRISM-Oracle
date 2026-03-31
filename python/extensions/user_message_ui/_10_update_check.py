@@ -55,4 +55,8 @@ class UpdateCheck(Extension):
             display_time=notif.get("display_time", 10),
             group=notif.get("group", "update_check"),
             priority=notif.get("priority", notification.NotificationPriority.NORMAL),
+            target_username=getattr(self.agent.context, "username", None),
+            target_organization=getattr(self.agent.context, "organization", None),
+            source="update_check",
+            severity="normal",
         )

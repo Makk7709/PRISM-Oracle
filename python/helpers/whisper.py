@@ -14,6 +14,14 @@ _model = None
 _model_name = ""
 is_updating_model = False  # Tracks whether the model is currently updating
 
+
+def _safe_notify(*args, **kwargs):
+    try:
+        NotificationManager.send_notification(*args, **kwargs)
+    except Exception:
+        # Notification scope may be unavailable in background preload paths.
+        pass
+
 async def preload(model_name:str):
     try:
         # return await runtime.call_development_function(_preload, model_name)
@@ -31,7 +39,7 @@ async def _preload(model_name:str):
     try:
         is_updating_model = True
         if not _model or _model_name != model_name:
-            NotificationManager.send_notification(
+            _safe_notify(
                 NotificationType.INFO,
                 NotificationPriority.NORMAL,
                 "Loading Whisper model...",
@@ -40,7 +48,7 @@ async def _preload(model_name:str):
             PrintStyle.standard(f"Loading Whisper model: {model_name}")
             _model = whisper.load_model(name=model_name, download_root=files.get_abs_path("/tmp/models/whisper")) # type: ignore
             _model_name = model_name
-            NotificationManager.send_notification(
+            _safe_notify(
                 NotificationType.INFO,
                 NotificationPriority.NORMAL,
                 "Whisper model loaded.",

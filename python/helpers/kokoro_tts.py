@@ -18,6 +18,14 @@ _speed = 1.1
 is_updating_model = False
 
 
+def _safe_notify(*args, **kwargs):
+    try:
+        NotificationManager.send_notification(*args, **kwargs)
+    except Exception:
+        # Notification scope may be unavailable in background preload paths.
+        pass
+
+
 async def preload():
     try:
         # return await runtime.call_development_function(_preload)
@@ -39,7 +47,7 @@ async def _preload():
     try:
         is_updating_model = True
         if not _pipeline:
-            NotificationManager.send_notification(
+            _safe_notify(
                 NotificationType.INFO,
                 NotificationPriority.NORMAL,
                 "Loading Kokoro TTS model...",
@@ -48,7 +56,7 @@ async def _preload():
             PrintStyle.standard("Loading Kokoro TTS model...")
             from kokoro import KPipeline
             _pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
-            NotificationManager.send_notification(
+            _safe_notify(
                 NotificationType.INFO,
                 NotificationPriority.NORMAL,
                 "Kokoro TTS model loaded.",

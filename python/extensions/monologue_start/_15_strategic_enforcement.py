@@ -32,6 +32,7 @@ try:
     from python.helpers.strategic_orchestrator import (
         detect_strategic_document,
         run_strategic_orchestrator,
+        export_strategic_pdf_for_context,
         is_strategic_orchestrator_enabled,
         StrategicDetection,
     )
@@ -247,7 +248,23 @@ class StrategicEnforcementMonologueHook(Extension):
             # ═══════════════════════════════════════════════════════════════════
             # CRITICAL: Short-circuit LLM with pipeline response
             # ═══════════════════════════════════════════════════════════════════
-            self.agent.set_data("_pipeline_final_response", result.consolidated_response)
+            final_response = result.consolidated_response
+            if result.validation_passed:
+                export_info = export_strategic_pdf_for_context(agent=self.agent, result=result)
+                if export_info:
+                    final_response += (
+                        "\n\n---\n\n"
+                        "📄 **Version PDF générée**\n\n"
+                        f"[📄 Télécharger {export_info['filename']}]({export_info['download_url']})\n"
+                    )
+                    self.agent.set_data("_strategic_pdf_path", export_info["absolute_path"])
+                    self.agent.set_data("_strategic_pdf_download_url", export_info["download_url"])
+                else:
+                    final_response += (
+                        "\n\n⚠️ Export PDF automatique indisponible dans ce contexte. "
+                        "Demandez explicitement l'export PDF si nécessaire."
+                    )
+            self.agent.set_data("_pipeline_final_response", final_response)
             self.agent.set_data("_skip_llm", True)
             self.agent.set_data("_pipeline_was_used", True)
             self.agent.set_data("_strategic_result", result)

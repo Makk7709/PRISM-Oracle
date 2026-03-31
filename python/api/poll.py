@@ -6,6 +6,7 @@ from python.helpers.task_scheduler import TaskScheduler
 from python.helpers.localization import Localization
 from python.helpers.dotenv import get_dotenv_value
 from python.security.authorization import can_access_context, can_access_task
+from flask import session
 
 
 class Poll(ApiHandler):
@@ -33,7 +34,19 @@ class Poll(ApiHandler):
 
         # Get notifications from global notification manager
         notification_manager = AgentContext.get_notification_manager()
-        notifications = notification_manager.output(start=notifications_from)
+        try:
+            current_username, _ = self._session_user_info()
+        except Exception:
+            current_username = session.get("username")
+        try:
+            current_org, _ = self._session_org_info()
+        except Exception:
+            current_org = session.get("organization")
+        notifications = notification_manager.output(
+            start=notifications_from,
+            target_username=current_username,
+            target_organization=current_org,
+        )
 
         # loop AgentContext._contexts
 

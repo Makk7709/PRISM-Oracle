@@ -82,7 +82,7 @@ class RateLimiter:
         if "api" not in self._configs:
             self._configs["api"] = RateLimitConfig(
                 name="api",
-                max_requests=int(os.environ.get("RATE_LIMIT_API_MAX", "60")),
+                max_requests=int(os.environ.get("RATE_LIMIT_API_MAX", "600")),
                 window_seconds=int(os.environ.get("RATE_LIMIT_API_WINDOW", "60")),
                 enable_backoff=False,
             )

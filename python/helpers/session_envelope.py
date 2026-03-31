@@ -158,6 +158,7 @@ class SessionEnvelope:
             ("Horodatage fin", self.completed_at or "—"),
             ("Duree de traitement", duration_label),
             ("Utilisateur", self.username or "—"),
+            ("Organisation", self.organization or "—"),
             ("Profil utilisateur", self.user_profile or "—"),
             ("Environnement", self.environment_label or "—"),
             ("Version KOREV Evidence", version_label),

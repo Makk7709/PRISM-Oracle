@@ -45,6 +45,21 @@ def _get_file_from_module(module_name: str) -> str:
     return module_name.split(".")[-1]
 
 _cache: dict[str, list[type[Extension]]] = {}
+
+def invalidate_extension_cache(folder: str | None = None) -> None:
+    """Clear cached extension classes.
+
+    Args:
+        folder: specific folder to invalidate (absolute or relative path).
+                If None, clears the entire cache.
+    """
+    global _cache
+    if folder is None:
+        _cache.clear()
+    else:
+        abs_folder = files.get_abs_path(folder)
+        _cache.pop(abs_folder, None)
+
 async def _get_extensions(folder:str):
     global _cache
     folder = files.get_abs_path(folder)
