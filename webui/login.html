@@ -1,30 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - KOREV Evidence</title>
+    <title>KOREV Evidence — Connexion</title>
     <link rel="stylesheet" href="/login.css">
     <link rel="icon" type="image/svg+xml" href="/public/korev-evidence-logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="login-container">
-        <form class="login-form" method="POST" action="/login">
-            <img src="/public/korev-evidence-logo.svg" alt="KOREV Evidence Logo" class="logo">
-            <h2>KOREV Evidence</h2>
-            <div class="input-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+    <div class="login-layout">
+
+        <div class="login-brand-panel">
+            <div class="brand-content">
+                <div class="brand-logo-wrap">
+                    <div class="brand-glow"></div>
+                    <img src="/public/korev-evidence-logo.svg" alt="KOREV Evidence" class="brand-logo">
+                </div>
+                <h1 class="brand-title">KOREV <em>Evidence</em></h1>
+                <p class="brand-tagline">Plateforme d'agents IA de confiance</p>
+                <div class="brand-separator"></div>
+                <ul class="brand-features">
+                    <li>
+                        <span class="feature-icon">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10.1 5.3L15 6L11.5 9.4L12.3 14.3L8 12L3.7 14.3L4.5 9.4L1 6L5.9 5.3L8 1Z" fill="currentColor" opacity="0.7"/></svg>
+                        </span>
+                        12 agents specialises — juridique, medical, finance, strategie
+                    </li>
+                    <li>
+                        <span class="feature-icon">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3 2.7a1 1 0 00-1.4 0L6 8.6 4.1 6.7a1 1 0 00-1.4 1.4l2.5 2.5a1 1 0 001.4 0l6.7-6.7a1 1 0 000-1.2z" fill="currentColor" opacity="0.7"/></svg>
+                        </span>
+                        Consensus multi-LLM — validation croisee fail-closed
+                    </li>
+                    <li>
+                        <span class="feature-icon">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM6 8.5A.5.5 0 016.5 8h3a.5.5 0 01.5.5v3a.5.5 0 01-.5.5h-3a.5.5 0 01-.5-.5v-3z" fill="currentColor" opacity="0.7"/></svg>
+                        </span>
+                        Conforme AI Act — tracabilite et auditabilite completes
+                    </li>
+                </ul>
             </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+            <div class="brand-footer">
+                <span class="brand-copy">&copy; 2026 Korev AI</span>
             </div>
-            <button type="submit">Login</button>
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
-        </form>
+        </div>
+
+        <div class="login-form-panel">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <img src="/public/korev-evidence-logo.svg" alt="" class="form-logo-mobile">
+                    <h2>Connexion</h2>
+                    <p class="form-subtitle">Accedez a votre espace securise</p>
+                </div>
+                <form class="login-form" method="POST" action="/login">
+                    <div class="input-group">
+                        <label for="username">Identifiant</label>
+                        <div class="input-wrap">
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="5.5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 15.5c0-3 2.9-5.5 6.5-5.5s6.5 2.5 6.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            <input type="text" id="username" name="username" placeholder="Votre identifiant" required autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Mot de passe</label>
+                        <div class="input-wrap">
+                            <svg class="input-icon" width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="3" y="8" width="12" height="8" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 8V5.5a3 3 0 016 0V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="9" cy="12.5" r="1.2" fill="currentColor"/></svg>
+                            <input type="password" id="password" name="password" placeholder="Votre mot de passe" required autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button type="submit">
+                        <span>Se connecter</span>
+                        <svg class="btn-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.5 9h11M10.5 5l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    {% if error %}
+                        <p class="error">{{ error }}</p>
+                    {% endif %}
+                </form>
+                <div class="form-footer">
+                    <div class="trust-badges">
+                        <span class="badge">Chiffrement Argon2</span>
+                        <span class="badge-sep"></span>
+                        <span class="badge">Session securisee</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 </html>

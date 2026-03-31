@@ -1,8 +1,8 @@
 # KOREV Evidence — Developer Onboarding & Architecture Guide
 
 **Classification :** CONFIDENTIEL — Usage interne  
-**Version :** 4.0 (patch anti-boucles infinies + garde-fous d'exécution)  
-**Date :** 2026-03-11  
+**Version :** 5.0 (multi-tenant canonical, strategic orchestrator v2, contract drafting, A2A, observability)  
+**Date :** 2026-03-31  
 **Auteur :** Audit automatisé (Staff Engineer / Architecture Review)  
 **Destinataire :** Lead Engineer entrant(e)  
 **Note au lecteur :** Ce document est long. C'est volontaire. Lis-le de bout en bout pendant ta première semaine, puis utilise-le comme référence. Les sections les plus urgentes à lire en priorité sont marquées d'un signe (**LIRE EN PREMIER**).
@@ -22,9 +22,14 @@
 
 ## 1.1 Ce que fait KOREV Evidence
 
-KOREV Evidence est une plateforme multi-agents d'IA de confiance, conçue pour des environnements professionnels exigeants (cabinets d'avocats, entreprises, recherche). L'idée directrice : un utilisateur interagit avec un agent principal qui peut **déléguer** à des agents spécialisés (juridique, médical, recherche, sécurité, finance...), orchestrer des **consensus** entre agents, et produire des livrables traçables (rapports PDF, images, analyses).
+KOREV Evidence est une plateforme multi-agents d'IA de confiance, conçue pour des environnements professionnels exigeants (cabinets d'avocats, médecins, chercheurs, consultants, finance). L'idée directrice : un utilisateur interagit avec un agent principal qui peut **déléguer** à des agents spécialisés (juridique, médical, recherche, sécurité, finance, stratégie, marketing, cybersécurité...), orchestrer des **consensus** entre agents, et produire des livrables traçables (rapports PDF, contrats, dossiers stratégiques, images, analyses).
 
-Le différenciant par rapport à un ChatGPT-like : **l'auditabilité**. Chaque action d'agent est loggée, les sources sont tracées, et les réponses critiques (juridiques, médicales) passent par un pipeline de validation multi-agents.
+Les différenciants par rapport à un ChatGPT-like :
+- **Auditabilité** : chaque action d'agent est loggée, les sources sont tracées, et les réponses critiques passent par un pipeline de validation multi-agents
+- **Multi-tenant strict** : isolation par organisation (UUID canonique), rôles OWNER/MEMBER, fail-closed
+- **Pipelines métier spécialisés** : juridique (FTS5 Légifrance), médical (PRISM consensus + FAERS), stratégique (4 agents + consolidation LLM), rédaction contractuelle (Act Leak Guard fail-closed)
+- **Protocole A2A** : communication agent-to-agent via FastA2A (client + serveur)
+- **2768 tests automatisés**, 137 fichiers de tests, 67 endpoints API
 
 ## 1.2 Architecture Macro
 
@@ -121,22 +126,27 @@ Voici le parcours complet d'un message utilisateur, du clic au résultat :
 
 ## 1.4 Profils d'Agents et Spécialisations
 
-Le système supporte 12 profils. Chaque profil est un répertoire sous `agents/` avec ses propres prompts, outils, extensions et settings.
+Le système supporte **12 profils**. Chaque profil est un répertoire sous `agents/` avec ses propres prompts, outils, extensions et settings.
 
 | Profil | Rôle | Spécificités |
 |--------|------|-------------|
 | **default** | Prompts de base | Hérité par tous les profils, contient les prompts et settings par défaut |
-| **multitask** | Agent par défaut | Généraliste, peut déléguer |
-| **legal_safe** | Mode juridique sécurisé | Température=0, citations obligatoires, classification 3 niveaux, consensus multi-agents |
-| **legal_drafting_guarded** | Rédaction juridique | Garde-fous rédactionnels |
-| **medical** | Intelligence médicale | Consensus PRISM (protocole de validation multi-LLM), essais cliniques, FAERS, synthèse par preuves (GRADE) |
-| **researcher** | Recherche approfondie | Littérature académique, orchestration de sous-agents |
-| **hacker** | Analyste sécurité | Red/blue team, Kali, scoring de sévérité |
-| **developer** | Développeur | Code, génération d'images, outils techniques |
-| **finance** | Analyse financière | Modélisation, reporting |
-| **sales** | Support ventes | Commercial |
-| **marketing** | Marketing | Stratégie marketing |
-| **_example** | Template | Pour créer de nouveaux profils |
+| **multitask** | Orchestrateur principal (Agent #0) | Délégation intelligente via `call_subordinate`, `search_engine`, `browser_agent`, `generate_image`, memory |
+| **legal_safe** | Mode juridique sécurisé | Température=0, citations obligatoires, classification 3 niveaux de confiance, consensus multi-agents, index FTS5 Légifrance |
+| **legal_drafting_guarded** | Rédaction contractuelle automatisée | Pipeline fail-closed : templates CP/CG + 6 annexes, Act Leak Guard (16 patterns P0 bloquants + 9 P1), Gate d'audit avec veto absolu legal_safe, export control |
+| **medical** | Intelligence médicale | BioMCP (23+ outils), PubMed MCP, FAERS pharmacovigilance (PRR, ROR, IC), ClinicalTrials.gov, consensus PRISM multi-LLM, synthèse GRADE |
+| **researcher** | Recherche approfondie | ArXiv, Semantic Scholar, OpenAlex, Tavily, code_execution, orchestration de sous-agents |
+| **hacker** | Analyste cybersécurité | Red/blue team, Kali-oriented `code_execution`, scoring de sévérité, conformité scope |
+| **developer** | Développeur logiciel | Architecture, `code_execution`, `search_engine`, génération d'images |
+| **finance** | Analyse financière et stratégie | Modélisation MECE, Tavily, Firecrawl, market tools, KPIs, conseil fiscal |
+| **sales** | Support commercial | Scripts de vente, objections tables, CRM, prospection |
+| **marketing** | Marketing et croissance | Stratégie marketing, `generate_image` obligatoire pour visuels |
+| **_example** | Template | Illustre la structure pour créer de nouveaux profils |
+
+**Profils avec extensions propres :**
+- `legal_safe/extensions/monologue_start/_10_legal_safe_pipeline.py` — pipeline juridique complet
+- `medical/extensions/agent_init/_10_medical_tools.py` — outils médicaux (evidence synthesis, FAERS, trials)
+- `medical/tools/` — 5 outils spécialisés : `evidence_synthesis.py`, `faers_signal_detection.py`, `clinical_trials_intel.py`, `prism_integration.py`, `response.py`
 
 **Analogie** : Imagine une entreprise. L'Agent #0 (multitask) est le chef de projet. Quand il reçoit une question juridique, il "appelle" l'Agent #1 (legal_safe) qui est l'avocat spécialisé. Si la question est critique, l'avocat convoque un "comité" (consensus) avec plusieurs LLMs qui débattent avant de valider la réponse. Le chef de projet ne renvoie jamais une réponse juridique non validée.
 
@@ -147,13 +157,19 @@ Le système supporte 12 profils. Chaque profil est un répertoire sous `agents/`
 - Les logs sont persistés dans les fichiers de chat (`tmp/chats/{ctxid}/chat.json`)
 - **Evidence Pack** (`python/helpers/evidence.py`) : objet structuré qui encapsule les sources, citations et métadonnées de confiance pour chaque réponse validée par le consensus
 - Audit des opérations fichier dans `shared/audit/file_operations.jsonl` (via `WorkspaceManager`)
-- Logs applicatifs dans le volume `evidence-logs`
+- Logs applicatifs structurés JSON dans le volume `evidence-logs`
+- Métriques d'observabilité exposées via `/observability_metrics`
+- Security audit logging (`python/security/security_audit.py`) — logs structurés sans PII
 
 ### Garde-fous
-- **Température forcée à 0** pour les profils critiques (legal_safe) — pas d'improvisation
-- **CriticalityRouter** : détecte automatiquement les sujets nécessitant un consensus (basé sur des patterns LEVEL 3 critiques ou `force_consensus=True`, pas sur le profil agent)
+- **Température forcée à 0** pour les profils critiques (legal_safe, legal_drafting_guarded) — pas d'improvisation
+- **CriticalityRouter** (`python/helpers/criticality_router.py`) : détecte automatiquement les sujets nécessitant un consensus (basé sur des patterns LEVEL 3 critiques ou `force_consensus=True`, pas sur le profil agent)
 - **Consensus multi-agents** : 3 rounds de débat entre LLMs — Round 1 (analyse indépendante par 3 LLMs en parallèle), Round 2 (débat croisé, sauté si unanimité au Round 1), Round 3 (synthèse et verdict)
-- **Extension pipeline** : 24 hook points avec 45 extensions permettant d'intercepter et modifier le comportement à chaque étape
+- **Extension pipeline** : 24 hook points avec 42 extensions permettant d'intercepter et modifier le comportement à chaque étape
+- **Deterministic Router v2** (`python/helpers/router/`) : routage policy-driven sans jugement LLM, multi-intent (finance + legal + sales simultanés), 40+ keywords board-level (M&A, IPO, LBO, COMEX), anti-injection FR+EN, blocage high-stakes automatique
+- **ReasoningEngine** (`python/helpers/metacognition.py`) : métacognition avec politique d'escalade non-diluable (SAFE_REFUSE, HUMAN_REVIEW, ASK_CLARIFY, NONE). Invariants : monotonie (signaux ne peuvent que durcir), non-dilution, no-PII
+- **Critical Decision Gate** (`python/helpers/critical_decision_gate.py`) : gate séparée pour les décisions à haut risque
+- **Adversarial Analysis** : 4 endpoints API + intégration dans le consensus juridique et la validation
 - **ExecutionBudget** (`python/helpers/execution_budget.py`) : ✅ garde-fou central anti-boucles infinies. Chaque exécution transporte un budget partagé qui borne :
   - `max_iterations` (défaut 25) — itérations du message loop
   - `max_depth` (défaut 5) — profondeur de récursion `_process_chain`
@@ -167,11 +183,79 @@ Le système supporte 12 profils. Chaque profil est un répertoire sous `agents/`
   - Arrêt immédiat avec `LOOP_GUARD_TRIGGERED` et log structuré en cas de dépassement
 - **Exécution gardée** : `ExecutionGuard` (désactivé actuellement — remplacé par le prompt-based execution policy)
 
-### Isolation utilisateur
-- Projets : champ `owner` + filtrage API
+### Isolation multi-tenant (v5.0)
+- **Organisation canonique** (`python/helpers/organization.py`) : chaque tenant est identifié par `organization_uuid` + `organization_id` (slug normalisé) + `organization_display` (affichage UI)
+- **Normalisation** : `normalize_org_id()` assure une comparaison case-insensitive et slug-safe ("DICA France" → "dica-france")
+- **Isolation stricte** : `python/security/authorization.py` — `AccessPrincipal` avec scoping org/workspace/user, `can_access_context()`, `can_access_task()`, `can_access_workspace()`
+- **Rôles** : OWNER (accès à tous les chats de l'org) / MEMBER (accès uniquement à ses propres chats)
+- Projets : champ `owner` + `organization_id` + filtrage API
 - Images générées : sous-dossiers par utilisateur
 - Mémoire : index FAISS séparés par utilisateur
 - Workspaces : `shared/users/{username}/` avec documents, rapports, tmp
+- Notifications scoppées : `target_username` + `target_organization` sur chaque notification
+- Scheduler fail-closed : tâches sans `username` ou `organization` ne s'exécutent jamais
+
+## 1.6 Pipelines Métier Spécialisés
+
+### Pipeline Juridique (`legal_safe`)
+- **Index SQLite FTS5** : ~5000+ décisions de la Cour de cassation dans `data/legal/index/legal_index.sqlite`
+- **Ingestion** : `python/legal_sources/` — connecteurs PISTE / Judilibre / Légifrance (APIs officielles françaises)
+- **Pipeline** : `python/helpers/legal_pipeline.py` (1807 lignes) — recherche → retrieval → classification → judge → consensus
+- **Température forcée à 0** — zéro improvisation pour les réponses juridiques
+- **Classification 3 niveaux** : NIVEAU 1 (source vérifiée), NIVEAU 2 (probable), NIVEAU 3 (incertain)
+- **124 tests** dédiés au pipeline juridique
+
+### Pipeline Rédaction Contractuelle (`legal_drafting_guarded`)
+- **Module** : `python/helpers/contract_drafting/` (7 fichiers : orchestrator, gate, leak_guard, governance, export_control, templates, models)
+- **Templates** : Conditions Particulières + Conditions Générales + 6 Annexes (SLA, DPA RGPD art.28, réversibilité, grille tarifaire)
+- **Act Leak Guard** : 16 patterns P0 bloquants (cession code source, transfert IP, garanties absolues) + 9 patterns P1
+- **Gate d'audit fail-closed** : veto absolu `legal_safe`, export PDF impossible sans PASS
+- **Séparation des rôles** : `legal_drafting_guarded` = RÉDACTEUR, `legal_safe` = JUGE
+
+### Pipeline Stratégique (`strategic_orchestrator`)
+- **Module** : `python/helpers/strategic_orchestrator.py` (v2.0)
+- **Détection** : `detect_strategic_document()` identifie les requêtes de dossiers stratégiques
+- **4 agents spécialisés** : researcher, finance, marketing, legal (exécution séquentielle avec contexte inter-agents enrichi via `_extract_key_content()`)
+- **Consolidation LLM dynamique** : `_consolidate_via_llm()` — persona Senior Partner, minimum 3000 mots
+- **Routing modèle** : `_call_chat_model()` route explicitement vers le `chat_model` (pas le `utility_model`)
+- **Export PDF** : `export_strategic_pdf_for_context()` — génération automatique de dossiers PDF premium
+- **Hook** : `python/extensions/monologue_start/_15_strategic_enforcement.py` — court-circuite le LLM principal
+
+### Pipeline Médical (`medical`)
+- **Outils dédiés** dans `agents/medical/tools/` : evidence_synthesis, faers_signal_detection, clinical_trials_intel, prism_integration
+- **BioMCP** : 23+ outils (PubMed, ClinicalTrials.gov, OpenFDA, Genomics)
+- **Pharmacovigilance FAERS** : signal detection avec PRR, ROR, IC
+- **Synthèse GRADE** : scoring evidence (HIGH/MODERATE/LOW/VERY LOW)
+- **Consensus PRISM** : validation multi-LLM fail-closed (voir `PROTOCOL_EVIDENCE_VALIDATION.md`)
+
+## 1.7 Protocole A2A (Agent-to-Agent)
+
+Evidence implémente le protocole Agent-to-Agent pour la communication inter-agents distante :
+- **Serveur** : `python/helpers/fasta2a_server.py` — `AgentZeroWorker` + `DynamicA2AProxy`, monté à `/a2a`
+- **Client** : `python/helpers/fasta2a_client.py` — `AgentConnection`, bearer/A2A_TOKEN, découverte via `/.well-known/agent.json`
+- **Outil** : `python/tools/a2a_chat.py` — `A2AChatTool` pour les interactions agent-to-agent depuis le chat
+- **UI** : `webui/components/settings/a2a/a2a-connection.html` — configuration des connexions A2A
+
+## 1.8 Observabilité et Monitoring
+
+- **Logs JSON structurés** : événements scheduler, notifications, sécurité multi-tenant
+- **Métriques** : `/observability_metrics` — compteurs tasks_created, tasks_claimed, tasks_failed, notifications_denied, cross_tenant_denied
+- **Smoke tests** : `scripts/smoke_test_multi_user.py` — test post-déploiement multi-user + concurrence
+- **Health endpoints** : `/healthz` — readiness check
+- **Security audit** : `python/security/security_audit.py` — logs structurés sans données sensibles
+
+## 1.9 Speech & Multimodal
+
+- **Speech-to-Text** : Whisper via `python/helpers/whisper.py`, endpoint `/transcribe`
+- **Text-to-Speech** : Kokoro TTS via `python/helpers/kokoro_tts.py`, endpoint `/synthesize`
+- **Vision** : `python/tools/vision_load.py` — chargement/compression d'images pour le contexte modèle
+- **Browser Automation** : `python/tools/browser_agent.py` — Playwright + browser_use
+
+## 1.10 Backup & Restore
+
+- APIs natives : `/backup_create`, `/backup_inspect`, `/backup_restore`, `/backup_preview_grouped`, `/backup_test`
+- Backup complet des volumes Docker (données, audit, workspaces partagés)
+- Prévisualisation groupée avant restauration
 
 ---
 
@@ -560,10 +644,10 @@ docker logs -f evidence-backend
 
 ## 3.3 Tests et Déploiement
 
-### Tests existants
+### Tests existants (2768 tests, 137 fichiers)
 
 ```bash
-# Tests sécurité (les plus fiables)
+# Tests sécurité (31 fichiers)
 pytest tests/security/ -v
 
 # Tests e2e
@@ -574,6 +658,27 @@ pytest tests/test_execution_budget.py -v
 
 # Tests consensus / PRISM
 pytest tests/test_prism_consensus.py tests/test_prism_tally_quorum.py tests/test_prism_timeouts.py -v
+
+# Tests pipeline juridique
+pytest tests/test_legal_pipeline.py tests/test_legal_safe.py tests/test_legal_adversarial_cases.py -v
+
+# Tests rédaction contractuelle (124 tests)
+pytest tests/test_contract_drafting.py tests/test_contract_drafting_phase2.py tests/test_control_prompt_ultra_strict.py -v
+
+# Tests pipeline stratégique
+pytest tests/test_strategic_orchestrator.py tests/test_strategic_contract.py tests/test_strategic_e2e.py -v
+
+# Tests multi-tenant / organisation
+pytest tests/test_organization_canonical.py tests/test_multi_tenant_security.py -v
+
+# Tests chat rename
+pytest tests/test_chat_rename.py -v
+
+# Tests router v2 (204 tests)
+pytest tests/test_router.py tests/test_router_contract_safety.py tests/test_router_determinism.py -v
+
+# Tests métacognition
+pytest tests/test_metacognition.py tests/test_metacognition_policy.py -v
 
 # Tous les tests
 pytest tests/ -v
@@ -816,4 +921,4 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 ---
 
-*Ce document est un instantané au 2026-03-11 (v4.0, patch anti-boucles infinies + garde-fous d'exécution). Il doit être mis à jour à chaque changement architectural majeur. En cas de doute sur une information, la source de vérité est toujours le code, pas ce document.*
+*Ce document est un instantané au 2026-03-31 (v5.0, multi-tenant canonical + strategic orchestrator v2 + contract drafting + A2A + observability). Il doit être mis à jour à chaque changement architectural majeur. En cas de doute sur une information, la source de vérité est toujours le code, pas ce document.*

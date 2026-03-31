@@ -1,9 +1,9 @@
 import { createStore } from "/js/AlpineStore.js";
 
-// Sidebar Bottom store manages version info display
 const model = {
   versionNo: "",
   commitTime: "",
+  userName: "",
 
   get versionLabel() {
     if (!this.versionNo) return "";
@@ -13,11 +13,18 @@ const model = {
     return this.versionNo;
   },
 
+  logout() {
+    window.location.href = "/logout";
+  },
+
   init() {
     const gi = globalThis.gitinfo;
     if (gi && gi.version && gi.version !== "unknown") {
       this.versionNo = gi.version;
       this.commitTime = gi.commit_time && gi.commit_time !== "unknown" ? gi.commit_time : "";
+    }
+    if (window.__korevUserName) {
+      this.userName = window.__korevUserName;
     }
   },
 };

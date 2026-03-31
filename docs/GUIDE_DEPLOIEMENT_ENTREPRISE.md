@@ -2,10 +2,10 @@
 
 ## Document destiné aux prestataires techniques
 
-**Version :** 2.0
-**Date :** 2026-02-10
+**Version :** 3.0
+**Date :** 2026-03-31
 **Classification :** CONFIDENTIEL — Usage interne prestataires
-**Périmètre :** 1 serveur central + 7 postes Windows + dossiers partagés multi-utilisateurs
+**Périmètre :** 1 serveur central + N postes Windows + dossiers partagés multi-utilisateurs + isolation multi-tenant par organisation
 
 ---
 
@@ -34,7 +34,7 @@
 
 KOREV Evidence est une **plateforme d'agents IA de confiance**. Ce n'est PAS un simple chatbot.
 
-C'est un système multi-agents composé de **9+ agents spécialisés** (juridique, médical, financier, recherche scientifique, stratégie, marketing, RH, technique, etc.) pilotés par un **orchestrateur central** (Agent 0) qui :
+C'est un système multi-agents composé de **12 agents spécialisés** (juridique, rédaction contractuelle, médical, financier, recherche scientifique, stratégie, marketing, cybersécurité, développement, commercial, etc.) pilotés par un **orchestrateur central** (Agent 0) qui :
 
 - **Cite systématiquement ses sources** : chaque affirmation est liée à un PMID, DOI, article de loi, ou référence vérifiable.
 - **Valide par consensus multi-LLM** : les réponses critiques sont votées par 3 modèles d'IA indépendants (quorum 2/3).
@@ -1352,8 +1352,24 @@ En cas de problème non résolu par ce guide :
 
 ---
 
-**Document rédigé le 2026-02-09, mis à jour le 2026-02-10 — KOREV Evidence v2.0**
+**Document rédigé le 2026-02-09, mis à jour le 2026-03-31 — KOREV Evidence v3.0**
 **Classification : CONFIDENTIEL — Prestataires uniquement**
+
+**Changelog v3.0 (2026-03-31) :**
+- Isolation multi-tenant par organisation (organization_uuid canonical, normalisation case-insensitive)
+- 12 agents spécialisés (ajout : legal_drafting_guarded, hacker)
+- Pipeline rédaction contractuelle (Act Leak Guard, Gate fail-closed, templates CP/CG + 6 annexes)
+- Pipeline stratégique v2.0 (4 agents + consolidation LLM dynamique, export PDF automatique)
+- Protocole A2A (Agent-to-Agent) : serveur + client FastA2A
+- Système de notifications scoppées par utilisateur/organisation
+- Scheduler de tâches programmées (fail-closed sur tâches non scoppées)
+- Chat rename par les utilisateurs
+- Backup/Restore natif (APIs complètes)
+- Observabilité : logs JSON structurés, métriques, smoke tests post-déploiement
+- Speech : Whisper (transcription) + Kokoro TTS (synthèse vocale)
+- Ancrage temporel (date du jour injectée dans tous les prompts agents)
+- 2768 tests automatisés (137 fichiers de tests)
+- Deterministic Router v2 (routage policy-driven, anti-injection, 40+ keywords board-level)
 
 **Changelog v2.1 :**
 - Accès aux paramètres système réservé au rôle `admin` (frontend + backend 403)
@@ -1366,4 +1382,4 @@ En cas de problème non résolu par ce guide :
 - Ajout des lecteurs réseau (M:\ personnel, N:\ commun) sur les postes Windows
 - Ajout du script PowerShell de déploiement automatisé (`deploy_evidence_workstation.ps1`)
 - Grille de validation étendue (17 tests au lieu de 10)
-- Suite de tests automatisés : 69 tests unitaires + intégration + E2E (tous GREEN)
+- Suite de tests automatisés

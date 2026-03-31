@@ -4,11 +4,11 @@
 
 ### Système Cognitif Autonome de Nouvelle Génération
 
-[![Version](https://img.shields.io/badge/Version-2.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
+[![Version](https://img.shields.io/badge/Version-3.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-346%20Passed-green?style=for-the-badge)](#tests)
+[![Tests](https://img.shields.io/badge/Tests-2768%20Collected-green?style=for-the-badge)](#tests)
 
-**Un assistant IA enterprise-grade avec raisonnement avancé, recherche académique intégrée et extraction de documents intelligente.**
+**Plateforme multi-agents d'IA de confiance pour professions réglementées — juridique, médical, finance, stratégie, cybersécurité.**
 
 [Installation](#installation) •
 [Fonctionnalités](#fonctionnalités-clés) •
@@ -21,12 +21,18 @@
 
 ## Présentation
 
-Korev Evidence est un framework d'agent IA autonome conçu pour les professionnels exigeants. Il combine :
+Korev Evidence est une plateforme multi-agents d'IA de confiance conçue pour les professions réglementées (avocats, médecins, chercheurs, consultants, finance). Elle combine :
 
-- **Raisonnement Métacognitif** — Auto-évaluation et escalade intelligente
-- **Recherche Académique** — Accès à 5 bases de données scientifiques
-- **Extraction PDF Robuste** — Pipeline avec circuit breakers et timeouts
-- **Multi-Agents** — Coopération hiérarchique pour tâches complexes
+- **12 Agents Spécialisés** — Juridique, médical, rédaction contractuelle, stratégie, finance, cybersécurité, recherche, développement, marketing, ventes
+- **Consensus Multi-LLM** — Validation croisée en 3 rounds pour les réponses critiques (quorum 2/3)
+- **Pipelines Métier** — Juridique (FTS5 Légifrance), médical (PRISM + FAERS), stratégique (4 agents + consolidation), contrats (Act Leak Guard fail-closed)
+- **Multi-Tenant Strict** — Isolation par organisation avec rôles OWNER/MEMBER
+- **Raisonnement Métacognitif** — Auto-évaluation et escalade intelligente (non-diluable)
+- **Recherche Académique** — 8+ serveurs MCP (ArXiv, PubMed, Semantic Scholar, EUR-Lex, OpenAlex, Crossref, Tavily, Brave)
+- **Protocole A2A** — Communication agent-to-agent via FastA2A (client + serveur)
+- **Extraction PDF Robuste** — Pipeline avec circuit breakers, timeouts stricts, OCR Tesseract
+- **Speech** — Transcription (Whisper) + synthèse vocale (Kokoro TTS)
+- **2768 Tests** — 137 fichiers de tests, CI/CD GitHub Actions (3 pipelines)
 
 ---
 
