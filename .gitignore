@@ -47,3 +47,14 @@ instruments/**
 agent_history.gif
 
 venv/
+
+# Legal data (local index, cache, processed files — large binaries, regenerable)
+data/legal/cache/
+data/legal/processed/
+data/legal/reports/
+data/legal/index/*.sqlite
+data/legal/index/*.sqlite-shm
+data/legal/index/*.sqlite-wal
+
+# Deploy secrets / temp configs
+deploy/.env.tmp
