@@ -251,7 +251,7 @@ class TestAuditMetadataAppend:
         asyncio.get_event_loop().run_until_complete(ext.execute())
 
         updated = agent.get_data("_pipeline_final_response")
-        assert "Metadonnees d'audit Evidence" in updated
+        assert "Rapport d'audit Evidence" in updated
         assert "Identite de la session" in updated
         assert "KRV-SES-" in updated
 
@@ -374,7 +374,7 @@ class TestAuditMetadataAppend:
 
         updated = agent.get_data("_pipeline_final_response")
         assert updated.startswith("# Response")
-        assert "## Metadonnees d'audit Evidence" in updated
+        assert "## Rapport d'audit Evidence" in updated
         assert "Grille de conformite reglementaire" in updated
         assert "Metadonnees techniques" in updated
 
