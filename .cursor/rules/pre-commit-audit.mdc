@@ -36,7 +36,21 @@ Lister explicitement les defauts trouves dans un tableau :
 - Si defauts trouves : corriger AVANT le commit
 - Si zero defauts : noter explicitement "0 defauts — audit clean"
 
-### Phase 3 — Commit avec trace d'audit
+### Phase 3 — Re-audit total si defaut severe
+
+**Si au moins un defaut de severite CRITIQUE ou IMPORTANT a ete corrige :**
+
+La correction elle-meme peut introduire de nouveaux defauts (effet domino). Dans ce cas, reprendre l'integralite du protocole depuis la Phase 1 sur TOUS les fichiers modifies — pas seulement le correctif.
+
+Boucle obligatoire :
+1. Phase 1 complete (relecture contradictoire de TOUT le diff cumule)
+2. Phase 2 (nouvelle checklist)
+3. Si nouveaux defauts Critique/Important → retour en 1
+4. Si uniquement Modere/Mineur ou zero defauts → passer en Phase 4
+
+La boucle s'arrete quand un cycle complet produit zero defaut Critique/Important.
+
+### Phase 4 — Commit avec trace d'audit
 
 Inclure dans le message de commit une mention de l'audit :
 
@@ -44,6 +58,14 @@ Inclure dans le message de commit une mention de l'audit :
 refactor(roadmap): split SESSION 7 into 7A + 7B
 
 Audit hostile: 4 DEF trouves et corriges (references croisees S8/S9, clarification hook, signature incomplete)
+Re-audit total: 0 defaut residuel apres correction
+```
+
+Si la Phase 3 a necessite plusieurs passes, indiquer le nombre :
+
+```
+Audit hostile: 2 DEF critiques + 1 important trouves et corriges
+Re-audit total (2 passes): 0 defaut residuel
 ```
 
 ## Exemples de violations
@@ -52,17 +74,21 @@ Audit hostile: 4 DEF trouves et corriges (references croisees S8/S9, clarificati
 # INTERDIT — commit sans audit
 git add . && git commit -m "update roadmap" && git push
 
-# OBLIGATOIRE — audit hostile, puis commit avec trace
+# INTERDIT — correction d'un defaut critique sans re-audit total
+# (la correction peut casser autre chose)
+
+# OBLIGATOIRE — audit hostile complet avec boucle de controle
 # 1. Relire le diff
 # 2. Verifier chaque reference croisee
 # 3. Lister les defauts
 # 4. Corriger
-# 5. Commit avec mention audit
+# 5. Si defaut Critique/Important corrige → re-audit total (retour en 1)
+# 6. Commit avec mention audit + nombre de passes
 ```
 
 ## Severites
 
-- **Critique** : reference a du code/hook qui n'existe pas, regression silencieuse
-- **Important** : contradiction entre sections du meme document, ambiguite dangereuse
+- **Critique** : reference a du code/hook qui n'existe pas, regression silencieuse → **declenche re-audit total**
+- **Important** : contradiction entre sections du meme document, ambiguite dangereuse → **declenche re-audit total**
 - **Modere** : reference orpheline (ex: "S6-S7" au lieu de "S6-S7A"), comptage incorrect
 - **Mineur** : signature incomplete (params optionnels omis), typo technique
