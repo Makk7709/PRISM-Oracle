@@ -66,17 +66,20 @@ class HealthChecker:
         self._version = self._load_version()
     
     def _load_version(self) -> str:
-        """Charge la version depuis version.json."""
-        try:
-            version_file = Path("/app/version.json")
-            if not version_file.exists():
-                version_file = Path("version.json")
-            
-            if version_file.exists():
-                data = json.loads(version_file.read_text())
-                return data.get("version", "unknown")
-        except Exception:
-            pass
+        """Charge la version depuis VERSION.json (case-insensitive search)."""
+        for p in [
+            "/app/VERSION.json",
+            "/app/version.json",
+            "VERSION.json",
+            "version.json",
+        ]:
+            try:
+                f = Path(p)
+                if f.exists():
+                    data = json.loads(f.read_text())
+                    return data.get("version", "unknown")
+            except Exception:
+                continue
         return "unknown"
     
     @property

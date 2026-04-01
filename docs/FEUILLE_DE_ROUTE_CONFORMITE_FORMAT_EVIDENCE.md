@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 2.3.0  
+**Version** : 2.4.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-04-01  
-**Statut global** : EN COURS — 6.1/10 sessions validees (SESSION 1-6.1) · PIVOT SCENARIO B actif · Test E2E strategique VALIDE en production  
+**Statut global** : EN COURS — 7A/10 sessions validees (SESSION 1-7A) · PIVOT SCENARIO B actif · Test E2E strategique VALIDE en production  
 
 ---
 
@@ -1159,6 +1159,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-03-11 | SESSION 6.1 | Corrections audit hostile : C1 (hook placement), D1 (human profile), D3 (organisation), D4 (cache). +15 tests. Audit re-execute 10/10. 297/297 tests. | ✅ VALIDEE |
 | 2026-04-01 | SESSION 6.1 | **Test E2E production — LEGAL** : detection correcte (non-strategique), audit metadata NON visible (flux LLM classique). Gap identifie. | ⚠️ CONSTATE |
 | 2026-04-01 | SESSION 6.1 | **Test E2E production — STRATEGIQUE** : 4 agents (researcher, finance, marketing, sales), SessionEnvelope + PipelineTracker + audit metadata **VISIBLES**. Profil=Admin, Org=Korev AI. FAIL_CLOSED sur validation (par design). `evidence_version=unknown` — fix prevu S7. | ✅ **SUCCES LIVE** |
+| 2026-04-01 | SESSION 7A | Cablage ComplianceGrid + ReportMetadata + fix version Docker + source taxonomy renderer. 16 tests ReportMetadata + 155 tests checkpoint. Audit hostile : 3 DEF corriges (ARG Docker, double resolve, docstring), re-audit clean. | ✅ VALIDEE |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1229,6 +1230,22 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 **Auto-audit S6** : 7/10 — REJET (C1 critique).  
 **Auto-audit S6.1** : 10/10 — ACCEPTE. Tous defauts corriges.
 
+### Livrables SESSION 7A — Cablage ComplianceGrid + ReportMetadata + fix version
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/git.py` | **MODIFIE** | `_load_version_file()` recherche desormais 6 chemins (VERSION.json + version.json, base + parent + /app) pour resoudre la version en Docker. Corrige le case mismatch Linux (VERSION.json vs version.json). |
+| `deploy/Dockerfile.backend` | **MODIFIE** | Remplace `RUN echo` par `COPY VERSION.json` (structure complete). Re-ajoute `ARG EVIDENCE_VERSION` avant LABEL OCI (DEF-1 audit hostile). |
+| `python/helpers/health_endpoints.py` | **MODIFIE** | `_load_version()` aligne sur le meme pattern multi-casing que git.py. |
+| `tools/diagnostics_bundle.py` | **MODIFIE** | `collect_evidence_version()` ajoute VERSION.json (uppercase) dans les chemins. |
+| `python/helpers/report_metadata.py` | **CREE** | Dataclass `ReportMetadata` (8 champs). Factory `from_session(envelope, tracker, route_decision, model_config)` fail-safe. Serialiseurs `to_dict()`, `to_json()`, `to_markdown_block()`. |
+| `python/extensions/monologue_start/_20_audit_metadata_append.py` | **MODIFIE** | Ajoute 3 sections 7A : ComplianceGrid, Source taxonomy, ReportMetadata. Resolvers : `_resolve_route_decision()` (deserialise `_route_decision_v2`), `_resolve_confidence_score()`, `_render_source_taxonomy()`. Route decision resolue une seule fois et partagee (DEF-2 audit hostile). |
+| `tests/test_session7a_report_metadata.py` | **CREE** | 16 tests : defaults, from_session (9 combinaisons), serialisation (5 checks). |
+
+**Note 7A.5** : Le renderer de taxonomie des sources est pret mais la donnee ne circule pas encore — le pipeline legal ne stocke pas les `SourceNote` sur l'agent. Cablage data prevu en SESSION 7B ou 8.
+
+**Auto-audit S7A** : 10/10 — ACCEPTE. 3 DEF trouves (1 Important: ARG Docker, 1 Modere: double resolve, 1 Mineur: docstring), tous corriges, re-audit clean.
+
 ---
 
 ## Regles de mise a jour
@@ -1294,7 +1311,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | ⚡ | **TEST MI-PARCOURS** | — | E2E reel | **0/5 cables** | — | ⚠️ |
 | 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | Faible | ❌ |
 | 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | Faible | ✅ |
-| **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 0/8 | — | — | **Faible** | ⬜ |
+| **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 8/8 | Execute | 10/10 | **Faible** | ✅ |
 | **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 0/8 | — | — | **ELEVE** | ⬜ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | Faible | ⬜ |
 | 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | Modere | ⬜ |

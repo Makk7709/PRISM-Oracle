@@ -5,10 +5,20 @@ from python.helpers import files
 
 
 def _load_version_file():
-    """Load version info from VERSION.json (baked at build/deploy time)."""
+    """Load version info from VERSION.json (baked at build/deploy time).
+
+    Searches multiple paths and casings to handle Docker deployments
+    where only /app/VERSION.json exists (COPY from repo root).
+    """
+    base = files.get_base_dir()
+    parent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     for candidate in [
-        os.path.join(files.get_base_dir(), "VERSION.json"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "VERSION.json"),
+        os.path.join(base, "VERSION.json"),
+        os.path.join(base, "version.json"),
+        os.path.join(parent, "VERSION.json"),
+        os.path.join(parent, "version.json"),
+        "/app/VERSION.json",
+        "/app/version.json",
     ]:
         if os.path.isfile(candidate):
             try:

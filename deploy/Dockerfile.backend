@@ -37,11 +37,14 @@ RUN pip install --no-cache-dir --upgrade pip wheel "setuptools<81" && \
 # ═══════════════════════════════════════════════════════════════════════════════
 FROM python:3.11-slim AS runtime
 
+# Build args (pour LABEL OCI)
+ARG EVIDENCE_VERSION=1.0.0
+
 # Labels
 LABEL org.opencontainers.image.title="KOREV Evidence"
 LABEL org.opencontainers.image.description="KOREV Evidence — Plateforme d'agents IA de confiance"
 LABEL org.opencontainers.image.vendor="KOREV AI"
-LABEL org.opencontainers.image.version="${EVIDENCE_VERSION:-1.0.0}"
+LABEL org.opencontainers.image.version="${EVIDENCE_VERSION}"
 
 # ── Variables d'environnement ──
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -171,11 +174,10 @@ RUN python -m playwright install chromium --with-deps 2>&1 \
     && echo "[Playwright] Chromium installed successfully" \
     || echo "[Playwright] WARNING: install failed — browser agent will be unavailable"
 
-# ── Créer le fichier version ──
-ARG BUILD_DATE
-ARG GIT_COMMIT
-ARG EVIDENCE_VERSION
-RUN echo "{\"version\": \"${EVIDENCE_VERSION:-1.0.0}\", \"build_date\": \"${BUILD_DATE:-unknown}\", \"git_commit\": \"${GIT_COMMIT:-unknown}\"}" > /app/version.json
+# ── Fichier version ──
+# COPY depuis le repo (structure complète : version, short_tag, branch, commit_hash, commit_time)
+# Ce fichier est lu par python/helpers/git.py._load_version_file() pour résoudre evidence_version
+COPY --chown=evidence:evidence VERSION.json ./VERSION.json
 
 # ── Passer à l'utilisateur non-root ──
 USER evidence

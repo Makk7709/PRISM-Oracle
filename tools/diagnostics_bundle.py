@@ -123,8 +123,7 @@ def collect_evidence_version() -> Dict[str, Any]:
         "git_commit": "unknown",
     }
     
-    # Chercher version.json
-    for path in ["/app/version.json", "version.json", "deploy/version.json"]:
+    for path in ["/app/VERSION.json", "/app/version.json", "VERSION.json", "version.json", "deploy/version.json"]:
         if Path(path).exists():
             try:
                 version_info = json.loads(Path(path).read_text())
