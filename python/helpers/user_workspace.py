@@ -26,7 +26,7 @@ from typing import Optional
 logger = logging.getLogger("user_workspace")
 
 # Subdirectories created for each user
-_USER_SUBDIRS = ("documents", "rapports", "tmp")
+_USER_SUBDIRS = ("documents", "rapports", "tmp", "generated")
 
 
 class WorkspaceManager:

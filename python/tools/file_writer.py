@@ -30,13 +30,27 @@ class FileWriter(Tool):
         """
         ctx = getattr(self.agent, "context", None)
         workspace = getattr(ctx, "workspace", None)
+        username = (getattr(ctx, "username", None) or "").strip().lower()
+
+        PrintStyle(font_color="cyan").print(
+            f"[FileWriter] _resolve_workspace: ctx={ctx is not None}, "
+            f"workspace={workspace!r}, username={username!r}"
+        )
+
         if workspace:
             return workspace
 
-        username = (getattr(ctx, "username", None) or "").strip().lower()
         if username and username != "anonymous":
-            return files.get_abs_path("shared/users", username)
+            derived = files.get_abs_path("shared/users", username)
+            os.makedirs(derived, exist_ok=True)
+            PrintStyle(font_color="cyan").print(
+                f"[FileWriter] Derived workspace from username: {derived}"
+            )
+            return derived
 
+        PrintStyle(font_color="yellow").print(
+            "[FileWriter] WARNING: No workspace resolved — falling back to global tmp"
+        )
         return None
 
     async def execute(self, **kwargs) -> Response:
@@ -67,9 +81,23 @@ class FileWriter(Tool):
         workspace = self._resolve_workspace()
         if workspace:
             output_dir = os.path.join(workspace, "generated")
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                # Verify we can actually write to the directory
+                test_file = os.path.join(output_dir, ".write_test")
+                with open(test_file, "w") as f:
+                    f.write("")
+                os.remove(test_file)
+            except PermissionError:
+                PrintStyle(font_color="yellow").print(
+                    f"[FileWriter] Permission denied on {output_dir} — falling back to global tmp"
+                )
+                workspace = None
+                output_dir = files.get_abs_path("tmp/generated")
+                os.makedirs(output_dir, exist_ok=True)
         else:
             output_dir = files.get_abs_path("tmp/generated")
-        os.makedirs(output_dir, exist_ok=True)
+            os.makedirs(output_dir, exist_ok=True)
         
         # Add timestamp to avoid overwrites
         base, ext = os.path.splitext(filename)
