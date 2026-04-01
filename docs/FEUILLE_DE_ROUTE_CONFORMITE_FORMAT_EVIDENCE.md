@@ -674,36 +674,42 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 ---
 
-## SESSION 7 — Cablage : ComplianceGrid + SourceTaxonomy + ReportMetadata
+## SESSION 7A — Cablage : ComplianceGrid + SourceTaxonomy + ReportMetadata (flux pipeline)
 
-**Objectif** : Faire apparaitre la grille de conformite (S5), la taxonomie des sources (S4), et les metadonnees techniques dans le rapport.  
-**Prerequis** : SESSION 6 (SessionEnvelope et Tracker cables)  
-**Risque sur l'existant** : Modere (meme strategie d'integration non-intrusive)  
-**Strategie** : Reutiliser les donnees S6 (envelope + tracker) pour alimenter ComplianceGrid et ReportMetadata
+**Objectif** : Faire apparaitre la grille de conformite (S5), la taxonomie des sources (S4), et les metadonnees techniques dans le rapport strategique.  
+**Prerequis** : SESSION 6.1 (SessionEnvelope et Tracker cables et valides)  
+**Risque sur l'existant** : Faible (meme pattern que S6 — extension `monologue_start`, meme fail-safe)  
+**Strategie** : Enrichir `_20_audit_metadata_append.py` existant — PAS `message_loop_end` qui s'execute APRES la livraison de la reponse
+
+> **CORRECTION ARCHITECTURALE** : La version precedente de cette session indiquait `message_loop_end` comme hook cible.
+> C'est **incorrect** : `message_loop_end` s'execute dans le bloc `finally` (agent.py L573) APRES que `_pipeline_final_response`
+> a deja ete retourne a l'utilisateur (agent.py L440). Le bon hook est `monologue_start` via `_20_audit_metadata_append.py`,
+> qui s'execute AVANT le short-circuit pipeline et peut donc modifier `_pipeline_final_response` avant livraison.
 
 ### Taches
 
-| # | Tache | Statut | Notes |
-|---|---|:---:|---|
-| 7.0 | **FIX** : Corriger le resolver `evidence_version` en environnement Docker (`unknown` → version reelle). Diagnostiquer `gitinfo.version` / `settings.evidence_version` dans le conteneur. | ⬜ | Bug identifie en test E2E production (S6.1 Test 2) |
-| 7.1 | Recuperer `SessionEnvelope` et `PipelineTracker` depuis `agent.data`, recuperer `RouteDecision` depuis le router, appeler `ComplianceGrid.evaluate()` | ⬜ | Dans l'extension `message_loop_end` |
-| 7.2 | Injecter `ComplianceGrid.to_report_table()` dans le rapport final | ⬜ | Bloc "Grille de conformite reglementaire" |
-| 7.3 | Enrichir le rendu des sources : si `SourceNote` a `source_type_fr` et `reliability_percent`, les afficher dans la table des sources du rapport | ⬜ | Modifier le renderer existant des sources |
-| 7.4 | Creer `ReportMetadata` dataclass minimal : `session_id`, `model_primary`, `agents_activated`, `confidence_score`, `processing_time_ms`, `ai_act_category`, `data_residency` | ⬜ | Assembler depuis envelope + tracker + route_decision |
-| 7.5 | Creer `ReportMetadata.from_session()` factory + `to_json()` + `to_markdown_block()` | ⬜ | |
-| 7.6 | Injecter `ReportMetadata.to_markdown_block()` dans le rapport | ⬜ | Bloc "Metadonnees techniques" |
-| 7.7 | Etendre la couverture audit metadata au flux LLM classique (`call_subordinate` / `message_loop_end`) — pas seulement pipeline short-circuit | ⬜ | Gap identifie en test E2E production (S6.1 Test 1 — legal) |
-| 7.8 | Ecrire tests unitaires + tests d'integration | ⬜ | |
-| 7.9 | Verifier zero regression | ⬜ | |
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 7A.0 | **FIX** : Corriger le resolver `evidence_version` en environnement Docker (`unknown` → version reelle). Diagnostiquer `gitinfo.version` / `settings.evidence_version` dans le conteneur. | ⬜ | Faible | Bug isole, standalone. Identifie en test E2E production (S6.1 Test 2) |
+| 7A.1 | Creer `ReportMetadata` dataclass : `session_id`, `model_primary`, `agents_activated`, `confidence_score`, `processing_time_ms`, `ai_act_category`, `data_residency` | ⬜ | Nul | Pure data class, zero dependance runtime. Assembler depuis envelope + tracker + route_decision |
+| 7A.2 | Creer `ReportMetadata.from_session()` factory + `to_json()` + `to_markdown_block()` + **tests unitaires** | ⬜ | Nul | Factory + serializers, testable en isolation |
+| 7A.3 | Dans `_20_audit_metadata_append.py` : recuperer `RouteDecision`, appeler `ComplianceGrid.evaluate(envelope, tracker, route_decision)`, injecter `ComplianceGrid.to_report_table()` comme nouveau bloc "Grille de conformite reglementaire" | ⬜ | Faible | Meme extension que S6, meme pattern try/except fail-safe |
+| 7A.4 | Dans la meme extension : injecter `ReportMetadata.to_markdown_block()` comme bloc "Metadonnees techniques" | ⬜ | Faible | Meme logique d'append — ajout sequentiel apres le bloc grille |
+| 7A.5 | Enrichir le rendu des sources : si `SourceNote` a `source_type_fr` et `reliability_percent`, les afficher dans la table des sources du rapport | ⬜ | Faible | Chemin de code independant — modifier le renderer legal existant, pas l'extension audit |
+| 7A.6 | **CHECKPOINT OBLIGATOIRE** : Deploy + E2E test strategique — verifier que les 3 nouveaux blocs (grille conformite, metadonnees techniques, sources enrichies) apparaissent dans un rapport reel | ⬜ | — | Gate : ne PAS passer a 7B tant que 7A n'est pas valide en production |
+| 7A.7 | Auto-audit contradictoire SESSION 7A | ⬜ | — | Voir prompt ci-dessous |
 
-### Criteres de validation SESSION 7
-- [ ] Un dossier strategique juridique affiche la grille conformite AI Act (5 articles, statuts honnetes)
+### Criteres de validation SESSION 7A
+- [ ] Un dossier strategique affiche le bloc "Grille de conformite reglementaire" (5 articles AI Act, statuts honnetes)
+- [ ] Le bloc "Metadonnees techniques" affiche session_id, model_primary, agents, confidence, processing_time reels
 - [ ] La table des sources affiche `source_type_fr` et `reliability_percent` quand disponibles
-- [ ] Le bloc metadonnees techniques apparait dans le rapport
+- [ ] `evidence_version` affiche la version reelle (pas `unknown`)
+- [ ] Coherence croisee : session_id identique dans Identite (S6), Grille (7A), Metadonnees (7A)
 - [ ] Test E2E reel via l'interface confirme la presence des 3 blocs
-- [ ] Auto-audit contradictoire execute
+- [ ] Zero regression sur les flux existants (legal, strategic)
+- [ ] Auto-audit contradictoire execute et passe
 
-### AUTO-AUDIT CONTRADICTOIRE — SESSION 7
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 7A
 
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Auditeur AI Act + Data engineer, zero tolerance pour les metriques decoratives.
@@ -714,7 +720,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > que les metadonnees sont reelles. Ensemble, vous n'acceptez aucune
 > valeur decorative.
 >
-> Audite SESSION 7 (Cablage S5+S4+Metadata) :
+> Audite SESSION 7A (ComplianceGrid + ReportMetadata dans le flux pipeline) :
 >
 > 1. GRILLE CONFORMITE — La ComplianceGrid dans le rapport est-elle
 >    alimentee par des DONNEES REELLES de la session (envelope, tracker)
@@ -741,11 +747,107 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 >    REEL ? Toute valeur approximative ou par defaut est un ECHEC.
 >
 > 6. COHERENCE CROISEE — Le session_id en en-tete (S6) est-il
->    identique a celui des metadonnees (S7) et de la grille (S7) ?
+>    identique a celui des metadonnees (7A) et de la grille (7A) ?
 >    Les agents listes dans le pipeline (S6) sont-ils les memes
->    que dans les metadonnees (S7) ?
+>    que dans les metadonnees (7A) ?
 >
-> 7. VERDICT — Note /10. Toute metrique decorative = max 5/10.
+> 7. HOOK VERIFICATION — Confirme que l'injection se fait dans
+>    monologue_start (_20_audit_metadata_append.py) et PAS dans
+>    message_loop_end. Verifie dans le code source que les blocs
+>    sont appended a _pipeline_final_response AVANT le return.
+>
+> 8. VERDICT — Note /10. Toute metrique decorative = max 5/10.
+>    Injection dans le mauvais hook = 0/10.
+> ```
+
+---
+
+## SESSION 7B — Extension audit metadata au flux LLM classique
+
+**Objectif** : Etendre la couverture des metadonnees d'audit aux reponses LLM classiques (non-pipeline), pour que TOUS les utilisateurs voient un minimum de tracabilite — pas seulement les dossiers strategiques.  
+**Prerequis** : SESSION 7A validee en production  
+**Risque sur l'existant** : **ELEVE** — touche le flux principal de generation de reponses. Le flux pipeline (strategic, legal) est un short-circuit; le flux classique est le chemin par defaut de l'agent.  
+**Strategie** : Investigation architecturale AVANT toute modification de code. Decision explicite sur le mecanisme.
+
+> **CONTEXTE DU PROBLEME** : Aujourd'hui, `_20_audit_metadata_append.py` ne se declenche que si
+> `_pipeline_final_response` est set (ligne 28-29). Pour les reponses LLM classiques, la reponse
+> est **streamee** via `call_chat_model` et il n'existe aucun point d'injection equivalent.
+> C'est un probleme **architecturalement different** du pipeline :
+>
+> | | Flux pipeline (S6) | Flux LLM classique (7B) |
+> |---|---|---|
+> | Reponse | capturee dans `_pipeline_final_response` | **streamee** via `call_chat_model` |
+> | Point d'injection | append avant `return` (monologue_start) | **aucun point existant** |
+> | Donnees disponibles | envelope, tracker, agents, sources | **pas de tracker, pas d'agents specialises** |
+> | Risque regression | nul (chemin isole) | **eleve (chemin principal)** |
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 7B.0 | **INVESTIGATION** : Analyser les options techniques pour capturer la reponse LLM finale avant livraison. Options a evaluer : (a) hook dans le tool `response` qui termine le message loop, (b) wrapper autour de `message_loop_end` avec re-emission, (c) post-append via le framework d'extensions, (d) modification du streaming pour buffer la reponse finale | ⬜ | Nul | Lecture seule — aucune modification de code. Produire un document de decision avec pros/cons de chaque option |
+| 7B.1 | **DECISION ARCHITECTURALE** : Choisir le mecanisme d'injection. Criteres : (1) pas de regression sur le flux pipeline, (2) pas de latence perceptible, (3) fail-safe total (crash = reponse livree sans audit), (4) compatibilite avec le streaming | ⬜ | Nul | Point de decision explicite — documenter le choix et la justification AVANT d'ecrire du code |
+| 7B.2 | Concevoir un **"audit block leger"** adapte aux reponses classiques. Pas le meme poids qu'un dossier strategique : session_id, model, timestamp, version — PAS de grille conformite ni de pipeline tracker pour un simple "Bonjour" | ⬜ | Faible | Definir les regles de declenchement : quand afficher l'audit leger vs ne rien afficher (ex: reponses < 100 mots = pas d'audit) |
+| 7B.3 | Implementer le mecanisme choisi en 7B.1 | ⬜ | **Modere** | Le seul point de risque reel — encapsuler dans try/except avec fail-safe total |
+| 7B.4 | Tests unitaires + tests d'integration (flux classique ET flux pipeline) | ⬜ | — | Tester specifiquement : (1) prompt simple sans audit, (2) prompt complexe avec audit leger, (3) pipeline strategique avec audit complet inchange |
+| 7B.5 | Deploy + E2E test : prompt classique affiche audit leger visible | ⬜ | — | Tester avec un compte type "jeremie" (user DICA France, pas admin) |
+| 7B.6 | Verifier **zero regression** sur le flux strategique et legal | ⬜ | — | Relancer un dossier strategique complet — les blocs S6+7A doivent etre identiques |
+| 7B.7 | Auto-audit contradictoire SESSION 7B | ⬜ | — | Voir prompt ci-dessous |
+
+### Criteres de validation SESSION 7B
+- [ ] Un prompt classique complexe (ex: "Redige un contrat CDI") affiche un bloc audit leger (session_id, model, timestamp)
+- [ ] Un prompt simple (ex: "Bonjour") n'affiche PAS de bloc audit (pas de pollution)
+- [ ] Le flux pipeline strategique est **strictement identique** a avant (zero regression)
+- [ ] Le flux legal est **strictement identique** a avant
+- [ ] Le mecanisme est fail-safe : un crash dans l'audit block ne bloque pas la reponse
+- [ ] Latence ajoutee < 100ms mesurable
+- [ ] Test E2E avec un compte non-admin (DICA France) confirme la visibilite
+- [ ] Auto-audit contradictoire execute et passe
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 7B
+
+> **Prompt a executer obligatoirement avant de valider cette session.**
+> Persona : Architecte systeme + QA senior, focus regression et UX.
+>
+> ```
+> Tu es un binome architecte systeme + QA senior. L'architecte verifie
+> que le mecanisme d'injection est propre et n'introduit pas de couplage
+> dangereux. Le QA verifie que rien n'est casse.
+>
+> Audite SESSION 7B (Extension audit au flux LLM classique) :
+>
+> 1. MECANISME — Comment la reponse LLM classique est-elle capturee ?
+>    Est-ce un hook dans le tool response, un wrapper, ou autre ?
+>    Le mecanisme est-il documente et justifie ? Si c'est un hack
+>    fragile, c'est un ECHEC architectural.
+>
+> 2. FAIL-SAFE — Provoque un crash volontaire dans le bloc audit
+>    leger (ex: raise Exception). La reponse est-elle quand meme
+>    livree a l'utilisateur ? Si non = ECHEC CRITIQUE.
+>
+> 3. REGRESSION PIPELINE — Lance un dossier strategique complet.
+>    Compare les blocs audit (S6 + 7A) avec ceux d'avant 7B.
+>    TOUTE difference = ECHEC.
+>
+> 4. REGRESSION LEGAL — Lance une requete legal_safe. Compare
+>    la sortie avec celle d'avant 7B. TOUTE difference inattendue
+>    = ECHEC.
+>
+> 5. SEUIL DE DECLENCHEMENT — Envoie "Bonjour" puis "Redige un
+>    contrat CDI complet". Le premier ne doit PAS avoir de bloc
+>    audit. Le second DOIT en avoir un. Si le seuil est mal calibre
+>    (audit sur "Bonjour" OU pas d'audit sur le CDI), c'est un ECHEC.
+>
+> 6. LATENCE — Mesure le temps de reponse pour un prompt standard
+>    avec et sans 7B. L'overhead doit etre < 100ms. Si perceptible
+>    = ECHEC performance.
+>
+> 7. MULTI-COMPTE — Teste avec un compte admin (amine) ET un compte
+>    user (jeremie). Les deux doivent avoir le meme comportement
+>    audit. Si difference = ECHEC (c'est le probleme qu'on corrige).
+>
+> 8. VERDICT — Note /10. Regression = 0/10. Fail-safe absent = 0/10.
+>    Audit sur "Bonjour" = max 4/10. Difference entre comptes = 0/10.
 > ```
 
 ---
@@ -753,9 +855,9 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 ## SESSION 8 — Integrite, signature, et assemblage du rapport complet
 
 **Objectif** : Completer les blocs Integrite/Securite (hashes, signature), assembler le rapport final complet.  
-**Prerequis** : SESSION 7  
+**Prerequis** : SESSION 7A (ComplianceGrid + ReportMetadata cables dans le flux pipeline)  
 **Risque sur l'existant** : Faible (ajout de blocs supplementaires au rapport deja cable)  
-**Strategie** : Construire ET cabler dans la meme session (pattern valide par S6-S7)
+**Strategie** : Construire ET cabler dans la meme session (pattern valide par S6-S7A)
 
 ### Taches
 
@@ -1179,18 +1281,19 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 
 ## Compteur de sante
 
-| Session | Description (v2) | Taches | Auto-audit | Note | Statut |
-|:---:|---|:---:|:---:|:---:|:---:|
-| 1 | SessionEnvelope (brique) | 8/8 | Execute | 7.5→8+ | ✅ |
-| 2 | Classification AI Act (brique) | 8/8 | Execute | 7.5→8.5+ | ✅ |
-| 3 | PipelineTracker (brique) | 8/8 | Execute | 8.5/10 | ✅ |
-| 4 | SourceTaxonomy (brique) | 8/8 | Execute | 8.5/10 | ✅ |
-| 5 | ComplianceGrid (brique) | 9/9 | Execute | 9/10 | ✅ |
-| ⚡ | **TEST MI-PARCOURS** | — | E2E reel | **0/5 cables** | ⚠️ |
-| 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | ❌ |
-| 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | ✅ |
-| 7 | **Cabler S5+S4+Metadata** (grid+taxonomy+meta) + fix version resolver + couverture audit LLM classique | 0/10 | — | — | ⬜ |
-| 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | ⬜ |
-| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | ⬜ |
-| 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | ⬜ |
-| **GLOBAL** | — | — | — | — | ⬜ |
+| Session | Description (v2) | Taches | Auto-audit | Note | Risque | Statut |
+|:---:|---|:---:|:---:|:---:|:---:|:---:|
+| 1 | SessionEnvelope (brique) | 8/8 | Execute | 7.5→8+ | Nul | ✅ |
+| 2 | Classification AI Act (brique) | 8/8 | Execute | 7.5→8.5+ | Nul | ✅ |
+| 3 | PipelineTracker (brique) | 8/8 | Execute | 8.5/10 | Nul | ✅ |
+| 4 | SourceTaxonomy (brique) | 8/8 | Execute | 8.5/10 | Nul | ✅ |
+| 5 | ComplianceGrid (brique) | 9/9 | Execute | 9/10 | Nul | ✅ |
+| ⚡ | **TEST MI-PARCOURS** | — | E2E reel | **0/5 cables** | — | ⚠️ |
+| 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | Faible | ❌ |
+| 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | Faible | ✅ |
+| **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 0/8 | — | — | **Faible** | ⬜ |
+| **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 0/8 | — | — | **ELEVE** | ⬜ |
+| 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | Faible | ⬜ |
+| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | Modere | ⬜ |
+| 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | Modere | ⬜ |
+| **GLOBAL** | — | — | — | — | — | ⬜ |
