@@ -1,0 +1,68 @@
+---
+description: Audit hostile obligatoire avant tout commit/push — zero tolerance
+alwaysApply: true
+---
+
+# Pre-Commit Hostile Audit Protocol
+
+## REGLE ABSOLUE
+
+**INTERDICTION de `git commit` ou `git push` sans audit hostile prealable.**
+
+Tout changement — code, documentation, configuration, prompt — doit passer par le protocole ci-dessous AVANT d'etre fige dans l'historique git.
+
+## Protocole en 3 phases
+
+### Phase 1 — Relecture contradictoire du diff
+
+Avant de commit, relire CHAQUE fichier modifie avec un regard hostile :
+
+1. **References croisees** : toute mention d'une session, d'un composant, ou d'un numero de tache est-elle coherente avec le reste du document ET le code reel ?
+2. **Signatures de code** : toute signature de fonction/methode citee dans la doc correspond-elle a la signature reelle dans le code source ? Verifier avec Grep/Read.
+3. **Numeros de ligne** : tout numero de ligne cite (ex: "agent.py L573") est-il toujours correct ? Les numeros bougent a chaque modif.
+4. **Dependances** : les prerequis et liens entre sessions/modules sont-ils a jour ?
+5. **Coherence comptage** : le nombre de taches dans une table correspond-il au compteur dans le tableau recapitulatif global ?
+
+### Phase 2 — Checklist de defauts
+
+Lister explicitement les defauts trouves dans un tableau :
+
+```
+| DEF | Severite | Description |
+|---|:---:|---|
+| DEF-1 | ... | ... |
+```
+
+- Si defauts trouves : corriger AVANT le commit
+- Si zero defauts : noter explicitement "0 defauts — audit clean"
+
+### Phase 3 — Commit avec trace d'audit
+
+Inclure dans le message de commit une mention de l'audit :
+
+```
+refactor(roadmap): split SESSION 7 into 7A + 7B
+
+Audit hostile: 4 DEF trouves et corriges (references croisees S8/S9, clarification hook, signature incomplete)
+```
+
+## Exemples de violations
+
+```
+# INTERDIT — commit sans audit
+git add . && git commit -m "update roadmap" && git push
+
+# OBLIGATOIRE — audit hostile, puis commit avec trace
+# 1. Relire le diff
+# 2. Verifier chaque reference croisee
+# 3. Lister les defauts
+# 4. Corriger
+# 5. Commit avec mention audit
+```
+
+## Severites
+
+- **Critique** : reference a du code/hook qui n'existe pas, regression silencieuse
+- **Important** : contradiction entre sections du meme document, ambiguite dangereuse
+- **Modere** : reference orpheline (ex: "S6-S7" au lieu de "S6-S7A"), comptage incorrect
+- **Mineur** : signature incomplete (params optionnels omis), typo technique

@@ -685,6 +685,9 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > C'est **incorrect** : `message_loop_end` s'execute dans le bloc `finally` (agent.py L573) APRES que `_pipeline_final_response`
 > a deja ete retourne a l'utilisateur (agent.py L440). Le bon hook est `monologue_start` via `_20_audit_metadata_append.py`,
 > qui s'execute AVANT le short-circuit pipeline et peut donc modifier `_pipeline_final_response` avant livraison.
+>
+> **Note** : `message_loop_end` reste valide pour des operations POST-livraison (sauvegarde fichier, stockage rapport — cf. SESSION 9).
+> L'interdiction ne concerne que l'INJECTION dans la reponse utilisateur.
 
 ### Taches
 
@@ -693,7 +696,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 7A.0 | **FIX** : Corriger le resolver `evidence_version` en environnement Docker (`unknown` → version reelle). Diagnostiquer `gitinfo.version` / `settings.evidence_version` dans le conteneur. | ⬜ | Faible | Bug isole, standalone. Identifie en test E2E production (S6.1 Test 2) |
 | 7A.1 | Creer `ReportMetadata` dataclass : `session_id`, `model_primary`, `agents_activated`, `confidence_score`, `processing_time_ms`, `ai_act_category`, `data_residency` | ⬜ | Nul | Pure data class, zero dependance runtime. Assembler depuis envelope + tracker + route_decision |
 | 7A.2 | Creer `ReportMetadata.from_session()` factory + `to_json()` + `to_markdown_block()` + **tests unitaires** | ⬜ | Nul | Factory + serializers, testable en isolation |
-| 7A.3 | Dans `_20_audit_metadata_append.py` : recuperer `RouteDecision`, appeler `ComplianceGrid.evaluate(envelope, tracker, route_decision)`, injecter `ComplianceGrid.to_report_table()` comme nouveau bloc "Grille de conformite reglementaire" | ⬜ | Faible | Meme extension que S6, meme pattern try/except fail-safe |
+| 7A.3 | Dans `_20_audit_metadata_append.py` : recuperer `RouteDecision`, appeler `ComplianceGrid.evaluate(envelope, tracker, route_decision, confidence_score=...)`, injecter `ComplianceGrid.to_report_table()` comme nouveau bloc "Grille de conformite reglementaire". **Ne pas oublier** les params optionnels `confidence_score`, `has_human_review`, `has_consensus` de la signature reelle. | ⬜ | Faible | Meme extension que S6, meme pattern try/except fail-safe |
 | 7A.4 | Dans la meme extension : injecter `ReportMetadata.to_markdown_block()` comme bloc "Metadonnees techniques" | ⬜ | Faible | Meme logique d'append — ajout sequentiel apres le bloc grille |
 | 7A.5 | Enrichir le rendu des sources : si `SourceNote` a `source_type_fr` et `reliability_percent`, les afficher dans la table des sources du rapport | ⬜ | Faible | Chemin de code independant — modifier le renderer legal existant, pas l'extension audit |
 | 7A.6 | **CHECKPOINT OBLIGATOIRE** : Deploy + E2E test strategique — verifier que les 3 nouveaux blocs (grille conformite, metadonnees techniques, sources enrichies) apparaissent dans un rapport reel | ⬜ | — | Gate : ne PAS passer a 7B tant que 7A n'est pas valide en production |
@@ -868,7 +871,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 8.3 | Creer `LogSigner` avec HMAC-SHA256 (phase 1), key ID format `KRV-SIGN-KEY-NNN` | ⬜ | HMAC explicitement presente comme phase 1, pas comme non-repudiation |
 | 8.4 | Injecter `IntegrityBlock.to_report_table()` dans le rapport | ⬜ | Cable immediatement |
 | 8.5 | Creer `AuditReportRenderer` qui assemble les blocs dans l'ordre : Identite → Requete → Pipeline → Sources → Conformite → Metadonnees → Integrite → Footer | ⬜ | Centralise tous les rendus |
-| 8.6 | Remplacer l'injection bloc-par-bloc (S6-S7) par l'appel unique `AuditReportRenderer.render()` | ⬜ | Refactoring propre |
+| 8.6 | Remplacer l'injection bloc-par-bloc (S6-S7A) par l'appel unique `AuditReportRenderer.render()` | ⬜ | Refactoring propre |
 | 8.7 | Footer auto-generation avec avertissement + proposition PDF | ⬜ | |
 | 8.8 | Ecrire tests unitaires + test de snapshot (comparer a un rapport de reference) | ⬜ | |
 | 8.9 | Test E2E reel : rapport complet avec tous les blocs | ⬜ | |
@@ -933,7 +936,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 9.1 | Consolider la generation du rapport dans une extension unique `_30_audit_report_generation.py` (message_loop_end) | ⬜ | Remplace les injections individuelles S6-S7 |
+| 9.1 | Consolider la generation du rapport dans une extension unique `_30_audit_report_generation.py` (`message_loop_end`) | ⬜ | **Attention** : ici `message_loop_end` est correct — c'est pour generer un FICHIER rapport separe (stockage), PAS pour injecter dans la reponse (qui reste dans `monologue_start` via S6-S7A). Ne pas confondre avec la correction architecturale 7A. |
 | 9.2 | Stocker le rapport dans `tmp/chats/{ctxid}/audit_report.md` (meme ownership que chat.json) | ⬜ | can_access_context s'applique aussi |
 | 9.3 | Export PDF via `evidence_pdf_engine.py` | ⬜ | Reutiliser l'existant |
 | 9.4 | Ajouter bouton "Voir le rapport d'audit" dans l'UI (optionnel phase 2) | ⬜ | |
