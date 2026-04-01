@@ -364,14 +364,19 @@ class TestAuditMetadataAppend:
         updated = agent.get_data("_pipeline_final_response")
         assert "Identite de la session" in updated
 
-    def test_no_append_when_no_envelope_and_no_tracker(self):
+    def test_pipeline_appends_grid_and_meta_without_envelope_or_tracker(self):
+        """SESSION 7A : sans envelope/tracker, S6 n'ajoute rien mais 7A ajoute grille + meta."""
         agent = MockAgent()
         agent.set_data("_pipeline_final_response", "# Response")
 
         ext = _make_audit_append(agent)
         asyncio.get_event_loop().run_until_complete(ext.execute())
 
-        assert agent.get_data("_pipeline_final_response") == "# Response"
+        updated = agent.get_data("_pipeline_final_response")
+        assert updated.startswith("# Response")
+        assert "## Metadonnees d'audit Evidence" in updated
+        assert "Grille de conformite reglementaire" in updated
+        assert "Metadonnees techniques" in updated
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

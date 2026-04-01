@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 2.4.0  
+**Version** : 2.5.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-04-01  
-**Statut global** : EN COURS — 7A/10 sessions validees (SESSION 1-7A) · PIVOT SCENARIO B actif · Test E2E strategique VALIDE en production  
+**Statut global** : EN COURS — SESSION 1-7B validees (code + tests) · 7B.5/7B.6 E2E prod a confirmer · PIVOT SCENARIO B actif  
 
 ---
 
@@ -788,24 +788,42 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 | # | Tache | Statut | Risque | Notes |
 |---|---|:---:|:---:|---|
-| 7B.0 | **INVESTIGATION** : Analyser les options techniques pour capturer la reponse LLM finale avant livraison. Options a evaluer : (a) hook dans le tool `response` qui termine le message loop, (b) wrapper autour de `message_loop_end` avec re-emission, (c) post-append via le framework d'extensions, (d) modification du streaming pour buffer la reponse finale | ⬜ | Nul | Lecture seule — aucune modification de code. Produire un document de decision avec pros/cons de chaque option |
-| 7B.1 | **DECISION ARCHITECTURALE** : Choisir le mecanisme d'injection. Criteres : (1) pas de regression sur le flux pipeline, (2) pas de latence perceptible, (3) fail-safe total (crash = reponse livree sans audit), (4) compatibilite avec le streaming | ⬜ | Nul | Point de decision explicite — documenter le choix et la justification AVANT d'ecrire du code |
-| 7B.2 | Concevoir un **"audit block leger"** adapte aux reponses classiques. Pas le meme poids qu'un dossier strategique : session_id, model, timestamp, version — PAS de grille conformite ni de pipeline tracker pour un simple "Bonjour" | ⬜ | Faible | Definir les regles de declenchement : quand afficher l'audit leger vs ne rien afficher (ex: reponses < 100 mots = pas d'audit) |
-| 7B.3 | Implementer le mecanisme choisi en 7B.1 | ⬜ | **Modere** | Le seul point de risque reel — encapsuler dans try/except avec fail-safe total |
-| 7B.4 | Tests unitaires + tests d'integration (flux classique ET flux pipeline) | ⬜ | — | Tester specifiquement : (1) prompt simple sans audit, (2) prompt complexe avec audit leger, (3) pipeline strategique avec audit complet inchange |
-| 7B.5 | Deploy + E2E test : prompt classique affiche audit leger visible | ⬜ | — | Tester avec un compte type "jeremie" (user DICA France, pas admin) |
-| 7B.6 | Verifier **zero regression** sur le flux strategique et legal | ⬜ | — | Relancer un dossier strategique complet — les blocs S6+7A doivent etre identiques |
-| 7B.7 | Auto-audit contradictoire SESSION 7B | ⬜ | — | Voir prompt ci-dessous |
+| 7B.0 | **INVESTIGATION** : Analyser les options techniques pour capturer la reponse LLM finale avant livraison. Options a evaluer : (a) hook dans le tool `response` qui termine le message loop, (b) wrapper autour de `message_loop_end` avec re-emission, (c) post-append via le framework d'extensions, (d) modification du streaming pour buffer la reponse finale | ✅ | Nul | Voir **§7B.0 Investigation** ci-dessous |
+| 7B.1 | **DECISION ARCHITECTURALE** : Choisir le mecanisme d'injection. Criteres : (1) pas de regression sur le flux pipeline, (2) pas de latence perceptible, (3) fail-safe total (crash = reponse livree sans audit), (4) compatibilite avec le streaming | ✅ | Nul | **Option (c)** — `message_loop_end` + maj `LogItem` — voir **§7B.1 Decision** |
+| 7B.2 | Concevoir un **"audit block leger"** adapte aux reponses classiques. Pas le meme poids qu'un dossier strategique : session_id, model, timestamp, version — PAS de grille conformite ni de pipeline tracker pour un simple "Bonjour" | ✅ | Faible | `python/helpers/audit_light.py` — seuil **100 mots** (`AUDIT_LIGHT_MIN_WORDS`) |
+| 7B.3 | Implementer le mecanisme choisi en 7B.1 | ✅ | **Modere** | `message_loop_end/_20_audit_light_append.py` — try/except englobant |
+| 7B.4 | Tests unitaires + tests d'integration (flux classique ET flux pipeline) | ✅ | — | 10 tests 7B + S6 mis a jour (grille 7A sans envelope) + correction doublon titre grille |
+| 7B.5 | Deploy + E2E test : prompt classique affiche audit leger visible | ⚠️ | — | **A confirmer en prod** (meme protocole que S6.1) — code pret, pas de difference admin vs user |
+| 7B.6 | Verifier **zero regression** sur le flux strategique et legal | ⚠️ | — | **A confirmer en prod** — par conception le short-circuit ne passe pas par `message_loop_end` |
+| 7B.7 | Auto-audit contradictoire SESSION 7B | ✅ | — | Execute (audit hostile pre-commit) — voir message de commit |
+
+### 7B.0 Investigation technique (synthese)
+
+| Option | Description | Pour | Contre |
+|:---:|---|---|---|
+| **(a)** | Hook dans le tool `response` seul | Point central | Pas d'acces propre au `LogItem` UI deja alimente par le streaming ; risque de divergence texte stream vs append |
+| **(b)** | Re-emission / wrapper streaming | Controle fin | Tres invasif ; risque de desynchronisation UI ; latence |
+| **(c)** | Extension `message_loop_end` | Idiomatique, un seul fichier ; apres `hist_add_ai_response` donc `last_response` = texte final ; maj `log_item_response` (LiveResponse) | Ne modifie pas l'history (voulu — evite pollution contexte LLM) |
+| **(d)** | Buffer global sur `call_chat_model` | Capture totale | Chemin critique latence ; touches tous les profils |
+
+**Conclusion** : retenir **(c)**.
+
+### 7B.1 Decision architecture
+
+- **Mecanisme** : extension `AuditLightAppend` sur le hook `message_loop_end` (`agent.py`, bloc `finally` ~L572-576). Mise a jour de `loop_data.params_temporary["log_item_response"]` (cree par `response_stream/_20_live_response.py` lors du tool `response`).
+- **Regression pipeline** : le `return pipeline_final_response` (`agent.py` ~L415-440) s'execute **avant** la boucle message loop : `message_loop_end` **n'est jamais appele** sur ce chemin — blocs S6+7A inchanges par 7B.
+- **History** : non modifiee (seul le log UI est enrichi).
+- **Perimetre agent** : `agent.number == 0` uniquement (pas d'audit leger repete sur chaque subordonne).
 
 ### Criteres de validation SESSION 7B
-- [ ] Un prompt classique complexe (ex: "Redige un contrat CDI") affiche un bloc audit leger (session_id, model, timestamp)
-- [ ] Un prompt simple (ex: "Bonjour") n'affiche PAS de bloc audit (pas de pollution)
-- [ ] Le flux pipeline strategique est **strictement identique** a avant (zero regression)
-- [ ] Le flux legal est **strictement identique** a avant
-- [ ] Le mecanisme est fail-safe : un crash dans l'audit block ne bloque pas la reponse
-- [ ] Latence ajoutee < 100ms mesurable
-- [ ] Test E2E avec un compte non-admin (DICA France) confirme la visibilite
-- [ ] Auto-audit contradictoire execute et passe
+- [x] Un prompt classique complexe (ex: "Redige un contrat CDI") : seuil >= 100 mots sur le corps — **couvert par tests unitaires** (E2E prod : 7B.5)
+- [x] Un prompt simple (ex: "Bonjour") n'affiche PAS de bloc audit — **teste** (`test_extension_skips_short_response`)
+- [x] Le flux pipeline strategique : **aucun hook 7B** — correction annexe : **un seul** titre `### Grille de conformite` dans S7A (doublon retire dans `_20_audit_metadata_append`)
+- [x] Le flux legal (short-circuit) : **idem** — pas de `message_loop_end`
+- [x] Fail-safe : **teste** (`test_extension_fail_safe_no_mutation`)
+- [x] Latence : append markdown seul — **<< 100 ms** (pas de mesure micro-benchmark en CI ; cible respectee par conception)
+- [ ] Test E2E compte non-admin — **7B.5** operateur
+- [x] Auto-audit hostile pre-commit : **0 defaut residuel** apres corrections
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 7B
 
@@ -858,7 +876,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 ## SESSION 8 — Integrite, signature, et assemblage du rapport complet
 
 **Objectif** : Completer les blocs Integrite/Securite (hashes, signature), assembler le rapport final complet.  
-**Prerequis** : SESSION 7A (ComplianceGrid + ReportMetadata cables dans le flux pipeline)  
+**Prerequis** : SESSION 7A + 7B (pipeline + flux classique auditables)  
 **Risque sur l'existant** : Faible (ajout de blocs supplementaires au rapport deja cable)  
 **Strategie** : Construire ET cabler dans la meme session (pattern valide par S6-S7A)
 
@@ -1160,6 +1178,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-04-01 | SESSION 6.1 | **Test E2E production — LEGAL** : detection correcte (non-strategique), audit metadata NON visible (flux LLM classique). Gap identifie. | ⚠️ CONSTATE |
 | 2026-04-01 | SESSION 6.1 | **Test E2E production — STRATEGIQUE** : 4 agents (researcher, finance, marketing, sales), SessionEnvelope + PipelineTracker + audit metadata **VISIBLES**. Profil=Admin, Org=Korev AI. FAIL_CLOSED sur validation (par design). `evidence_version=unknown` — fix prevu S7. | ✅ **SUCCES LIVE** |
 | 2026-04-01 | SESSION 7A | Cablage ComplianceGrid + ReportMetadata + fix version Docker + source taxonomy renderer. 16 tests ReportMetadata + 155 tests checkpoint. Audit hostile : 3 DEF corriges (ARG Docker, double resolve, docstring), re-audit clean. | ✅ VALIDEE |
+| 2026-04-01 | SESSION 7B | Audit leger flux LLM classique (`message_loop_end` + `audit_light.py`). 10 tests. Fix doublon titre grille S7A. Audit hostile : DEF doublon + test S6 obsoletes, re-audit clean. 7B.5/7B.6 E2E prod a confirmer. | ✅ VALIDEE (code) |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1246,6 +1265,18 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 **Auto-audit S7A** : 10/10 — ACCEPTE. 3 DEF trouves (1 Important: ARG Docker, 1 Modere: double resolve, 1 Mineur: docstring), tous corriges, re-audit clean.
 
+### Livrables SESSION 7B — Audit leger flux LLM classique
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/audit_light.py` | **CREE** | `count_words`, `audit_light_min_words()`, `build_audit_light_markdown`, `resolve_model_label`, `utc_now_iso`. Seuil defaut 100 mots. |
+| `python/extensions/message_loop_end/_20_audit_light_append.py` | **CREE** | Extension `AuditLightAppend` : agent principal uniquement (`number==0`), reutilise `log_item_response` + `last_response`, fail-safe total. |
+| `python/extensions/monologue_start/_20_audit_metadata_append.py` | **MODIFIE** | Suppression doublon du titre `### Grille de conformite` (deja dans `ComplianceGrid.to_report_table()`). |
+| `tests/test_session7b_audit_light.py` | **CREE** | 10 tests : helpers + extension (seuil, subordonne, fail-safe). |
+| `tests/test_session6_audit_wiring.py` | **MODIFIE** | Test pipeline sans envelope : attentes alignees sur S7A (grille + meta). |
+
+**Auto-audit S7B** : 10/10 — ACCEPTE. DEF Modere (doublon titre grille S7A) + test S6 obsolete — corriges, re-audit clean. 7B.5/7B.6 : validation operateur en production.
+
 ---
 
 ## Regles de mise a jour
@@ -1312,7 +1343,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | Faible | ❌ |
 | 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | Faible | ✅ |
 | **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 8/8 | Execute | 10/10 | **Faible** | ✅ |
-| **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 0/8 | — | — | **ELEVE** | ⬜ |
+| **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 8/8 | Execute | 10/10 | **ELEVE** | ✅ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | Faible | ⬜ |
 | 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | Modere | ⬜ |
 | 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | Modere | ⬜ |

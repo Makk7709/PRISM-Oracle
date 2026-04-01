@@ -90,10 +90,8 @@ class AuditMetadataAppend(Extension):
                 )
                 grid_table = grid.to_report_table()
                 if grid_table:
-                    sections.append(
-                        "### Grille de conformite reglementaire\n\n"
-                        + grid_table
-                    )
+                    # to_report_table() inclut deja le titre ### Grille...
+                    sections.append(grid_table)
             except Exception as exc:
                 logger.warning("ComplianceGrid render failed (non-blocking): %s", exc)
 
