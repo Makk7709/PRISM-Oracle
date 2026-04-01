@@ -79,6 +79,7 @@ except ImportError:
         return text.lower().strip()
 
 from python.helpers.pipeline_tracker import PipelineTracker
+from python.helpers.progress_feedback import emit_delegation_progress
 
 logger = logging.getLogger("delegation_tool")
 
@@ -325,6 +326,10 @@ class Delegation(Tool):
             _tracker = PipelineTracker()
             self.agent.set_data("_pipeline_tracker", _tracker)
         _tracker.start_step(agent_profile or "default")
+
+        _profile_label = agent_profile or "default"
+        _step_no = len(_tracker.get_activated())
+        emit_delegation_progress(self.agent, _profile_label, _step_no)
 
         # Exécuter le monologue du subordonné (BudgetExceededError propagates naturally)
         _sub_success = True

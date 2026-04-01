@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from python.helpers import files
 from python.helpers.pipeline_tracker import PipelineTracker
+from python.helpers.progress_feedback import emit_pipeline_progress, emit_synthesis_progress
 
 if TYPE_CHECKING:
     from agent import Agent
@@ -930,7 +931,10 @@ async def run_strategic_orchestrator(
         f"type={detection.document_type}, agents={detection.required_agents}"
     )
 
-    for profile in detection.required_agents:
+    total_agents = len(detection.required_agents)
+    for idx, profile in enumerate(detection.required_agents, 1):
+        emit_pipeline_progress(agent, profile, idx, total_agents)
+
         prompt = get_agent_prompt(
             document_type=detection.document_type,
             agent_profile=profile,
@@ -949,6 +953,8 @@ async def run_strategic_orchestrator(
             )
 
     total_sources = sum(r.sources_count for r in responses)
+
+    emit_synthesis_progress(agent, total_agents)
 
     # Dynamic LLM consolidation with template fallback
     consolidated = await _consolidate_via_llm(

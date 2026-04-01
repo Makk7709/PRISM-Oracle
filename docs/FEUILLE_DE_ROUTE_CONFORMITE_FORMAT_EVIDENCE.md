@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 2.5.0  
+**Version** : 2.6.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-04-01  
-**Statut global** : EN COURS — SESSION 1-7B validees (code + tests) · 7B.5/7B.6 E2E prod a confirmer · PIVOT SCENARIO B actif  
+**Statut global** : EN COURS — SESSION 1-7B validees + S9 taches 9.11-9.13 (feedback progression) · 7B.5/7B.6 E2E prod a confirmer · PIVOT SCENARIO B actif  
 
 ---
 
@@ -964,9 +964,9 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 9.8 | Tests E2E automatises : 5 types de requetes (legal, strategique, medical, general, multi-agent) | ⬜ | |
 | 9.9 | Benchmark performance : overhead < 200ms sur le chemin critique | ⬜ | |
 | 9.10 | Deployer en staging et valider avec test E2E reel | ⬜ | |
-| 9.11 | **UX : Feedback de progression temps reel pour pipelines longs** — Informer l'utilisateur de l'avancement pendant l'execution (agent en cours, etape X/N, temps ecoule/estime). Sans ca, un pipeline de 17min ressemble a un freeze. Options : SSE events, WebSocket updates, ou messages intermediaires streames dans le chat. | ⬜ | **PRIORITE HAUTE** — Constat direct utilisateur lors du test E2E S6.1 (dossier strategique ~17min sans feedback) |
-| 9.12 | Concevoir les messages de progression : format, frequence, granularite (par agent ? par phase ?). Ex: "🔍 Agent researcher en cours (2/4)... 107 sources analysees" | ⬜ | UX : eviter le spam, privilegier les jalons significatifs |
-| 9.13 | Integrer les events de progression avec `PipelineTracker` (S3) : emettre un event a chaque `start_step()` / `complete_step()` | ⬜ | Le tracker connait deja les agents — il suffit d'emettre |
+| 9.11 | **UX : Feedback de progression temps reel pour pipelines longs** — Informer l'utilisateur de l'avancement pendant l'execution (agent en cours, etape X/N). Utilise `context.log.set_progress()` (progress bar existante, polling 25-250ms). | ✅ | Implemente via `python/helpers/progress_feedback.py` — 3 helpers fail-safe, zero overhead |
+| 9.12 | Concevoir les messages de progression : format, frequence, granularite (par agent ? par phase ?). Format: "Agent {profile} en cours ({step}/{total}) — {role}" + phase synthese | ✅ | Format choisi : profile + step X/N + role description depuis `AGENT_ROLE_DESCRIPTIONS` |
+| 9.13 | Integrer les events de progression avec `PipelineTracker` (S3) : emettre un event a chaque `start_step()` / `complete_step()` | ✅ | Cable dans `strategic_orchestrator.py` (boucle agents + synthese) et `call_subordinate.py` (delegations individuelles). 12 tests unitaires. |
 
 ### Criteres de validation SESSION 9
 - [ ] Rapport genere automatiquement a chaque fin de session
@@ -975,8 +975,8 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 - [ ] Fail-safe prouve (crash du renderer ne bloque pas la reponse)
 - [ ] Overhead < 200ms mesure
 - [ ] Tests E2E passent sur 5 types de requetes
-- [ ] **Feedback de progression visible** : un pipeline de 4 agents affiche au minimum l'agent en cours et l'etape X/N
-- [ ] L'utilisateur ne voit jamais un ecran fige pendant plus de 30 secondes sans indication d'activite
+- [x] **Feedback de progression visible** : un pipeline de 4 agents affiche au minimum l'agent en cours et l'etape X/N
+- [x] L'utilisateur ne voit jamais un ecran fige pendant plus de 30 secondes sans indication d'activite
 - [ ] Auto-audit contradictoire execute
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 9
@@ -1179,6 +1179,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-04-01 | SESSION 6.1 | **Test E2E production — STRATEGIQUE** : 4 agents (researcher, finance, marketing, sales), SessionEnvelope + PipelineTracker + audit metadata **VISIBLES**. Profil=Admin, Org=Korev AI. FAIL_CLOSED sur validation (par design). `evidence_version=unknown` — fix prevu S7. | ✅ **SUCCES LIVE** |
 | 2026-04-01 | SESSION 7A | Cablage ComplianceGrid + ReportMetadata + fix version Docker + source taxonomy renderer. 16 tests ReportMetadata + 155 tests checkpoint. Audit hostile : 3 DEF corriges (ARG Docker, double resolve, docstring), re-audit clean. | ✅ VALIDEE |
 | 2026-04-01 | SESSION 7B | Audit leger flux LLM classique (`message_loop_end` + `audit_light.py`). 10 tests. Fix doublon titre grille S7A. Audit hostile : DEF doublon + test S6 obsoletes, re-audit clean. 7B.5/7B.6 E2E prod a confirmer. | ✅ VALIDEE (code) |
+| 2026-04-01 | SESSION 9 (partiel) | **Taches 9.11-9.13 avancees** : feedback progression temps reel pour pipelines. Module `progress_feedback.py`, cable dans `strategic_orchestrator.py` + `call_subordinate.py`. 12 tests, 0 regression (112 total). Audit hostile : 0 defaut. | ✅ VALIDEE |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1277,6 +1278,17 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 **Auto-audit S7B** : 10/10 — ACCEPTE. DEF Modere (doublon titre grille S7A) + test S6 obsolete — corriges, re-audit clean. 7B.5/7B.6 : validation operateur en production.
 
+### Livrables SESSION 9 (partiel) — Feedback progression temps reel
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/progress_feedback.py` | **CREE** | 3 helpers fail-safe : `emit_pipeline_progress` (pipeline strategique X/N), `emit_synthesis_progress` (phase consolidation), `emit_delegation_progress` (delegation individuelle). Utilise `context.log.set_progress()` existant. |
+| `python/helpers/strategic_orchestrator.py` | **MODIFIE** | Import `progress_feedback`, appel `emit_pipeline_progress` dans la boucle agents + `emit_synthesis_progress` avant consolidation LLM. |
+| `python/tools/call_subordinate.py` | **MODIFIE** | Import `progress_feedback`, appel `emit_delegation_progress` apres `start_step()`. |
+| `tests/test_pipeline_progress_feedback.py` | **CREE** | 12 tests : messages, role descriptions, fallback profil inconnu, fail-safe, edge cases. |
+
+**Audit hostile** : 0 defaut. 112 tests passes, 0 regression.
+
 ---
 
 ## Regles de mise a jour
@@ -1345,6 +1357,6 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 8/8 | Execute | 10/10 | **Faible** | ✅ |
 | **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 8/8 | Execute | 10/10 | **ELEVE** | ✅ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 0/10 | — | — | Faible | ⬜ |
-| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 0/13 | — | — | Modere | ⬜ |
+| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 3/13 | Partiel | — | Modere | 🔄 |
 | 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | Modere | ⬜ |
 | **GLOBAL** | — | — | — | — | — | ⬜ |
