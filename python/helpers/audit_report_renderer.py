@@ -79,6 +79,8 @@ class AuditReportRenderer:
         self.source_notes = source_notes
         self.has_human_review = has_human_review
         self.has_consensus = has_consensus
+        self.tokens_input: Optional[int] = None
+        self.tokens_output: Optional[int] = None
 
     def render(self) -> str:
         """Render the full audit report as a markdown block.
@@ -200,6 +202,8 @@ class AuditReportRenderer:
                 tracker=self.tracker,
                 route_decision=self.route_decision,
                 model_config=self.model_config,
+                tokens_input=self.tokens_input,
+                tokens_output=self.tokens_output,
             )
             sections.append(
                 "### Metadonnees techniques\n\n"

@@ -34,6 +34,8 @@ class ReportMetadata:
     ai_act_category: str = "unknown"
     data_residency: str = "EU (OVH Cloud, Gravelines)"
     evidence_version: str = "unknown"
+    tokens_input: Optional[int] = None
+    tokens_output: Optional[int] = None
 
     @classmethod
     def from_session(
@@ -42,6 +44,8 @@ class ReportMetadata:
         tracker: Optional["PipelineTracker"] = None,
         route_decision: Optional["RouteDecision"] = None,
         model_config=None,
+        tokens_input: Optional[int] = None,
+        tokens_output: Optional[int] = None,
     ) -> "ReportMetadata":
         """Factory: assemble depuis les composants de session.
 
@@ -82,6 +86,11 @@ class ReportMetadata:
             except Exception:
                 pass
 
+        if tokens_input is not None and tokens_input > 0:
+            meta.tokens_input = tokens_input
+        if tokens_output is not None and tokens_output > 0:
+            meta.tokens_output = tokens_output
+
         return meta
 
     def to_dict(self) -> dict:
@@ -102,6 +111,8 @@ class ReportMetadata:
             ("Score de confiance", f"{self.confidence_score:.2f}" if self.confidence_score is not None else "—"),
             ("Temps de traitement", f"{self.processing_time_ms:,} ms" if self.processing_time_ms is not None else "—"),
             ("Categorie AI Act", self.ai_act_category if self.ai_act_category != "unknown" else "unknown"),
+            ("Tokens (entree)", f"{self.tokens_input:,}" if self.tokens_input is not None else "\u2014"),
+            ("Tokens (sortie)", f"{self.tokens_output:,}" if self.tokens_output is not None else "\u2014"),
             ("Residence des donnees", self.data_residency),
         ]
 

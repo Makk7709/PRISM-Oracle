@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 3.0.0  
+**Version** : 3.1.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-04-01  
-**Statut global** : EN COURS — SESSION 1-8 validees (code + tests) + S9 partiel (9.11-9.13) · 8.9 + 7B.5/7B.6 E2E prod a confirmer · PIVOT SCENARIO B actif  
+**Statut global** : EN COURS — SESSION 1-9 validees (code + tests, 10/13 taches S9) · 9.4 optionnel phase 2 · 9.8 E2E specifiques + 9.10 deploy a faire · PIVOT SCENARIO B actif  
 
 ---
 
@@ -954,30 +954,30 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 | # | Tache | Statut | Notes |
 |---|---|:---:|---|
-| 9.1 | Consolider la generation du rapport dans une extension unique `_30_audit_report_generation.py` (`message_loop_end`) | ⬜ | **Attention** : ici `message_loop_end` est correct — c'est pour generer un FICHIER rapport separe (stockage), PAS pour injecter dans la reponse (qui reste dans `monologue_start` via S6-S7A). Ne pas confondre avec la correction architecturale 7A. |
-| 9.2 | Stocker le rapport dans `tmp/chats/{ctxid}/audit_report.md` (meme ownership que chat.json) | ⬜ | can_access_context s'applique aussi |
-| 9.3 | Export PDF via `evidence_pdf_engine.py` | ⬜ | Reutiliser l'existant |
+| 9.1 | Consolider la generation du rapport dans `_30_audit_report_generation.py` (LLM classique) + `_20._store_report_file()` (pipeline) | ✅ | Helper centralise `audit_report_storage.py`. Deux chemins couverts. |
+| 9.2 | Stocker le rapport dans `tmp/chats/{ctxid}/audit_report.md` (meme ownership que chat.json) | ✅ | Meme dossier que `chat.json`, meme ACL. `folder_override` pour tests. |
+| 9.3 | Export PDF via `evidence_pdf_engine.py` | ✅ | `_generate_pdf()` best-effort via `markdown_to_pdf()`. Fallback ReportLab. |
 | 9.4 | Ajouter bouton "Voir le rapport d'audit" dans l'UI (optionnel phase 2) | ⬜ | |
-| 9.5 | Fail-safe complet : si la generation crash, la reponse est quand meme livree | ⬜ | try/except + logging.error |
-| 9.6 | Cleanup : rapport supprime quand le chat est supprime (chat_remove) | ⬜ | Pas de fuite de donnees |
-| 9.7 | Collecter tokens_input/tokens_output depuis les callbacks LLM (enrichir ReportMetadata) | ⬜ | |
-| 9.8 | Tests E2E automatises : 5 types de requetes (legal, strategique, medical, general, multi-agent) | ⬜ | |
-| 9.9 | Benchmark performance : overhead < 200ms sur le chemin critique | ⬜ | |
-| 9.10 | Deployer en staging et valider avec test E2E reel | ⬜ | |
+| 9.5 | Fail-safe complet : si la generation crash, la reponse est quand meme livree | ✅ | try/except dans `_30`, `_20._store_report_file()`, `store_audit_report()`, `_generate_pdf()`. |
+| 9.6 | Cleanup : rapport supprime quand le chat est supprime (chat_remove) | ✅ | Gratuit : `remove_chat()` → `delete_dir()` supprime tout `tmp/chats/{ctxid}/`. |
+| 9.7 | Collecter tokens_input/tokens_output depuis les callbacks LLM (enrichir ReportMetadata) | ✅ | `_tokens_cb` dans `call_chat_model` + `ReportMetadata.tokens_input/output`. |
+| 9.8 | Tests E2E automatises : 5 types de requetes (legal, strategique, medical, general, multi-agent) | ⬜ | 38 tests S9 + 282 regression. E2E specifiques 5 types a faire post-deploy. |
+| 9.9 | Benchmark performance : overhead < 200ms sur le chemin critique | ✅ | Tests `under_200ms` + `under_100ms`. Overhead mesure < 50ms. |
+| 9.10 | Deployer en staging et valider avec test E2E reel | ⬜ | A faire apres commit. |
 | 9.11 | **UX : Feedback de progression temps reel pour pipelines longs** — Informer l'utilisateur de l'avancement pendant l'execution (agent en cours, etape X/N). Utilise `context.log.set_progress()` (progress bar existante, polling 25-250ms). | ✅ | Implemente via `python/helpers/progress_feedback.py` — 3 helpers fail-safe, zero overhead |
 | 9.12 | Concevoir les messages de progression : format, frequence, granularite (par agent ? par phase ?). Format: "Agent {profile} en cours ({step}/{total}) — {role}" + phase synthese | ✅ | Format choisi : profile + step X/N + role description depuis `AGENT_ROLE_DESCRIPTIONS` |
 | 9.13 | Integrer les events de progression avec `PipelineTracker` (S3) : emettre un event a chaque `start_step()` / `complete_step()` | ✅ | Cable dans `strategic_orchestrator.py` (boucle agents + synthese) et `call_subordinate.py` (delegations individuelles). 12 tests unitaires. |
 
 ### Criteres de validation SESSION 9
-- [ ] Rapport genere automatiquement a chaque fin de session
-- [ ] Stocke avec meme ACL que chat.json
-- [ ] Export PDF fonctionnel
-- [ ] Fail-safe prouve (crash du renderer ne bloque pas la reponse)
-- [ ] Overhead < 200ms mesure
+- [x] Rapport genere automatiquement a chaque fin de session
+- [x] Stocke avec meme ACL que chat.json
+- [x] Export PDF fonctionnel
+- [x] Fail-safe prouve (crash du renderer ne bloque pas la reponse)
+- [x] Overhead < 200ms mesure
 - [ ] Tests E2E passent sur 5 types de requetes
 - [x] **Feedback de progression visible** : un pipeline de 4 agents affiche au minimum l'agent en cours et l'etape X/N
 - [x] L'utilisateur ne voit jamais un ecran fige pendant plus de 30 secondes sans indication d'activite
-- [ ] Auto-audit contradictoire execute
+- [x] Auto-audit contradictoire execute
 
 ### AUTO-AUDIT CONTRADICTOIRE — SESSION 9
 
@@ -1181,6 +1181,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-04-01 | SESSION 7B | Audit leger flux LLM classique (`message_loop_end` + `audit_light.py`). 10 tests. Fix doublon titre grille S7A. Audit hostile : DEF doublon + test S6 obsoletes, re-audit clean. 7B.5/7B.6 E2E prod a confirmer. | ✅ VALIDEE (code) |
 | 2026-04-01 | SESSION 9 (partiel) | **Taches 9.11-9.13 avancees** : feedback progression temps reel pour pipelines. Module `progress_feedback.py`, cable dans `strategic_orchestrator.py` + `call_subordinate.py`. 12 tests, 0 regression (112 total). Audit hostile : 0 defaut. | ✅ VALIDEE |
 | 2026-04-01 | SESSION 8 | IntegrityBlock (SHA-256 + HMAC-SHA256 phase 1) + AuditReportRenderer (assemblage centralise 7 blocs) + refactoring extension. 33 tests + 2 tests S6 adaptes. 157 tests total, 0 regression. Audit hostile : 0 defaut. 8.9 E2E a confirmer. | ✅ VALIDEE (code) |
+| 2026-04-01 | SESSION 9 | Stockage rapport MD+PDF (`audit_report_storage.py`), token tracking (`_tokens_cb` dans `call_chat_model`), extensions `_30` (LLM classique) + `_20` (pipeline). Fail-safe complet. Cleanup gratuit via `delete_dir`. 38 tests S9 + 1 test S7A adapte. 282 tests total, 0 regression. Overhead < 50ms. Audit hostile : 0 defaut. 9.4 optionnel, 9.8/9.10 post-deploy. | ✅ VALIDEE (code) |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1302,6 +1303,21 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 **Audit hostile** : 0 defaut. 157 tests passes, 0 regression.
 
+### Livrables SESSION 9 — Stockage + Tokens + PDF
+
+| Fichier | Action | Detail |
+|---|---|---|
+| `python/helpers/audit_report_storage.py` | **CREE** | `store_audit_report()` + `_generate_pdf()`. Import defere `persist_chat` (evite chaine whisper). `folder_override` pour tests. |
+| `python/extensions/message_loop_end/_30_audit_report_generation.py` | **CREE** | Extension pour LLM classique. Genere rapport fichier via `AuditReportRenderer` + `store_audit_report()`. Guards : agent0 only, non-BACKGROUND, non-pipeline. |
+| `python/extensions/monologue_start/_20_audit_metadata_append.py` | **MODIFIE** | Ajout `_store_report_file()` + propagation tokens (`_llm_tokens_input/output`). |
+| `python/helpers/audit_report_renderer.py` | **MODIFIE** | Ajout `tokens_input/tokens_output` propages a `ReportMetadata.from_session()`. |
+| `python/helpers/report_metadata.py` | **MODIFIE** | Champs `tokens_input: Optional[int]` + `tokens_output: Optional[int]`. Affichage formate dans `to_markdown_block()`. |
+| `agent.py` | **MODIFIE** | `call_chat_model()` : estimation input tokens + `_tokens_cb` accumulator via `unified_call`. Stocke `_llm_tokens_input/output` dans agent data. |
+| `tests/test_session9_storage_tokens.py` | **CREE** | 38 tests : storage MD/PDF/fail-safe, tokens ReportMetadata/Renderer, guards, pipeline storage, accumulation, cleanup, integration, benchmark < 200ms. |
+| `tests/test_session7a_report_metadata.py` | **MODIFIE** | 1 assertion adaptee : `expected_keys` inclut `tokens_input` + `tokens_output`. |
+
+**Audit hostile** : 0 defaut. 282 tests passes, 0 regression.
+
 ---
 
 ## Regles de mise a jour
@@ -1370,6 +1386,6 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 8/8 | Execute | 10/10 | **Faible** | ✅ |
 | **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 8/8 | Execute | 10/10 | **ELEVE** | ✅ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 9/10 | Execute | 10/10 | Faible | ✅ |
-| 9 | **E2E + Production** (stockage+PDF+fail-safe+**feedback progression**) | 3/13 | Partiel | — | Modere | 🔄 |
+| 9 | **E2E + Production** (stockage+PDF+tokens+fail-safe+**feedback progression**) | 10/13 | Execute | 10/10 | Faible | ✅ |
 | 10 | **Hardening** (RSA+rotation+monitoring) | 0/8 | — | — | Modere | ⬜ |
 | **GLOBAL** | — | — | — | — | — | ⬜ |

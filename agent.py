@@ -898,13 +898,35 @@ class Agent:
         # model class
         model = self.get_chat_model()
 
+        # Estimate input tokens from prompt messages
+        try:
+            prompt_text = " ".join(
+                getattr(m, "content", "") or "" for m in messages
+            )
+            input_tokens_est = tokens.approximate_tokens(prompt_text)
+        except Exception:
+            input_tokens_est = 0
+
+        # Accumulator for output tokens (reasoning + response chunks)
+        _output_tokens_acc = [0]
+
+        async def _tokens_cb(delta: str, approx: int) -> None:
+            _output_tokens_acc[0] += approx
+
         # call model
         response, reasoning = await model.unified_call(
             messages=messages,
             reasoning_callback=reasoning_callback,
             response_callback=response_callback,
+            tokens_callback=_tokens_cb,
             rate_limiter_callback=self.rate_limiter_callback if not background else None,
         )
+
+        # Store token usage for audit report (SESSION 9.7)
+        prev_in = self.get_data("_llm_tokens_input") or 0
+        prev_out = self.get_data("_llm_tokens_output") or 0
+        self.set_data("_llm_tokens_input", prev_in + input_tokens_est)
+        self.set_data("_llm_tokens_output", prev_out + _output_tokens_acc[0])
 
         return response, reasoning
 

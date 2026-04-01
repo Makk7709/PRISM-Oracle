@@ -163,6 +163,7 @@ class TestSerialization:
             "session_id", "model_primary", "agents_activated",
             "confidence_score", "processing_time_ms", "ai_act_category",
             "data_residency", "evidence_version",
+            "tokens_input", "tokens_output",
         }
         assert set(d.keys()) == expected_keys
 

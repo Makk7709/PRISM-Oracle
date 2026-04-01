@@ -62,6 +62,11 @@ class AuditMetadataAppend(Extension):
                 has_consensus=False,
             )
 
+            tokens_in = self.agent.get_data("_llm_tokens_input")
+            tokens_out = self.agent.get_data("_llm_tokens_output")
+            renderer.tokens_input = tokens_in
+            renderer.tokens_output = tokens_out
+
             audit_block = renderer.render()
             if not audit_block:
                 return
@@ -71,6 +76,8 @@ class AuditMetadataAppend(Extension):
                 pipeline_response + audit_block,
             )
             logger.info("Audit report appended (renderer v2)")
+
+            self._store_report_file(audit_block)
 
         except Exception as exc:
             logger.error("AuditMetadataAppend failed (non-blocking): %s", exc)
@@ -86,6 +93,15 @@ class AuditMetadataAppend(Extension):
             return self.agent.get_data("_pipeline_tracker")
         except Exception:
             return None
+
+    def _store_report_file(self, audit_block: str) -> None:
+        """Best-effort: persist audit report to disk (SESSION 9.1-9.2)."""
+        try:
+            from python.helpers.audit_report_storage import store_audit_report
+            store_audit_report(self.agent.context.id, audit_block)
+            logger.info("Audit report file stored (pipeline path)")
+        except Exception as exc:
+            logger.warning("Report file storage failed (non-blocking): %s", exc)
 
     def _resolve_route_decision(self):
         """Resolve RouteDecision from agent data (stored by call_subordinate)."""
