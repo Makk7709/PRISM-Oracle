@@ -1,13 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  * KOREV Evidence — Chat Messages Design System
  * Premium, sovereign, minimal — Design KOREV Evidence
- * Typography: Playfair Display (élégant) + Space Grotesk (technique)
+ * Typography: SF Pro / Helvetica Neue (clean, modern)
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Korev Typography Variables */
 :root {
-  --korev-font-elegant: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --korev-font-technical: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --korev-font-elegant: 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+  --korev-font-technical: 'SF Pro Text', 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
