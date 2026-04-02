@@ -1,9 +1,9 @@
 # Feuille de route — Conformite format Evidence
 
-**Version** : 4.0.0  
+**Version** : 5.0.0  
 **Cree le** : 2026-03-31  
 **Derniere mise a jour** : 2026-04-02  
-**Statut global** : EN COURS — SESSION 1-10 validees (code + tests, 8/8 taches S10) · Deploy prod + E2E final restants · PIVOT SCENARIO B actif  
+**Statut global** : EN COURS — PHASE 1-2 completes (S1-S10, 453 tests) · PHASE 3 lancee (S11-S16 : 9 ecarts post-rapport audit) · Evidence v1.2.0 deploye  
 
 ---
 
@@ -1184,6 +1184,8 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 2026-04-01 | SESSION 9 | Stockage rapport MD+PDF (`audit_report_storage.py`), token tracking (`_tokens_cb` dans `call_chat_model`), extensions `_30` (LLM classique) + `_20` (pipeline). Fail-safe complet. Cleanup gratuit via `delete_dir`. 38 tests S9 + 1 test S7A adapte. 282 tests total, 0 regression. Overhead < 50ms. Audit hostile : 0 defaut. 9.4 optionnel, 9.8/9.10 post-deploy. | ✅ VALIDEE (code) |
 | 2026-04-02 | SESSION 10 | **Hardening complet** : RSA-2048 (`log_signer.py`), rotation cles (registry JSON), IntegrityBlock upgrade (RSA-first + HMAC fallback), monitoring (4 compteurs audit), retention 5 ans (`purge_expired_reports` + `job_loop`), endpoint `/audit_reports` (OWNER+DPO/RSSI), `can_access_audit_reports` ACL, path traversal guard, bandit clean, `cryptography` dep. 50 tests S10 + 444 total S1-S10, 0 regression. Audit hostile : 2 DEF (1 Important path traversal, 1 Mineur import), corriges. Re-audit (1 passe) : 0 defaut. | ✅ VALIDEE (code) |
 | 2026-04-02 | SESSION 10 | **Re-audit hostile parano** : 4 DEF trouves (1 Critique : `compliance_role` non hydrate dans session/`_principal()` — DPO/RSSI inaccessible en prod ; 1 Important : `get_compliance_role()` manquant dans `user_manager.py` ; 1 Modere : `getattr` redondant dans `authorization.py` ; 1 Mineur : incoherence docstring "phase 1/2"). Corriges : hydratation `compliance_role` dans `run_ui.py` (3 points de login), `_resolve_session_scope()`, `_principal()` dans `api.py`, + `get_compliance_role()` dans `user_manager.py`. Re-audit total (1 passe) : 0 defaut residuel, bandit clean, 453 tests 0 regression. | ✅ VALIDEE |
+| 2026-04-02 | — | **Rapport audit strategique** (Corr. ID f6387161) : **11 ecarts diagnostiques**. E-01 (tokens) et E-02 (version) corriges immediatement (v1.2.0). 9 ecarts restants : E-03/04 (RouteDecision), E-05 (hash query), E-06/07 (hash doc + RSA prod), E-08/09 (flags dynamiques), E-10 (Art. 13 narratif), E-11 (registres formels). | ⚠️ DIAGNOSTIC |
+| 2026-04-02 | — | **Feuille de route v5.0.0** : PHASE 3 ajoutee (S11-S16). Processus par session : implementation → tests → audit parano hostile → correction → re-audit → commit → push GitHub → deploy serveur → verification post-deploy. | Plan mis a jour |
 
 ### Livrables SESSION 1 — SessionEnvelope
 
@@ -1339,6 +1341,372 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 ---
 
+## PHASE 3 : CORRECTIONS POST-RAPPORT D'AUDIT (S11-S16)
+
+> **Origine** : Rapport d'audit du 02/04/2026 — Dossier Strategique KOREV Evidence x Chaire Construction 4.0
+> (Correlation ID: f6387161-140c-412b-857b-6ba7d19374d8)
+>
+> 11 ecarts identifies. 2 corriges (E-01 tokens, E-02 version — v1.2.0). 9 restants.
+>
+> **Processus obligatoire par session** :
+> 1. Implementation + tests unitaires
+> 2. Audit parano hostile (relecture contradictoire du diff complet)
+> 3. Correction de tous les defauts identifies
+> 4. Re-audit total si defaut Critique/Important corrige (boucle jusqu'a 0 defaut)
+> 5. Commit avec trace d'audit dans le message
+> 6. Push sur GitHub (`origin main`)
+> 7. Mise a jour serveur : `git pull` + `docker compose up -d --build`
+> 8. Verification post-deploy (containers healthy + version correcte)
+
+### Ecarts diagnostiques (rapport 02/04/2026)
+
+| ID | Point du rapport | Valeur actuelle | Cause racine | Session |
+|---|---|---|---|:---:|
+| ~~E-01~~ | ~~Tokens (entree/sortie)~~ | ~~— / —~~ | ~~`_call_chat_model()` sans accumulation~~ | ~~v1.2.0~~ |
+| ~~E-02~~ | ~~Version Evidence~~ | ~~v1.0.0~~ | ~~Session generee avant bump~~ | ~~v1.2.0~~ |
+| E-03 | Score de confiance | `—` | `_route_decision_v2` non persiste pour pipelines strategiques | **11** |
+| E-04 | Categorie AI Act | `unknown` | Idem E-03 — `RouteDecision` absente sur l'agent principal | **11** |
+| E-05 | Hash requete (SHA-256) | `— (pas de requete)` | `envelope.query` reste `None` si extraction echoue | **12** |
+| E-06 | Hash document (SHA-256) | `— (pas de document)` | `document=None` code en dur dans `_20` | **13** |
+| E-07 | Signature | `HMAC-SHA256 (fallback)` | Cle RSA non configuree en production | **13** |
+| E-08 | `has_human_review` | `False` (code en dur) | Pas de resolution dynamique depuis metacognition/legal | **12** |
+| E-09 | `has_consensus` | `False` (code en dur) | PRISM consensus non cable vers le rapport | **12** |
+| E-10 | Art. 13 — Export non-technique | `to_safe_dict()` = counts only | Pas de couche narrative sanitisee | **14** |
+| E-11 | Art. 9/17/RGPD 30 — Registres | Absents | Aucun registre formel implemente | **15** |
+
+---
+
+## SESSION 11 — Cablage RouteDecision strategique (E-03 + E-04)
+
+**Objectif** : Persister la `RouteDecision` enrichie sur l'agent principal pour que le rapport d'audit affiche le `confidence_score` et la `ai_act_category` reels.
+**Prerequis** : SESSION 10
+**Risque sur l'existant** : Faible (ajout d'un `set_data` dans le hook strategique)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 11.1 | Dans `_15_strategic_enforcement.py` : apres `run_strategic_orchestrator()`, construire un `RouteDecision` avec `ai_act_category` derive du contexte (strategic_dossier → `limited_risk` ou `high_risk` selon le domaine) et `routing_strength` derive de la qualite du resultat (nombre de sources / score validation) | ⬜ | Faible | Utiliser `enrich_route_decision()` de `strategic_pipeline.py` si disponible |
+| 11.2 | Stocker la `RouteDecision` via `agent.set_data("_route_decision_v2", rd.to_dict())` dans `_15` | ⬜ | Faible | Doit etre fait AVANT l'execution de `_20` (ordre garanti : `_15` < `_20`) |
+| 11.3 | Verifier que `_resolve_route_decision()` dans `_20_audit_metadata_append.py` deserialise correctement le nouveau `_route_decision_v2` | ⬜ | Nul | Code existant — verification uniquement |
+| 11.4 | Tests unitaires : route decision presente → confidence + category dans le rapport, absente → fallback `unknown` (non-regression) | ⬜ | Nul | |
+| 11.5 | Tests de regression S1-S10 (453+ tests) | ⬜ | Nul | |
+| 11.6 | **AUDIT PARANO HOSTILE** — Phase 1+2+3 du protocole pre-commit | ⬜ | — | |
+| 11.7 | **COMMIT** avec trace d'audit + **PUSH** `origin main` | ⬜ | — | |
+| 11.8 | **DEPLOY** serveur : `git pull` + `docker compose up -d --build` + verification containers healthy | ⬜ | — | |
+| 11.9 | **VERIFICATION POST-DEPLOY** : lancer un dossier strategique et confirmer que `confidence_score` et `ai_act_category` apparaissent dans l'audit | ⬜ | — | |
+
+### Criteres de validation SESSION 11
+- [ ] `confidence_score` affiche une valeur numerique dans le rapport d'audit strategique
+- [ ] `ai_act_category` affiche une categorie reelle (pas `unknown`)
+- [ ] Zero regression sur les flux existants
+- [ ] Audit parano hostile execute : 0 defaut residuel
+- [ ] GitHub et serveur synchronises sur le meme commit
+- [ ] Containers healthy post-deploy
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 11
+
+> **Persona** : Architecte securite + auditeur AI Act.
+>
+> ```
+> Tu es un architecte securite senior qui audite le cablage d'une
+> RouteDecision strategique. Ton objectif : verifier que les valeurs
+> affichees dans le rapport sont REELLES, pas decoratives.
+>
+> 1. PROVENANCE — Le confidence_score vient-il d'un calcul reel
+>    (routing_strength, nombre de sources, qualite de consolidation)
+>    ou d'une valeur inventee ? Si c'est un chiffre arbitraire, c'est
+>    PIRE que "—" — c'est une fraude metrique.
+>
+> 2. AI ACT CATEGORY — La categorie derivee est-elle conforme a
+>    l'Annexe III du Reglement ? Un dossier strategique BTP qui
+>    touche a la securite des travailleurs DOIT etre high_risk.
+>    Un dossier marketing peut etre limited_risk. Verifie le mapping.
+>
+> 3. TIMING — Le set_data("_route_decision_v2") est-il execute
+>    AVANT _20_audit_metadata_append ? Si l'ordre d'execution des
+>    extensions n'est pas garanti, la valeur peut etre absente.
+>    Prouve l'ordre avec les prefixes de fichiers.
+>
+> 4. NON-REGRESSION — Les flux non-strategiques (legal, classique)
+>    sont-ils impactes ? Le _route_decision_v2 deja set par
+>    call_subordinate est-il ecrase ? Teste les 3 chemins.
+>
+> 5. COHERENCE — Le session_id dans la grille de conformite, les
+>    metadonnees, et l'integrite est-il identique ?
+>
+> 6. VERDICT — Note /10. Metrique decorative = 0/10.
+> ```
+
+---
+
+## SESSION 12 — Hash requete + flags dynamiques (E-05 + E-08 + E-09)
+
+**Objectif** : Le rapport affiche le hash SHA-256 de la requete et les vrais flags de supervision humaine et consensus.
+**Prerequis** : SESSION 11
+**Risque sur l'existant** : Faible (enrichissement de resolvers existants dans `_20`)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 12.1 | Garantir `envelope.query` non-None pour les pipelines strategiques : dans `_15`, si `envelope.query` est vide/None, le remplir depuis le texte utilisateur extrait par `_extract_user_text(loop_data)` | ⬜ | Faible | `_03` s'execute avant `_15` — l'envelope existe deja |
+| 12.2 | Creer `_resolve_human_review_flag()` dans `_20` : chercher `agent.get_data("_requires_human_review")` (legal safe), `agent.get_data("_metacognition_escalation")` (metacognition), `agent.get_data("_strategic_result")` flags | ⬜ | Faible | |
+| 12.3 | Creer `_resolve_consensus_flag()` dans `_20` : chercher `agent.get_data("_consensus_result")`, `agent.get_data("_prism_consensus_used")` | ⬜ | Faible | |
+| 12.4 | Passer les flags resolus dans `AuditReportRenderer(has_human_review=..., has_consensus=...)` au lieu de `False` | ⬜ | Faible | |
+| 12.5 | Tests unitaires : query non-None → hash present, flags dynamiques → statut Art. 14 correct | ⬜ | Nul | |
+| 12.6 | Tests de regression S1-S11 | ⬜ | Nul | |
+| 12.7 | **AUDIT PARANO HOSTILE** — Phase 1+2+3 | ⬜ | — | |
+| 12.8 | **COMMIT** + **PUSH** `origin main` | ⬜ | — | |
+| 12.9 | **DEPLOY** serveur + verification containers healthy | ⬜ | — | |
+| 12.10 | **VERIFICATION POST-DEPLOY** : confirmer hash requete present + flags dans un rapport reel | ⬜ | — | |
+
+### Criteres de validation SESSION 12
+- [ ] `Hash requete (SHA-256)` affiche `sha256:xxx` (pas `— (pas de requete)`)
+- [ ] `has_human_review` resolu dynamiquement (true quand declenchee, false sinon — pas hardcoded)
+- [ ] `has_consensus` resolu dynamiquement
+- [ ] Art. 14 de la grille de conformite reflete l'etat reel de la session
+- [ ] Zero regression
+- [ ] Audit parano hostile : 0 defaut residuel
+- [ ] GitHub + serveur synchronises
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 12
+
+> **Persona** : DPO + cryptographe, zero tolerance pour les traces manquantes.
+>
+> ```
+> Tu es un DPO senior et un cryptographe applique. Le DPO verifie que
+> chaque requete utilisateur est tracee. Le cryptographe verifie que
+> les hashes sont calcules sur les bonnes donnees.
+>
+> 1. HASH REQUETE — Le hash est-il calcule sur la requete BRUTE de
+>    l'utilisateur ou sur une version transformee/tronquee ? Si la
+>    requete est tronquee (ex: 2000 chars), le hash ne correspond
+>    plus a l'original — c'est une FAUSSE GARANTIE.
+>
+> 2. QUERY CAPTURE — Pour les 3 chemins (strategique, legal, classique),
+>    la query est-elle TOUJOURS capturee ? Teste une requete strategique
+>    longue (5000 chars) et verifie que le hash est present.
+>
+> 3. HUMAN REVIEW — Le flag est-il resolve CORRECTEMENT ? Si la session
+>    n'a PAS declenche de revue humaine, il DOIT etre false. S'il est
+>    true alors qu'aucune revue n'a eu lieu, c'est une fraude. Teste
+>    les 2 cas.
+>
+> 4. CONSENSUS — Meme verification. Si PRISM consensus n'a pas ete
+>    utilise, has_consensus DOIT etre false.
+>
+> 5. COHERENCE — L'integrity_hash de la SessionEnvelope inclut-il le
+>    query ? Si oui, l'integrity_hash est-il recalcule APRES le fix
+>    query ? Verifie la chaine de hashes.
+>
+> 6. VERDICT — Note /10. Hash sur donnees tronquees = max 5/10.
+> ```
+
+---
+
+## SESSION 13 — Hash document + RSA production (E-06 + E-07)
+
+**Objectif** : Le rapport affiche le hash du document strategique consolide et une signature RSA avec non-repudiation.
+**Prerequis** : SESSION 12
+**Risque sur l'existant** : Modere (configuration serveur)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 13.1 | Dans `_20_audit_metadata_append.py` : passer `pipeline_response` comme `document` dans `AuditReportRenderer` pour les pipelines strategiques (le document consolide = la reponse) | ⬜ | Faible | Distinguer pipeline vs classique |
+| 13.2 | Generer une keypair RSA-2048 sur le serveur OVH via `python -c "from python.helpers.log_signer import generate_keypair; generate_keypair('/evidence/keys')"` | ⬜ | Faible | Cles dans `/evidence/keys/` (volume Docker) |
+| 13.3 | Configurer `EVIDENCE_RSA_PRIVATE_KEY_PATH` dans le Docker env (`.env` ou `docker-compose.yml`) | ⬜ | Modere | Verifier permissions fichier (600) |
+| 13.4 | Configurer `EVIDENCE_RSA_PUBLIC_KEYS` JSON pour la verification | ⬜ | Faible | |
+| 13.5 | Tests unitaires : document hash present, signature RSA quand cle configuree | ⬜ | Nul | |
+| 13.6 | Tests de regression S1-S12 | ⬜ | Nul | |
+| 13.7 | **AUDIT PARANO HOSTILE** — Phase 1+2+3 | ⬜ | — | |
+| 13.8 | **COMMIT** + **PUSH** `origin main` | ⬜ | — | |
+| 13.9 | **DEPLOY** serveur + verification containers healthy | ⬜ | — | |
+| 13.10 | **VERIFICATION POST-DEPLOY** : rapport affiche `RSA-PSS-SHA256` + hash document present | ⬜ | — | |
+
+### Criteres de validation SESSION 13
+- [ ] `Hash document (SHA-256)` affiche `sha256:xxx` pour les pipelines strategiques
+- [ ] `Methode` affiche `RSA-PSS-SHA256 (non-repudiation)` au lieu du fallback HMAC
+- [ ] Signature verifiable avec la cle publique
+- [ ] Les rapports classiques (sans document) affichent toujours `— (pas de document)` — non-regression
+- [ ] Audit parano hostile : 0 defaut residuel
+- [ ] GitHub + serveur synchronises
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 13
+
+> **Persona** : Pentester + RSSI.
+>
+> ```
+> Tu es un pentester mandate pour valider la crypto en production.
+>
+> 1. RSA KEY SECURITY — Ou est la cle privee ? Permissions du fichier ?
+>    Accessible depuis le conteneur uniquement ? Pas dans le repo git ?
+>
+> 2. SIGNATURE VERIFICATION — Modifie un octet du rapport signe.
+>    La verification rejette-t-elle ? Si non = decoratif.
+>
+> 3. DOCUMENT HASH — Le hash couvre-t-il le document AVANT ou APRES
+>    l'ajout du bloc audit ? Si apres = le hash change a chaque
+>    generation et n'est pas verifiable.
+>
+> 4. FALLBACK — Si la cle RSA est absente/corrompue, le systeme
+>    tombe-t-il en HMAC gracieusement ? Ou crash-t-il ?
+>
+> 5. KEY ROTATION — Si on genere une nouvelle cle, les anciens
+>    rapports sont-ils toujours verifiables via le key registry ?
+>
+> 6. VERDICT — Note /10. Cle privee dans le repo = 0/10.
+> ```
+
+---
+
+## SESSION 14 — Art. 13 : Export non-technique lisible (E-10)
+
+**Objectif** : Les utilisateurs peuvent comprendre le fonctionnement du systeme via un export sanitise du raisonnement.
+**Prerequis** : SESSION 13
+**Risque sur l'existant** : Faible (enrichissement des methodes `to_safe_dict()`)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 14.1 | Creer `to_safe_narrative()` sur `ReasoningOutcome` : labels d'etapes en langage clair ("Recherche de sources", "Analyse financiere", "Consolidation") sans exposer le CoT interne | ⬜ | Faible | `reasoning_engine.py` |
+| 14.2 | Creer `to_safe_narrative()` sur `MetaDecision` : resume des decisions metacognitives en langage non-technique | ⬜ | Faible | `metacognition.py` |
+| 14.3 | Enrichir `to_safe_dict()` pour inclure les narratifs (en plus des counts existants) | ⬜ | Faible | Retrocompatible — ajout de cles |
+| 14.4 | Integrer dans le rapport audit : section "Transparence du raisonnement" avec les narratifs | ⬜ | Faible | `audit_report_renderer.py` |
+| 14.5 | Mettre a jour `_evaluate_art13_transparence()` dans `compliance_grid.py` pour detecter les narratifs → ameliorer le statut PARTIEL | ⬜ | Nul | |
+| 14.6 | Tests unitaires + regression S1-S13 | ⬜ | Nul | |
+| 14.7 | **AUDIT PARANO HOSTILE** — Phase 1+2+3 | ⬜ | — | |
+| 14.8 | **COMMIT** + **PUSH** `origin main` | ⬜ | — | |
+| 14.9 | **DEPLOY** serveur + verification containers healthy | ⬜ | — | |
+| 14.10 | **VERIFICATION POST-DEPLOY** : rapport contient section "Transparence" lisible par un non-technique | ⬜ | — | |
+
+### Criteres de validation SESSION 14
+- [ ] Section "Transparence du raisonnement" presente dans le rapport
+- [ ] Langage lisible par un DPO non-technique (pas de jargon code)
+- [ ] Aucune information CoT sensible exposee (pas de prompts internes, pas de traces brutes)
+- [ ] Art. 13 de la grille reflete l'amelioration
+- [ ] Audit parano hostile : 0 defaut residuel
+- [ ] GitHub + serveur synchronises
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 14
+
+> **Persona** : DPO non-technique + juriste AI Act.
+>
+> ```
+> Tu es un DPO qui n'a AUCUNE formation technique et un juriste
+> specialise AI Act. Votre question unique : un citoyen qui demande
+> "comment votre IA a-t-elle produit cette reponse ?" obtient-il
+> une explication comprehensible ?
+>
+> 1. LISIBILITE — Lis la section "Transparence du raisonnement".
+>    Comprends-tu ce que le systeme a fait SANS lire le code ?
+>    Si tu dois deviner, c'est un ECHEC Art. 13.
+>
+> 2. COMPLETUDE — Les etapes principales sont-elles toutes listees ?
+>    (recherche, analyse, consolidation, validation). Si une etape
+>    majeure est omise, c'est trompeur.
+>
+> 3. SECURITE — Les narratifs exposent-ils des prompts internes,
+>    des noms de modeles sensibles, ou des donnees utilisateur ?
+>    Si oui = FUITE.
+>
+> 4. VERDICT — Note /10. Jargon technique = max 5/10.
+> ```
+
+---
+
+## SESSION 15 — Registres formels Art. 9 / Art. 17 / RGPD Art. 30 (E-11)
+
+**Objectif** : Implementer les 3 registres formels requis par l'AI Act et le RGPD, et les integrer dans le rapport.
+**Prerequis** : SESSION 14
+**Risque sur l'existant** : Faible (ajout de modules, pas de modification de flux)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 15.1 | Creer `RiskRegister` (Art. 9) : identification des risques par domaine/profil (securite chantier → high, marketing → low), mesures d'attenuation documentees (PRISM consensus, metacognition, FAIL_CLOSED), lien avec `CriticalityRouter` existant | ⬜ | Faible | Nouveau `python/helpers/risk_register.py` |
+| 15.2 | Creer `ProcessingRegister` (RGPD Art. 30) : finalites du traitement, categories de personnes concernees, destinataires, transferts (OVH EU), delais de retention (12 mois logs), mesures de securite (SHA-256, RSA, HMAC) | ⬜ | Faible | Nouveau `python/helpers/processing_register.py` |
+| 15.3 | Enrichir Art. 17 (QMS) : lier les metriques de monitoring S10 (4 compteurs audit) comme preuve de monitoring post-deploiement, documenter la politique de correction | ⬜ | Faible | `compliance_grid.py` |
+| 15.4 | Integrer les registres dans le rapport d'audit : sections supplementaires ou annexes accessibles | ⬜ | Faible | `audit_report_renderer.py` |
+| 15.5 | Mettre a jour les evaluateurs Art. 9 / Art. 17 / RGPD 30 dans `compliance_grid.py` pour detecter les registres → ameliorer les statuts PARTIEL | ⬜ | Nul | |
+| 15.6 | Tests unitaires + regression S1-S14 | ⬜ | Nul | |
+| 15.7 | **AUDIT PARANO HOSTILE** — Phase 1+2+3 | ⬜ | — | |
+| 15.8 | **COMMIT** + **PUSH** `origin main` | ⬜ | — | |
+| 15.9 | **DEPLOY** serveur + verification containers healthy | ⬜ | — | |
+| 15.10 | **VERIFICATION POST-DEPLOY** : rapport contient registres + statuts conformite ameliores | ⬜ | — | |
+
+### Criteres de validation SESSION 15
+- [ ] `RiskRegister` genere une grille de risques coherente par domaine
+- [ ] `ProcessingRegister` contient toutes les informations Art. 30 RGPD
+- [ ] Art. 17 ameliore grace aux metriques de monitoring
+- [ ] Les 3 statuts (Art. 9, Art. 17, RGPD 30) progressent de PARTIEL vers un statut plus favorable
+- [ ] ZERO compliance washing : si un element manque encore, le statut reste PARTIEL
+- [ ] Audit parano hostile : 0 defaut residuel
+- [ ] GitHub + serveur synchronises
+
+### AUTO-AUDIT CONTRADICTOIRE — SESSION 15
+
+> **Persona** : Auditeur CNIL + consultant AI Act certifie.
+>
+> ```
+> Tu es un auditeur CNIL mandate pour verifier le registre Art. 30
+> et un consultant certifie AI Act qui verifie les registres Art. 9
+> et Art. 17.
+>
+> 1. REGISTRE Art. 30 — Contient-il : (a) finalites du traitement,
+>    (b) categories de personnes concernees, (c) categories de
+>    destinataires, (d) transferts hors UE, (e) delais d'effacement,
+>    (f) mesures de securite ? Si un element manque = NON CONFORME.
+>
+> 2. REGISTRE Art. 9 — Contient-il : (a) identification des risques,
+>    (b) estimation de l'impact, (c) mesures d'attenuation,
+>    (d) monitoring continu ? Un simple score ne suffit PAS.
+>
+> 3. QMS Art. 17 — Le systeme de gestion de la qualite comprend-il :
+>    (a) versioning, (b) logs, (c) monitoring post-deploiement,
+>    (d) gestion des donnees, (e) procedures de correction ?
+>
+> 4. HONNETE — Les statuts de conformite sont-ils HONNETES apres
+>    ajout des registres ? CONFORME exige la completude totale.
+>    PARTIEL est acceptable si des gaps sont documentes.
+>
+> 5. VERDICT — Note /10. Registre bidon = 0/10.
+> ```
+
+---
+
+## SESSION 16 — E2E final + Audit global + Version bump
+
+**Objectif** : Valider l'ensemble des corrections par des tests E2E reels, executer l'audit contradictoire global, deployer la version finale.
+**Prerequis** : SESSION 15
+**Risque sur l'existant** : Nul (validation uniquement)
+
+### Taches
+
+| # | Tache | Statut | Risque | Notes |
+|---|---|:---:|:---:|---|
+| 16.1 | Tests E2E production : 5 types de requetes — (1) legal simple, (2) legal complexe PDF, (3) strategique, (4) classique general, (5) multi-agent | ⬜ | — | Chaque type doit produire un rapport complet |
+| 16.2 | Pour chaque rapport E2E, verifier : score confiance present, AI Act category reelle, hash requete present, signature RSA, transparence lisible, registres presents | ⬜ | — | |
+| 16.3 | Executer l'**audit contradictoire GLOBAL** (prompt post-SESSION 10 de la feuille de route — "DPO + CTO revue finale") sur les 5 rapports | ⬜ | — | Bloquant : ≥ 8/10 |
+| 16.4 | Corriger les ecarts identifies par l'audit global | ⬜ | Variable | |
+| 16.5 | **AUDIT PARANO HOSTILE** final si corrections | ⬜ | — | |
+| 16.6 | Version bump (`VERSION.json` → v1.3.0 ou selon delta) + **COMMIT** + **PUSH** | ⬜ | Nul | |
+| 16.7 | **DEPLOY** final serveur + verification complète | ⬜ | — | |
+| 16.8 | Verification croisee : GitHub == serveur == version affichee dans le rapport | ⬜ | — | |
+
+### Criteres de validation SESSION 16
+- [ ] 5 rapports E2E complets et conformes
+- [ ] Audit contradictoire GLOBAL ≥ 8/10
+- [ ] Tous les ecarts E-01 a E-11 corriges (verification par tableau)
+- [ ] GitHub, serveur, et version parfaitement synchronises
+- [ ] Prêt pour audit externe (CNIL, ANSSI, Big Four)
+
+---
+
 ## Regles de mise a jour
 
 1. A chaque debut de session : passer les taches en 🔄
@@ -1392,7 +1760,7 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 
 ## Compteur de sante
 
-| Session | Description (v2) | Taches | Auto-audit | Note | Risque | Statut |
+| Session | Description | Taches | Auto-audit | Note | Risque | Statut |
 |:---:|---|:---:|:---:|:---:|:---:|:---:|
 | 1 | SessionEnvelope (brique) | 8/8 | Execute | 7.5→8+ | Nul | ✅ |
 | 2 | Classification AI Act (brique) | 8/8 | Execute | 7.5→8.5+ | Nul | ✅ |
@@ -1402,9 +1770,17 @@ VERDICT : ACCEPTE / REJET (corriger DEF-N.x avant de continuer) / ANNULE
 | ⚡ | **TEST MI-PARCOURS** | — | E2E reel | **0/5 cables** | — | ⚠️ |
 | 6 | **Cabler S1+S3** (envelope+tracker) | 7/7 | Execute | 7/10 → REJET | Faible | ❌ |
 | 6.1 | **Corrections audit hostile S6** | 6/6 | Execute | **10/10** | Faible | ✅ |
-| **7A** | **Cabler S5+S4+Metadata** dans le flux pipeline (grid+taxonomy+meta) + fix version resolver | 8/8 | Execute | 10/10 | **Faible** | ✅ |
-| **7B** | **Extension audit au flux LLM classique** — investigation archi + audit leger + implementation | 8/8 | Execute | 10/10 | **ELEVE** | ✅ |
+| **7A** | **Cabler S5+S4+Metadata** + fix version resolver | 8/8 | Execute | 10/10 | Faible | ✅ |
+| **7B** | **Extension audit flux LLM classique** | 8/8 | Execute | 10/10 | ELEVE | ✅ |
 | 8 | **Integrite + Assemblage** (hashes+renderer) | 9/10 | Execute | 10/10 | Faible | ✅ |
-| 9 | **E2E + Production** (stockage+PDF+tokens+fail-safe+**feedback progression**) | 10/13 | Execute | 10/10 | Faible | ✅ |
-| 10 | **Hardening** (RSA+rotation+monitoring+retention+ACL) | 8/8 | Execute | 10/10 | Faible | ✅ |
-| **GLOBAL** | — | — | — | — | — | ⬜ (deploy+E2E) |
+| 9 | **E2E + Production** (stockage+PDF+tokens+feedback) | 10/13 | Execute | 10/10 | Faible | ✅ |
+| 10 | **Hardening** (RSA+rotation+monitoring+ACL) | 8/8 | Execute | 10/10 | Faible | ✅ |
+| | | | | | | |
+| | **— PHASE 3 : POST-RAPPORT AUDIT 02/04/2026 —** | | | | | |
+| **11** | **RouteDecision strategique** (E-03, E-04) | 0/9 | — | — | Faible | ⬜ |
+| **12** | **Hash requete + flags dynamiques** (E-05, E-08, E-09) | 0/10 | — | — | Faible | ⬜ |
+| **13** | **Hash document + RSA production** (E-06, E-07) | 0/10 | — | — | Modere | ⬜ |
+| **14** | **Art. 13 export non-technique** (E-10) | 0/10 | — | — | Faible | ⬜ |
+| **15** | **Registres formels Art. 9/17/RGPD 30** (E-11) | 0/10 | — | — | Faible | ⬜ |
+| **16** | **E2E final + Audit global + Version** | 0/8 | — | — | Nul | ⬜ |
+| **GLOBAL** | — | — | — | — | — | ⬜ |

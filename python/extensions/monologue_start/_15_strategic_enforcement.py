@@ -269,6 +269,8 @@ class StrategicEnforcementMonologueHook(Extension):
             self.agent.set_data("_pipeline_was_used", True)
             self.agent.set_data("_strategic_result", result)
             self.agent.set_data("_strategic_correlation_id", correlation_id)
+
+            self._persist_route_decision(result, detection, correlation_id)
             
             logger.info(
                 f"[{correlation_id}] Strategic pipeline completed: "
@@ -293,3 +295,77 @@ class StrategicEnforcementMonologueHook(Extension):
             )
             
             # Do NOT set _skip_llm - let the LLM respond as fallback
+
+    def _persist_route_decision(self, result, detection, correlation_id: str) -> None:
+        """Build and persist a RouteDecision for the audit report (SESSION 11).
+
+        Derives ai_act_category from the agents actually mobilised and
+        routing_strength from the pipeline quality signals (source count,
+        validation outcome).  Stored as ``_route_decision_v2`` so that
+        ``_20_audit_metadata_append`` picks it up via its existing resolver.
+        """
+        try:
+            from python.helpers.router.routing_contract import (
+                RouteDecision, RouteIntent, RouteVerdict, IntentName,
+                AIActCategory, get_ai_act_category,
+            )
+
+            intent_map = {
+                "researcher": IntentName.RESEARCHER,
+                "finance": IntentName.FINANCE,
+                "marketing": IntentName.MARKETING,
+                "sales": IntentName.SALES,
+            }
+
+            intents = []
+            for resp in result.responses:
+                intent_name = intent_map.get(resp.profile)
+                if intent_name is not None:
+                    score = 1.0 if resp.success else 0.2
+                    intents.append(RouteIntent(
+                        name=intent_name, score=score, is_required=True,
+                    ))
+
+            if not intents:
+                intents.append(RouteIntent(
+                    name=IntentName.RESEARCHER, score=0.8, is_required=True,
+                ))
+
+            min_sources = getattr(detection, "min_sources", 10) or 10
+            source_ratio = min(result.total_sources / max(min_sources, 1), 1.0)
+            validation_bonus = 0.2 if result.validation_passed else 0.0
+            strength = round(min(source_ratio * 0.8 + validation_bonus, 1.0), 3)
+            _RISK_ORDER = {
+                AIActCategory.UNACCEPTABLE: 4,
+                AIActCategory.HIGH_RISK: 3,
+                AIActCategory.LIMITED_RISK: 2,
+                AIActCategory.MINIMAL_RISK: 1,
+            }
+            highest_cat = max(
+                (get_ai_act_category(i.name) for i in intents),
+                key=lambda c: _RISK_ORDER.get(c, 0),
+            )
+
+            rd = RouteDecision(
+                verdict=RouteVerdict.PROCEED,
+                intents=intents,
+                routing_strength=strength,
+                is_board_level=True,
+                reasons=[
+                    f"Strategic pipeline: {detection.document_type}",
+                    f"{result.total_sources} sources, "
+                    f"{'PASS' if result.validation_passed else 'FAIL_CLOSED'}",
+                ],
+                route_id=correlation_id,
+                ai_act_category=highest_cat,
+            )
+
+            self.agent.set_data("_route_decision_v2", rd.to_dict())
+            logger.info(
+                "[%s] RouteDecision persisted: ai_act=%s, strength=%.3f",
+                correlation_id,
+                rd.ai_act_category.value if rd.ai_act_category else "unknown",
+                rd.routing_strength,
+            )
+        except Exception as exc:
+            logger.warning("_persist_route_decision failed (non-blocking): %s", exc)
