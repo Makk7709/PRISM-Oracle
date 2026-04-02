@@ -173,6 +173,51 @@ class TestContentValidation:
         assert not is_valid
         assert any("Alternative" in m for m in missing)
 
+    def test_alternatives_detected_via_synonym_benchmark(self):
+        """Test that 'benchmarking' satisfies the alternatives check."""
+        text = """
+        Benchmarking des solutions du marché [REF-01]
+        Source: Eurostat 2024 [REF-02] [REF-03]
+        """
+        is_valid, missing = validate_strategic_content(text, "strategic_dossier", 3)
+        assert not any("Alternative" in m for m in missing)
+
+    def test_alternatives_detected_via_synonym_concurrent(self):
+        """Test that 'concurrentiel' satisfies the alternatives check."""
+        text = """
+        Analyse concurrentielle du secteur [REF-01]
+        Source: INSEE 2024 [REF-02] [REF-03]
+        """
+        is_valid, missing = validate_strategic_content(text, "strategic_dossier", 3)
+        assert not any("Alternative" in m for m in missing)
+
+    def test_alternatives_detected_via_synonym_swot(self):
+        """Test that 'SWOT' satisfies the alternatives check."""
+        text = """
+        SWOT du positionnement [REF-01]
+        Source: Bpifrance 2024 [REF-02] [REF-03]
+        """
+        is_valid, missing = validate_strategic_content(text, "strategic_dossier", 3)
+        assert not any("Alternative" in m for m in missing)
+
+    def test_alternatives_detected_via_comparaison(self):
+        """Test that 'comparaison' (French) satisfies the alternatives check."""
+        text = """
+        Comparaison des acteurs du marché [REF-01]
+        Source: IDC Europe 2024 [REF-02] [REF-03]
+        """
+        is_valid, missing = validate_strategic_content(text, "strategic_dossier", 3)
+        assert not any("Alternative" in m for m in missing)
+
+    def test_alternatives_detected_via_vs(self):
+        """Test that 'vs' satisfies the alternatives check."""
+        text = """
+        Solution A vs Solution B [REF-01]
+        Source: Gartner Europe 2024 [REF-02] [REF-03]
+        """
+        is_valid, missing = validate_strategic_content(text, "strategic_dossier", 3)
+        assert not any("Alternative" in m for m in missing)
+
 
 class TestAgentPrompts:
     """Tests for agent prompt generation."""

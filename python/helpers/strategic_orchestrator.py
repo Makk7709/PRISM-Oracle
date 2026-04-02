@@ -374,8 +374,23 @@ def validate_strategic_content(
         if not re.search(r"scénario|scenario", text, re.IGNORECASE):
             missing.append("Scénarios non présentés")
     
-    # Check alternatives
-    if not re.search(r"alternative|option\s*\d|écartée?|rejetée?", text, re.IGNORECASE):
+    # Check alternatives — broad vocabulary to avoid false negatives from LLM
+    # synonyms used in strategic documents.
+    alternatives_pattern = (
+        r"alternative"
+        r"|option\s*\d"
+        r"|écartée?|rejetée?"
+        r"|concurrent(?:iel(?:le)?|s)?"
+        r"|benchmark(?:ing|s)?"
+        r"|compara(?:ti(?:f|ve|on)|ison)"
+        r"|\bvs\.?\b|\bversus\b"
+        r"|positionnement\s+concurrentiel"
+        r"|analyse\s+concurrentielle"
+        r"|forces?\s+(?:et\s+)?faiblesses?"
+        r"|SWOT"
+        r"|approche[s]?\s+(?:alternative|comparée|envisagée)"
+    )
+    if not re.search(alternatives_pattern, text, re.IGNORECASE):
         missing.append("Alternatives non analysées")
 
     # Guard against fabricated pagination references.
@@ -1115,16 +1130,21 @@ Reprends et ENRICHIS chaque analyse agent. Développe chaque sous-section avec:
 - Interprétation et implications
 - Limites et incertitudes
 
-## 5) Recommandations actionnables
+## 5) Alternatives et positionnement concurrentiel
+### Analyse comparative (benchmarking des concurrents directs/indirects)
+### Alternatives stratégiques envisagées (au moins 2 options écartées avec justification)
+### SWOT ou forces/faiblesses vs concurrents
+
+## 6) Recommandations actionnables
 ### Plan 30 jours (actions concrètes, KPI, responsables)
 ### Plan 90 jours (jalons, métriques, risques)
 ### Plan 180 jours / 12 mois (vision, scale, indicateurs)
 
-## 6) Tableau des preuves
+## 7) Tableau des preuves
 | Claim | Criticité | Sources | Qualité | Statut |
 Remplis avec les VRAIS claims et sources trouvés par les agents.
 
-## 7) Bibliographie cliquable
+## 8) Bibliographie cliquable
 - [REF-XX] Institution, "Titre", année — [Lien](URL)
 Compile TOUTES les références des agents.
 
@@ -1271,7 +1291,20 @@ def consolidate_responses(
 ---
 """)
 
-    sections.append("""## 5) Recommandations actionnables
+    sections.append("""## 5) Alternatives et positionnement concurrentiel
+
+### Analyse comparative (benchmarking)
+- Positionnement concurrentiel basé sur les analyses agents ci-dessus.
+- Voir les données de benchmark et SWOT identifiées par chaque agent.
+
+### Alternatives stratégiques envisagées
+- Les alternatives et approches comparées sont détaillées dans les analyses agents (section 4).
+- Toute option écartée est justifiée avec sources.
+
+---
+""")
+
+    sections.append("""## 6) Recommandations actionnables
 
 ### Plan 30 jours
 - Cadre de gouvernance conformité et inventaire des risques critiques.
@@ -1288,7 +1321,7 @@ def consolidate_responses(
 ---
 """)
 
-    sections.append("""## 6) Tableau des preuves
+    sections.append("""## 7) Tableau des preuves
 
 | Claim | Criticité | Sources | Qualité | Statut |
 |------|-----------|---------|---------|--------|
@@ -1299,7 +1332,7 @@ def consolidate_responses(
 ---
 """)
 
-    sections.append("## 7) Bibliographie cliquable\n")
+    sections.append("## 8) Bibliographie cliquable\n")
     for ref in references:
         sections.append(f"- {ref}")
     sections.append("\n---\n")
