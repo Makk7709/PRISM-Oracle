@@ -1,8 +1,8 @@
 {
-  "version": "Evidence v1.2.0",
-  "short_tag": "v1.2.0",
-  "tag": "v1.2.0",
+  "version": "Evidence v1.3.0",
+  "short_tag": "v1.3.0",
+  "tag": "v1.3.0",
   "branch": "main",
-  "commit_hash": "f9299a4b",
-  "commit_time": "26-04-02 17:52"
+  "commit_hash": "d674d01a",
+  "commit_time": "26-04-02 23:10"
 }
