@@ -137,7 +137,7 @@
         border: 1px solid var(--prism-border);
         border-radius: var(--prism-radius-lg);
         color: var(--prism-text-primary);
-        font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        font-family: var(--korev-font-elegant, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, sans-serif);
         font-size: 15px;
         line-height: 1.6;
         letter-spacing: 0.01em;
@@ -156,8 +156,8 @@
     .korev-textarea::placeholder {
         color: var(--prism-text-muted);
         opacity: 0.6;
-        font-family: 'Playfair Display', Georgia, serif;
-        font-style: italic;
+        font-family: var(--korev-font-elegant, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, sans-serif);
+        font-style: normal;
     }
 
     /* Scrollbar */
