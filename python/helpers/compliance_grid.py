@@ -67,6 +67,7 @@ class ComplianceCheck:
 def _evaluate_art13_transparency(
     envelope: Optional["SessionEnvelope"],
     tracker: Optional["PipelineTracker"],
+    has_narrative: bool = False,
 ) -> ComplianceCheck:
     """
     Art. 13 AI Act — Transparence.
@@ -74,8 +75,7 @@ def _evaluate_art13_transparency(
 
     CE QUI EXISTE : TraceStep structure (reasoning_engine), sanitized actions/outcomes,
     session_id traçable, pipeline_tracker avec agents actives et durees.
-    CE QUI MANQUE : export lisible pour utilisateur non-technique (to_safe_dict
-    n'expose que le count, pas le contenu des traces).
+    SESSION 14 : section « Transparence du raisonnement » avec narratif non-technique.
     """
     evidence_parts = []
     has_session_id = envelope is not None and envelope.session_id is not None
@@ -97,11 +97,32 @@ def _evaluate_art13_transparency(
         "(action/outcome sanitises, CoT non expose)"
     )
 
-    gaps = (
-        "Export utilisateur non-technique incomplet : to_safe_dict() "
-        "n'expose que le nombre d'etapes, pas le contenu des traces. "
-        "Art. 13 exige que les utilisateurs puissent COMPRENDRE le fonctionnement."
-    )
+    if has_narrative:
+        evidence_parts.append(
+            "Section 'Transparence du raisonnement' presente dans le rapport : "
+            "narratif en langage non technique (agents consultes, durees, "
+            "validation, confiance) sans exposition de CoT ni de prompts internes"
+        )
+
+    gaps_parts = []
+    if not has_narrative:
+        gaps_parts.append(
+            "Export utilisateur non-technique incomplet : to_safe_dict() "
+            "n'expose que le nombre d'etapes, pas le contenu des traces. "
+            "Art. 13 exige que les utilisateurs puissent COMPRENDRE le fonctionnement."
+        )
+
+    gaps = " ".join(gaps_parts)
+
+    if has_session_id and has_tracker and has_narrative:
+        return ComplianceCheck(
+            article="Art. 13 AI Act (2024/1689)",
+            exigence="Transparence : les utilisateurs doivent pouvoir comprendre "
+                     "le fonctionnement du systeme IA",
+            status=ComplianceStatus.CONFORME,
+            evidence="; ".join(evidence_parts),
+            gaps=gaps,
+        )
 
     if has_session_id and has_tracker:
         return ComplianceCheck(
@@ -110,7 +131,10 @@ def _evaluate_art13_transparency(
                      "le fonctionnement du systeme IA",
             status=ComplianceStatus.PARTIEL,
             evidence="; ".join(evidence_parts),
-            gaps=gaps,
+            gaps=gaps if gaps else (
+                "Export utilisateur non-technique incomplet : "
+                "Art. 13 exige que les utilisateurs puissent COMPRENDRE le fonctionnement."
+            ),
         )
 
     return ComplianceCheck(
@@ -120,7 +144,10 @@ def _evaluate_art13_transparency(
         status=ComplianceStatus.NON_CONFORME,
         evidence="Aucune trace de session disponible" if not evidence_parts
                  else "; ".join(evidence_parts),
-        gaps=gaps,
+        gaps=gaps if gaps else (
+            "Export utilisateur non-technique incomplet : "
+            "Art. 13 exige que les utilisateurs puissent COMPRENDRE le fonctionnement."
+        ),
     )
 
 
@@ -364,10 +391,11 @@ class ComplianceGrid:
         has_human_review: bool = False,
         human_reviewer: Optional[str] = None,
         has_consensus: bool = False,
+        has_narrative: bool = False,
     ) -> "ComplianceGrid":
         """Evalue tous les articles applicables et retourne la grille."""
         checks = [
-            _evaluate_art13_transparency(envelope, tracker),
+            _evaluate_art13_transparency(envelope, tracker, has_narrative=has_narrative),
             _evaluate_art14_human_supervision(envelope, has_human_review, human_reviewer),
             _evaluate_art17_quality_system(envelope, tracker, has_consensus),
             _evaluate_art9_risk_management(envelope, route_decision, confidence_score),

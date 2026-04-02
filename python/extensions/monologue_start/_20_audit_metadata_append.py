@@ -1,5 +1,5 @@
 """
-SESSION 8 / SESSION 12 — Append full audit report to pipeline responses.
+SESSION 8 / SESSION 12 / SESSION 14 — Append full audit report to pipeline responses.
 
 Runs AFTER strategic (_15) and legal (_10) pipeline hooks in monologue_start.
 If _pipeline_final_response was set by a pipeline, this hook delegates to
@@ -8,10 +8,11 @@ AuditReportRenderer which assembles the complete audit report:
     1. Identite de la session     (SessionEnvelope)
     2. Pipeline d'execution       (PipelineTracker)
     3. Grille de conformite       (ComplianceGrid)
-    4. Taxonomie des sources      (SourceTaxonomy)
-    5. Metadonnees techniques     (ReportMetadata)
-    6. Integrite et securite      (IntegrityBlock — NEW S8)
-    7. Footer                     (avertissement + Evidence branding)
+    4. Transparence du raisonnement (SESSION 14 — Art. 13)
+    5. Taxonomie des sources      (SourceTaxonomy)
+    6. Metadonnees techniques     (ReportMetadata)
+    7. Integrite et securite      (IntegrityBlock)
+    8. Footer                     (avertissement + Evidence branding)
 
 The original response is hashed (SHA-256) BEFORE appending, so the integrity
 hash in the SessionEnvelope covers the unmodified pipeline output.
@@ -20,6 +21,10 @@ SESSION 12 additions:
   - Backfill envelope.query when _03 extraction missed the raw message
   - Resolve has_human_review dynamically from legal/metacognition signals
   - Resolve has_consensus dynamically from PRISM/pipeline consensus signals
+
+SESSION 14 additions:
+  - Resolve reasoning/metacognition narratives from agent data
+  - Pass narratives to AuditReportRenderer for Art. 13 transparency section
 
 Fail-safe: any error is logged and swallowed — the original response is
 delivered unchanged to the user.
@@ -60,6 +65,9 @@ class AuditMetadataAppend(Extension):
 
             document = self._resolve_document(pipeline_response)
 
+            reasoning_narrative = self._resolve_reasoning_narrative()
+            meta_narrative = self._resolve_meta_narrative()
+
             from python.helpers.audit_report_renderer import AuditReportRenderer
             renderer = AuditReportRenderer(
                 envelope=envelope,
@@ -72,6 +80,8 @@ class AuditMetadataAppend(Extension):
                 source_notes=source_notes,
                 has_human_review=has_human_review,
                 has_consensus=has_consensus,
+                reasoning_narrative=reasoning_narrative,
+                meta_narrative=meta_narrative,
             )
 
             tokens_in = self.agent.get_data("_llm_tokens_input")
@@ -210,6 +220,26 @@ class AuditMetadataAppend(Extension):
         except Exception as exc:
             logger.debug("_resolve_consensus_flag failed: %s", exc)
         return False
+
+    def _resolve_reasoning_narrative(self):
+        """SESSION 14 — Extract reasoning narrative if ReasoningOutcome was persisted."""
+        try:
+            raw = self.agent.get_data("_reasoning_outcome_safe")
+            if raw is not None and isinstance(raw, dict):
+                return raw.get("narrative")
+        except Exception as exc:
+            logger.debug("_resolve_reasoning_narrative failed: %s", exc)
+        return None
+
+    def _resolve_meta_narrative(self):
+        """SESSION 14 — Extract metacognition narrative if MetaDecision was persisted."""
+        try:
+            raw = self.agent.get_data("_meta_decision_safe")
+            if raw is not None and isinstance(raw, dict):
+                return raw.get("narrative")
+        except Exception as exc:
+            logger.debug("_resolve_meta_narrative failed: %s", exc)
+        return None
 
     def _resolve_document(self, pipeline_response: str):
         """SESSION 13.1 — Resolve the document to hash in the integrity block.

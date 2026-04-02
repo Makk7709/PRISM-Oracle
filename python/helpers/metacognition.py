@@ -242,6 +242,20 @@ class MetaDecision:
     should_retry: bool
     debug_id: str
     
+    _ESCALATION_LABELS = {
+        EscalationType.NONE: "Aucune escalade necessaire",
+        EscalationType.ASK_CLARIFY: "Demande de clarification aupres de l'utilisateur",
+        EscalationType.HUMAN_REVIEW: "Revue humaine requise avant validation",
+        EscalationType.SAFE_REFUSE: "Refus de traitement par mesure de precaution",
+    }
+
+    _CONFIDENCE_LEVEL_LABELS = {
+        ConfidenceLevel.HIGH: "elevee",
+        ConfidenceLevel.MEDIUM: "moderee",
+        ConfidenceLevel.LOW: "faible",
+        ConfidenceLevel.CRITICAL: "critique",
+    }
+
     def to_safe_dict(self) -> Dict[str, Any]:
         """Export sans CoT."""
         return {
@@ -251,7 +265,51 @@ class MetaDecision:
             "uncertainty_count": len(self.uncertainty_reasons),
             "questions_count": len(self.clarification_questions),
             "should_retry": self.should_retry,
+            "narrative": self.to_safe_narrative(),
         }
+
+    def to_safe_narrative(self) -> str:
+        """Art. 13 — Human-readable metacognition summary (no CoT, no prompts).
+
+        Produces a plain-language explanation of the confidence assessment and
+        any escalation decision — comprehensible by a non-technical DPO.
+        """
+        parts: List[str] = []
+
+        level_label = self._CONFIDENCE_LEVEL_LABELS.get(
+            self.confidence_analysis.level, "non evaluee"
+        )
+        parts.append(
+            f"Evaluation metacognitive : confiance {level_label} "
+            f"({self.confidence:.0%}) basee sur "
+            f"{len(self.confidence_analysis.factors)} facteur(s) d'analyse."
+        )
+
+        if self.confidence_analysis.signals:
+            parts.append(
+                f"{len(self.confidence_analysis.signals)} signal(aux) "
+                "d'incertitude detecte(s) lors de l'analyse."
+            )
+
+        esc_label = self._ESCALATION_LABELS.get(
+            self.escalation, self.escalation.value
+        )
+        parts.append(f"Decision d'escalade : {esc_label}.")
+
+        if self.uncertainty_reasons:
+            safe_reasons = [r[:80] for r in self.uncertainty_reasons[:3]]
+            parts.append(
+                "Raisons d'incertitude identifiees :\n"
+                + "\n".join(f"  - {r}" for r in safe_reasons)
+            )
+
+        if self.should_retry:
+            parts.append(
+                "Le systeme recommande une nouvelle tentative "
+                "pour ameliorer la qualite de la reponse."
+            )
+
+        return "\n".join(parts)
 
 
 # ============================================================================

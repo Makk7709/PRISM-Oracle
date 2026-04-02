@@ -271,6 +271,24 @@ class ReasoningOutcome:
     tool_calls_made: int
     total_duration_ms: int
     
+    _CONFIDENCE_LABELS = {
+        (0.0, 0.3): "faible",
+        (0.3, 0.6): "moderee",
+        (0.6, 0.8): "bonne",
+        (0.8, 1.01): "elevee",
+    }
+
+    _FLAG_LABELS = {
+        ReasoningFlag.UNCERTAIN: "Incertitude detectee",
+        ReasoningFlag.NEEDS_HUMAN: "Verification humaine recommandee",
+        ReasoningFlag.POLICY_RISK: "Risque de conformite identifie",
+        ReasoningFlag.TOOL_RISK: "Risque lie aux outils externes",
+        ReasoningFlag.CONTRADICTION: "Contradiction detectee dans les sources",
+        ReasoningFlag.MISSING_INFO: "Informations manquantes",
+        ReasoningFlag.NOVELTY: "Sujet inhabituel ou peu documente",
+        ReasoningFlag.LOW_CONFIDENCE: "Confiance insuffisante",
+    }
+
     def to_safe_dict(self) -> Dict[str, Any]:
         """Export safe pour logs/API (sans CoT)."""
         return {
@@ -282,7 +300,50 @@ class ReasoningOutcome:
             "tool_calls": self.tool_calls_made,
             "duration_ms": self.total_duration_ms,
             "trace_steps": len(self.trace),
+            "narrative": self.to_safe_narrative(),
         }
+
+    def to_safe_narrative(self) -> str:
+        """Art. 13 — Human-readable reasoning summary (no CoT, no prompts).
+
+        Produces a plain-language description of the steps taken, confidence
+        level, and any flags raised — comprehensible by a non-technical DPO.
+        """
+        parts: List[str] = []
+
+        conf_label = "non evaluee"
+        for (lo, hi), label in self._CONFIDENCE_LABELS.items():
+            if lo <= self.confidence < hi:
+                conf_label = label
+                break
+
+        parts.append(
+            f"Le systeme a execute {len(self.trace)} etape(s) de raisonnement "
+            f"({self.subtasks_completed}/{self.subtasks_total} sous-taches completees) "
+            f"en {self.total_duration_ms / 1000:.1f} secondes."
+        )
+
+        parts.append(f"Confiance globale du resultat : {conf_label} ({self.confidence:.0%}).")
+
+        if self.backtracks_used > 0:
+            parts.append(
+                f"Le systeme a reconsidere son approche {self.backtracks_used} fois "
+                "avant de converger vers la reponse finale."
+            )
+
+        if self.flags:
+            flag_labels = [self._FLAG_LABELS.get(f, f.value) for f in self.flags]
+            parts.append("Alertes : " + " ; ".join(flag_labels) + ".")
+
+        step_summaries = []
+        for step in self.trace[:10]:
+            action = step.action[:60] if step.action else "action"
+            outcome = step.outcome[:60] if step.outcome else "—"
+            step_summaries.append(f"  - {action} → {outcome}")
+        if step_summaries:
+            parts.append("Etapes principales :\n" + "\n".join(step_summaries))
+
+        return "\n".join(parts)
 
 
 @dataclass
