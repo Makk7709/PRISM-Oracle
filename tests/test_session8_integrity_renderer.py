@@ -254,7 +254,7 @@ class TestAuditReportRenderer:
         renderer = AuditReportRenderer(query="q", response="r")
         report = renderer.render()
         assert "AI Act" in report
-        assert "export_audit" in report
+        assert "audit_reports" in report
 
     def test_integrity_hashes_match_inputs(self):
         query = "What is RGPD?"

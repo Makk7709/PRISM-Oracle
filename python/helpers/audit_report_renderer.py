@@ -36,8 +36,9 @@ _FOOTER_TEXT = (
     "*Ce rapport d'audit a ete genere automatiquement par **KOREV Evidence**. "
     "Il constitue une trace de conformite pour les obligations de transparence "
     "et de tracabilite exigees par le Reglement AI Act (UE) 2024/1689.*\n\n"
-    "*Pour obtenir ce rapport au format PDF, utilisez la commande "
-    "`/export_audit` ou contactez votre administrateur Evidence.*\n\n"
+    "*Ce rapport est archive automatiquement et accessible via "
+    "l'API `/audit_reports` (Admin + DPO + RSSI). "
+    "Contactez votre administrateur Evidence pour obtenir l'export PDF.*\n\n"
     "*Les hashes et signatures permettent de verifier l'integrite de ce rapport. "
     "Toute modification du contenu invalidera les hashes.*"
 )
