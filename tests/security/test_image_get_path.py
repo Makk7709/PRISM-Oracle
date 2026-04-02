@@ -16,8 +16,9 @@ Tested vectors:
 """
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
 from python.api.image_get import ImageGet
+from python.security.authorization import AccessPrincipal
 
 
 def _make_handler(path: str):
@@ -187,3 +188,62 @@ class TestImageGetLegitimate:
             )
         except Exception:
             pass
+
+    @pytest.mark.asyncio
+    async def test_generated_images_own_user_allowed(self):
+        """Authenticated user may fetch tmp/generated_images/<username>/file.png."""
+        handler = _make_handler("tmp/generated_images/alice/pic.png")
+        handler._principal = lambda: AccessPrincipal(
+            username="alice",
+            organization="org",
+            org_role=None,
+            role="user",
+            workspace=None,
+        )
+        with patch("python.api.image_get.files.exists", return_value=True):
+            with patch("python.api.image_get.send_file") as mock_send:
+                mock_send.return_value = MagicMock(headers={})
+                await handler.process(
+                    {"path": "tmp/generated_images/alice/pic.png"},
+                    _make_request("tmp/generated_images/alice/pic.png"),
+                )
+        mock_send.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generated_images_other_user_denied(self):
+        """Authenticated user must not read another user's generated_images folder."""
+        handler = _make_handler("tmp/generated_images/bob/secret.png")
+        handler._principal = lambda: AccessPrincipal(
+            username="alice",
+            organization="org",
+            org_role=None,
+            role="user",
+            workspace=None,
+        )
+        handler._is_admin = lambda: False
+        with pytest.raises(ValueError, match="Access denied"):
+            await handler.process(
+                {"path": "tmp/generated_images/bob/secret.png"},
+                _make_request("tmp/generated_images/bob/secret.png"),
+            )
+
+    @pytest.mark.asyncio
+    async def test_generated_images_admin_may_cross_user(self):
+        """Admin may fetch another user's generated image (gallery support)."""
+        handler = _make_handler("tmp/generated_images/bob/pic.png")
+        handler._principal = lambda: AccessPrincipal(
+            username="admin",
+            organization="org",
+            org_role=None,
+            role="admin",
+            workspace=None,
+        )
+        handler._is_admin = lambda: True
+        with patch("python.api.image_get.files.exists", return_value=True):
+            with patch("python.api.image_get.send_file") as mock_send:
+                mock_send.return_value = MagicMock(headers={})
+                await handler.process(
+                    {"path": "tmp/generated_images/bob/pic.png"},
+                    _make_request("tmp/generated_images/bob/pic.png"),
+                )
+        mock_send.assert_called_once()

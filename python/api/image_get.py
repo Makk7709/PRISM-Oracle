@@ -57,6 +57,18 @@ class ImageGet(ApiHandler):
                 user_prefix = f"tmp/uploads/{principal.username}/"
                 if path.startswith(user_prefix):
                     allowed = True
+            # AI-generated images (generate_image tool) — per-user subfolder
+            if path.startswith("tmp/generated_images/") and principal.username:
+                user_prefix = f"tmp/generated_images/{principal.username}/"
+                if path.startswith(user_prefix):
+                    allowed = True
+            # Admin: gallery / support — any path under tmp/generated_images/
+            if (
+                not allowed
+                and path.startswith("tmp/generated_images/")
+                and self._is_admin()
+            ):
+                allowed = True
             if path.startswith("tmp/chats/"):
                 parts = path.split("/")
                 if len(parts) >= 3:
