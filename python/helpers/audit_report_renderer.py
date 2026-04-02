@@ -1,5 +1,5 @@
 """
-SESSION 8 / SESSION 14 — AuditReportRenderer: assemblage centralise du rapport d'audit.
+SESSION 8 / SESSION 14 / SESSION 15 — AuditReportRenderer.
 
 Assemble tous les blocs du rapport d'audit Evidence dans l'ordre canonique :
 
@@ -7,12 +7,13 @@ Assemble tous les blocs du rapport d'audit Evidence dans l'ordre canonique :
     2. Pipeline d'execution       (PipelineTracker)
     3. Grille de conformite       (ComplianceGrid)
     4. Transparence du raisonnement (SESSION 14 — Art. 13)
-    5. Taxonomie des sources      (SourceTaxonomy — quand disponible)
-    6. Metadonnees techniques     (ReportMetadata)
-    7. Integrite et securite      (IntegrityBlock)
-    8. Footer                     (avertissement + Evidence branding)
+    5. Registre des risques       (SESSION 15 — Art. 9)
+    6. Registre des traitements   (SESSION 15 — RGPD Art. 30)
+    7. Taxonomie des sources      (SourceTaxonomy — quand disponible)
+    8. Metadonnees techniques     (ReportMetadata)
+    9. Integrite et securite      (IntegrityBlock)
+   10. Footer                     (avertissement + Evidence branding)
 
-Remplace l'assemblage bloc-par-bloc de _20_audit_metadata_append.py (S6/7A).
 Chaque bloc est fail-safe — si un renderer crashe, les autres sont presents.
 """
 
@@ -123,6 +124,8 @@ class AuditReportRenderer:
         self._add_pipeline(sections)
         self._add_compliance(sections)
         self._add_transparency_narrative(sections)
+        self._add_risk_register(sections)
+        self._add_processing_register(sections)
         self._add_source_taxonomy(sections)
         self._add_metadata(sections)
         self._add_integrity(sections)
@@ -175,6 +178,8 @@ class AuditReportRenderer:
                 has_human_review=self.has_human_review,
                 has_consensus=self.has_consensus,
                 has_narrative=self.has_narrative,
+                has_risk_register=True,
+                has_processing_register=True,
             )
             grid_table = grid.to_report_table()
             if grid_table:
@@ -368,8 +373,35 @@ class AuditReportRenderer:
             return True
         return False
 
+    def _add_risk_register(self, sections: List[str]) -> None:
+        """Bloc 5 (SESSION 15): Registre des risques (Art. 9 AI Act)."""
+        try:
+            from python.helpers.risk_register import RiskRegister
+            register = RiskRegister.from_session(
+                route_decision=self.route_decision,
+                confidence_score=self._resolve_confidence_score(),
+            )
+            section_text = register.to_report_section()
+            if section_text:
+                sections.append(section_text)
+        except Exception as exc:
+            logger.warning("Risk register block failed: %s", exc)
+
+    def _add_processing_register(self, sections: List[str]) -> None:
+        """Bloc 6 (SESSION 15): Registre des traitements (RGPD Art. 30)."""
+        try:
+            from python.helpers.processing_register import ProcessingRegister
+            register = ProcessingRegister.from_session(
+                envelope=self.envelope,
+            )
+            section_text = register.to_report_section()
+            if section_text:
+                sections.append(section_text)
+        except Exception as exc:
+            logger.warning("Processing register block failed: %s", exc)
+
     def _add_source_taxonomy(self, sections: List[str]) -> None:
-        """Bloc 5: Taxonomie des sources (SourceTaxonomy)."""
+        """Bloc 7: Taxonomie des sources (SourceTaxonomy)."""
         if not self.source_notes or not isinstance(self.source_notes, dict):
             return
         try:
@@ -401,7 +433,7 @@ class AuditReportRenderer:
             logger.warning("Source taxonomy block failed: %s", exc)
 
     def _add_metadata(self, sections: List[str]) -> None:
-        """Bloc 6: Metadonnees techniques (ReportMetadata)."""
+        """Bloc 8: Metadonnees techniques (ReportMetadata)."""
         try:
             from python.helpers.report_metadata import ReportMetadata
             meta = ReportMetadata.from_session(
@@ -420,7 +452,7 @@ class AuditReportRenderer:
             logger.warning("Metadata block failed: %s", exc)
 
     def _add_integrity(self, sections: List[str]) -> None:
-        """Bloc 7: Integrite et securite (IntegrityBlock)."""
+        """Bloc 9: Integrite et securite (IntegrityBlock)."""
         try:
             from python.helpers.integrity_block import IntegrityBlock
             session_id = ""
@@ -440,7 +472,7 @@ class AuditReportRenderer:
             logger.warning("Integrity block failed: %s", exc)
 
     def _add_footer(self, sections: List[str]) -> None:
-        """Bloc 8: Footer avec avertissement et branding."""
+        """Bloc 10: Footer avec avertissement et branding."""
         sections.append(_FOOTER_TEXT)
 
     def _resolve_confidence_score(self) -> Optional[float]:

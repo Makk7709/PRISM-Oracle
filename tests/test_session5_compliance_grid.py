@@ -183,7 +183,7 @@ class TestArt17QualitySystem:
         )
         assert check.status == ComplianceStatus.PARTIEL
         assert "PRISM" in check.evidence
-        assert "monitoring" in check.gaps.lower()
+        assert "donnees d'entrainement" in check.gaps.lower()
 
     def test_partiel_without_consensus(self):
         check = _evaluate_art17_quality_system(_make_envelope(), _make_tracker())
