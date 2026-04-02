@@ -790,9 +790,13 @@ async def _call_chat_model(agent: "Agent", system: str, message: str) -> str:
     The utility model is intentionally lightweight (memory, summaries).
     Strategic dossiers require the user's primary chat model for depth.
     Falls back to utility model if chat model call fails.
+
+    Token usage is accumulated on agent._llm_tokens_input/_output so the
+    audit report renderer can pick it up (SESSION 9.7 compatibility).
     """
     try:
         from models import get_chat_model
+        from python.helpers import tokens
 
         cfg = agent.config.chat_model
         model = get_chat_model(
@@ -801,12 +805,26 @@ async def _call_chat_model(agent: "Agent", system: str, message: str) -> str:
 
         rate_cb = getattr(agent, "rate_limiter_callback", None)
 
+        input_tokens_est = tokens.approximate_tokens(f"{system} {message}")
+
+        _output_acc = [0]
+
+        async def _tokens_cb(delta: str, approx: int) -> None:
+            _output_acc[0] += approx
+
         response, _reasoning = await model.unified_call(
             system_message=system,
             user_message=message,
             response_callback=None,
+            tokens_callback=_tokens_cb,
             rate_limiter_callback=rate_cb,
         )
+
+        prev_in = agent.get_data("_llm_tokens_input") or 0
+        prev_out = agent.get_data("_llm_tokens_output") or 0
+        agent.set_data("_llm_tokens_input", prev_in + input_tokens_est)
+        agent.set_data("_llm_tokens_output", prev_out + _output_acc[0])
+
         return response
     except Exception as exc:
         logger.warning(
