@@ -40,8 +40,10 @@
      * ═══════════════════════════════════════════════════════════════════════ */
     
     .prism-sidebar {
-      background: var(--prism-bg-surface);
-      border-right: 1px solid var(--prism-border);
+      background: var(--prism-glass-bg);
+      backdrop-filter: blur(var(--prism-glass-blur));
+      -webkit-backdrop-filter: blur(var(--prism-glass-blur));
+      border-right: 1px solid var(--prism-glass-border);
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -50,11 +52,17 @@
       width: 250px;
       min-width: 250px;
       color: var(--prism-text-primary);
-      box-shadow: 1px 0 10px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--prism-shadow-glow-violet);
       user-select: none;
       -webkit-user-select: none;
       height: 100vh;
       overflow: hidden;
+    }
+
+    @supports not (backdrop-filter: blur(1px)) {
+      .prism-sidebar {
+        background: var(--prism-bg-surface);
+      }
     }
 
     .prism-sidebar.hidden {
@@ -86,7 +94,7 @@
       position: relative;
       flex-shrink: 0;
       flex-grow: 0;
-      border-top: 1px solid var(--prism-border-subtle);
+      border-top: 1px solid var(--prism-glass-border);
     }
 
     /* Section containers */

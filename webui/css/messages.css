@@ -24,7 +24,7 @@
   overflow-x: hidden;
   scroll-behavior: auto !important;
   padding: var(--prism-space-4) var(--prism-space-4) 0;
-  gap: var(--prism-space-4);
+  gap: var(--prism-space-5);
   scrollbar-width: thin;
   scrollbar-color: var(--prism-border) transparent;
 }
@@ -81,7 +81,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message {
-  border-radius: var(--prism-radius-lg);
+  border-radius: var(--prism-radius-xl);
   padding: var(--prism-space-4);
   overflow-x: auto;
   width: auto;
@@ -113,9 +113,9 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message-user {
-  background: linear-gradient(135deg, var(--prism-bg-elevated) 0%, var(--prism-bg-surface-2) 100%);
-  border-color: var(--prism-border);
-  border-radius: var(--prism-radius-lg) var(--prism-radius-lg) var(--prism-radius-sm) var(--prism-radius-lg);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, var(--prism-bg-elevated) 50%, var(--prism-bg-surface-2) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-sm) var(--prism-radius-xl);
 }
 
 .message-user > div {
@@ -161,7 +161,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message-ai {
-  border-radius: var(--prism-radius-lg) var(--prism-radius-lg) var(--prism-radius-lg) var(--prism-radius-sm);
+  border-radius: var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-sm);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -200,10 +200,10 @@
 /* Agent Response — "Cristal" elevated delivery layer */
 .message-agent-response {
   min-width: 200px;
-  background: linear-gradient(135deg, #16161b 0%, #141418 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, #16161b 40%, #141418 100%);
   border-left: 3px solid #6366f1;
   padding-left: calc(var(--prism-space-4) - 2px);
-  box-shadow: 0 1px 6px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.12), 0 0 24px rgba(139, 92, 246, 0.06);
 }
 
 .message-agent-response .message-body {
@@ -647,7 +647,7 @@
 }
 
 .message-followup .message {
-  border-radius: var(--prism-radius-lg);
+  border-radius: var(--prism-radius-xl);
 }
 
 .message-followup + .message-followup {
@@ -713,14 +713,26 @@
   border-color: var(--prism-border);
 }
 
+.message-user:hover {
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.1);
+}
+
 .message-agent:hover {
   border-left-color: #6366f1;
   background: #131316;
+  box-shadow: 0 1px 8px var(--prism-glow-violet-subtle);
 }
 
 .message-agent-response:hover {
   border-left-color: #8b5cf6;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.18), 0 0 30px rgba(139, 92, 246, 0.08);
+}
+
+.message-agent-delegation:hover,
+.message-tool:hover,
+.message-code-exe:hover,
+.message-browser:hover {
+  box-shadow: 0 1px 8px var(--prism-glow-violet-subtle);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -736,7 +748,12 @@
 }
 
 .light-mode .message-user {
-  background: linear-gradient(135deg, var(--prism-bg-surface-2) 0%, var(--prism-bg-surface) 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, var(--prism-bg-surface-2) 50%, var(--prism-bg-surface) 100%);
+  border-color: rgba(139, 92, 246, 0.1);
+}
+
+.light-mode .message-user:hover {
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.06);
 }
 
 .light-mode .message-agent {
@@ -749,9 +766,9 @@
 }
 
 .light-mode .message-agent-response {
-  background: linear-gradient(135deg, #fafafe 0%, #ffffff 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, #fafafe 40%, #ffffff 100%);
   border-left-color: #6366f1;
-  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.06);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.06), 0 0 16px rgba(139, 92, 246, 0.03);
 }
 
 .light-mode .message-agent-response .message-body {
@@ -764,7 +781,7 @@
 }
 
 .light-mode .message-agent-response:hover {
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1), 0 0 24px rgba(139, 92, 246, 0.05);
 }
 
 .light-mode .message-agent-delegation {

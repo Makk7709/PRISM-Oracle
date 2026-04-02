@@ -41,6 +41,14 @@
   --prism-accent-subtle: rgba(99, 102, 241, 0.15);
   --prism-accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   
+  /* Glow Violet — Glassmorphism accents */
+  --prism-glow-violet: rgba(139, 92, 246, 0.25);
+  --prism-glow-violet-subtle: rgba(139, 92, 246, 0.08);
+  --prism-glass-bg: rgba(20, 20, 24, 0.75);
+  --prism-glass-blur: 16px;
+  --prism-glass-border: rgba(139, 92, 246, 0.12);
+  --prism-shadow-glow-violet: 0 0 30px rgba(139, 92, 246, 0.15), 0 0 60px rgba(99, 102, 241, 0.05);
+  
   /* Focus ring (Spectral Edge on focus) */
   --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
   --prism-focus-ring-inset: inset 0 0 0 2px var(--prism-accent);
@@ -139,6 +147,14 @@
   --prism-accent-hover: #4338ca;
   --prism-accent-subtle: rgba(79, 70, 229, 0.12);
   --prism-accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  
+  /* Glow Violet — Light mode (attenuated) */
+  --prism-glow-violet: rgba(139, 92, 246, 0.15);
+  --prism-glow-violet-subtle: rgba(139, 92, 246, 0.05);
+  --prism-glass-bg: rgba(255, 255, 255, 0.8);
+  --prism-glass-blur: 16px;
+  --prism-glass-border: rgba(139, 92, 246, 0.1);
+  --prism-shadow-glow-violet: 0 0 24px rgba(139, 92, 246, 0.08), 0 0 48px rgba(99, 102, 241, 0.03);
   
   /* Shadows — Shorter, more diffuse */
   --prism-shadow-soft: 0 1px 4px rgba(60, 50, 40, 0.08);
