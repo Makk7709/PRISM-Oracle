@@ -58,6 +58,8 @@ class AuditMetadataAppend(Extension):
             has_human_review = self._resolve_human_review_flag()
             has_consensus = self._resolve_consensus_flag()
 
+            document = self._resolve_document(pipeline_response)
+
             from python.helpers.audit_report_renderer import AuditReportRenderer
             renderer = AuditReportRenderer(
                 envelope=envelope,
@@ -66,7 +68,7 @@ class AuditMetadataAppend(Extension):
                 model_config=model_config,
                 query=query,
                 response=pipeline_response,
-                document=None,
+                document=document,
                 source_notes=source_notes,
                 has_human_review=has_human_review,
                 has_consensus=has_consensus,
@@ -208,6 +210,20 @@ class AuditMetadataAppend(Extension):
         except Exception as exc:
             logger.debug("_resolve_consensus_flag failed: %s", exc)
         return False
+
+    def _resolve_document(self, pipeline_response: str):
+        """SESSION 13.1 — Resolve the document to hash in the integrity block.
+
+        For strategic pipelines the consolidated response IS the document.
+        For other pipelines (legal, etc.) no standalone document exists yet.
+        Returns the document string or None.
+        """
+        try:
+            if self.agent.get_data("_strategic_result") is not None:
+                return pipeline_response
+        except Exception:
+            pass
+        return None
 
     def _resolve_tracker(self):
         """Resolve PipelineTracker from strategic result or agent data."""
