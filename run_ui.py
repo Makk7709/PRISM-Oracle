@@ -212,6 +212,13 @@ def _register_routes(app: Flask) -> None:
                         session["org_role"] = org_role
                 except Exception:
                     pass
+            if not session.get("compliance_role"):
+                try:
+                    cr = user_mgr.get_compliance_role(username)
+                    if cr:
+                        session["compliance_role"] = cr
+                except Exception:
+                    pass
         if ws_mgr and not session.get("workspace"):
             try:
                 session["workspace"] = ws_mgr.ensure_workspace(username)
@@ -263,6 +270,7 @@ def _register_routes(app: Flask) -> None:
                     session['role'] = auth_result['role']
                     session['organization'] = auth_result.get('organization')
                     session['org_role'] = auth_result.get('org_role', 'MEMBER')
+                    session['compliance_role'] = auth_result.get('compliance_role')
                     session.permanent = True
                     
                     if ws_mgr:
@@ -349,6 +357,7 @@ def _register_routes(app: Flask) -> None:
                     session['role'] = 'admin'  # Mono-user is always admin
                     session['organization'] = user_mgr.get_organization(submitted_user)
                     session['org_role'] = user_mgr.get_org_role(submitted_user) or "OWNER"
+                    session['compliance_role'] = user_mgr.get_compliance_role(submitted_user)
                     session.permanent = True
                     
                     if ws_mgr:

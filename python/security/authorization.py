@@ -13,6 +13,7 @@ class AccessPrincipal:
     org_role: str | None
     role: str | None
     workspace: str | None
+    compliance_role: str | None = None
 
     @property
     def is_authenticated(self) -> bool:
@@ -58,6 +59,38 @@ def can_access_context(
         return False, "member_not_owner"
 
     return True, "member_owner_access"
+
+
+COMPLIANCE_ROLES = frozenset({"DPO", "RSSI", "COMPLIANCE_OFFICER"})
+
+
+def can_access_audit_reports(
+    principal: AccessPrincipal,
+    *,
+    target_org: Optional[str],
+) -> tuple[bool, str]:
+    """Check if the principal can access audit reports for target_org.
+
+    Access is granted to:
+      - Org OWNER
+      - Users with a compliance role (DPO, RSSI, COMPLIANCE_OFFICER)
+    """
+    if not principal.is_authenticated:
+        return False, "anonymous_audit_access_denied"
+
+    if not target_org or not principal.organization:
+        return False, "audit_missing_organization"
+
+    if normalize_org_id(target_org) != principal.organization_id:
+        return False, "audit_cross_organization_denied"
+
+    if principal.is_org_owner:
+        return True, "audit_org_owner_access"
+
+    if principal.compliance_role and principal.compliance_role in COMPLIANCE_ROLES:
+        return True, f"audit_{principal.compliance_role.lower()}_access"
+
+    return False, "audit_access_denied_no_compliance_role"
 
 
 def can_access_task(

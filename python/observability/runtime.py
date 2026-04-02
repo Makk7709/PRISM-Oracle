@@ -33,6 +33,10 @@ class ObservabilityMetrics:
             "notifications_read_total": 0,
             "notifications_denied_total": 0,
             "cross_tenant_denied_total": 0,
+            "audit_reports_generated_total": 0,
+            "audit_reports_failed_total": 0,
+            "audit_report_generation_ms_total": 0,
+            "audit_report_size_bytes_total": 0,
         }
 
     @classmethod

@@ -211,6 +211,13 @@ class UserManager:
             return None
         return info.get("org_role", "MEMBER")
 
+    def get_compliance_role(self, username: str) -> Optional[str]:
+        """Get the compliance role (DPO, RSSI, COMPLIANCE_OFFICER) or None."""
+        info = self._users.get(username)
+        if info is None:
+            return None
+        return info.get("compliance_role")
+
     def get_user_profile(self, username: str) -> str:
         """Get the display profile for a user.
 

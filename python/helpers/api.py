@@ -130,6 +130,7 @@ class ApiHandler:
         organization = session.get("organization")
         org_role = session.get("org_role")
         role = session.get("role")
+        compliance_role = session.get("compliance_role")
 
         if username:
             cfg = None
@@ -166,6 +167,15 @@ class ApiHandler:
                         session["workspace"] = workspace
                 except Exception:
                     workspace = workspace
+
+            if not compliance_role and user_mgr:
+                try:
+                    compliance_role = user_mgr.get_compliance_role(username)
+                    if compliance_role:
+                        session["compliance_role"] = compliance_role
+                except Exception:
+                    pass
+
             if not organization:
                 log_observability_event(
                     event_type="invalid_session_scope",
@@ -182,6 +192,7 @@ class ApiHandler:
             "organization": organization,
             "org_role": org_role,
             "role": role,
+            "compliance_role": compliance_role,
         }
 
     def _session_user_info(self) -> tuple[str | None, str | None]:
@@ -202,7 +213,7 @@ class ApiHandler:
 
     def _principal(self) -> AccessPrincipal:
         username, workspace = None, None
-        organization, org_role, role = None, None, None
+        organization, org_role, role, compliance_role = None, None, None, None
         try:
             scope = self._resolve_session_scope()
             username = scope.get("username")
@@ -210,6 +221,7 @@ class ApiHandler:
             organization = scope.get("organization")
             org_role = scope.get("org_role")
             role = scope.get("role")
+            compliance_role = scope.get("compliance_role")
         except RuntimeError:
             role = None
         return AccessPrincipal(
@@ -218,6 +230,7 @@ class ApiHandler:
             org_role=org_role,
             role=role,
             workspace=workspace,
+            compliance_role=compliance_role,
         )
 
     def _is_admin(self) -> bool:

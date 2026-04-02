@@ -97,10 +97,14 @@ class TestIntegrityBlockFactory:
         block = IntegrityBlock.from_session(query="q", response="r", document=None)
         assert block.hash_document is None
 
-    def test_signature_method_is_honest(self):
+    def test_signature_method_is_honest_hmac_fallback(self):
+        """Without RSA keys, HMAC fallback is used and honestly labeled."""
         block = IntegrityBlock.from_session(query="q", response="r")
-        assert "phase 1" in block.signature_method.lower()
+        assert block.signature_log.startswith("hmac-sha256:")
+        assert "HMAC-SHA256" in block.signature_method
+        assert "fallback" in block.signature_method
         assert "non-repudiation" in block.signature_method.lower()
+        assert "verification uniquement" in block.signature_method.lower()
 
     def test_custom_key_via_env(self):
         with patch.dict(os.environ, {"EVIDENCE_HMAC_KEY": "custom-secret"}):
@@ -137,6 +141,7 @@ class TestIntegrityBlockVerify:
 class TestIntegrityBlockSerialization:
 
     def test_to_report_table_markdown(self):
+        """Without RSA keys, table contains HMAC signature."""
         block = IntegrityBlock.from_session(query="q", response="r", session_id="S1")
         table = block.to_report_table()
         assert "| CHAMP | VALEUR |" in table
@@ -145,7 +150,7 @@ class TestIntegrityBlockSerialization:
         assert "Signature log" in table
         assert "sha256:" in table
         assert "hmac-sha256:" in table
-        assert "phase 1" in table.lower()
+        assert "fallback" in table.lower()
 
     def test_to_dict_all_keys(self):
         block = IntegrityBlock.from_session(query="q", response="r")
@@ -318,7 +323,8 @@ class TestReportSnapshot:
         for section in expected_sections:
             assert section in report, f"Missing section: {section}"
 
-    def test_full_report_has_hmac_and_sha256(self):
+    def test_full_report_has_hmac_fallback_and_sha256(self):
+        """Without RSA keys, the full report uses HMAC fallback."""
         renderer = AuditReportRenderer(
             envelope=_make_envelope(),
             tracker=_make_tracker(),
@@ -329,7 +335,8 @@ class TestReportSnapshot:
         assert "sha256:" in report
         assert "hmac-sha256:" in report
         assert "HMAC-SHA256" in report
-        assert "phase 1" in report.lower()
+        assert "fallback" in report.lower()
+        assert "verification uniquement" in report.lower()
 
     def test_session_id_consistent_across_blocks(self):
         env = _make_envelope(session_id="KRV-SES-20260401-CONSIST")

@@ -10,6 +10,8 @@ from python.helpers import runtime
 
 
 SLEEP_TIME = 15
+_RETENTION_CHECK_INTERVAL = 86400  # 24 hours
+_last_retention_check: float = 0.0
 
 keep_running = True
 pause_time = 0
@@ -73,6 +75,8 @@ async def run_loop():
                     await scheduler_tick()
                 except Exception as e:
                     PrintStyle().error(f"[JobLoop] Scheduler tick error: {errors.error_text(e)}")
+
+                _run_retention_check_if_due()
         
         except Exception as e:
             # Catch any unexpected errors to prevent loop from crashing
@@ -100,6 +104,24 @@ async def scheduler_tick():
         await scheduler.tick()
     except Exception as e:
         PrintStyle().error(f"Scheduler tick error: {errors.error_text(e)}")
+
+
+def _run_retention_check_if_due():
+    """Run audit report retention purge once per day."""
+    global _last_retention_check
+    now = time.time()
+    if now - _last_retention_check < _RETENTION_CHECK_INTERVAL:
+        return
+    _last_retention_check = now
+    try:
+        from python.helpers.audit_report_storage import purge_expired_reports
+        deleted = purge_expired_reports()
+        if deleted:
+            PrintStyle(font_color="yellow").print(
+                f"[JobLoop] Retention purge: {len(deleted)} expired audit folders removed"
+            )
+    except Exception as e:
+        PrintStyle().error(f"[JobLoop] Retention check error: {errors.error_text(e)}")
 
 
 def pause_loop():
