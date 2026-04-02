@@ -81,7 +81,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message {
-  border-radius: var(--prism-radius-xl);
+  border-radius: 4px;
   padding: var(--prism-space-4);
   overflow-x: auto;
   width: auto;
@@ -91,10 +91,8 @@
   overflow-wrap: anywhere;
   position: relative;
   
-  /* Subtle border */
   border: 1px solid var(--prism-border-subtle);
   
-  /* Smooth transitions */
   transition: all var(--prism-transition-fast);
 }
 
@@ -113,9 +111,27 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message-user {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, var(--prism-bg-elevated) 50%, var(--prism-bg-surface-2) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.15);
-  border-radius: var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-sm) var(--prism-radius-xl);
+  background: linear-gradient(135deg, rgba(201, 160, 78, 0.09) 0%, var(--prism-bg-elevated) 40%, var(--prism-bg-surface-2) 100%);
+  border: 1px solid var(--prism-gold-border);
+  border-radius: 4px 4px 0 4px;
+  box-shadow: 0 1px 8px rgba(201, 160, 78, 0.06);
+}
+
+.message-user::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(212, 168, 83, 0.055) 44%,
+    rgba(224, 186, 110, 0.035) 52%,
+    transparent 58%,
+    transparent 100%
+  );
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 .message-user > div {
@@ -161,7 +177,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .message-ai {
-  border-radius: var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-xl) var(--prism-radius-sm);
+  border-radius: 4px 4px 4px 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -185,7 +201,7 @@
   border-left: 2px solid rgba(79, 70, 229, 0.35);
   padding-left: calc(var(--prism-space-4) - 1px);
   box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
-  border-radius: var(--prism-radius-lg);
+  border-radius: 3px;
 }
 
 .message-agent .msg-heading h4 {
@@ -622,17 +638,17 @@
 
 /* Group border radius adjustments */
 .message-group > *:first-child:not(:last-child) > .message {
-  border-bottom-left-radius: var(--prism-radius-sm);
-  border-bottom-right-radius: var(--prism-radius-sm);
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
 }
 
 .message-group > *:not(:first-child):not(:last-child) > .message {
-  border-radius: var(--prism-radius-sm);
+  border-radius: 2px;
 }
 
 .message-group > *:last-child:not(:first-child) > .message {
-  border-top-left-radius: var(--prism-radius-sm);
-  border-top-right-radius: var(--prism-radius-sm);
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -661,7 +677,7 @@
 }
 
 .message-followup .message {
-  border-radius: var(--prism-radius-xl);
+  border-radius: 4px;
 }
 
 .message-followup + .message-followup {
@@ -728,7 +744,8 @@
 }
 
 .message-user:hover {
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.1);
+  box-shadow: var(--prism-shadow-glow-gold);
+  border-color: rgba(201, 160, 78, 0.28);
 }
 
 .message-agent:hover {
@@ -765,19 +782,33 @@
 }
 
 .light-mode .message-user {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, var(--prism-bg-surface-2) 50%, var(--prism-bg-surface) 100%);
-  border-color: rgba(139, 92, 246, 0.1);
+  background: linear-gradient(135deg, rgba(180, 140, 40, 0.06) 0%, var(--prism-bg-surface-2) 40%, var(--prism-bg-surface) 100%);
+  border-color: var(--prism-gold-border);
+  box-shadow: 0 1px 6px rgba(160, 120, 30, 0.04);
+}
+
+.light-mode .message-user::after {
+  background: linear-gradient(
+    125deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(180, 140, 40, 0.04) 44%,
+    rgba(200, 165, 60, 0.025) 52%,
+    transparent 58%,
+    transparent 100%
+  );
 }
 
 .light-mode .message-user:hover {
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.06);
+  box-shadow: var(--prism-shadow-glow-gold);
+  border-color: rgba(160, 120, 30, 0.22);
 }
 
 .light-mode .message-agent {
   background: #eeeff2;
   border-left: 2px solid rgba(165, 180, 252, 0.45);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
-  border-radius: var(--prism-radius-lg);
+  border-radius: 3px;
 }
 
 .light-mode .message-agent .message-body {

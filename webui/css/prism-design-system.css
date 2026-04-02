@@ -49,6 +49,12 @@
   --prism-glass-border: rgba(139, 92, 246, 0.12);
   --prism-shadow-glow-violet: 0 0 30px rgba(139, 92, 246, 0.15), 0 0 60px rgba(99, 102, 241, 0.05);
   
+  /* Glow Gold — User identity accent */
+  --prism-glow-gold: rgba(201, 160, 78, 0.2);
+  --prism-glow-gold-subtle: rgba(201, 160, 78, 0.06);
+  --prism-gold-border: rgba(201, 160, 78, 0.18);
+  --prism-shadow-glow-gold: 0 2px 16px rgba(201, 160, 78, 0.12), 0 0 32px rgba(212, 168, 83, 0.05);
+  
   /* Focus ring (Spectral Edge on focus) */
   --prism-focus-ring: 0 0 0 2px var(--prism-bg-base), 0 0 0 4px var(--prism-accent);
   --prism-focus-ring-inset: inset 0 0 0 2px var(--prism-accent);
@@ -155,6 +161,12 @@
   --prism-glass-blur: 16px;
   --prism-glass-border: rgba(139, 92, 246, 0.1);
   --prism-shadow-glow-violet: 0 0 24px rgba(139, 92, 246, 0.08), 0 0 48px rgba(99, 102, 241, 0.03);
+  
+  /* Glow Gold — Light mode (attenuated) */
+  --prism-glow-gold: rgba(160, 120, 30, 0.12);
+  --prism-glow-gold-subtle: rgba(160, 120, 30, 0.04);
+  --prism-gold-border: rgba(160, 120, 30, 0.14);
+  --prism-shadow-glow-gold: 0 1px 10px rgba(160, 120, 30, 0.08), 0 0 24px rgba(180, 140, 40, 0.03);
   
   /* Shadows — Shorter, more diffuse */
   --prism-shadow-soft: 0 1px 4px rgba(60, 50, 40, 0.08);
