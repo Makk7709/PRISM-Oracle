@@ -54,6 +54,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PATH="/opt/venv/bin:$PATH" \
     EVIDENCE_HOME=/app \
+    PLAYWRIGHT_BROWSERS_PATH=/app/tmp/playwright \
     # Defaults for production
     WEB_UI_HOST=0.0.0.0 \
     WEB_UI_PORT=5050
@@ -191,8 +192,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Fonts (Debian trixie: ttf-unifont→fonts-unifont; fonts-ubuntu absent on trixie)
     fonts-unifont \
     && rm -rf /var/lib/apt/lists/* \
-    && python -m playwright install chromium 2>&1 \
-    && echo "[Playwright] Chromium installed successfully" \
+    && PLAYWRIGHT_BROWSERS_PATH=/app/tmp/playwright \
+       python -m playwright install chromium 2>&1 \
+    && chown -R evidence:evidence /app/tmp/playwright \
+    && echo "[Playwright] Chromium installed to /app/tmp/playwright" \
     || echo "[Playwright] WARNING: install failed — browser agent will be unavailable"
 
 # ── Fichier version ──
