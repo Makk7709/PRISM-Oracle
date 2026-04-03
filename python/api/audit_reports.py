@@ -4,7 +4,7 @@ SESSION 10 — Endpoint /audit_reports (OWNER + DPO/RSSI).
 GET : liste les rapports d'audit disponibles pour l'organisation.
 POST (action=download) : telecharge un rapport specifique (MD ou PDF).
 
-Acces : auth + admin + verification OWNER ou role de conformite.
+Acces : auth + verification OWNER ou role de conformite (via can_access_audit_reports).
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class AuditReports(ApiHandler):
 
     @classmethod
     def requires_admin(cls) -> bool:
-        return True
+        return False
 
     @classmethod
     def get_methods(cls) -> list[str]:
@@ -44,9 +44,11 @@ class AuditReports(ApiHandler):
         if not allowed:
             log_security_event(
                 action="audit_reports_access_denied",
-                username=principal.username,
+                decision="denied",
+                user=principal.username,
                 organization=principal.organization,
-                details={"reason": reason},
+                resource_type="audit_report",
+                reason=reason,
             )
             return Response(
                 '{"error":"Access denied","reason":"' + reason + '"}',

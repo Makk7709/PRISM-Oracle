@@ -341,7 +341,7 @@ def _register_routes(app: Flask) -> None:
                                 PrintStyle.warning(
                                     "WARNING: Using plaintext password. "
                                     "Run: python -c \"from python.security.auth import hash_password; "
-                                    f"print(hash_password('{stored_password}'))\" "
+                                    "print(hash_password('YOUR_PASSWORD'))\" "
                                     "and update AUTH_PASSWORD in .env"
                                 )
                 

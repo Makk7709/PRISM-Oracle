@@ -22,6 +22,25 @@ from python.helpers.integrity_block import (
 from python.helpers.audit_report_renderer import AuditReportRenderer
 
 
+@pytest.fixture(autouse=True)
+def _set_hmac_key(monkeypatch):
+    """All tests in this file need a valid HMAC key unless they test its absence."""
+    monkeypatch.setenv("EVIDENCE_HMAC_KEY", "test-hmac-key-for-ci")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IntegrityBlock — Missing key guard
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestMissingHMACKey:
+
+    def test_missing_key_raises(self, monkeypatch):
+        monkeypatch.delenv("EVIDENCE_HMAC_KEY", raising=False)
+        with pytest.raises(RuntimeError, match="EVIDENCE_HMAC_KEY"):
+            IntegrityBlock.from_session(query="q", response="r")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # IntegrityBlock — Hashes
 # ═══════════════════════════════════════════════════════════════════════════════

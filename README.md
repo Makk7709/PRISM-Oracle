@@ -5,7 +5,7 @@
 ### Système Cognitif Autonome de Nouvelle Génération
 
 [![Version](https://img.shields.io/badge/Version-3.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](./LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-2768%20Collected-green?style=for-the-badge)](#tests)
 
 **Plateforme multi-agents d'IA de confiance pour professions réglementées — juridique, médical, finance, stratégie, cybersécurité.**
@@ -334,9 +334,9 @@ PYTHONPATH=. DETERMINISTIC_ROUTER_V2=2 python scripts/router_prod_validation.py
 
 ## Licence
 
-Ce projet est sous licence MIT. Voir [LICENSE](./LICENSE) pour plus de détails.
+Ce projet est sous licence proprietaire KOREV AI. Voir [LICENSE](./LICENSE) pour les termes complets.
 
-Les licences des composants open-source utilisés sont conservées dans [legal/THIRD_PARTY_NOTICES.txt](./legal/THIRD_PARTY_NOTICES.txt).
+Les licences des composants open-source integres sont conservees dans [legal/THIRD_PARTY_NOTICES.txt](./legal/THIRD_PARTY_NOTICES.txt).
 
 ---
 

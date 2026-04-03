@@ -36,12 +36,14 @@ _RSA_METHOD = "RSA-PSS-SHA256 (non-repudiation — verifiable par un tiers avec 
 
 
 def _get_hmac_key() -> bytes:
-    """Resolve the HMAC signing key from environment or use dev fallback."""
+    """Resolve the HMAC signing key from environment. Raises if unset."""
     env_key = os.environ.get("EVIDENCE_HMAC_KEY")
     if env_key:
         return env_key.encode("utf-8")
-    logger.debug("EVIDENCE_HMAC_KEY not set — using dev fallback key")
-    return b"evidence-dev-hmac-key-not-for-production"
+    raise RuntimeError(
+        "EVIDENCE_HMAC_KEY environment variable is required for report integrity signing. "
+        "Set it in .env (min 32 chars recommended) or contact your administrator."
+    )
 
 
 def _get_hmac_key_id() -> str:
@@ -140,6 +142,8 @@ class IntegrityBlock:
 
             block.signed_at = now_iso
 
+        except RuntimeError:
+            raise
         except Exception as exc:
             logger.warning("IntegrityBlock signing failed: %s", exc)
             block.signature_log = "error: signature failed"

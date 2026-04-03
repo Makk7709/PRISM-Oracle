@@ -16,8 +16,14 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pytest
 from unittest.mock import MagicMock
 from python.helpers.integrity_block import IntegrityBlock, compute_sha256
+
+
+@pytest.fixture(autouse=True)
+def _set_hmac_key(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_HMAC_KEY", "test-hmac-key-for-ci")
 
 
 def _make_hook():

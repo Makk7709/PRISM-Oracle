@@ -246,7 +246,7 @@ class TestIntegrityBlockRSA:
 class TestIntegrityBlockHMACFallback:
 
     def test_falls_back_to_hmac_without_rsa(self):
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"EVIDENCE_HMAC_KEY": "test-key"}, clear=True):
             from python.helpers.integrity_block import IntegrityBlock
             block = IntegrityBlock.from_session(query="q", response="r")
             assert block.signature_log.startswith("hmac-sha256:")
@@ -254,7 +254,7 @@ class TestIntegrityBlockHMACFallback:
             assert "fallback" in block.signature_method
 
     def test_verify_signature_hmac_succeeds(self):
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"EVIDENCE_HMAC_KEY": "test-key"}, clear=True):
             from python.helpers.integrity_block import IntegrityBlock
             block = IntegrityBlock.from_session(query="q", response="r", session_id="S1")
             assert block.verify_signature("q", "r", session_id="S1") is True
@@ -501,6 +501,54 @@ class TestAccessPrincipalComplianceRole:
         assert p.compliance_role == "DPO"
 
 
+class TestAuditReportsHandlerRBAC:
+    """Integration: AuditReports handler honours fine-grained policy, not admin-only."""
+
+    def test_requires_admin_is_false(self):
+        from python.api.audit_reports import AuditReports
+        assert AuditReports.requires_admin() is False
+
+    def test_requires_auth_is_true(self):
+        from python.api.audit_reports import AuditReports
+        assert AuditReports.requires_auth() is True
+
+    def test_dpo_not_blocked_by_requires_admin(self):
+        """A DPO principal should pass can_access_audit_reports even though
+        they are not admin — this was broken when requires_admin returned True."""
+        from python.security.authorization import can_access_audit_reports, AccessPrincipal
+        p = AccessPrincipal(
+            username="dpo_user",
+            organization="Korev AI",
+            org_role="MEMBER",
+            role="user",
+            workspace="ws1",
+            compliance_role="DPO",
+        )
+        allowed, reason = can_access_audit_reports(p, target_org="Korev AI")
+        assert allowed is True
+        assert "dpo" in reason
+
+    def test_log_security_event_kwargs_match_signature(self):
+        """Verify the log_security_event call in audit_reports uses correct kwargs."""
+        import inspect
+        from python.security.security_audit import log_security_event
+        sig = inspect.signature(log_security_event)
+        required_params = {
+            name for name, param in sig.parameters.items()
+            if param.default is inspect.Parameter.empty
+            and param.kind in (
+                inspect.Parameter.KEYWORD_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+        }
+        assert "action" in required_params
+        assert "decision" in required_params
+        assert "user" in required_params
+        assert "resource_type" in required_params
+        assert "username" not in sig.parameters
+        assert "details" not in sig.parameters
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Job Loop — Retention Hook
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -673,7 +721,7 @@ class TestIntegrationFullFlow:
 
     def test_hmac_fallback_full_cycle(self, tmp_path):
         """Without RSA keys, HMAC is used and everything still works."""
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {"EVIDENCE_HMAC_KEY": "test-key"}, clear=True):
             from python.helpers.integrity_block import IntegrityBlock
             from python.helpers.audit_report_storage import store_audit_report
 
