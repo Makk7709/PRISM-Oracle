@@ -167,10 +167,30 @@ RUN set -e; \
     done; \
     echo "[MCP-py] Python MCP deps installed"
 
-# ── Installer Playwright browsers (pour le MCP playwright) ──
-# Non-critique : si l'install échoue, le MCP playwright sera indisponible
-# mais le reste de l'application fonctionne
-RUN python -m playwright install chromium --with-deps 2>&1 \
+# ── Installer Playwright Chromium ──
+# --with-deps échoue sur Debian trixie (ttf-unifont/ttf-ubuntu-font-family absents).
+# On installe manuellement les deps Chromium puis on télécharge le binaire.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Chromium rendering & compositing
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0t64 \
+    libatk-bridge2.0-0t64 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libxfixes3 \
+    libxshmfence1 \
+    # Audio (ALSA)
+    libasound2t64 \
+    # Fonts (Debian trixie replacements for ttf-unifont/ttf-ubuntu-font-family)
+    fonts-unifont \
+    fonts-ubuntu \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m playwright install chromium 2>&1 \
     && echo "[Playwright] Chromium installed successfully" \
     || echo "[Playwright] WARNING: install failed — browser agent will be unavailable"
 
