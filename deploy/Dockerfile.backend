@@ -186,6 +186,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxshmfence1 \
     # Audio (ALSA)
     libasound2t64 \
+    # Printing (Chromium expects libcups2)
+    libcups2 \
     # Fonts (Debian trixie: ttf-unifont→fonts-unifont; fonts-ubuntu absent on trixie)
     fonts-unifont \
     && rm -rf /var/lib/apt/lists/* \
