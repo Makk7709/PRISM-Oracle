@@ -186,9 +186,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxshmfence1 \
     # Audio (ALSA)
     libasound2t64 \
-    # Fonts (Debian trixie replacements for ttf-unifont/ttf-ubuntu-font-family)
+    # Fonts (Debian trixie: ttf-unifont→fonts-unifont; fonts-ubuntu absent on trixie)
     fonts-unifont \
-    fonts-ubuntu \
     && rm -rf /var/lib/apt/lists/* \
     && python -m playwright install chromium 2>&1 \
     && echo "[Playwright] Chromium installed successfully" \
