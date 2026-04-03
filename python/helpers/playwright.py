@@ -6,8 +6,9 @@ import subprocess
 from python.helpers import files
 
 
-# this helper ensures that playwright is installed in /lib/playwright
-# should work for both docker and local installation
+# Ensures Playwright Chromium is available in tmp/playwright.
+# In Docker: pre-installed at build time via PLAYWRIGHT_BROWSERS_PATH.
+# Locally: downloaded on first use by ensure_playwright_binary().
 
 def get_playwright_binary():
     pw_cache = Path(get_playwright_cache_dir())
