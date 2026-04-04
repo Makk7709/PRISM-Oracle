@@ -105,6 +105,10 @@ RUN groupadd -r evidence && useradd -r -g evidence -m evidence && \
 # ── Copier le venv Python depuis le builder ──
 COPY --from=python-deps /opt/venv /opt/venv
 
+# ── Installer les polices PRISM (Inter, Playfair Display, DejaVu) ──
+COPY fonts/*.ttf /usr/share/fonts/truetype/evidence/
+RUN fc-cache -f -v /usr/share/fonts/truetype/evidence/ 2>/dev/null || true
+
 # ── Copier le code source ──
 # Backend Python
 COPY --chown=evidence:evidence python/         ./python/

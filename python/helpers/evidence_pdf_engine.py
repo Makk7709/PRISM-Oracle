@@ -31,6 +31,27 @@ logger = logging.getLogger("evidence_pdf_engine")
 # collisions with CSS braces and LLM-generated content containing {}.
 
 _PRISM_CSS = """
+        @font-face {
+            font-family: 'Inter';
+            src: local('Inter'), url('file:///usr/share/fonts/truetype/evidence/Inter-Variable.ttf') format('truetype');
+            font-weight: 100 900;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Playfair Display';
+            src: local('Playfair Display'), url('file:///usr/share/fonts/truetype/evidence/PlayfairDisplay-Variable.ttf') format('truetype');
+            font-weight: 400 900;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Playfair Display';
+            src: local('Playfair Display Italic'), url('file:///usr/share/fonts/truetype/evidence/PlayfairDisplay-Italic-Variable.ttf') format('truetype');
+            font-weight: 400 900;
+            font-style: italic;
+            font-display: swap;
+        }
+
         :root {
             --prism-accent: #4A7CFF;
             --prism-accent-light: #6B95FF;
@@ -52,14 +73,14 @@ _PRISM_CSS = """
 
             @top-left {
                 content: "KOREV Evidence";
-                font-family: 'Playfair Display', Georgia, serif;
+                font-family: 'Playfair Display', 'DejaVu Serif', Georgia, serif;
                 font-size: 8pt;
                 color: #8B95A5;
             }
 
             @top-right {
                 content: "$HEADER_RIGHT$";
-                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+                font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #4A7CFF;
                 text-transform: uppercase;
@@ -67,15 +88,15 @@ _PRISM_CSS = """
             }
 
             @bottom-left {
-                content: "KOREV Evidence — Confidentiel";
-                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+                content: "KOREV Evidence \2014  Confidentiel";
+                font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #8B95A5;
             }
 
             @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
-                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+                font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #8B95A5;
             }
@@ -92,7 +113,7 @@ _PRISM_CSS = """
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 10pt;
             line-height: 1.65;
             color: var(--prism-text-primary);
@@ -110,8 +131,17 @@ _PRISM_CSS = """
             overflow: hidden;
         }
 
+        .cover__logo {
+            margin-bottom: 24px;
+        }
+
+        .cover__logo svg {
+            width: 80px;
+            height: 80px;
+        }
+
         .cover__badge {
-            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+            font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 8pt;
             font-weight: 600;
             text-transform: uppercase;
@@ -125,7 +155,7 @@ _PRISM_CSS = """
         }
 
         .cover__title {
-            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-family: 'Playfair Display', 'DejaVu Serif', Georgia, 'Times New Roman', serif;
             font-size: 34pt;
             font-weight: 400;
             line-height: 1.15;
@@ -137,7 +167,7 @@ _PRISM_CSS = """
         .cover__title i { font-style: italic; font-weight: 400; }
 
         .cover__subtitle {
-            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-family: 'Playfair Display', 'DejaVu Serif', Georgia, 'Times New Roman', serif;
             font-size: 14pt;
             color: #A0AEC0;
             margin-bottom: 50px;
@@ -158,7 +188,7 @@ _PRISM_CSS = """
         .content { padding-top: 4px; }
 
         h1 {
-            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-family: 'Playfair Display', 'DejaVu Serif', Georgia, 'Times New Roman', serif;
             font-size: 18pt;
             font-weight: 600;
             color: var(--prism-text-primary);
@@ -169,7 +199,7 @@ _PRISM_CSS = """
         }
 
         h2 {
-            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-family: 'Playfair Display', 'DejaVu Serif', Georgia, 'Times New Roman', serif;
             font-size: 13pt;
             font-weight: 600;
             color: var(--prism-accent);
@@ -181,7 +211,7 @@ _PRISM_CSS = """
         }
 
         h3 {
-            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+            font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 11pt;
             font-weight: 700;
             color: var(--prism-text-primary);
@@ -191,7 +221,7 @@ _PRISM_CSS = """
         }
 
         h4 {
-            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
+            font-family: 'Inter', 'DejaVu Sans', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 10pt;
             font-weight: 600;
             color: var(--prism-text-secondary);
@@ -259,7 +289,7 @@ _PRISM_CSS = """
         blockquote p { margin-bottom: 4px; }
 
         code {
-            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-family: 'DejaVu Sans Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace;
             font-size: 8.5pt;
             background: var(--prism-bg-warm);
             padding: 1px 4px;
@@ -307,6 +337,7 @@ def _build_full_html(
         '</head>\n<body>\n\n'
         '<!-- COVER -->\n'
         '<div class="cover">\n'
+        f'    <div class="cover__logo">{_get_logo_svg()}</div>\n'
         '    <div class="cover__badge">KOREV Evidence</div>\n'
         '    <div class="cover__title"><b>KOREV</b> <i>Evidence</i></div>\n'
         f'    <div class="cover__subtitle">{_html_escape(title)}</div>\n'
@@ -321,6 +352,27 @@ def _build_full_html(
         '</div>\n\n'
         '</body>\n</html>'
     )
+
+
+def _get_logo_svg() -> str:
+    """Return the KOREV Evidence logo SVG for the cover page.
+
+    Tries to load from webui/public/ first, falls back to a minimal text mark.
+    """
+    logo_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "..", "webui", "public", "korev-evidence-logo-light.svg"),
+        "/app/webui/public/korev-evidence-logo-light.svg",
+    ]
+    for p in logo_paths:
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                svg = f.read()
+                svg = svg.replace('width="1024"', 'width="80"')
+                svg = svg.replace('height="1024"', 'height="80"')
+                return svg
+        except (OSError, IOError):
+            continue
+    return ""
 
 
 def _html_escape(text: str) -> str:
