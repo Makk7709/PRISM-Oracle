@@ -393,6 +393,7 @@ def markdown_to_pdf(
     output_path: str,
     title: Optional[str] = None,
     header_right: str = "Document",
+    enable_charts: bool = True,
 ) -> str:
     """
     Génère un PDF branded Evidence depuis du Markdown.
@@ -402,6 +403,7 @@ def markdown_to_pdf(
         output_path: Chemin du PDF de sortie
         title: Titre sur la page de couverture (auto-détecté si None)
         header_right: Texte en haut à droite de chaque page
+        enable_charts: Auto-generate PRISM charts from markdown tables
 
     Returns:
         Chemin du fichier PDF généré
@@ -409,7 +411,15 @@ def markdown_to_pdf(
     if title is None:
         title = _extract_title(content)
 
+    charts = []
+    if enable_charts:
+        charts = _generate_strategic_charts(content, output_path)
+
     html_content = _md_to_html(content)
+
+    if charts:
+        html_content = _inject_charts_html(html_content, charts)
+
     date_str = datetime.now().strftime("%Y-%m-%d")
     full_html = _build_full_html(html_content, title, date_str, header_right)
 
@@ -429,13 +439,14 @@ def markdown_to_pdf(
             traceback.format_exc(),
         )
 
-    return _reportlab_prism(content, output_path, title, header_right)
+    return _reportlab_prism(content, output_path, title, header_right, charts=charts)
 
 
 def markdown_to_pdf_bytes(
     content: str,
     title: Optional[str] = None,
     header_right: str = "Document",
+    enable_charts: bool = True,
 ) -> bytes:
     """
     Génère un PDF branded Evidence en mémoire (bytes).
@@ -444,6 +455,7 @@ def markdown_to_pdf_bytes(
         content: Contenu Markdown
         title: Titre sur la page de couverture
         header_right: Texte en haut à droite
+        enable_charts: Auto-generate PRISM charts from markdown tables
 
     Returns:
         PDF en bytes
@@ -451,7 +463,15 @@ def markdown_to_pdf_bytes(
     if title is None:
         title = _extract_title(content)
 
+    charts = []
+    if enable_charts:
+        charts = _generate_strategic_charts(content)
+
     html_content = _md_to_html(content)
+
+    if charts:
+        html_content = _inject_charts_html(html_content, charts)
+
     date_str = datetime.now().strftime("%Y-%m-%d")
     full_html = _build_full_html(html_content, title, date_str, header_right)
 
@@ -495,6 +515,42 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
     except Exception as e:
         logger.error(f"HTML to PDF bytes failed: {e}")
         raise
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRISM REPORTLAB ENGINE — Premium fallback with full PRISM styling
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHART INTEGRATION HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _generate_strategic_charts(content: str, output_path: str = "") -> list:
+    """Generate PRISM charts from markdown tables (soft dependency)."""
+    try:
+        from python.helpers.strategic_charts import generate_charts_from_markdown
+        chart_dir = None
+        if output_path:
+            chart_dir = os.path.join(
+                os.path.dirname(output_path) or ".", "chart_assets"
+            )
+        return generate_charts_from_markdown(content, output_dir=chart_dir)
+    except ImportError:
+        logger.debug("strategic_charts module not available — skipping charts")
+        return []
+    except Exception:
+        logger.warning("Chart generation failed:\n%s", traceback.format_exc())
+        return []
+
+
+def _inject_charts_html(html_content: str, charts: list) -> str:
+    """Inject chart images as base64 <img> after their source tables in HTML."""
+    try:
+        from python.helpers.strategic_charts import inject_charts_into_html
+        return inject_charts_into_html(html_content, charts)
+    except Exception:
+        logger.warning("Chart HTML injection failed:\n%s", traceback.format_exc())
+        return html_content
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -677,8 +733,9 @@ def _reportlab_prism(
     output_path: str,
     title: str,
     header_right: str = "Document",
+    charts: Optional[list] = None,
 ) -> str:
-    """PRISM-branded ReportLab PDF with cover page, styled headings and tables."""
+    """PRISM-branded ReportLab PDF with cover page, styled headings, tables and charts."""
     try:
         from reportlab.platypus import (
             SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle,
@@ -723,6 +780,7 @@ def _reportlab_prism(
                 continue
 
             if stripped.startswith("|") and "|" in stripped[1:]:
+                table_start_line = i
                 table_lines = []
                 while i < len(lines) and lines[i].strip().startswith("|"):
                     table_lines.append(lines[i])
@@ -732,6 +790,10 @@ def _reportlab_prism(
                     elements.append(Spacer(1, 6))
                     elements.append(_build_prism_table(rows, styles))
                     elements.append(Spacer(1, 6))
+                    chart_img = _find_chart_for_table(table_start_line, charts)
+                    if chart_img:
+                        elements.append(_embed_chart_image(chart_img, page_w - 5 * cm))
+                        elements.append(Spacer(1, 8))
                 continue
 
             if not stripped:
@@ -766,6 +828,11 @@ def _reportlab_prism(
                         styles["bullet"],
                     )
                 )
+            elif stripped.startswith("<!--CHART:") and stripped.endswith("-->"):
+                chart_path = stripped[10:-3].strip()
+                if os.path.isfile(chart_path):
+                    elements.append(_embed_chart_image(chart_path, page_w - 5 * cm))
+                    elements.append(Spacer(1, 8))
             elif stripped == "---" or stripped == "***":
                 elements.append(Spacer(1, 4))
                 elements.append(_hr_line(page_w - 5 * cm))
@@ -853,6 +920,37 @@ def _reportlab_prism(
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(content)
         return md_path
+
+
+def _find_chart_for_table(table_line_index: int, charts: Optional[list]) -> Optional[str]:
+    """Find a chart image matching a table by line index."""
+    if not charts:
+        return None
+    for chart in charts:
+        if abs(chart.table_line_index - table_line_index) <= 2:
+            if os.path.isfile(chart.image_path):
+                return chart.image_path
+    return None
+
+
+def _embed_chart_image(image_path: str, max_width: float):
+    """Create a centered ReportLab Image flowable from a chart PNG."""
+    from reportlab.platypus import Image
+    from reportlab.lib.units import cm
+
+    try:
+        img = Image(image_path)
+        iw, ih = img.drawWidth, img.drawHeight
+        if iw > max_width:
+            scale = max_width / iw
+            img.drawWidth = max_width
+            img.drawHeight = ih * scale
+        img.hAlign = "CENTER"
+        return img
+    except Exception as exc:
+        logger.warning(f"Failed to embed chart image {image_path}: {exc}")
+        from reportlab.platypus import Spacer
+        return Spacer(1, 1)
 
 
 def _build_prism_table(rows: list, styles: dict):
