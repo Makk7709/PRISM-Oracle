@@ -165,10 +165,10 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 ### Garde-fous
 - **Température forcée à 0** pour les profils critiques (legal_safe, legal_drafting_guarded) — pas d'improvisation
 - **CriticalityRouter** (`python/helpers/criticality_router.py`) : détecte automatiquement les sujets nécessitant un consensus (basé sur des patterns LEVEL 3 critiques ou `force_consensus=True`, pas sur le profil agent)
-- **Consensus multi-agents** : 3 rounds de débat entre LLMs — Round 1 (analyse indépendante par 3 LLMs en parallèle), Round 2 (débat croisé, sauté si unanimité au Round 1), Round 3 (synthèse et verdict)
-- **Extension pipeline** : 24 hook points avec 42 extensions permettant d'intercepter et modifier le comportement à chaque étape
+- **Validation multi-LLM a 3 tours** : Round 1 (analyse independante par 3 LLMs en parallele via `asyncio.gather`), Round 2 (debat croise, saute si unanimite au Round 1 — unanimite = `confidence >= 0.8` + zero hallucinations), Round 3 (synthese et verdict par **un seul LLM** — l'arbitre principal `arbiters[0]`, temperature=0.1). Le verdict final est la decision de Round 3, pas un vote a quorum. En cas d'echec de Round 3, un verdict heuristique est calcule depuis Round 1 (confidence moyenne + comptage hallucinations). Si non approuve : fail-closed (reponse originale non retournee).
+- **Extension pipeline** : 24 hook points avec 46 extensions permettant d'intercepter et modifier le comportement a chaque etape
 - **Deterministic Router v2** (`python/helpers/router/`) : routage policy-driven sans jugement LLM, multi-intent (finance + legal + sales simultanés), 40+ keywords board-level (M&A, IPO, LBO, COMEX), anti-injection FR+EN, blocage high-stakes automatique
-- **ReasoningEngine** (`python/helpers/metacognition.py`) : métacognition avec politique d'escalade non-diluable (SAFE_REFUSE, HUMAN_REVIEW, ASK_CLARIFY, NONE). Invariants : monotonie (signaux ne peuvent que durcir), non-dilution, no-PII
+- **ReasoningEngine** (`python/helpers/metacognition.py`) : metacognition avec politique d'escalade non-diluable (SAFE_REFUSE, HUMAN_REVIEW, ASK_CLARIFY, NONE). Invariants : monotonie (signaux ne peuvent que durcir), non-dilution, no-PII. **Important :** `HUMAN_REVIEW` est une **classification de risque** (flag metadata), pas un workflow bloquant. Aucune file d'attente, aucun ecran de validation humaine. La supervision humaine repose sur la revue post-session des rapports d'audit.
 - **Critical Decision Gate** (`python/helpers/critical_decision_gate.py`) : gate séparée pour les décisions à haut risque
 - **Adversarial Analysis** : 4 endpoints API + intégration dans le consensus juridique et la validation
 - **ExecutionBudget** (`python/helpers/execution_budget.py`) : ✅ garde-fou central anti-boucles infinies. Chaque exécution transporte un budget partagé qui borne :
@@ -236,11 +236,12 @@ Evidence implémente le protocole Agent-to-Agent pour la communication inter-age
 - **Client** : `python/helpers/fasta2a_client.py` — `AgentConnection`, bearer/A2A_TOKEN, découverte via `/.well-known/agent.json`
 - **Outil** : `python/tools/a2a_chat.py` — `A2AChatTool` pour les interactions agent-to-agent depuis le chat
 - **UI** : `webui/components/settings/a2a/a2a-connection.html` — configuration des connexions A2A
+- **Tests** : aucun test automatise en CI. `tests/test_fasta2a_client.py` est un helper manuel (print/curl). Dependance optionnelle `fasta2a`.
 
 ## 1.8 Observabilité et Monitoring
 
 - **Logs JSON structurés** : événements scheduler, notifications, sécurité multi-tenant
-- **Métriques** : `/observability_metrics` — compteurs tasks_created, tasks_claimed, tasks_failed, notifications_denied, cross_tenant_denied
+- **Metriques** : `/observability_metrics` (requiert **authentification admin**) — 14 compteurs (`*_total` : tasks_created, tasks_claimed, tasks_completed, tasks_failed, tasks_quarantined, notifications_created/read/denied, cross_tenant_denied, audit_reports_generated/failed/size_bytes/generation_ms) + 5 taux derives (claim_conflict_rate, task_fail_rate, denied_scope_rate, notification_read_gap, cross_tenant_denied_rate)
 - **Smoke tests** : `scripts/smoke_test_multi_user.py` — test post-déploiement multi-user + concurrence
 - **Health endpoints** : `/healthz` — readiness check
 - **Security audit** : `python/security/security_audit.py` — logs structurés sans données sensibles
@@ -277,7 +278,13 @@ Le systeme genere automatiquement un rapport d'audit structure pour chaque sessi
 
 **Signature d'integrite :** Le bloc 9 signe cryptographiquement le rapport. En production, RSA-PSS-SHA256 est utilise (non-repudiation via cles dans `/evidence/keys/`). En dev, HMAC-SHA256 sert de fallback si les cles RSA ne sont pas configurees. La variable `EVIDENCE_HMAC_KEY` est **obligatoire** — l'application leve `RuntimeError` si elle est absente.
 
-**Stockage :** Les rapports sont persistes dans `tmp/chats/{ctxid}/audit_report.md` (et optionnellement `.pdf`) via `audit_report_storage.py`. L'endpoint `/audit_reports` (GET/POST) permet leur consultation avec controle d'acces fin (`can_access_audit_reports` — OWNER, DPO, RSSI, COMPLIANCE_OFFICER).
+**Stockage :** Les rapports sont persistes dans `tmp/chats/{ctxid}/audit_report.md` (et optionnellement `.pdf`) via `audit_report_storage.py`. Retention par defaut : **1825 jours** (5 ans), configurable via `EVIDENCE_RETENTION_DAYS`. Purge automatique via `purge_expired_reports()`. L'endpoint `/audit_reports` (GET/POST) permet leur consultation avec controle d'acces fin (`can_access_audit_reports` — OWNER, DPO, RSSI, COMPLIANCE_OFFICER).
+
+**Limites actuelles (honnetete) :**
+- Le `RiskRegister` est base sur un **socle statique de 7 risques types**, enrichi par 2 indicateurs de session (score de confiance, categorie AI Act). Ce n'est pas une analyse dynamique des risques par LLM.
+- Le `ProcessingRegister` est un **template statique** enrichi par le username et l'organisation de la session. Pas d'analyse dynamique des traitements reels.
+- La `ComplianceGrid` couvre 5 articles : Art. 9, 13, 14, 17 AI Act + RGPD Art. 30. Les autres articles AI Act ne sont pas evalues.
+- **Pas de capacite de replay** : les rapports tracent les outputs mais pas suffisamment les inputs (prompts exacts, etat FAISS, version du modele) pour reproduire un raisonnement.
 
 **Fichiers cles :**
 - `python/helpers/audit_report_renderer.py` — assembleur des 10 blocs
@@ -322,24 +329,17 @@ Le rate limiting est applique sur `/login` (anti-brute-force) et les endpoints A
 
 ## 2.1 Vulnérabilités Critiques
 
-### 🔴 CRITIQUE : Path Traversal dans `file_info` et `download_work_dir_file`
+### ~~CRITIQUE : Path Traversal dans `file_info` et `download_work_dir_file`~~ — CORRIGE (mars 2026)
 
-**Fichiers :** `python/api/file_info.py`, `python/api/download_work_dir_file.py`
+> **Statut : CORRIGE.** Les trois fichiers utilisent desormais `safe_path_join()`. Commit de reference : pre-v1.3.0.
 
-Le chemin fourni par l'utilisateur est passé directement à `files.get_abs_path(path)` sans validation. Cette fonction fait un simple `os.path.join(base_dir, path)` sans résolution ni vérification. Un attaquant pourrait lire n'importe quel fichier du système :
+**Fichiers corriges :** `python/api/file_info.py`, `python/api/download_work_dir_file.py`, `python/api/api_files_get.py`
 
-```
-POST /file_info {"path": "../../etc/passwd"}
-```
+**Historique de la faille :** Le chemin fourni par l'utilisateur etait passe directement a `files.get_abs_path(path)` sans validation (`os.path.join` sans resolution). Un attaquant pouvait lire n'importe quel fichier du systeme via `../../etc/passwd`.
 
-`image_get.py` est protégé (il utilise `safe_path_join`), mais ses voisins ne le sont pas. C'est incohérent et dangereux.
+**Correction appliquee :** `safe_path_join(root, normalized, allow_symlinks=False)` est desormais appele dans les trois fichiers. `api_files_get` restreint aussi le scope a `tmp/uploads/` et `tmp/chats/` uniquement.
 
-**Impact :** Lecture arbitraire de fichiers (clés API dans `.env`, `users.json` avec les hashes).  
-**Fix immédiat :** Appliquer `safe_path_join()` dans `file_info.py` et `download_work_dir_file.py`, comme c'est déjà fait dans `image_get.py`.
-
-### 🔴 CRITIQUE : `api_files_get` — API Key + Pas de validation de chemin
-
-L'endpoint `api_files_get` (destiné aux intégrations externes) accepte un chemin arbitraire avec comme seule protection une API key. Combiné à l'absence de `safe_path_join`, c'est un accès lecture à tout le filesystem.
+**Risque residuel :** `api_files_get` autorise l'acces aux fichiers dans `tmp/chats/` pour les detenteurs d'API key — si la cle fuit, tous les chats sont lisibles. Ce n'est plus du path traversal mais un probleme de scope d'API key.
 
 ### 🟠 ÉLEVÉ : Pas de sandbox pour l'exécution de code
 
@@ -348,12 +348,18 @@ L'endpoint `api_files_get` (destiné aux intégrations externes) accepte un chem
 - Le code peut lire/écrire tout ce que le processus backend peut lire/écrire
 - Un agent hallucinant pourrait exécuter `rm -rf /app/tmp/` et détruire toutes les données
 
-### 🟠 ÉLEVÉ : Chats sans isolation utilisateur au stockage
+### ELEVE : Chats sans isolation utilisateur au stockage
 
-Tous les chats sont dans `tmp/chats/` (un seul dossier). L'ownership est un champ `username` dans le JSON, mais :
-- Aucun contrôle d'accès à l'API de chargement (`chat_load`)
-- Si un utilisateur connaît le `ctxid` d'un autre, il peut charger son chat
-- Au startup, TOUS les chats sont chargés en mémoire (`load_tmp_chats()`)
+Tous les chats sont dans `tmp/chats/<ctxid>/` (un dossier par context, **pas** de sous-dossier par utilisateur). L'ownership est un champ `username` dans le JSON.
+
+**Mitigations existantes (partielles) :**
+- `can_access_context()` est appele dans `use_context()` et `poll.py` — l'isolation est **enforcie au niveau API**
+- Un utilisateur ne peut pas lister/charger les chats d'un autre via l'interface web
+
+**Risques restants :**
+- Un acces direct au volume Docker contourne cette protection (pas d'isolation filesystem)
+- Au startup, TOUS les chats sont charges en memoire (`load_tmp_chats()`) — ne scale pas
+- L'import de chat (`chat_load`) re-attribue le contexte au compte importateur (design intentionnel, mais a documenter en politique d'usage)
 
 ### 🟠 ÉLEVÉ : Fuite de file descriptors (observée en production)
 
@@ -418,7 +424,7 @@ Le consensus multi-agents est implémenté dans `python/tools/call_subordinate.p
 
 3. **Dans les logs Docker** : En production, lance `docker logs evidence-backend 2>&1 | grep -i "consensus\|CriticalityRouter\|subordinate"`. Les `PrintStyle` du module `call_subordinate.py` émettent des lignes colorées pour chaque étape : choix du routeur, lancement du consensus, résultat de chaque round, décision finale.
 
-4. **En débogage local** : Place un breakpoint dans `_validate_with_consensus()` (ligne ~368 de `call_subordinate.py`). Les variables `rounds`, `votes`, `arbiter_response` contiennent l'état complet du débat.
+4. **En debogage local** : Place un breakpoint dans `_validate_with_consensus()` (ligne ~423 de `call_subordinate.py`). Les variables `debate_result`, `round1_analyses` contiennent l'etat complet du debat. Attention : le verdict final est dans `debate_result.approved` et `debate_result.synthesis.final_verdict`, pas dans un comptage de votes.
 
 ### Comment vérifier qu'un agent `legal_safe` n'hallucine pas des jurisprudences ?
 
@@ -669,7 +675,7 @@ curl -s https://<DOMAINE>/healthz
 │   │   ├── projects.py      # Gestion projets filesystem
 │   │   ├── memory.py        # FAISS vector store
 │   │   ├── persist_chat.py  # Sérialisation/chargement chats
-│   │   ├── settings.py      # Gestion settings (2222 lignes !)
+│   │   ├── settings.py      # Gestion settings (2225 lignes)
 │   │   ├── user_manager.py  # Auth multi-utilisateur
 │   │   ├── runtime.py       # Détection Docker, environment
 │   │   ├── files.py         # I/O fichiers, templates, placeholders
@@ -692,8 +698,8 @@ curl -s https://<DOMAINE>/healthz
 │   │   └── user_workspace.py   # Isolation workspaces par utilisateur
 │   │
 │   ├── tools/               # ⭐ Outils disponibles pour les agents
-│   │   ├── call_subordinate.py  # Délégation (648 lignes)
-│   │   ├── code_execution_tool.py # Exécution code (551 lignes)
+│   │   ├── call_subordinate.py  # Delegation (703 lignes)
+│   │   ├── code_execution_tool.py # Execution code (555 lignes)
 │   │   ├── generate_image.py    # Génération images
 │   │   └── ... (23 outils)
 │   │
@@ -724,7 +730,7 @@ curl -s https://<DOMAINE>/healthz
 │
 ├── webui/                   # Frontend
 │   ├── index.html           # Page principale (1300 lignes)
-│   ├── index.js             # ⭐ Polling, sendMessage, startPolling (699 lignes)
+│   ├── index.js             # Polling, sendMessage, startPolling (710 lignes)
 │   ├── js/                  # Logique (messages, settings, scheduler...)
 │   └── components/          # Composants Alpine.js (sidebar, modals...)
 │
@@ -793,7 +799,9 @@ uv run pytest tests/ -v
 | `security_ci.yml` | Changements dans `python/security/`, `tests/security/`, `run_ui.py` | Tests sécurité uniquement |
 | `legal_pipeline_ci.yml` | Changements dans `python/legal_sources/`, `python/helpers/legal_*.py`, `python/extensions/legal_safe_mode/`, `tests/test_legal_*.py` | Pipeline juridique |
 
-**Point critique :** Les tests "extended" ont `continue-on-error: true`. Des échecs sont silencieusement ignorés. Pas de déploiement automatique (pas de CD — le déploiement est manuel via SSH + docker cp ou rebuild).
+**Point critique :** Les tests "extended" ont `continue-on-error: true`. Des echecs sont silencieusement ignores. Pas de deploiement automatique (pas de CD — le deploiement est manuel via SSH + `git pull` + `docker compose build`).
+
+**Garde-fou reseau des tests :** Le `tests/conftest.py` contient un fixture `_network_guard` (autouse) qui **bloque tous les appels LLM reels** sauf si `A0_ALLOW_REAL_LLM=1`. Cela signifie que `uv run pytest` fonctionne sans API key configuree — mais les tests verifient la logique, pas les appels reels aux LLMs.
 
 ### Procedure de deploiement actuelle
 
@@ -828,8 +836,9 @@ curl -s https://<DOMAINE>/healthz           # Doit retourner 200
 | Lire `.env` avec `open()` | Peut exposer des secrets | Utiliser `os.environ.get()` ou `settings.get_settings()` |
 | `eval()` ou `exec()` avec input utilisateur | Injection de code | Utiliser `code_execution_tool` (⚠ pas de vrai sandbox actuellement — voir section 2.1) |
 | Stocker des mots de passe en clair | Exposition | `hash_password()` de `python/security/auth.py` (Argon2id) |
-| Créer un endpoint sans `@_requires_auth` | Auth bypass | Toujours utiliser le décorateur sauf pour `/healthz` et `/login` |
+| Creer un endpoint sans `@_requires_auth` | Auth bypass | Toujours utiliser le decorateur sauf pour `/healthz` et `/login` |
 | Modifier `mcp_config.json` avec des chemins locaux | Fuite d'info en prod | Utiliser `mcp_config.production.json` |
+| Desactiver le CSRF sans raison | CSRF attack | Protection active : `csrf_protect()` + `X-CSRF-Token` header + cookie. Ne surcharger `requires_csrf() -> False` que pour les endpoints API-key-only |
 
 ### Conventions de code
 
@@ -854,7 +863,7 @@ Quand tu veux ajouter une fonctionnalité, demande-toi :
 
 ## Semaine 1-2 : Quick Wins (Familiarisation)
 
-### Quick Win #1 : Corriger le path traversal dans `file_info.py` (**SÉCURITÉ CRITIQUE**)
+### ~~Quick Win #1 : Corriger le path traversal dans `file_info.py`~~ — FAIT (mars 2026)
 
 **Fichier :** `python/api/file_info.py`  
 **Effort :** 30 minutes  
@@ -885,12 +894,7 @@ except SecurityError:
     raise ValueError("Path is outside of allowed directory")
 ```
 
-**Ce que tu dois faire concrètement :**
-1. Ouvrir `python/api/file_info.py` et `python/api/download_work_dir_file.py`.
-2. Repérer les appels à `files.get_abs_path(path)` qui prennent directement l'input utilisateur.
-3. Les remplacer par `safe_path_join(files.get_base_dir(), path)`, exactement comme dans `python/api/image_get.py` (lignes 50-57 — c'est ton modèle).
-4. Ajouter un test dans `tests/security/` qui vérifie qu'un chemin `../../etc/passwd` est rejeté.
-5. Faire le même traitement dans `python/api/api_files_get.py`.
+**Correction deja appliquee :** `safe_path_join()` est desormais utilise dans `file_info.py`, `download_work_dir_file.py` et `api_files_get.py`. Verifier avec : `grep -n "safe_path_join" python/api/file_info.py python/api/download_work_dir_file.py python/api/api_files_get.py`.
 
 ### Quick Win #2 : Ajouter du logging structuré sur les erreurs 500
 
@@ -1016,7 +1020,7 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 | Action | Urgence | Effort | Risque si ignoré |
 |--------|---------|--------|------------------|
-| Patcher path traversal (`file_info`, `download_work_dir_file`, `api_files_get`) | IMMÉDIAT | 30 min par fichier | Lecture arbitraire de fichiers (`.env`, `users.json`) |
+| ~~Patcher path traversal (`file_info`, `download_work_dir_file`, `api_files_get`)~~ | FAIT (mars 2026) | — | ~~Lecture arbitraire de fichiers~~ → Corrige via `safe_path_join()` |
 | ~~Ajouter `max_iterations` à la monologue~~ | ✅ FAIT (v4.0) | — | ~~Agent en boucle infinie~~ → Borné par `ExecutionBudget.max_iterations=25` + `max_llm_calls=30` + `deadline=300s` |
 | ~~Ajouter `max_depth` à la délégation~~ | ✅ FAIT (v4.0) | — | ~~Stack overflow, délégation récursive infinie~~ → Borné par `ExecutionBudget.max_depth=5` + `max_delegations=8` + cycle detection |
 | Monitoring file descriptors | Semaine 1 | 1 heure (cron) | Crash backend en production (déjà observé) |
@@ -1030,13 +1034,15 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 ## Annexe E : Checklist "Premier Jour"
 
-- [ ] Cloner le repo et lancer le backend en local (`python run_ui.py`)
-- [ ] Se connecter à l'interface web, créer un chat, envoyer un message
-- [ ] Lire `agent.py` en entier (1015 lignes — compte 2 heures)
-- [ ] Lire `python/tools/call_subordinate.py` (648 lignes — le cœur multi-agents)
-- [ ] Ouvrir un chat en mode `legal_safe`, poser une question juridique, observer la délégation et le consensus dans les logs
-- [ ] Se connecter au serveur production en SSH, vérifier `docker compose ps`, lire les derniers logs
-- [ ] Identifier les 3 fichiers de sécurité à patcher (Quick Win #1) et lire `image_get.py` comme modèle
+- [ ] Cloner le repo et lancer le backend en local (`uv sync && uv run python run_ui.py`)
+- [ ] Se connecter a l'interface web, creer un chat, envoyer un message
+- [ ] Lire `agent.py` en entier (1144 lignes — compte 2 heures)
+- [ ] Lire `python/tools/call_subordinate.py` (703 lignes — le coeur multi-agents)
+- [ ] Lire `python/helpers/audit_report_renderer.py` (486 lignes — le systeme de rapports d'audit)
+- [ ] Ouvrir un chat en mode `legal_safe`, poser une question juridique, observer la delegation et la validation multi-LLM dans les logs
+- [ ] Se connecter au serveur production en SSH, verifier `docker compose ps`, lire les derniers logs
+- [ ] Lancer `uv run pytest tests/ -q` et verifier que les 3739 tests passent (sans API key — le network guard bloque les appels reels)
+- [ ] Verifier la section securite de `python/security/` et lire `image_get.py` comme modele de bonne pratique (safe_path_join + authz)
 
 ---
 
