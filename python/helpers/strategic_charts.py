@@ -125,7 +125,7 @@ def _apply_prism_style():
         "ytick.color": PRISM_TEXT_SECONDARY,
         "text.color": PRISM_TEXT,
         "font.family": "sans-serif",
-        "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+        "font.sans-serif": ["DejaVu Sans", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
         "font.size": 10,
         "axes.titlesize": 13,
         "axes.titleweight": "bold",
