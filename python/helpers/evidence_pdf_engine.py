@@ -16,8 +16,9 @@ Usage:
 """
 
 import os
+import re
 import logging
-from io import BytesIO
+import traceback
 from datetime import datetime
 from typing import Optional
 
@@ -26,16 +27,11 @@ logger = logging.getLogger("evidence_pdf_engine")
 # ═══════════════════════════════════════════════════════════════════════════════
 # PRISM HTML TEMPLATE — Charte graphique KOREV Evidence
 # ═══════════════════════════════════════════════════════════════════════════════
+# Uses $PLACEHOLDER$ sentinel tokens (not {}) to avoid Python .format()
+# collisions with CSS braces and LLM-generated content containing {}.
 
-EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>{title}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
-
-        :root {{
+_PRISM_CSS = """
+        :root {
             --prism-accent: #4A7CFF;
             --prism-accent-light: #6B95FF;
             --prism-accent-bg: #F0F4FF;
@@ -48,63 +44,61 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             --prism-bg-warm: #FAFBFC;
             --prism-green: #38A169;
             --prism-red: #E53E3E;
-        }}
+        }
 
-        @page {{
+        @page {
             size: A4;
             margin: 20mm 22mm 25mm 22mm;
 
-            @top-left {{
+            @top-left {
                 content: "KOREV Evidence";
                 font-family: 'Playfair Display', Georgia, serif;
                 font-size: 8pt;
                 color: #8B95A5;
-            }}
+            }
 
-            @top-right {{
-                content: "{header_right}";
-                font-family: 'Inter', sans-serif;
+            @top-right {
+                content: "$HEADER_RIGHT$";
+                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #4A7CFF;
                 text-transform: uppercase;
                 letter-spacing: 0.1em;
-            }}
+            }
 
-            @bottom-left {{
+            @bottom-left {
                 content: "KOREV Evidence — Confidentiel";
-                font-family: 'Inter', sans-serif;
+                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #8B95A5;
-            }}
+            }
 
-            @bottom-right {{
+            @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
-                font-family: 'Inter', sans-serif;
+                font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
                 font-size: 7pt;
                 color: #8B95A5;
-            }}
-        }}
+            }
+        }
 
-        @page :first {{
+        @page :first {
             margin: 0;
-            @top-left {{ content: none; }}
-            @top-right {{ content: none; }}
-            @bottom-left {{ content: none; }}
-            @bottom-right {{ content: none; }}
-        }}
+            @top-left { content: none; }
+            @top-right { content: none; }
+            @bottom-left { content: none; }
+            @bottom-right { content: none; }
+        }
 
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        body {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 10pt;
             line-height: 1.65;
             color: var(--prism-text-primary);
-        }}
+        }
 
-        /* ── COVER PAGE ──────────────────────────────────── */
-        /* WeasyPrint: no flexbox — use block layout + padding for centering */
-        .cover {{
+        .cover {
             position: relative;
             width: 210mm;
             height: 297mm;
@@ -114,10 +108,10 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             padding-top: 90mm;
             page-break-after: always;
             overflow: hidden;
-        }}
+        }
 
-        .cover__badge {{
-            font-family: 'Inter', sans-serif;
+        .cover__badge {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 8pt;
             font-weight: 600;
             text-transform: uppercase;
@@ -128,22 +122,22 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             border-radius: 4px;
             display: inline-block;
             margin-bottom: 40px;
-        }}
+        }
 
-        .cover__title {{
-            font-family: 'Playfair Display', Georgia, serif;
+        .cover__title {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 34pt;
             font-weight: 400;
             line-height: 1.15;
             margin-bottom: 16px;
             letter-spacing: -0.02em;
-        }}
+        }
 
-        .cover__title b {{ font-weight: 700; }}
-        .cover__title i {{ font-style: italic; font-weight: 400; }}
+        .cover__title b { font-weight: 700; }
+        .cover__title i { font-style: italic; font-weight: 400; }
 
-        .cover__subtitle {{
-            font-family: 'Playfair Display', Georgia, serif;
+        .cover__subtitle {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 14pt;
             color: #A0AEC0;
             margin-bottom: 50px;
@@ -151,22 +145,20 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             margin-right: auto;
             line-height: 1.4;
             max-width: 420px;
-        }}
+        }
 
-        .cover__meta {{
+        .cover__meta {
             font-size: 8pt;
             color: #718096;
             margin-top: 80px;
-        }}
+        }
 
-        .cover__meta span {{ display: block; margin-bottom: 2px; }}
+        .cover__meta span { display: block; margin-bottom: 2px; }
 
-        /* ── CONTENT ─────────────────────────────────────── */
-        .content {{ padding-top: 4px; }}
+        .content { padding-top: 4px; }
 
-        /* ── HEADINGS ────────────────────────────────────── */
-        h1 {{
-            font-family: 'Playfair Display', Georgia, serif;
+        h1 {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 18pt;
             font-weight: 600;
             color: var(--prism-text-primary);
@@ -174,10 +166,10 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             margin-bottom: 10px;
             letter-spacing: -0.01em;
             page-break-after: avoid;
-        }}
+        }
 
-        h2 {{
-            font-family: 'Playfair Display', Georgia, serif;
+        h2 {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
             font-size: 13pt;
             font-weight: 600;
             color: var(--prism-accent);
@@ -186,48 +178,47 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             padding-bottom: 5px;
             border-bottom: 1px solid var(--prism-border);
             page-break-after: avoid;
-        }}
+        }
 
-        h3 {{
-            font-family: 'Inter', sans-serif;
+        h3 {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 11pt;
             font-weight: 700;
             color: var(--prism-text-primary);
             margin-top: 16px;
             margin-bottom: 6px;
             page-break-after: avoid;
-        }}
+        }
 
-        h4 {{
-            font-family: 'Inter', sans-serif;
+        h4 {
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 10pt;
             font-weight: 600;
             color: var(--prism-text-secondary);
-        }}
+        }
 
-        p {{
+        p {
             margin-bottom: 8px;
             color: var(--prism-text-secondary);
             orphans: 3;
             widows: 3;
-        }}
+        }
 
-        strong {{ font-weight: 600; color: var(--prism-text-primary); }}
-        a {{ color: var(--prism-accent); text-decoration: none; }}
+        strong { font-weight: 600; color: var(--prism-text-primary); }
+        a { color: var(--prism-accent); text-decoration: none; }
 
-        /* ── TABLES ──────────────────────────────────────── */
-        table {{
+        table {
             width: 100%;
             border-collapse: collapse;
             margin: 10px 0 14px 0;
             font-size: 8.5pt;
             table-layout: fixed;
             page-break-inside: auto;
-        }}
+        }
 
-        thead {{ display: table-header-group; }}
+        thead { display: table-header-group; }
 
-        thead th {{
+        thead th {
             background: var(--prism-dark);
             color: white;
             font-weight: 600;
@@ -236,28 +227,26 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 7.5pt;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-        }}
+        }
 
-        thead th:first-child {{ border-radius: 4px 0 0 0; }}
-        thead th:last-child {{ border-radius: 0 4px 0 0; }}
+        thead th:first-child { border-radius: 4px 0 0 0; }
+        thead th:last-child { border-radius: 0 4px 0 0; }
 
-        tbody td {{
+        tbody td {
             padding: 6px 9px;
             border-bottom: 1px solid var(--prism-border-light);
             vertical-align: top;
             word-wrap: break-word;
             overflow-wrap: break-word;
-        }}
+        }
 
-        tbody tr:nth-child(even) {{ background: var(--prism-bg-warm); }}
+        tbody tr:nth-child(even) { background: var(--prism-bg-warm); }
 
-        /* ── LISTS ───────────────────────────────────────── */
-        ul, ol {{ padding-left: 18px; margin-bottom: 8px; }}
-        li {{ margin-bottom: 4px; color: var(--prism-text-secondary); font-size: 9.5pt; }}
-        li strong {{ color: var(--prism-text-primary); }}
+        ul, ol { padding-left: 18px; margin-bottom: 8px; }
+        li { margin-bottom: 4px; color: var(--prism-text-secondary); font-size: 9.5pt; }
+        li strong { color: var(--prism-text-primary); }
 
-        /* ── BLOCKQUOTES ─────────────────────────────────── */
-        blockquote {{
+        blockquote {
             border-left: 3px solid var(--prism-accent);
             padding: 10px 14px;
             margin: 12px 0;
@@ -265,21 +254,20 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             border-radius: 0 4px 4px 0;
             font-style: italic;
             color: var(--prism-text-secondary);
-        }}
+        }
 
-        blockquote p {{ margin-bottom: 4px; }}
+        blockquote p { margin-bottom: 4px; }
 
-        /* ── CODE ────────────────────────────────────────── */
-        code {{
-            font-family: 'SF Mono', 'Fira Code', monospace;
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
             font-size: 8.5pt;
             background: var(--prism-bg-warm);
             padding: 1px 4px;
             border-radius: 3px;
             color: var(--prism-accent);
-        }}
+        }
 
-        pre {{
+        pre {
             background: var(--prism-dark);
             color: #E2E8F0;
             padding: 12px 14px;
@@ -289,35 +277,60 @@ EVIDENCE_HTML_TEMPLATE = """<!DOCTYPE html>
             overflow-wrap: break-word;
             white-space: pre-wrap;
             margin: 10px 0;
-        }}
+        }
 
-        pre code {{ background: none; color: inherit; padding: 0; }}
+        pre code { background: none; color: inherit; padding: 0; }
 
-        /* ── MISC ────────────────────────────────────────── */
-        hr {{ border: none; border-top: 1px solid var(--prism-border); margin: 16px 0; }}
-        img {{ max-width: 100%; height: auto; }}
-    </style>
-</head>
-<body>
+        hr { border: none; border-top: 1px solid var(--prism-border); margin: 16px 0; }
+        img { max-width: 100%; height: auto; }
+"""
 
-<!-- COVER -->
-<div class="cover">
-    <div class="cover__badge">KOREV Evidence</div>
-    <div class="cover__title"><b>KOREV</b> <i>Evidence</i></div>
-    <div class="cover__subtitle">{title}</div>
-    <div class="cover__meta">
-        <span>Auteur : KOREV Evidence</span>
-        <span>Date : {date}</span>
-    </div>
-</div>
 
-<!-- CONTENT -->
-<div class="content">
-{content}
-</div>
+def _build_full_html(
+    html_content: str,
+    title: str,
+    date_str: str,
+    header_right: str,
+) -> str:
+    """Assemble the PRISM HTML document via safe string concatenation.
 
-</body>
-</html>"""
+    Avoids str.format() entirely — CSS braces and LLM-generated content
+    with {} are left untouched.
+    """
+    css = _PRISM_CSS.replace("$HEADER_RIGHT$", _html_escape(header_right))
+
+    return (
+        '<!DOCTYPE html>\n<html lang="fr">\n<head>\n'
+        '    <meta charset="UTF-8">\n'
+        f'    <title>{_html_escape(title)}</title>\n'
+        f'    <style>{css}</style>\n'
+        '</head>\n<body>\n\n'
+        '<!-- COVER -->\n'
+        '<div class="cover">\n'
+        '    <div class="cover__badge">KOREV Evidence</div>\n'
+        '    <div class="cover__title"><b>KOREV</b> <i>Evidence</i></div>\n'
+        f'    <div class="cover__subtitle">{_html_escape(title)}</div>\n'
+        '    <div class="cover__meta">\n'
+        '        <span>Auteur : KOREV Evidence</span>\n'
+        f'        <span>Date : {_html_escape(date_str)}</span>\n'
+        '    </div>\n'
+        '</div>\n\n'
+        '<!-- CONTENT -->\n'
+        '<div class="content">\n'
+        f'{html_content}\n'
+        '</div>\n\n'
+        '</body>\n</html>'
+    )
+
+
+def _html_escape(text: str) -> str:
+    """Minimal HTML escaping for attribute/text values."""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -330,12 +343,10 @@ def _md_to_html(md_text: str) -> str:
         import markdown
         return markdown.markdown(
             md_text,
-            extensions=["tables", "fenced_code", "toc", "nl2br", "sane_lists"],
+            extensions=["tables", "fenced_code", "toc", "sane_lists"],
         )
     except ImportError:
         logger.warning("markdown library not available, using basic conversion")
-        # Basic fallback: just wrap in paragraphs
-        import re
         html = md_text
         html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
         html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
@@ -353,6 +364,24 @@ def _extract_title(md_text: str) -> str:
         if line.startswith("# "):
             return line.lstrip("# ").strip()
     return "Document KOREV Evidence"
+
+
+def _sanitize_html_for_weasyprint(html: str) -> str:
+    """Remove or neutralize content that can crash tinycss2/WeasyPrint.
+
+    Known triggers:
+    - Stray <style> blocks injected by LLM content
+    - Inline style attributes with malformed CSS
+    - Control characters
+    """
+    html = re.sub(
+        r'<style[^>]*>.*?</style>',
+        '',
+        html,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    html = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', html)
+    return html
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -381,26 +410,26 @@ def markdown_to_pdf(
         title = _extract_title(content)
 
     html_content = _md_to_html(content)
-    full_html = EVIDENCE_HTML_TEMPLATE.format(
-        title=title,
-        content=html_content,
-        date=datetime.now().strftime("%Y-%m-%d"),
-        header_right=header_right,
-    )
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    full_html = _build_full_html(html_content, title, date_str, header_right)
 
     os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else '.', exist_ok=True)
 
     try:
         import weasyprint
-        weasyprint.HTML(string=full_html).write_pdf(output_path)
-        logger.info(f"PDF generated: {output_path}")
+        sanitized = _sanitize_html_for_weasyprint(full_html)
+        weasyprint.HTML(string=sanitized).write_pdf(output_path)
+        logger.info(f"PRISM PDF generated (WeasyPrint): {output_path}")
         return output_path
     except ImportError:
-        logger.error("weasyprint not installed — falling back to legacy ReportLab")
-        return _reportlab_fallback(content, output_path, title)
-    except Exception as e:
-        logger.error(f"WeasyPrint failed: {e} — falling back to legacy ReportLab")
-        return _reportlab_fallback(content, output_path, title)
+        logger.warning("weasyprint not installed — using PRISM ReportLab engine")
+    except Exception:
+        logger.error(
+            "WeasyPrint rendering failed — using PRISM ReportLab engine\n%s",
+            traceback.format_exc(),
+        )
+
+    return _reportlab_prism(content, output_path, title, header_right)
 
 
 def markdown_to_pdf_bytes(
@@ -423,22 +452,22 @@ def markdown_to_pdf_bytes(
         title = _extract_title(content)
 
     html_content = _md_to_html(content)
-    full_html = EVIDENCE_HTML_TEMPLATE.format(
-        title=title,
-        content=html_content,
-        date=datetime.now().strftime("%Y-%m-%d"),
-        header_right=header_right,
-    )
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    full_html = _build_full_html(html_content, title, date_str, header_right)
 
     try:
         import weasyprint
-        return weasyprint.HTML(string=full_html).write_pdf()
+        sanitized = _sanitize_html_for_weasyprint(full_html)
+        return weasyprint.HTML(string=sanitized).write_pdf()
     except ImportError:
-        logger.error("weasyprint not installed — falling back to legacy ReportLab")
-        return _reportlab_fallback_bytes(content, title)
-    except Exception as e:
-        logger.error(f"WeasyPrint failed: {e} — falling back to legacy ReportLab")
-        return _reportlab_fallback_bytes(content, title)
+        logger.warning("weasyprint not installed — using PRISM ReportLab engine")
+    except Exception:
+        logger.error(
+            "WeasyPrint rendering failed — using PRISM ReportLab engine\n%s",
+            traceback.format_exc(),
+        )
+
+    return _reportlab_prism_bytes(content, title, header_right)
 
 
 def html_to_pdf(html_content: str, output_path: str) -> str:
@@ -449,7 +478,8 @@ def html_to_pdf(html_content: str, output_path: str) -> str:
 
     try:
         import weasyprint
-        weasyprint.HTML(string=html_content).write_pdf(output_path)
+        sanitized = _sanitize_html_for_weasyprint(html_content)
+        weasyprint.HTML(string=sanitized).write_pdf(output_path)
         return output_path
     except Exception as e:
         logger.error(f"HTML to PDF failed: {e}")
@@ -460,64 +490,452 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
     """Convertit du HTML complet en PDF bytes."""
     try:
         import weasyprint
-        return weasyprint.HTML(string=html_content).write_pdf()
+        sanitized = _sanitize_html_for_weasyprint(html_content)
+        return weasyprint.HTML(string=sanitized).write_pdf()
     except Exception as e:
         logger.error(f"HTML to PDF bytes failed: {e}")
         raise
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# REPORTLAB FALLBACK (avoids circular dependency with pdf_generator.py)
+# PRISM REPORTLAB ENGINE — Premium fallback with full PRISM styling
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _reportlab_fallback(content: str, output_path: str, title: str) -> str:
-    """Direct ReportLab fallback — does NOT call pdf_generator.generate_pdf."""
-    try:
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import cm
+_PRISM_ACCENT_HEX = "#4A7CFF"
+_PRISM_DARK_HEX = "#0D1117"
+_PRISM_TEXT_PRIMARY_HEX = "#1A1D23"
+_PRISM_TEXT_SECONDARY_HEX = "#4A5568"
+_PRISM_BORDER_HEX = "#E2E8F0"
+_PRISM_BG_WARM_HEX = "#FAFBFC"
+_PRISM_ACCENT_BG_HEX = "#F0F4FF"
 
-        doc = SimpleDocTemplate(output_path, pagesize=A4,
-                                leftMargin=2.5*cm, rightMargin=2.5*cm,
-                                topMargin=2.5*cm, bottomMargin=2.5*cm,
-                                title=title)
-        styles = getSampleStyleSheet()
+
+def _hex_to_color(hex_str: str):
+    """Convert hex color to ReportLab Color."""
+    from reportlab.lib.colors import HexColor
+    return HexColor(hex_str)
+
+
+def _prism_styles():
+    """Build PRISM-branded ReportLab paragraph styles."""
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+
+    base_font = "Helvetica"
+    bold_font = "Helvetica-Bold"
+    italic_font = "Helvetica-Oblique"
+    mono_font = "Courier"
+
+    return {
+        "cover_badge": ParagraphStyle(
+            "cover_badge",
+            fontName=bold_font,
+            fontSize=8,
+            leading=10,
+            textColor=_hex_to_color(_PRISM_ACCENT_HEX),
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            textTransform="uppercase",
+        ),
+        "cover_title": ParagraphStyle(
+            "cover_title",
+            fontName=bold_font,
+            fontSize=28,
+            leading=34,
+            textColor=_hex_to_color("#FFFFFF"),
+            alignment=TA_CENTER,
+            spaceAfter=12,
+        ),
+        "cover_subtitle": ParagraphStyle(
+            "cover_subtitle",
+            fontName=italic_font,
+            fontSize=13,
+            leading=18,
+            textColor=_hex_to_color("#A0AEC0"),
+            alignment=TA_CENTER,
+            spaceAfter=40,
+        ),
+        "cover_meta": ParagraphStyle(
+            "cover_meta",
+            fontName=base_font,
+            fontSize=8,
+            leading=11,
+            textColor=_hex_to_color("#718096"),
+            alignment=TA_CENTER,
+        ),
+        "h1": ParagraphStyle(
+            "prism_h1",
+            fontName=bold_font,
+            fontSize=16,
+            leading=20,
+            textColor=_hex_to_color(_PRISM_TEXT_PRIMARY_HEX),
+            spaceBefore=20,
+            spaceAfter=8,
+            keepWithNext=True,
+        ),
+        "h2": ParagraphStyle(
+            "prism_h2",
+            fontName=bold_font,
+            fontSize=12,
+            leading=16,
+            textColor=_hex_to_color(_PRISM_ACCENT_HEX),
+            spaceBefore=16,
+            spaceAfter=6,
+            keepWithNext=True,
+            borderWidth=0,
+            borderPadding=0,
+        ),
+        "h3": ParagraphStyle(
+            "prism_h3",
+            fontName=bold_font,
+            fontSize=10,
+            leading=13,
+            textColor=_hex_to_color(_PRISM_TEXT_PRIMARY_HEX),
+            spaceBefore=12,
+            spaceAfter=4,
+            keepWithNext=True,
+        ),
+        "h4": ParagraphStyle(
+            "prism_h4",
+            fontName=bold_font,
+            fontSize=9,
+            leading=12,
+            textColor=_hex_to_color(_PRISM_TEXT_SECONDARY_HEX),
+            spaceBefore=8,
+            spaceAfter=4,
+        ),
+        "body": ParagraphStyle(
+            "prism_body",
+            fontName=base_font,
+            fontSize=9,
+            leading=14,
+            textColor=_hex_to_color(_PRISM_TEXT_SECONDARY_HEX),
+            alignment=TA_JUSTIFY,
+            spaceAfter=6,
+        ),
+        "bullet": ParagraphStyle(
+            "prism_bullet",
+            fontName=base_font,
+            fontSize=9,
+            leading=13,
+            textColor=_hex_to_color(_PRISM_TEXT_SECONDARY_HEX),
+            leftIndent=16,
+            bulletIndent=6,
+            spaceAfter=3,
+        ),
+        "code": ParagraphStyle(
+            "prism_code",
+            fontName=mono_font,
+            fontSize=7.5,
+            leading=10,
+            textColor=_hex_to_color("#E2E8F0"),
+            backColor=_hex_to_color(_PRISM_DARK_HEX),
+            leftIndent=8,
+            rightIndent=8,
+            spaceBefore=6,
+            spaceAfter=6,
+            borderPadding=(8, 8, 8, 8),
+        ),
+        "blockquote": ParagraphStyle(
+            "prism_blockquote",
+            fontName=italic_font,
+            fontSize=9,
+            leading=13,
+            textColor=_hex_to_color(_PRISM_TEXT_SECONDARY_HEX),
+            leftIndent=14,
+            borderColor=_hex_to_color(_PRISM_ACCENT_HEX),
+            borderWidth=2,
+            borderPadding=(6, 8, 6, 10),
+            backColor=_hex_to_color(_PRISM_ACCENT_BG_HEX),
+            spaceAfter=8,
+        ),
+    }
+
+
+def _make_safe(text: str) -> str:
+    """Escape text for ReportLab XML paragraphs, preserving bold/italic."""
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
+    text = re.sub(r'`(.+?)`', r'<font face="Courier" size="8" color="#4A7CFF">\1</font>', text)
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" color="#4A7CFF">\1</a>', text)
+    return text
+
+
+def _parse_md_table(lines: list) -> list:
+    """Parse consecutive markdown table lines into list of rows (list of cells)."""
+    rows = []
+    for line in lines:
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if cells and not all(set(c) <= {"-", ":", " "} for c in cells):
+            rows.append(cells)
+    return rows
+
+
+def _reportlab_prism(
+    content: str,
+    output_path: str,
+    title: str,
+    header_right: str = "Document",
+) -> str:
+    """PRISM-branded ReportLab PDF with cover page, styled headings and tables."""
+    try:
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle,
+            KeepTogether,
+        )
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import cm, mm
+        from reportlab.lib.colors import HexColor, white, Color
+
+        page_w, page_h = A4
+        styles = _prism_styles()
         elements = []
 
-        if title:
-            elements.append(Paragraph(title, styles['Title']))
-            elements.append(Spacer(1, 20))
+        display_title = title if len(title) <= 60 else title[:57] + "..."
+        date_str = datetime.now().strftime("%d/%m/%Y")
 
-        for line in content.split('\n'):
-            line = line.strip()
-            if not line:
-                elements.append(Spacer(1, 6))
-            elif line.startswith('# '):
-                elements.append(Paragraph(line[2:], styles['Heading1']))
-            elif line.startswith('## '):
-                elements.append(Paragraph(line[3:], styles['Heading2']))
-            elif line.startswith('### '):
-                elements.append(Paragraph(line[4:], styles['Heading3']))
+        # ── CONTENT ──────────────────────────────────────────────────
+        lines = content.split("\n")
+        i = 0
+        in_code_block = False
+        code_lines = []
+
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.strip()
+
+            if stripped.startswith("```"):
+                if in_code_block:
+                    code_text = _make_safe("\n".join(code_lines))
+                    if code_text.strip():
+                        elements.append(Paragraph(code_text, styles["code"]))
+                    code_lines = []
+                    in_code_block = False
+                else:
+                    in_code_block = True
+                i += 1
+                continue
+
+            if in_code_block:
+                code_lines.append(line)
+                i += 1
+                continue
+
+            if stripped.startswith("|") and "|" in stripped[1:]:
+                table_lines = []
+                while i < len(lines) and lines[i].strip().startswith("|"):
+                    table_lines.append(lines[i])
+                    i += 1
+                rows = _parse_md_table(table_lines)
+                if rows:
+                    elements.append(Spacer(1, 6))
+                    elements.append(_build_prism_table(rows, styles))
+                    elements.append(Spacer(1, 6))
+                continue
+
+            if not stripped:
+                elements.append(Spacer(1, 4))
+            elif stripped.startswith("#### "):
+                elements.append(Paragraph(_make_safe(stripped[5:]), styles["h4"]))
+            elif stripped.startswith("### "):
+                elements.append(Paragraph(_make_safe(stripped[4:]), styles["h3"]))
+            elif stripped.startswith("## "):
+                text = _make_safe(stripped[3:])
+                elements.append(Spacer(1, 4))
+                elements.append(Paragraph(text, styles["h2"]))
+                elements.append(_h2_rule(page_w - 5 * cm))
+            elif stripped.startswith("# "):
+                elements.append(Paragraph(_make_safe(stripped[2:]), styles["h1"]))
+            elif stripped.startswith("> "):
+                elements.append(Paragraph(_make_safe(stripped[2:]), styles["blockquote"]))
+            elif stripped.startswith("- ") or stripped.startswith("* "):
+                bullet_text = _make_safe(stripped[2:])
+                elements.append(
+                    Paragraph(
+                        f'<bullet bulletColor="#4A7CFF">\u2022</bullet> {bullet_text}',
+                        styles["bullet"],
+                    )
+                )
+            elif re.match(r'^\d+\.\s', stripped):
+                num_text = _make_safe(re.sub(r'^\d+\.\s', '', stripped))
+                num = re.match(r'^(\d+)', stripped).group(1)
+                elements.append(
+                    Paragraph(
+                        f'<bullet bulletColor="#4A7CFF">{num}.</bullet> {num_text}',
+                        styles["bullet"],
+                    )
+                )
+            elif stripped == "---" or stripped == "***":
+                elements.append(Spacer(1, 4))
+                elements.append(_hr_line(page_w - 5 * cm))
+                elements.append(Spacer(1, 4))
             else:
-                safe = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                elements.append(Paragraph(safe, styles['Normal']))
+                elements.append(Paragraph(_make_safe(stripped), styles["body"]))
 
-        doc.build(elements)
-        logger.info(f"ReportLab fallback PDF: {output_path}")
+            i += 1
+
+        if code_lines:
+            code_text = _make_safe("\n".join(code_lines))
+            elements.append(Paragraph(code_text, styles["code"]))
+
+        def _draw_cover_page(canvas, doc):
+            """Full-bleed dark cover on page 1 only."""
+            canvas.saveState()
+            canvas.setFillColor(HexColor(_PRISM_DARK_HEX))
+            canvas.rect(0, 0, page_w, page_h, fill=True, stroke=False)
+
+            mid_x = page_w / 2
+            badge_y = page_h * 0.62
+            canvas.setFont("Helvetica-Bold", 9)
+            canvas.setFillColor(HexColor(_PRISM_ACCENT_HEX))
+            canvas.drawCentredString(mid_x, badge_y, "KOREV EVIDENCE")
+
+            canvas.setFont("Helvetica-Bold", 30)
+            canvas.setFillColor(white)
+            canvas.drawCentredString(mid_x, badge_y - 50, "KOREV Evidence")
+
+            canvas.setFont("Helvetica-Oblique", 13)
+            canvas.setFillColor(HexColor("#A0AEC0"))
+            canvas.drawCentredString(mid_x, badge_y - 85, display_title)
+
+            canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(HexColor("#718096"))
+            canvas.drawCentredString(
+                mid_x, badge_y - 165,
+                f"Auteur : KOREV Evidence  |  Date : {date_str}",
+            )
+
+            canvas.setFillColor(HexColor(_PRISM_ACCENT_HEX))
+            canvas.rect(page_w * 0.3, 30, page_w * 0.4, 2, fill=True, stroke=False)
+            canvas.restoreState()
+
+        def _draw_header_footer(canvas, doc):
+            """Headers/footers on content pages (page 2+)."""
+            canvas.saveState()
+            canvas.setFont("Helvetica", 7)
+            canvas.setFillColor(HexColor("#8B95A5"))
+            canvas.drawString(2.5 * cm, page_h - 1.2 * cm, "KOREV Evidence")
+            canvas.setFillColor(HexColor(_PRISM_ACCENT_HEX))
+            canvas.setFont("Helvetica", 6.5)
+            canvas.drawRightString(
+                page_w - 2.5 * cm, page_h - 1.2 * cm,
+                header_right.upper(),
+            )
+            canvas.setFillColor(HexColor("#8B95A5"))
+            canvas.setFont("Helvetica", 7)
+            canvas.drawString(2.5 * cm, 1.2 * cm, "KOREV Evidence — Confidentiel")
+            canvas.drawRightString(
+                page_w - 2.5 * cm, 1.2 * cm,
+                f"Page {doc.page}",
+            )
+            canvas.restoreState()
+
+        elements.insert(0, PageBreak())
+
+        doc = SimpleDocTemplate(
+            output_path, pagesize=A4,
+            leftMargin=2.5 * cm, rightMargin=2.5 * cm,
+            topMargin=2.2 * cm, bottomMargin=2.5 * cm,
+            title=title,
+        )
+        doc.build(
+            elements,
+            onFirstPage=_draw_cover_page,
+            onLaterPages=_draw_header_footer,
+        )
+        logger.info(f"PRISM PDF generated (ReportLab): {output_path}")
         return output_path
+
     except Exception as e:
-        logger.error(f"ReportLab fallback failed: {e}")
+        logger.error(f"PRISM ReportLab engine failed: {e}\n{traceback.format_exc()}")
         md_path = output_path.replace('.pdf', '.md')
         with open(md_path, 'w', encoding='utf-8') as f:
             f.write(content)
         return md_path
 
 
-def _reportlab_fallback_bytes(content: str, title: str) -> bytes:
-    """Direct ReportLab fallback returning bytes."""
+def _build_prism_table(rows: list, styles: dict):
+    """Build a styled PRISM table from parsed markdown rows."""
+    from reportlab.platypus import Table, TableStyle, Paragraph
+    from reportlab.lib.colors import HexColor, white
+    from reportlab.lib.units import cm
+
+    if not rows:
+        return Paragraph("", styles["body"])
+
+    table_data = []
+    for row_cells in rows:
+        table_data.append([
+            Paragraph(_make_safe(cell), styles["body"])
+            for cell in row_cells
+        ])
+
+    n_cols = max(len(r) for r in table_data) if table_data else 1
+    col_widths = [None] * n_cols
+
+    style_cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), HexColor(_PRISM_DARK_HEX)),
+        ("TEXTCOLOR", (0, 0), (-1, 0), white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 7.5),
+        ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("GRID", (0, 0), (-1, 0), 0, white),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.5, HexColor(_PRISM_BORDER_HEX)),
+        ("ROUNDEDCORNERS", [4, 4, 0, 0]),
+    ]
+
+    for row_idx in range(1, len(table_data)):
+        if row_idx % 2 == 0:
+            style_cmds.append(
+                ("BACKGROUND", (0, row_idx), (-1, row_idx), HexColor(_PRISM_BG_WARM_HEX))
+            )
+
+    tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
+    tbl.setStyle(TableStyle(style_cmds))
+    return tbl
+
+
+def _h2_rule(width: float):
+    """Thin accent line under H2 headings."""
+    from reportlab.graphics.shapes import Drawing, Line
+    d = Drawing(width, 2)
+    d.add(Line(0, 1, width, 1, strokeColor=_hex_to_color(_PRISM_BORDER_HEX), strokeWidth=0.5))
+    return d
+
+
+def _hr_line(width: float):
+    """Horizontal rule."""
+    from reportlab.graphics.shapes import Drawing, Line
+    d = Drawing(width, 2)
+    d.add(Line(0, 1, width, 1, strokeColor=_hex_to_color(_PRISM_BORDER_HEX), strokeWidth=0.5))
+    return d
+
+
+def _reportlab_prism_bytes(content: str, title: str, header_right: str = "Document") -> bytes:
+    """PRISM ReportLab engine returning bytes."""
     import tempfile
     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
-        path = _reportlab_fallback(content, tmp.name, title)
+        path = _reportlab_prism(content, tmp.name, title, header_right)
         with open(path, 'rb') as f:
-            return f.read()
+            data = f.read()
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        return data
+
+
+# Legacy aliases
+def _reportlab_fallback(content: str, output_path: str, title: str) -> str:
+    return _reportlab_prism(content, output_path, title)
+
+
+def _reportlab_fallback_bytes(content: str, title: str) -> bytes:
+    return _reportlab_prism_bytes(content, title)
