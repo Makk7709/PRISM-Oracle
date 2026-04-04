@@ -523,15 +523,34 @@ class SchedulerTaskList(BaseModel):
     def get(cls) -> "SchedulerTaskList":
         if cls.__instance is None:
             cls.__instance = cls(tasks=[])
-            asyncio.run(cls.__instance.reload())
-        else:
-            asyncio.run(cls.__instance.reload())
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                cls.__instance._sync_reload()
+            else:
+                asyncio.run(cls.__instance.reload())
         return cls.__instance
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._lock = threading.RLock()
         self._store: TaskStore = get_task_store()
+
+    def _sync_reload(self) -> "SchedulerTaskList":
+        """Synchronous reload for use when already inside a running event loop."""
+        with self._lock:
+            raw_tasks = self._store.list_tasks()
+            loaded: list[Annotated[Union[ScheduledTask, AdHocTask, PlannedTask], Field(discriminator="type")]] = []
+            for task_data in raw_tasks:
+                try:
+                    loaded.append(deserialize_task(task_data))
+                except Exception:
+                    continue
+            self.tasks.clear()
+            self.tasks.extend(loaded)
+        return self
 
     async def reload(self) -> "SchedulerTaskList":
         with self._lock:

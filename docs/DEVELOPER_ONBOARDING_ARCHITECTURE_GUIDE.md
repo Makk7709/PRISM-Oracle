@@ -1,7 +1,7 @@
 # KOREV Evidence — Developer Onboarding & Architecture Guide
 
 **Classification :** CONFIDENTIEL — Usage interne KOREV AI  
-**Version :** 7.0 (Evidence v1.4.0 — replay engine, human review workflow, dynamic risk register, audit-proof pipeline, +94 tests)  
+**Version :** 7.1 (Evidence v1.4.0 — replay engine, human review workflow, dynamic risk register, audit-proof pipeline, +107 tests)  
 **Date :** 2026-04-04  
 **Auteur :** Direction Technique KOREV AI  
 **Destinataire :** Lead Engineer entrant(e)  
@@ -62,7 +62,7 @@ Les différenciants par rapport à un ChatGPT-like :
 │  └──────────────────────────────────────────────────┘          │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────┐          │
-│  │         EXTENSIONS (46 fichiers, 24 hooks)       │          │
+│  │         EXTENSIONS (48 fichiers, 24 hooks)       │          │
 │  │  system_prompt │ recall_memories │ legal_pipeline │          │
 │  │  strategic_validation │ memorize_fragments │ ...    │          │
 │  └──────────────────────────────────────────────────┘          │
@@ -165,10 +165,10 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 ### Garde-fous
 - **Température forcée à 0** pour les profils critiques (legal_safe, legal_drafting_guarded) — pas d'improvisation
 - **CriticalityRouter** (`python/helpers/criticality_router.py`) : détecte automatiquement les sujets nécessitant un consensus (basé sur des patterns LEVEL 3 critiques ou `force_consensus=True`, pas sur le profil agent)
-- **Validation multi-LLM a 3 tours** : Round 1 (analyse independante par 3 LLMs en parallele via `asyncio.gather`), Round 2 (debat croise, saute si unanimite au Round 1 — unanimite = `confidence >= 0.8` + zero hallucinations), Round 3 (synthese et verdict par **un seul LLM** — l'arbitre principal `arbiters[0]`, temperature=0.1). Le verdict final est la decision de Round 3, pas un vote a quorum. En cas d'echec de Round 3, un verdict heuristique est calcule depuis Round 1 (confidence moyenne + comptage hallucinations). Si non approuve : fail-closed (reponse originale non retournee).
-- **Extension pipeline** : 24 hook points avec 46 extensions permettant d'intercepter et modifier le comportement a chaque etape
+- **Validation multi-LLM a 2-3 tours** : Round 1 (analyse independante par 3 LLMs en parallele via `asyncio.gather`), Round 2 (debat croise — **saute si unanimite** au Round 1, unanimite = `confidence >= 0.8` + zero hallucinations), Round 3 (synthese et verdict par **un seul LLM** — l'arbitre principal `arbiters[0]`, temperature=0.1). En pratique, les sessions unanimes ne passent que par 2 rounds. Le verdict final est la decision de Round 3, pas un vote a quorum (`quorum_ratio` est defini dans `DebateConfig` mais n'est pas utilise pour la decision). En cas d'echec de Round 3, un verdict heuristique est calcule depuis Round 1 (confidence moyenne + comptage hallucinations). Si non approuve : fail-closed (reponse originale non retournee). **NB :** `temperature=0.1` s'applique a tous les rounds, pas seulement Round 3 — ce n'est pas temperature=0, donc une marge d'indeterminisme subsiste.
+- **Extension pipeline** : 24 hook points avec 48 extensions permettant d'intercepter et modifier le comportement a chaque etape
 - **Deterministic Router v2** (`python/helpers/router/`) : routage policy-driven sans jugement LLM, multi-intent (finance + legal + sales simultanés), 40+ keywords board-level (M&A, IPO, LBO, COMEX), anti-injection FR+EN, blocage high-stakes automatique
-- **ReasoningEngine** (`python/helpers/metacognition.py`) : metacognition avec politique d'escalade non-diluable (SAFE_REFUSE, HUMAN_REVIEW, ASK_CLARIFY, NONE). Invariants : monotonie (signaux ne peuvent que durcir), non-dilution, no-PII. `HUMAN_REVIEW` est une **classification de risque** (flag metadata) dans la ReasoningEngine. Le **workflow bloquant reel** est desormais implemente par `python/helpers/human_review.py` (voir §1.15) — declenche automatiquement par le Dynamic Risk Register sur HIGH/CRITICAL.
+- **ReasoningEngine** (`python/helpers/metacognition.py`) : metacognition avec politique d'escalade non-diluable (SAFE_REFUSE, HUMAN_REVIEW, ASK_CLARIFY, NONE). Invariants : monotonie (signaux ne peuvent que durcir), non-dilution, no-PII. `HUMAN_REVIEW` est une **classification de risque** (flag metadata) dans la ReasoningEngine. Le **workflow de review** est implemente par `python/helpers/human_review.py` (voir §1.15) et declenche automatiquement par le Dynamic Risk Register sur HIGH/CRITICAL. **NB :** Le blocage effectif de la reponse dans la chaine de livraison n'est pas encore integre (voir §1.15 NB CRITIQUE).
 - **Critical Decision Gate** (`python/helpers/critical_decision_gate.py`) : gate séparée pour les décisions à haut risque
 - **Adversarial Analysis** : 4 endpoints API + intégration dans le consensus juridique et la validation
 - **ExecutionBudget** (`python/helpers/execution_budget.py`) : ✅ garde-fou central anti-boucles infinies. Chaque exécution transporte un budget partagé qui borne :
@@ -284,8 +284,7 @@ Le systeme genere automatiquement un rapport d'audit structure pour chaque sessi
 - Le `RiskRegister` statique (7 risques types) est desormais **complete par le Dynamic Risk Register** (`python/helpers/dynamic_risk_register.py`) qui calcule un score de risque dynamique par session a partir de 6 facteurs ponderes. Le registre statique reste present pour le rapport d'audit formel.
 - Le `ProcessingRegister` est un **template statique** enrichi par le username et l'organisation de la session. Pas d'analyse dynamique des traitements reels.
 - La `ComplianceGrid` couvre 5 articles : Art. 9, 13, 14, 17 AI Act + RGPD Art. 30. Les autres articles AI Act ne sont pas evalues.
-- Le **Replay Engine** capture les snapshots et permet la comparaison, mais le replay complet (re-execution via LLM) n'est pas deterministe a 100% — le LLM peut produire des reponses legerement differentes meme avec temperature=0. Le moteur detecte et classifie cette divergence.
-- **Pas de capacite de replay** : les rapports tracent les outputs mais pas suffisamment les inputs (prompts exacts, etat FAISS, version du modele) pour reproduire un raisonnement.
+- Le **Replay Engine** (§1.14) capture un snapshot complet (query, config, response, hashes) et permet la **comparaison post-hoc** via similarite Jaccard et verification d'integrite SHA-256. **Il ne re-execute pas** la decision via LLM — c'est du snapshot + comparaison, pas du replay au sens strict. Le non-determinisme inherent aux LLMs (meme a temperature=0) rend une re-execution exacte techniquement impraticable pour v1.
 
 **Fichiers cles :**
 - `python/helpers/audit_report_renderer.py` — assembleur des 10 blocs
@@ -322,9 +321,9 @@ Un systeme de rate limiting protege les endpoints critiques :
 
 Le rate limiting est applique sur `/login` (anti-brute-force) et les endpoints API. En mode `FAIL_CLOSED` quand Redis est indisponible.
 
-## 1.14 Replay Engine — Snapshot & Re-execution Deterministe (**LIRE EN PREMIER**)
+## 1.14 Replay Engine — Snapshot, Comparaison & Verification d'Integrite (**LIRE EN PREMIER**)
 
-Le systeme capture un **snapshot complet** de chaque session pour permettre le replay deterministe et la verification d'integrite. C'est la brique centrale de preuve pour l'auditabilite AI Act Art. 13 (transparence) et Art. 17 (tracabilite).
+Le systeme capture un **snapshot complet** de chaque session pour permettre la **comparaison post-hoc** et la **verification d'integrite**. C'est la brique centrale de preuve pour l'auditabilite AI Act Art. 13 (transparence) et Art. 17 (tracabilite). **NB :** Le moteur ne re-execute pas la decision via LLM (re-execution deterministe non implementee en v1 — voir §1.11 Limites). Il compare des snapshots et detecte les alterations.
 
 **Architecture :**
 - **`python/helpers/replay_engine.py`** — Moteur de capture, persistance, comparaison
@@ -335,18 +334,23 @@ Le systeme capture un **snapshot complet** de chaque session pour permettre le r
 - `query` (requete utilisateur)
 - `system_prompt_hash` (SHA-256 du prompt systeme)
 - `history_hash` (SHA-256 de l'historique)
+- `memory_snapshot_hash` (SHA-256 de l'etat FAISS)
 - `model_config` (provider, model, temperature, kwargs)
 - `response` + `response_hash`
 - `tool_calls`, `delegation_chain`, `execution_budget`
 - `tokens_input`, `tokens_output`
 - `correlation_id`, `session_id`, `context_id`
+- `snapshot_version`, `captured_at`, `started_at`, `completed_at`, `duration_ms`
+- `username`, `organization`, `agent_profile`
 - `integrity_hash` (SHA-256 des champs critiques — tamper detection)
 
 **Comparaison de divergence :**
 - `NONE` (hash identique)
 - `MINOR` (>95% similarite Jaccard)
-- `SIGNIFICANT` (70-95%)
+- `SIGNIFICANT` (70-95%, ou ratio de longueur <0.5)
 - `CRITICAL` (<70%)
+
+**NB :** La similarite Jaccard est une heuristique sur les mots (sensible au vocabulaire, insensible a l'ordre). Ce n'est pas une comparaison semantique — deux phrases de sens identique mais de vocabulaire different seront classees comme divergence significative. Limite acceptee en v1.
 
 **Stockage :** `tmp/chats/{ctxid}/replay_snapshot.json`
 
@@ -354,9 +358,9 @@ Le systeme capture un **snapshot complet** de chaque session pour permettre le r
 
 **Tests :** `tests/test_replay_engine.py` (29 tests — capture, persistance, integrite, comparaison, determinisme, edge cases, property tests).
 
-## 1.15 Human Review Workflow — Validation Humaine Bloquante
+## 1.15 Human Review Workflow — Validation Humaine Tracable
 
-Le systeme implemente un workflow de validation humaine conforme AI Act Art. 14 (controle humain). Chaque decision critique peut etre soumise a un reviewer humain avant publication.
+Le systeme implemente un workflow de validation humaine conforme AI Act Art. 14 (controle humain). Chaque decision critique peut etre soumise a un reviewer humain. **NB v1 :** Le workflow est entierement fonctionnel (creation, decision, audit trail), mais le **blocage effectif de la reponse** dans la chaine de livraison n'est pas encore integre au runtime (voir NB CRITIQUE ci-dessous). L'integration dans `poll.py` est un chantier prioritaire.
 
 **Architecture :**
 - **`python/helpers/human_review.py`** — Logique metier : creation, soumission, blocage
@@ -367,6 +371,7 @@ Le systeme implemente un workflow de validation humaine conforme AI Act Art. 14 
 ```
 PENDING_REVIEW → APPROVED (deblocage)
                → REJECTED (blocage maintenu)
+               → EXPIRED  (non utilise en v1 — reserve pour TTL futur)
 ```
 
 **Chaque decision est journalisee avec :**
@@ -382,9 +387,11 @@ PENDING_REVIEW → APPROVED (deblocage)
 - `POLICY` — regle de politique configurable
 - `CONSENSUS_FAILURE` — echec de consensus multi-agents
 
-**Blocage :** `is_review_blocking(context_id)` retourne le review en attente. Tant que le review n'est pas resolu, la reponse n'est pas publiee.
+**Blocage :** `is_review_blocking(context_id)` retourne le review en attente le cas echeant.
 
-**Securite :** Double soumission interdite (ValueError si deja resolu). Acces restreint OWNER / DPO / RSSI / COMPLIANCE_OFFICER.
+**NB CRITIQUE :** En v1, la fonction `is_review_blocking()` est implementee dans le helper mais **n'est PAS appelee dans la chaine de livraison** (`poll.py`, `agent.py`, `run_ui.py`). L'extension `_36_risk_assessment.py` cree le review et pose `_human_review_pending` sur le contexte, mais aucun code de livraison ne lit cette donnee pour bloquer la reponse. **Le blocage reel de la reponse n'est donc pas enforce a l'execution.** L'integration dans `poll.py` ou un middleware de livraison est un chantier necessaire pour que la garantie de blocage soit effective. En l'etat, le controle humain est un **registre consultatif**, pas un verrou bloquant.
+
+**Securite :** Double soumission interdite (ValueError si deja resolu). Acces restreint OWNER / DPO / RSSI / COMPLIANCE_OFFICER via `can_access_audit_reports`. Justification obligatoire au niveau API (rejet 400 si vide).
 
 **Stockage :** `tmp/reviews/{review_id}.json`
 
@@ -392,7 +399,7 @@ PENDING_REVIEW → APPROVED (deblocage)
 
 ## 1.16 Dynamic Risk Register — Scoring de Risque Temps Reel
 
-Le systeme calcule un **score de risque dynamique** par session a partir de 6 facteurs ponderes. Il remplace le `RiskRegister` statique des sessions precedentes par un moteur de scoring en temps reel.
+Le systeme calcule un **score de risque dynamique** par session a partir de 6 facteurs ponderes. Il **complete** le `RiskRegister` statique (qui reste present pour les rapports d'audit formels) par un moteur de scoring en temps reel.
 
 **Architecture :**
 - **`python/helpers/dynamic_risk_register.py`** — Moteur de scoring, dashboard, historisation
@@ -608,7 +615,7 @@ Quand un agent délègue puis que le subordinate redélègue, la trace se dilue.
 > **Message direct au Lead Engineer :** Cette liste peut donner le vertige. C'est normal. La tentation sera forte de "tout refaire proprement". **Résiste.** Voici le cadre de décision qui te dit quoi traiter en urgence et quoi laisser tranquille.
 
 **PATCHER IMMÉDIATEMENT (Semaine 1-2) — Sécurité :**
-- Les failles de path traversal dans `file_info.py`, `download_work_dir_file.py`, `api_files_get.py`. Ce sont des vulnérabilités actives. Chaque jour où elles restent ouvertes est un jour où un utilisateur malveillant peut lire `.env` et `users.json`. Le pattern existe déjà dans `image_get.py` — tu as juste à le répliquer.
+- ~~Les failles de path traversal dans `file_info.py`, `download_work_dir_file.py`, `api_files_get.py`.~~ **FAIT (mars 2026)** — corrige via `safe_path_join()` (voir §2.1).
 - L'isolation des chats (`persist_chat.py`). Le pattern existe déjà pour les projets et les images : sous-dossiers par utilisateur + contrôle d'accès dans l'API. C'est du copier-adapter.
 
 **ACCEPTER PROVISOIREMENT (Mois 1-3) — Architecture :**
@@ -815,7 +822,7 @@ curl -s https://<DOMAINE>/healthz
 │   │   ├── audit_report_storage.py # Persistance + purge retention
 │   │   ├── chat_style.py       # Personnalisation du chat (ton, persona, nom IA)
 │   │   ├── replay_engine.py    # Replay Engine : snapshot, comparaison, integrite
-│   │   ├── human_review.py     # Human Review : workflow bloquant PENDING/APPROVED/REJECTED
+│   │   ├── human_review.py     # Human Review : workflow tracable PENDING/APPROVED/REJECTED (blocage non integre en v1)
 │   │   ├── dynamic_risk_register.py # Risk Engine : scoring 6 facteurs, dashboard, historisation
 │   │   └── user_workspace.py   # Isolation workspaces par utilisateur
 │   │
@@ -1019,7 +1026,7 @@ except SecurityError:
     raise ValueError("Path is outside of allowed directory")
 ```
 
-**Correction deja appliquee :** `safe_path_join()` est desormais utilise dans `file_info.py`, `download_work_dir_file.py` et `api_files_get.py`. Verifier avec : `grep -n "safe_path_join" python/api/file_info.py python/api/download_work_dir_file.py python/api/api_files_get.py`.
+**Correction deja appliquee :** `safe_path_join()` est utilise directement dans `file_info.py` et `api_files_get.py`. `download_work_dir_file.py` est protege indirectement via `file_info.get_file_info()` qui appelle `safe_path_join()`. Verifier avec : `grep -rn "safe_path_join" python/api/file_info.py python/api/api_files_get.py`.
 
 ### Quick Win #2 : Ajouter du logging structuré sur les erreurs 500
 
@@ -1087,9 +1094,9 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 | `python/helpers/execution_budget.py` | ~388 | Critique | Garde-fou anti-boucles : budget, limites, cycles, deadline |
 | `python/helpers/audit_report_renderer.py` | ~486 | Critique | Assembleur des 10 blocs du rapport d'audit Evidence |
 | `python/helpers/integrity_block.py` | ~252 | Critique | Hashes SHA-256 + signatures HMAC/RSA-PSS |
-| `python/helpers/replay_engine.py` | ~280 | Critique | Replay Engine : snapshot, comparaison, integrite |
-| `python/helpers/human_review.py` | ~290 | Critique | Human Review : workflow bloquant, audit trail |
-| `python/helpers/dynamic_risk_register.py` | ~310 | Critique | Risk Engine : 6 facteurs, scoring, dashboard |
+| `python/helpers/replay_engine.py` | ~327 | Critique | Replay Engine : snapshot, comparaison, integrite |
+| `python/helpers/human_review.py` | ~327 | Critique | Human Review : workflow tracable, audit trail (blocage non integre en v1) |
+| `python/helpers/dynamic_risk_register.py` | ~403 | Critique | Risk Engine : 6 facteurs, scoring, dashboard |
 | `python/tools/code_execution_tool.py` | ~555 | Eleve | Execution de code — surface d'attaque |
 | `python/helpers/memory.py` | ~581 | Eleve | FAISS, embeddings, memoire agent |
 | `python/helpers/persist_chat.py` | ~300 | Moyen | Serialisation chats — pas d'isolation user |
@@ -1173,9 +1180,9 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 - [ ] Lire `agent.py` en entier (1144 lignes — compte 2 heures)
 - [ ] Lire `python/tools/call_subordinate.py` (703 lignes — le coeur multi-agents)
 - [ ] Lire `python/helpers/audit_report_renderer.py` (486 lignes — le systeme de rapports d'audit)
-- [ ] Lire `python/helpers/replay_engine.py` (~280 lignes — snapshot, comparaison, integrite)
-- [ ] Lire `python/helpers/human_review.py` (~290 lignes — workflow bloquant PENDING/APPROVED/REJECTED)
-- [ ] Lire `python/helpers/dynamic_risk_register.py` (~310 lignes — scoring 6 facteurs, dashboard)
+- [ ] Lire `python/helpers/replay_engine.py` (~327 lignes — snapshot, comparaison, integrite)
+- [ ] Lire `python/helpers/human_review.py` (~327 lignes — workflow tracable PENDING/APPROVED/REJECTED, blocage non integre en v1)
+- [ ] Lire `python/helpers/dynamic_risk_register.py` (~403 lignes — scoring 6 facteurs, dashboard)
 - [ ] Ouvrir un chat en mode `legal_safe`, poser une question juridique, observer la delegation et la validation multi-LLM dans les logs
 - [ ] Se connecter au serveur production en SSH, verifier `docker compose ps`, lire les derniers logs
 - [ ] Lancer `uv run pytest tests/ -q` et verifier que les 3846 tests passent (sans API key — le network guard bloque les appels reels)
@@ -1184,4 +1191,4 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 ---
 
-*Ce document est un instantane au 2026-04-04 (Evidence v1.4.0 — replay engine, human review workflow, dynamic risk register, audit-proof pipeline, +94 tests). Il doit etre mis a jour a chaque changement architectural majeur. En cas de doute sur une information, la source de verite est toujours le code, pas ce document.*
+*Ce document est un instantane au 2026-04-04 (Evidence v1.4.0 — replay engine, human review workflow, dynamic risk register, audit-proof pipeline, +107 tests). Audit de conformite document/code effectue le 2026-04-04 (v7.1). Il doit etre mis a jour a chaque changement architectural majeur. En cas de doute sur une information, la source de verite est toujours le code, pas ce document.*
