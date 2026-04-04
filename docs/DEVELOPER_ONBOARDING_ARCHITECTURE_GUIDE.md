@@ -1,11 +1,12 @@
 # KOREV Evidence — Developer Onboarding & Architecture Guide
 
-**Classification :** CONFIDENTIEL — Usage interne  
-**Version :** 5.0 (multi-tenant canonical, strategic orchestrator v2, contract drafting, A2A, observability)  
-**Date :** 2026-03-31  
-**Auteur :** Audit automatisé (Staff Engineer / Architecture Review)  
+**Classification :** CONFIDENTIEL — Usage interne KOREV AI  
+**Version :** 6.0 (Evidence v1.3.0 — audit reports, integrity signing, P0 security hardening, chat personalization, rate limiting)  
+**Date :** 2026-04-04  
+**Auteur :** Direction Technique KOREV AI  
 **Destinataire :** Lead Engineer entrant(e)  
-**Note au lecteur :** Ce document est long. C'est volontaire. Lis-le de bout en bout pendant ta première semaine, puis utilise-le comme référence. Les sections les plus urgentes à lire en priorité sont marquées d'un signe (**LIRE EN PREMIER**).
+**Licence :** Proprietaire KOREV AI — voir `LICENSE` a la racine du depot  
+**Note au lecteur :** Ce document est long. C'est volontaire. Lis-le de bout en bout pendant ta premiere semaine, puis utilise-le comme reference. Les sections les plus urgentes a lire en priorite sont marquees d'un signe (**LIRE EN PREMIER**).
 
 ---
 
@@ -29,7 +30,7 @@ Les différenciants par rapport à un ChatGPT-like :
 - **Multi-tenant strict** : isolation par organisation (UUID canonique), rôles OWNER/MEMBER, fail-closed
 - **Pipelines métier spécialisés** : juridique (FTS5 Légifrance), médical (PRISM consensus + FAERS), stratégique (4 agents + consolidation LLM), rédaction contractuelle (Act Leak Guard fail-closed)
 - **Protocole A2A** : communication agent-to-agent via FastA2A (client + serveur)
-- **2768 tests automatisés**, 137 fichiers de tests, 67 endpoints API
+- **3739 tests automatises**, 158 fichiers de tests, 68 endpoints API
 
 ## 1.2 Architecture Macro
 
@@ -61,7 +62,7 @@ Les différenciants par rapport à un ChatGPT-like :
 │  └──────────────────────────────────────────────────┘          │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────┐          │
-│  │         EXTENSIONS (45 fichiers, 24 hooks)       │          │
+│  │         EXTENSIONS (46 fichiers, 24 hooks)       │          │
 │  │  system_prompt │ recall_memories │ legal_pipeline │          │
 │  │  strategic_validation │ memorize_fragments │ ...    │          │
 │  └──────────────────────────────────────────────────┘          │
@@ -256,6 +257,62 @@ Evidence implémente le protocole Agent-to-Agent pour la communication inter-age
 - APIs natives : `/backup_create`, `/backup_inspect`, `/backup_restore`, `/backup_preview_grouped`, `/backup_test`
 - Backup complet des volumes Docker (données, audit, workspaces partagés)
 - Prévisualisation groupée avant restauration
+
+## 1.11 Rapports d'Audit Evidence (Sessions 8-16) (**LIRE EN PREMIER**)
+
+Le systeme genere automatiquement un rapport d'audit structure pour chaque session strategique. Ce rapport constitue la piece de conformite AI Act / RGPD. Il est assemble par `AuditReportRenderer` (486 lignes) et contient **10 blocs canoniques** :
+
+| Bloc | Module | Contenu |
+|------|--------|---------|
+| 1. Identite session | `SessionEnvelope` | ID session, utilisateur, organisation, horodatage |
+| 2. Pipeline execution | `PipelineTracker` | Agents mobilises, durees, statuts |
+| 3. Grille de conformite | `ComplianceGrid` | Evaluation Art. 9, 13, 14, 17 AI Act + RGPD Art. 30 |
+| 4. Transparence raisonnement | `ReasoningOutcome.to_safe_narrative()` | Narratif non-technique Art. 13 |
+| 5. Registre des risques | `RiskRegister` | Risques identifies (Art. 9 AI Act) |
+| 6. Registre des traitements | `ProcessingRegister` | Activites de traitement (RGPD Art. 30) |
+| 7. Taxonomie des sources | `SourceTaxonomy` | Classification et tracabilite des sources |
+| 8. Metadonnees techniques | `ReportMetadata` | Modeles utilises, tokens, latences |
+| 9. Integrite et securite | `IntegrityBlock` | Hashes SHA-256, signature HMAC/RSA-PSS |
+| 10. Footer | — | Avertissement, branding Evidence |
+
+**Signature d'integrite :** Le bloc 9 signe cryptographiquement le rapport. En production, RSA-PSS-SHA256 est utilise (non-repudiation via cles dans `/evidence/keys/`). En dev, HMAC-SHA256 sert de fallback si les cles RSA ne sont pas configurees. La variable `EVIDENCE_HMAC_KEY` est **obligatoire** — l'application leve `RuntimeError` si elle est absente.
+
+**Stockage :** Les rapports sont persistes dans `tmp/chats/{ctxid}/audit_report.md` (et optionnellement `.pdf`) via `audit_report_storage.py`. L'endpoint `/audit_reports` (GET/POST) permet leur consultation avec controle d'acces fin (`can_access_audit_reports` — OWNER, DPO, RSSI, COMPLIANCE_OFFICER).
+
+**Fichiers cles :**
+- `python/helpers/audit_report_renderer.py` — assembleur des 10 blocs
+- `python/helpers/integrity_block.py` — hashes + signatures
+- `python/helpers/session_envelope.py` — metadonnees session
+- `python/helpers/compliance_grid.py` — evaluation conformite
+- `python/helpers/risk_register.py` — registre des risques Art. 9
+- `python/helpers/processing_register.py` — registre des traitements RGPD Art. 30
+- `python/helpers/report_metadata.py` — metadonnees techniques
+- `python/helpers/audit_report_storage.py` — persistance + purge retention
+- `python/api/audit_reports.py` — endpoint REST
+
+**Tests :** `test_session8_integrity_renderer.py`, `test_session9_storage_tokens.py`, `test_session10_hardening.py` (RSA, benchmarks, RBAC), `test_session12_query_flags.py`, `test_session13_document_hash_rsa.py`, `test_session14_transparency_narrative.py`, `test_session15_registers.py`, `test_session16_e2e_final.py`.
+
+## 1.12 Personnalisation du Chat
+
+Le systeme supporte une personnalisation fine de l'interaction via `python/helpers/chat_style.py` :
+- **Adresse** : tutoiement / vouvoiement
+- **Ton** : formel, cordial, direct, bienveillant
+- **Humanisation** : minimal, modere, eleve
+- **Verbosite** : concise, equilibre, detaille
+- **Persona** : homme, femme, IA
+- **Nom d'IA** : configurable (ex: "Selene")
+
+L'extension `python/extensions/system_prompt/_05_chat_style.py` injecte les instructions de style en tete du system prompt. Configuration via l'UI (Settings > Personnalisation).
+
+## 1.13 Rate Limiting
+
+Un systeme de rate limiting protege les endpoints critiques :
+- **Backend memory** (`python/security/rate_limit/memory_backend.py`) — pour les deployements mono-instance
+- **Backend Redis** (`python/security/rate_limit/redis_backend.py`) — pour les deployements multi-workers
+- **Limiter** (`python/security/rate_limit/limiter.py`) — facade unifiee, backoff exponentiel, LRU eviction
+- **Compat** (`python/security/rate_limit/compat.py`) — API legacy : `check_login_rate_limit()`, `check_api_rate_limit()`
+
+Le rate limiting est applique sur `/login` (anti-brute-force) et les endpoints API. En mode `FAIL_CLOSED` quand Redis est indisponible.
 
 ---
 
@@ -475,23 +532,27 @@ Quand un agent délègue puis que le subordinate redélègue, la trace se dilue.
 
 ## 3.1 Setup Environnement de Développement
 
-### Prérequis
+### Prerequis
 
 ```bash
-# Python 3.11+ (3.12 non testé)
+# Python 3.11+ (3.12 non teste)
 python3 --version
+
+# uv (gestionnaire de paquets rapide — remplace pip)
+# Installation : curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
 
 # Node.js 18+ (pour les MCP servers)
 node --version
 
-# Docker + Docker Compose (pour le déploiement)
+# Docker + Docker Compose (pour le deploiement)
 docker --version && docker compose version
 
 # Tesseract OCR (pour pdf_ocr et document_query)
 tesseract --version
 
-# Playwright (pour browser_agent)
-playwright install
+# Playwright (pour browser_agent — installe automatiquement dans Docker)
+# En local : uv run python -m playwright install chromium
 ```
 
 ### Installation locale
@@ -501,35 +562,39 @@ playwright install
 git clone https://github.com/Makk7709/PRISM-Oracle.git
 cd PRISM-Oracle
 
-# 2. Environnement virtuel
-python3 -m venv .venv
-source .venv/bin/activate
+# 2. Installer les dependances (uv cree automatiquement le venv)
+uv sync
 
-# 3. Dépendances
-pip install -r requirements.txt
-
-# 4. Configuration
+# 3. Configuration
 cp .env.example .env
-# Éditer .env : au minimum API_KEY_OPENAI ou API_KEY_ANTHROPIC
+# Editer .env : au minimum API_KEY_OPENROUTER (recommande) ou API_KEY_OPENAI
 
-# 5. Lancer
-python run_ui.py
+# 4. Lancer
+uv run python run_ui.py
 # → http://localhost:5050
+
+# 5. Lancer les tests
+uv run pytest tests/ -q
 ```
 
 ### Configuration minimale `.env`
 
 ```env
-# LLM API (au moins un)
-API_KEY_OPENAI=sk-...
+# LLM API (au moins un — OpenRouter recommande pour acces multi-modeles)
+API_KEY_OPENROUTER=sk-or-...
+# ou API_KEY_OPENAI=sk-...
 # ou API_KEY_ANTHROPIC=sk-ant-...
 
-# Auth (vide = pas d'auth, dangereux)
+# Auth (OBLIGATOIRE — sans auth, l'app demarre sans protection)
 AUTH_LOGIN=dev
-AUTH_PASSWORD=devpass
+AUTH_PASSWORD=un-mot-de-passe-fort
 
-# Mode dev
+# Mode dev (active la simulation du consensus, desactive les gardes production)
 EVIDENCE_ENV=development
+
+# Cle HMAC pour la signature des rapports d'audit (OBLIGATOIRE)
+# Generer : python -c "import secrets; print(secrets.token_hex(32))"
+EVIDENCE_HMAC_KEY=votre-cle-hmac-ici
 ```
 
 ### Garde-fous d'exécution (optionnel, `.env`)
@@ -553,20 +618,36 @@ EVIDENCE_MAX_DELEGATION_REVISITS=1 # Revisites autorisées par profil (0 = stric
 ```bash
 cd deploy
 cp .env.example .env
-# Éditer .env avec les vrais API keys et mots de passe
+# Editer .env avec les vrais API keys et mots de passe :
+#   - API_KEY_OPENROUTER (obligatoire)
+#   - AUTH_LOGIN + AUTH_PASSWORD (hash Argon2 recommande)
+#   - EVIDENCE_HMAC_KEY (obligatoire — generer avec secrets.token_hex(32))
+#   - KOREV_PRODUCTION=true (active les gardes production)
 
 # Si users.json existe : mode multi-utilisateur
 cp users.json.example users.json
-# Éditer users.json avec les comptes (hasher avec argon2)
+# Editer users.json avec les comptes (hasher avec argon2)
 
 # Build et lancer
 docker compose build
 docker compose up -d
 
-# Vérifier
+# Verifier
 docker compose ps
 docker logs -f evidence-backend
+curl -s https://<DOMAINE>/healthz
 ```
+
+**Variables d'environnement critiques en production :**
+
+| Variable | Obligatoire | Description |
+|----------|:-----------:|-------------|
+| `API_KEY_OPENROUTER` | Oui | Cle API pour les modeles LLM |
+| `AUTH_LOGIN` / `AUTH_PASSWORD` | Oui | Identifiants (hash Argon2id recommande) |
+| `EVIDENCE_HMAC_KEY` | Oui | Cle HMAC pour signature des rapports d'audit |
+| `KOREV_PRODUCTION` | Recommande | `true` → refuse plaintext passwords, cookies securises |
+| `EVIDENCE_RSA_PRIVATE_KEY_PATH` | Recommande | Chemin vers la cle RSA pour signatures non-repudiables |
+| `EVIDENCE_RSA_KEY_ID` | Recommande | ID de la cle RSA active (ex: `001`) |
 
 ## 3.2 Arborescence des Fichiers Critiques
 
@@ -597,8 +678,17 @@ docker logs -f evidence-backend
 │   │   ├── legal_retrieval.py   # Récupération dans l'index juridique
 │   │   ├── collaborative_consensus.py # Moteur de débat 3 rounds
 │   │   ├── criticality_router.py     # Évaluation criticité (LEVEL 1-3)
-│   │   ├── execution_budget.py  # ⭐ Garde-fou anti-boucles infinies (budget, limites, cycles)
-│   │   ├── evidence.py         # EvidencePack — traçabilité des sources
+│   │   ├── execution_budget.py  # Garde-fou anti-boucles infinies (budget, limites, cycles)
+│   │   ├── evidence.py         # EvidencePack — tracabilite des sources
+│   │   ├── audit_report_renderer.py # Assembleur des 10 blocs du rapport d'audit
+│   │   ├── integrity_block.py  # SHA-256 + signatures HMAC/RSA-PSS
+│   │   ├── session_envelope.py # Metadonnees session pour audit
+│   │   ├── compliance_grid.py  # Grille conformite AI Act / RGPD
+│   │   ├── risk_register.py    # Registre des risques Art. 9
+│   │   ├── processing_register.py # Registre des traitements RGPD Art. 30
+│   │   ├── report_metadata.py  # Metadonnees techniques du rapport
+│   │   ├── audit_report_storage.py # Persistance + purge retention
+│   │   ├── chat_style.py       # Personnalisation du chat (ton, persona, nom IA)
 │   │   └── user_workspace.py   # Isolation workspaces par utilisateur
 │   │
 │   ├── tools/               # ⭐ Outils disponibles pour les agents
@@ -613,6 +703,14 @@ docker logs -f evidence-backend
 │   │   └── ... (24 points d'extension)
 │   │
 │   └── security/            # Auth, path safety, CSRF, rate limit, upload validation
+│       ├── auth.py          # Argon2id, verify_password, hash_password
+│       ├── authorization.py # AccessPrincipal, can_access_*, RBAC fin
+│       ├── path_safety.py   # safe_path_join (anti path-traversal)
+│       ├── security_audit.py # log_security_event (audit JSON structure)
+│       ├── ip.py            # Extraction IP client
+│       ├── shell_safety.py  # Sanitization commandes shell
+│       ├── upload_validation.py # Validation fichiers uploades
+│       └── rate_limit/      # Rate limiting (memory + Redis backends)
 │
 ├── agents/                  # Profils d'agents
 │   ├── default/prompts/     # Prompts de base (hérités par tous)
@@ -644,44 +742,47 @@ docker logs -f evidence-backend
 
 ## 3.3 Tests et Déploiement
 
-### Tests existants (2768 tests, 137 fichiers)
+### Tests existants (3739 tests, 158 fichiers)
 
 ```bash
-# Tests sécurité (31 fichiers)
-pytest tests/security/ -v
+# Tests securite (26 fichiers)
+uv run pytest tests/security/ -v
 
 # Tests e2e
-pytest tests/e2e/ -v
+uv run pytest tests/e2e/ -v
 
 # Tests garde-fous anti-boucles infinies (34 tests)
-pytest tests/test_execution_budget.py -v
+uv run pytest tests/test_execution_budget.py -v
 
 # Tests consensus / PRISM
-pytest tests/test_prism_consensus.py tests/test_prism_tally_quorum.py tests/test_prism_timeouts.py -v
+uv run pytest tests/test_prism_consensus.py tests/test_prism_tally_quorum.py tests/test_prism_timeouts.py -v
 
 # Tests pipeline juridique
-pytest tests/test_legal_pipeline.py tests/test_legal_safe.py tests/test_legal_adversarial_cases.py -v
+uv run pytest tests/test_legal_pipeline.py tests/test_legal_safe.py tests/test_legal_adversarial_cases.py -v
 
-# Tests rédaction contractuelle (124 tests)
-pytest tests/test_contract_drafting.py tests/test_contract_drafting_phase2.py tests/test_control_prompt_ultra_strict.py -v
+# Tests redaction contractuelle (124 tests)
+uv run pytest tests/test_contract_drafting.py tests/test_contract_drafting_phase2.py tests/test_control_prompt_ultra_strict.py -v
 
-# Tests pipeline stratégique
-pytest tests/test_strategic_orchestrator.py tests/test_strategic_contract.py tests/test_strategic_e2e.py -v
+# Tests pipeline strategique
+uv run pytest tests/test_strategic_orchestrator.py tests/test_strategic_contract.py tests/test_strategic_e2e.py -v
 
 # Tests multi-tenant / organisation
-pytest tests/test_organization_canonical.py tests/test_multi_tenant_security.py -v
+uv run pytest tests/test_organization_canonical.py tests/test_multi_tenant_security.py -v
 
-# Tests chat rename
-pytest tests/test_chat_rename.py -v
+# Tests rapports d'audit Evidence (integrite, RSA, RBAC, registres, E2E)
+uv run pytest tests/test_session8_integrity_renderer.py tests/test_session10_hardening.py tests/test_session13_document_hash_rsa.py tests/test_session15_registers.py tests/test_session16_e2e_final.py -v
 
 # Tests router v2 (204 tests)
-pytest tests/test_router.py tests/test_router_contract_safety.py tests/test_router_determinism.py -v
+uv run pytest tests/test_router.py tests/test_router_contract_safety.py tests/test_router_determinism.py -v
 
-# Tests métacognition
-pytest tests/test_metacognition.py tests/test_metacognition_policy.py -v
+# Tests metacognition
+uv run pytest tests/test_metacognition.py tests/test_metacognition_policy.py -v
+
+# Tests personnalisation chat
+uv run pytest tests/chat_personalization/ -v
 
 # Tous les tests
-pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ### CI/CD (GitHub Actions)
@@ -694,25 +795,28 @@ pytest tests/ -v
 
 **Point critique :** Les tests "extended" ont `continue-on-error: true`. Des échecs sont silencieusement ignorés. Pas de déploiement automatique (pas de CD — le déploiement est manuel via SSH + docker cp ou rebuild).
 
-### Procédure de déploiement actuelle (manuelle)
+### Procedure de deploiement actuelle
 
 ```bash
-# 1. Sur la machine locale
-git add . && git commit -m "description" && git push origin main
+# 1. Sur la machine locale — commit avec audit hostile (voir .cursor/rules/pre-commit-audit.mdc)
+git add <fichiers> && git commit -m "description" && git push origin main
 
-# 2. Copier les fichiers sur le serveur
-scp fichier ubuntu@<IP>:~/PRISM-Oracle/fichier
+# 2. Sur le serveur (SSH en tant que evidence)
+ssh evidence@<IP_SERVEUR>
+cd /home/evidence/app
 
-# 3. Injecter dans le container
-docker cp fichier evidence-backend:/app/fichier
-
-# 4. Redémarrer
-cd ~/PRISM-Oracle/deploy && docker compose restart evidence-backend
-
-# OU rebuild complet (prend ~15 min)
-docker compose build --no-cache evidence-backend
+# 3. Pull + rebuild + restart
+git pull origin main
+docker compose build evidence-backend     # ~5-15 min selon le cache
 docker compose up -d evidence-backend
+
+# 4. Verification post-deploiement
+docker compose ps                          # Tous les services UP
+docker logs -f evidence-backend --tail=50  # Pas d'erreur au demarrage
+curl -s https://<DOMAINE>/healthz           # Doit retourner 200
 ```
+
+**Important :** Ne PAS utiliser `docker cp` pour injecter des fichiers — c'est une pratique obsolete. Toutes les modifications passent par `git push` + `docker compose build`.
 
 ## 3.4 Conventions de Code et Règles Non Négociables
 
@@ -842,24 +946,28 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 ---
 
-## Annexe A : Inventaire complet des fichiers clés
+## Annexe A : Inventaire complet des fichiers cles
 
-| Fichier | Lignes | Criticité | Commentaire |
+| Fichier | Lignes | Criticite | Commentaire |
 |---------|--------|-----------|-------------|
-| `agent.py` | ~1015 | 🔴 Critique | Cœur du système, à comprendre en premier |
-| `run_ui.py` | ~588 | 🔴 Critique | Point d'entrée Flask, auth, routing |
-| `python/helpers/settings.py` | ~2222 | 🟠 Élevé | Monstre : gère toute la config, les secrets, le MCP |
-| `python/helpers/legal_pipeline.py` | ~1807 | 🟠 Élevé | Pipeline juridique complet |
-| `python/tools/call_subordinate.py` | ~648 | 🔴 Critique | Délégation + consensus — le cœur de l'orchestration multi-agents |
-| `python/helpers/execution_budget.py` | ~260 | 🔴 Critique | Garde-fou anti-boucles infinies : budget, limites, cycles, deadline |
-| `python/tools/code_execution_tool.py` | ~551 | 🟠 Élevé | Exécution de code — surface d'attaque |
-| `python/helpers/memory.py` | ~581 | 🟠 Élevé | FAISS, embeddings, mémoire agent |
-| `python/helpers/persist_chat.py` | ~300 | 🟡 Moyen | Sérialisation chats — pas d'isolation user |
-| `python/helpers/projects.py` | ~389 | 🟡 Moyen | CRUD projets + isolation owner |
-| `python/api/image_get.py` | ~237 | 🟡 Moyen | Modèle de bonne sécurité (safe_path_join) |
-| `webui/js/messages.js` | ~1093 | 🟡 Moyen | Rendu des messages — complexe |
-| `webui/js/scheduler.js` | ~1835 | 🟡 Moyen | Planificateur de tâches |
-| `models.py` | ~930 | 🟡 Moyen | Providers LLM |
+| `agent.py` | ~1144 | Critique | Coeur du systeme, a comprendre en premier |
+| `run_ui.py` | ~744 | Critique | Point d'entree Flask, auth, routing, middleware securite |
+| `python/helpers/settings.py` | ~2225 | Eleve | Monstre : gere toute la config, les secrets, le MCP |
+| `python/helpers/legal_pipeline.py` | ~1807 | Eleve | Pipeline juridique complet |
+| `python/tools/call_subordinate.py` | ~703 | Critique | Delegation + consensus — orchestration multi-agents |
+| `python/helpers/execution_budget.py` | ~388 | Critique | Garde-fou anti-boucles : budget, limites, cycles, deadline |
+| `python/helpers/audit_report_renderer.py` | ~486 | Critique | Assembleur des 10 blocs du rapport d'audit Evidence |
+| `python/helpers/integrity_block.py` | ~252 | Critique | Hashes SHA-256 + signatures HMAC/RSA-PSS |
+| `python/tools/code_execution_tool.py` | ~555 | Eleve | Execution de code — surface d'attaque |
+| `python/helpers/memory.py` | ~581 | Eleve | FAISS, embeddings, memoire agent |
+| `python/helpers/persist_chat.py` | ~300 | Moyen | Serialisation chats — pas d'isolation user |
+| `python/helpers/projects.py` | ~389 | Moyen | CRUD projets + isolation owner |
+| `python/api/image_get.py` | ~237 | Moyen | Securite (safe_path_join + authz per-user) |
+| `python/api/audit_reports.py` | ~129 | Moyen | Endpoint rapports d'audit RBAC (OWNER/DPO/RSSI) |
+| `webui/js/messages.js` | ~1077 | Moyen | Rendu des messages — complexe |
+| `webui/js/scheduler.js` | ~1835 | Moyen | Planificateur de taches |
+| `models.py` | ~930 | Moyen | Providers LLM |
+
 
 ## Annexe B : Glossaire
 
@@ -882,16 +990,27 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 | **LiteLLM** | Proxy unifié pour appeler différents providers LLM (OpenAI, Anthropic, Google...) |
 | **WorkspaceManager** | Gestionnaire d'espaces de travail par utilisateur (`python/helpers/user_workspace.py`) |
 | **DeferredTask** | Wrapper asyncio pour exécuter la monologue agent dans un thread séparé (`python/helpers/defer.py`) |
+| **SessionEnvelope** | Conteneur de metadonnees pour les rapports d'audit (ID session, user, org, horodatage) — `python/helpers/session_envelope.py` |
+| **IntegrityBlock** | Bloc d'integrite cryptographique : SHA-256 + HMAC ou RSA-PSS pour les rapports d'audit — `python/helpers/integrity_block.py` |
+| **ComplianceGrid** | Grille d'evaluation de conformite AI Act (Art. 9, 13, 14, 17) + RGPD Art. 30 — `python/helpers/compliance_grid.py` |
+| **AuditReportRenderer** | Assembleur des 10 blocs canoniques du rapport d'audit Evidence — `python/helpers/audit_report_renderer.py` |
+| **RouteDecision** | Objet de routage persiste : categorie AI Act, force du routage, profil cible — `python/helpers/router/routing_contract.py` |
+| **RiskRegister** | Registre formel des risques (Art. 9 AI Act) genere automatiquement pour chaque session strategique |
+| **ProcessingRegister** | Registre des activites de traitement (RGPD Art. 30) genere automatiquement |
+| **AccessPrincipal** | Identite d'acces avec scoping org/workspace/user/compliance_role — `python/security/authorization.py` |
+| **RateLimiter** | Systeme anti-brute-force avec backend memory ou Redis, backoff exponentiel — `python/security/rate_limit/` |
 
 ## Annexe C : Contacts et Ressources
 
 | Ressource | Emplacement |
 |-----------|-------------|
 | Repo GitHub | `https://github.com/Makk7709/PRISM-Oracle` |
-| Serveur Production | OVH VPS, Docker Compose |
-| Documentation existante | `docs/` (architecture, installation, legal, consensus) |
-| CI/CD | `.github/workflows/` (main_gate, security, legal) |
+| Serveur Production | OVH VPS (`evidence@<IP>`), Docker Compose |
+| Documentation existante | `docs/` (46 fichiers — architecture, installation, legal, consensus, audit, deploiement) |
+| CI/CD | `.github/workflows/` (main_gate, security_ci, legal_pipeline_ci) |
 | Logs production | `docker logs evidence-backend` ou volume `evidence-logs` |
+| Audit hostile | `audit-hostile-valorisation/` (7 livrables d'audit qualite) |
+| Societe | KOREV AI — licence proprietaire |
 
 ## Annexe D : Matrice de Priorité (Vue Synthétique)
 
@@ -921,4 +1040,4 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 
 ---
 
-*Ce document est un instantané au 2026-03-31 (v5.0, multi-tenant canonical + strategic orchestrator v2 + contract drafting + A2A + observability). Il doit être mis à jour à chaque changement architectural majeur. En cas de doute sur une information, la source de vérité est toujours le code, pas ce document.*
+*Ce document est un instantane au 2026-04-04 (Evidence v1.3.0 — audit reports, integrity signing, P0 security hardening, chat personalization, rate limiting). Il doit etre mis a jour a chaque changement architectural majeur. En cas de doute sur une information, la source de verite est toujours le code, pas ce document.*
