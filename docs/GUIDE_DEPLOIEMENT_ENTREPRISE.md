@@ -1368,7 +1368,7 @@ En cas de problème non résolu par ce guide :
 - Observabilité : logs JSON structurés, métriques, smoke tests post-déploiement
 - Speech : Whisper (transcription) + Kokoro TTS (synthèse vocale)
 - Ancrage temporel (date du jour injectée dans tous les prompts agents)
-- 3739 tests automatises (158 fichiers de tests)
+- 3846 tests automatises (179 fichiers de tests)
 - Deterministic Router v2 (routage policy-driven, anti-injection, 40+ keywords board-level)
 
 **Changelog v2.1 :**

@@ -37,6 +37,18 @@ class ObservabilityMetrics:
             "audit_reports_failed_total": 0,
             "audit_report_generation_ms_total": 0,
             "audit_report_size_bytes_total": 0,
+            "replay_snapshots_captured_total": 0,
+            "replay_integrity_checks_total": 0,
+            "replay_integrity_failures_total": 0,
+            "human_reviews_created_total": 0,
+            "human_reviews_approved_total": 0,
+            "human_reviews_rejected_total": 0,
+            "risk_assessments_total": 0,
+            "risk_assessments_low_total": 0,
+            "risk_assessments_medium_total": 0,
+            "risk_assessments_high_total": 0,
+            "risk_assessments_critical_total": 0,
+            "risk_human_review_triggered_total": 0,
         }
 
     @classmethod

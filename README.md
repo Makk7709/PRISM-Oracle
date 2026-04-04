@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/Version-3.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-3739%20Collected-green?style=for-the-badge)](#tests)
+[![Tests](https://img.shields.io/badge/Tests-3846%20Collected-green?style=for-the-badge)](#tests)
 
 **Plateforme multi-agents d'IA de confiance pour professions réglementées — juridique, médical, finance, stratégie, cybersécurité.**
 
@@ -32,7 +32,7 @@ Korev Evidence est une plateforme multi-agents d'IA de confiance conçue pour le
 - **Protocole A2A** — Communication agent-to-agent via FastA2A (client + serveur)
 - **Extraction PDF Robuste** — Pipeline avec circuit breakers, timeouts stricts, OCR Tesseract
 - **Speech** — Transcription (Whisper) + synthèse vocale (Kokoro TTS)
-- **3739 Tests** — 158 fichiers de tests, CI/CD GitHub Actions (3 pipelines)
+- **3846 Tests** — 179 fichiers de tests, CI/CD GitHub Actions (3 pipelines)
 
 ---
 
