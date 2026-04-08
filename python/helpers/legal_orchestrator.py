@@ -1156,8 +1156,7 @@ async def execute_consensus(
 
 def get_legal_index_path() -> Path:
     """Get the path to the legal index directory."""
-    # Default: workspace/data/legal_index
-    default_path = Path(__file__).parent.parent.parent / "data" / "legal_index"
+    default_path = Path(__file__).parent.parent.parent / "data" / "legal" / "index"
     return Path(os.environ.get("LEGAL_INDEX_PATH", str(default_path)))
 
 
