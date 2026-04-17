@@ -123,6 +123,10 @@ class JsonTaskStore(TaskStore):
                         break
                     task["state"] = "running"
                     task["updated_at"] = now
+                    # running_since is used by the scheduler's stale-RUNNING
+                    # recovery path to identify crashed executions after the
+                    # configured TTL expires.
+                    task["running_since"] = now
                     changed = True
                     claimed = True
                     break
@@ -199,8 +203,10 @@ class RedisTaskStore(TaskStore):
                     if task.get("state") == "running":
                         pipe.unwatch()
                         return False
+                    now = _now_iso()
                     task["state"] = "running"
-                    task["updated_at"] = _now_iso()
+                    task["updated_at"] = now
+                    task["running_since"] = now
                     pipe.multi()
                     pipe.set(key, json.dumps(task, ensure_ascii=False))
                     pipe.execute()

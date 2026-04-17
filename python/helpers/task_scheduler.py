@@ -37,6 +37,51 @@ from typing import Annotated
 
 SCHEDULER_FOLDER = "tmp/scheduler"
 
+# Default TTL for RUNNING state before a task is considered crashed and
+# recovered to ERROR. Overridable via EVIDENCE_SCHEDULER_RUN_TTL_SECONDS.
+_DEFAULT_RUN_TTL_SECONDS = 900
+
+
+def _get_run_ttl_seconds() -> int:
+    raw = os.getenv("EVIDENCE_SCHEDULER_RUN_TTL_SECONDS")
+    if not raw:
+        return _DEFAULT_RUN_TTL_SECONDS
+    try:
+        value = int(raw)
+    except ValueError:
+        return _DEFAULT_RUN_TTL_SECONDS
+    return value if value > 0 else _DEFAULT_RUN_TTL_SECONDS
+
+
+_BLOCKED_SCOPE_PREFIX = "BLOCKED_SCOPE"
+_SEPARATOR = "---"
+
+
+def _strip_blocked_scope_from_last_result(last_result: str | None) -> str | None:
+    """Remove BLOCKED_SCOPE lines (and their separators) from a last_result string.
+
+    The quarantine path accumulates lines formatted as:
+      <previous text>\n---\nBLOCKED_SCOPE: <reason>
+    When a task leaves quarantine, we want to drop the BLOCKED_SCOPE lines
+    without losing legitimate output from earlier successful runs.
+    Returns None if the resulting string is empty.
+    """
+    if not last_result:
+        return last_result
+    lines = last_result.splitlines()
+    kept: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(_BLOCKED_SCOPE_PREFIX):
+            continue
+        kept.append(line)
+    while kept and kept[-1].strip() == _SEPARATOR:
+        kept.pop()
+    while kept and kept[0].strip() == _SEPARATOR:
+        kept.pop(0)
+    cleaned = "\n".join(kept).strip()
+    return cleaned or None
+
 # ----------------------
 # Task Models
 # ----------------------
@@ -145,6 +190,10 @@ class BaseTask(BaseModel):
     last_result: str | None = None
     migration_state: str | None = Field(default="current")
     quarantine_reason: str | None = Field(default=None)
+    # running_since is populated by the claim path to allow stale RUNNING
+    # recovery. A task whose running_since is older than the TTL (or is None
+    # while state == RUNNING) is considered crashed and recovered to ERROR.
+    running_since: datetime | None = Field(default=None)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -550,6 +599,12 @@ class SchedulerTaskList(BaseModel):
                     continue
             self.tasks.clear()
             self.tasks.extend(loaded)
+            # Run lifecycle passes (rehabilitation + stale recovery) in-memory.
+            # Persisting changes here would require awaiting save(), which is
+            # not possible from a sync context. The async reload() path will
+            # persist any pending changes on its next invocation.
+            self._migrate_and_quarantine_legacy_tasks()
+            self._recover_stale_running_tasks()
         return self
 
     async def reload(self) -> "SchedulerTaskList":
@@ -563,8 +618,9 @@ class SchedulerTaskList(BaseModel):
                     continue
             self.tasks.clear()
             self.tasks.extend(loaded)
-            changed = self._migrate_and_quarantine_legacy_tasks()
-            if changed:
+            migration_changed = self._migrate_and_quarantine_legacy_tasks()
+            recovery_changed = self._recover_stale_running_tasks()
+            if migration_changed or recovery_changed:
                 await self.save()
         return self
 
@@ -611,6 +667,8 @@ class SchedulerTaskList(BaseModel):
                 task_workspace=task.workspace,
             )
             if valid:
+                if self._rehabilitate_if_quarantined(task, now):
+                    changed = True
                 continue
             if task.state != TaskState.DISABLED or not (task.last_result or "").startswith("BLOCKED_SCOPE"):
                 task.state = TaskState.DISABLED
@@ -643,6 +701,116 @@ class SchedulerTaskList(BaseModel):
                     correlation_id=f"task:{task.uuid}",
                     reason=reason,
                 )
+        return changed
+
+    def _rehabilitate_if_quarantined(
+        self,
+        task: Union[ScheduledTask, AdHocTask, PlannedTask],
+        now: datetime,
+    ) -> bool:
+        """Bring a task out of scope quarantine once its scope is valid.
+
+        Only reverses tasks that were explicitly quarantined (DISABLED with a
+        BLOCKED_SCOPE marker or a quarantine_reason). Tasks DISABLED for any
+        other reason (manual disable by owner, etc.) are left untouched.
+        """
+        is_quarantined = (
+            task.state == TaskState.DISABLED
+            and (
+                (task.last_result or "").startswith(_BLOCKED_SCOPE_PREFIX)
+                or (task.quarantine_reason is not None)
+                or (task.migration_state or "").startswith("quarantined_")
+            )
+        )
+        if not is_quarantined:
+            return False
+
+        previous_reason = task.quarantine_reason
+        task.state = TaskState.IDLE
+        task.last_result = _strip_blocked_scope_from_last_result(task.last_result)
+        task.quarantine_reason = None
+        task.migration_state = "rehabilitated"
+        task.updated_at = now
+
+        log_security_event(
+            action="legacy_task_rehabilitated",
+            decision="ALLOW",
+            user=task.username,
+            organization=task.organization,
+            resource_type="task",
+            resource_id=task.uuid,
+            reason=previous_reason or "scope_restored",
+        )
+        ObservabilityMetrics.get().incr("tasks_rehabilitated_total")
+        log_observability_event(
+            event_type="task_rehabilitated",
+            status="ALLOW",
+            username=task.username,
+            organization=task.organization,
+            task_uuid=task.uuid,
+            correlation_id=f"task:{task.uuid}",
+            reason=previous_reason or "scope_restored",
+        )
+        return True
+
+    def _recover_stale_running_tasks(self) -> bool:
+        """Recover RUNNING tasks that crashed mid-execution.
+
+        A task is considered stale when state == RUNNING AND either:
+          - running_since is None (legacy claim, pre-TTL instrumentation), or
+          - running_since is older than the configured TTL.
+
+        Recovery transitions the task to ERROR, resets running_since, and
+        tags last_result with a RECOVERED_STALE_RUNNING marker so operators
+        can distinguish these recoveries from genuine task failures.
+        """
+        changed = False
+        now = datetime.now(timezone.utc)
+        ttl = timedelta(seconds=_get_run_ttl_seconds())
+        for task in self.tasks:
+            if task.state != TaskState.RUNNING:
+                continue
+            running_since = task.running_since
+            if running_since is None:
+                reason = "no_running_since"
+            else:
+                if running_since.tzinfo is None:
+                    running_since = running_since.replace(tzinfo=timezone.utc)
+                age = now - running_since
+                if age < ttl:
+                    continue
+                reason = f"ttl_exceeded_{int(age.total_seconds())}s"
+
+            task.state = TaskState.ERROR
+            task.running_since = None
+            marker = f"RECOVERED_STALE_RUNNING: {reason}"
+            previous = task.last_result or ""
+            if previous:
+                task.last_result = f"{previous}\n---\n{marker}".strip()
+            else:
+                task.last_result = marker
+            task.updated_at = now
+            changed = True
+
+            log_security_event(
+                action="task_stale_running_recovered",
+                decision="DENY",
+                user=task.username,
+                organization=task.organization,
+                resource_type="task",
+                resource_id=task.uuid,
+                reason=reason,
+            )
+            ObservabilityMetrics.get().incr("tasks_stale_running_recovered_total")
+            log_observability_event(
+                event_type="task_stale_running_recovered",
+                status="DENY",
+                username=task.username,
+                organization=task.organization,
+                task_uuid=task.uuid,
+                correlation_id=f"task:{task.uuid}",
+                reason=reason,
+            )
         return changed
 
     async def add_task(self, task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> "SchedulerTaskList":
@@ -1385,6 +1553,7 @@ def serialize_task(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> Dict[s
         "organization": task.organization,
         "migration_state": task.migration_state,
         "quarantine_reason": task.quarantine_reason,
+        "running_since": serialize_datetime(task.running_since),
         "dedicated_context": task.is_dedicated(),
         "project": {
             "name": task.project_name,
@@ -1461,6 +1630,7 @@ def deserialize_task(task_data: Dict[str, Any], task_class: Optional[Type[T]] = 
         "organization": task_data.get("organization"),
         "migration_state": task_data.get("migration_state", "current"),
         "quarantine_reason": task_data.get("quarantine_reason"),
+        "running_since": parse_datetime(task_data.get("running_since")),
     }
 
     # Add type-specific fields
