@@ -1,8 +1,10 @@
+import json
 import os
 from typing import Literal, TypedDict, TYPE_CHECKING
 
 from python.helpers import files, dirty_json, persist_chat, file_tree
 from python.helpers.print_style import PrintStyle
+from python.observability.runtime import log_observability_event
 
 
 if TYPE_CHECKING:
@@ -339,11 +341,108 @@ def save_project_secrets(name: str, secrets: str):
 def get_context_memory_subdir(context: "AgentContext") -> str | None:
     # if a project is active and has memory isolation set, return the project memory subdir
     project_name = get_context_project_name(context)
-    if project_name:
+    if not project_name:
+        return None  # no memory override
+
+    try:
         project_data = load_basic_project_data(project_name)
-        if project_data["memory"] == "own":
-            return "projects/" + project_name
+    except (
+        FileNotFoundError,
+        IsADirectoryError,
+        PermissionError,
+        json.JSONDecodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+    ) as exc:
+        # Project referenced by this chat no longer exists on disk (deleted,
+        # lost volume, never created), is a directory, is not readable by
+        # the process, or the header is corrupted/truncated (DirtyJson
+        # returns None on empty input, which makes load_project_header raise
+        # TypeError). Fail open with self-healing: clear the stale reference
+        # so the next call to monologue_start does not re-hit the same path,
+        # persist the cleanup to disk, emit an observability warning, and
+        # fall back to default memory scoping.
+        _orphan_project_reference(
+            context=context,
+            project_name=project_name,
+            reason=type(exc).__name__,
+        )
+        return None
+
+    if project_data["memory"] == "own":
+        return "projects/" + project_name
     return None  # no memory override
+
+
+def _orphan_project_reference(
+    *,
+    context: "AgentContext",
+    project_name: str,
+    reason: str,
+) -> None:
+    """Self-heal a chat that points at a missing/broken project.
+
+    Responsibilities (contract-by-design, enforced by
+    tests/security/test_project_orphan_recovery.py):
+      - clear `context.data["project"]` so the orphan path is traversed at
+        most once per context in-memory;
+      - persist the cleared state to `tmp/chats/<id>/chat.json` via
+        `persist_chat.save_tmp_chat` so the healing survives restarts;
+      - emit a `project_reference_orphaned` observability event carrying
+        enough tenancy context (username/org/chat_id) to trace who was
+        impacted without exposing secrets.
+
+    The function is defensive: each side effect is isolated in its own
+    try/except so a failure in one branch (e.g. a missing `set_data` on an
+    atypical context) cannot prevent the others.
+    """
+    context_id = getattr(context, "id", None)
+    username = getattr(context, "username", None)
+    organization = getattr(context, "organization", None)
+
+    try:
+        if hasattr(context, "set_data"):
+            context.set_data(CONTEXT_DATA_KEY_PROJECT, None)
+        if hasattr(context, "set_output_data"):
+            try:
+                context.set_output_data(CONTEXT_DATA_KEY_PROJECT, None)
+            except Exception:
+                # set_output_data is nice-to-have, not contract-critical.
+                pass
+    except Exception as set_err:  # pragma: no cover - defensive
+        PrintStyle(font_color="yellow").print(
+            f"[projects] failed to clear orphan project '{project_name}' "
+            f"on context {context_id}: {set_err}"
+        )
+
+    try:
+        persist_chat.save_tmp_chat(context)
+    except Exception as save_err:  # pragma: no cover - defensive
+        PrintStyle(font_color="yellow").print(
+            f"[projects] failed to persist orphan cleanup for project "
+            f"'{project_name}' on context {context_id}: {save_err}"
+        )
+
+    try:
+        log_observability_event(
+            event_type="project_reference_orphaned",
+            status="WARN",
+            username=username,
+            organization=organization,
+            correlation_id=f"chat:{context_id}" if context_id else None,
+            reason=project_name,
+            metadata={
+                "project_name": project_name,
+                "chat_id": context_id,
+                "cause": reason,
+            },
+        )
+    except Exception as log_err:  # pragma: no cover - defensive
+        PrintStyle(font_color="yellow").print(
+            f"[projects] failed to log orphan event for project "
+            f"'{project_name}' on context {context_id}: {log_err}"
+        )
 
 
 def create_project_meta_folders(name: str):
