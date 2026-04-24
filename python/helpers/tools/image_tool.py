@@ -357,9 +357,9 @@ class ImageTool:
             return await self._placeholder_generate(request)
     
     async def _call_openai(self, request: ImageRequest) -> List[Any]:
-        """Appelle OpenAI (gpt-image-2 famille par défaut, DALL-E legacy pris en charge).
+        """Appelle OpenAI (gpt-image-1.5 famille par défaut, DALL-E legacy pris en charge).
 
-        gpt-image-2 retourne uniquement `b64_json` (bytes décodés ici) et exige
+        gpt-image-* retourne uniquement `b64_json` (bytes décodés ici) et exige
         des tailles + qualités spécifiques. On mappe le schéma interne vers
         les valeurs acceptées par l'API et on décode directement en bytes.
         """
@@ -370,7 +370,7 @@ class ImageTool:
 
             client = AsyncOpenAI()
 
-            # gpt-image-2 accepte uniquement 1024x1024, 1024x1536, 1536x1024, auto
+            # gpt-image-* accepte uniquement 1024x1024, 1024x1536, 1536x1024, auto
             size_map = {
                 "256x256": "1024x1024",   # Upscale vers le minimum supporté
                 "512x512": "1024x1024",
@@ -380,7 +380,7 @@ class ImageTool:
             }
             api_size = size_map.get(request.size.value, "1024x1024")
 
-            # gpt-image-2 attend low / medium / high / auto
+            # gpt-image-* attend low / medium / high / auto
             quality_map = {
                 "standard": "medium",
                 "hd": "high",
@@ -388,14 +388,14 @@ class ImageTool:
             api_quality = quality_map.get(request.quality.value, "medium")
 
             response = await client.images.generate(
-                model="gpt-image-2",  # Latest SOTA image model (Apr 2026)
+                model="gpt-image-1.5",  # Fast SOTA (~17s); gpt-image-2 also works but slower
                 prompt=request.prompt,
                 size=api_size,
                 quality=api_quality,
                 n=1,  # gpt-image family only supports n=1
             )
 
-            # gpt-image-2 ne renvoie que b64_json ; DALL-E legacy renvoie url
+            # gpt-image-* ne renvoie que b64_json ; DALL-E legacy renvoie url
             out: List[Any] = []
             for img in response.data:
                 b64 = getattr(img, "b64_json", None)

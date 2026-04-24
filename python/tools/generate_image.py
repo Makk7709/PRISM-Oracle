@@ -118,15 +118,25 @@ class GenerateImage(Tool):
                     f"[Image Gen] OpenAI API key found, forcing OpenAI as primary (was: {primary})"
                 )
             primary = "openai"
-            fallback = "google"
-            
-            # Force latest SOTA model unless the operator explicitly pinned a different one
+
+            # Default model if unset (respect user-pinned model otherwise — including "gpt-image-1")
             configured_model = current_settings.get("image_gen_openai_model", "")
-            if not configured_model or configured_model == "gpt-image-1":
-                current_settings["image_gen_openai_model"] = "gpt-image-2"
+            if not configured_model:
+                current_settings["image_gen_openai_model"] = "gpt-image-1.5"
             PrintStyle(font_color="green").print(
-                f"[Image Gen] Using OpenAI {current_settings['image_gen_openai_model']} (latest SOTA)"
+                f"[Image Gen] Using OpenAI {current_settings['image_gen_openai_model']}"
             )
+
+        # Skip fallback if the fallback provider has no usable credentials
+        # (prevents confusing "API key not configured" errors after a primary failure)
+        if fallback == "google":
+            google_key = (
+                current_settings.get("image_gen_google_api_key")
+                or os.environ.get("API_KEY_GOOGLE")
+                or os.environ.get("GOOGLE_API_KEY")
+            )
+            if not google_key:
+                fallback = "none"
         
         PrintStyle(font_color="cyan").print(f"[Image Gen] Generating image with {primary}...")
         
@@ -360,9 +370,12 @@ class GenerateImage(Tool):
             f"[Image Gen] OpenAI request: model={model}, size={payload.get('size')}, quality={payload.get('quality')}"
         )
         
+        # gpt-image-2 can take 40-60s on long prompts; use 180s to keep margin
+        request_timeout = aiohttp.ClientTimeout(total=180)
+
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json=payload, timeout=120) as response:
+            async with aiohttp.ClientSession(timeout=request_timeout) as session:
+                async with session.post(url, headers=headers, json=payload) as response:
                     if response.status != 200:
                         error_text = await response.text()
                         PrintStyle(font_color="red").print(
@@ -371,21 +384,21 @@ class GenerateImage(Tool):
                         try:
                             error_data = await response.json()
                             error_msg = error_data.get("error", {}).get("message", f"HTTP {response.status}")
-                        except:
-                            error_msg = error_text[:200]
+                        except Exception:
+                            error_msg = error_text[:200] or f"HTTP {response.status}"
                         return {
                             "status": "error",
                             "provider": "openai",
                             "error": error_msg
                         }
-                    
+
                     data = await response.json()
                     images = [img.get("url") or img.get("b64_json") for img in data.get("data", [])]
-                    
+
                     PrintStyle(font_color="green").print(
                         f"[Image Gen] OpenAI success: {len(images)} image(s) generated"
                     )
-                    
+
                     return {
                         "status": "success",
                         "provider": "openai",
@@ -393,19 +406,27 @@ class GenerateImage(Tool):
                         "images": images,
                         "revised_prompt": data.get("data", [{}])[0].get("revised_prompt")
                     }
+        except TimeoutError as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] OpenAI timeout (model={model}): {e}")
+            return {
+                "status": "error",
+                "provider": "openai",
+                "error": f"OpenAI timeout after 180s on model '{model}'. Try a faster model (gpt-image-1.5) or shorten the prompt.",
+            }
         except aiohttp.ClientError as e:
             PrintStyle(font_color="red").print(f"[Image Gen] OpenAI connection error: {e}")
             return {
                 "status": "error",
                 "provider": "openai",
-                "error": f"Connection error: {str(e)}"
+                "error": f"Connection error: {str(e) or type(e).__name__}"
             }
         except Exception as e:
-            PrintStyle(font_color="red").print(f"[Image Gen] OpenAI unexpected error: {e}")
+            msg = str(e) or f"{type(e).__name__} (no message)"
+            PrintStyle(font_color="red").print(f"[Image Gen] OpenAI unexpected error: {msg}")
             return {
                 "status": "error",
                 "provider": "openai",
-                "error": str(e)
+                "error": msg
             }
 
     async def _generate_google(
@@ -463,9 +484,11 @@ class GenerateImage(Tool):
             f"[Image Gen] Google request: model={model}, aspect={aspect_ratio}, n={sample_count}"
         )
 
+        request_timeout = aiohttp.ClientTimeout(total=120)
+
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, json=payload, timeout=120) as response:
+            async with aiohttp.ClientSession(timeout=request_timeout) as session:
+                async with session.post(url, headers=headers, json=payload) as response:
                     if response.status != 200:
                         error_text = await response.text()
                         PrintStyle(font_color="red").print(
@@ -475,7 +498,7 @@ class GenerateImage(Tool):
                             error_data = await response.json()
                             error_msg = error_data.get("error", {}).get("message", f"HTTP {response.status}")
                         except Exception:
-                            error_msg = error_text[:200]
+                            error_msg = error_text[:200] or f"HTTP {response.status}"
                         return {
                             "status": "error",
                             "provider": "google",
@@ -511,19 +534,27 @@ class GenerateImage(Tool):
                         "model": model,
                         "images": images,
                     }
+        except TimeoutError as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] Google timeout (model={model}): {e}")
+            return {
+                "status": "error",
+                "provider": "google",
+                "error": f"Google Imagen timeout after 120s on model '{model}'",
+            }
         except aiohttp.ClientError as e:
             PrintStyle(font_color="red").print(f"[Image Gen] Google connection error: {e}")
             return {
                 "status": "error",
                 "provider": "google",
-                "error": f"Connection error: {str(e)}",
+                "error": f"Connection error: {str(e) or type(e).__name__}",
             }
         except Exception as e:
-            PrintStyle(font_color="red").print(f"[Image Gen] Google unexpected error: {e}")
+            msg = str(e) or f"{type(e).__name__} (no message)"
+            PrintStyle(font_color="red").print(f"[Image Gen] Google unexpected error: {msg}")
             return {
                 "status": "error",
                 "provider": "google",
-                "error": str(e),
+                "error": msg,
             }
 
     async def _download_and_save_image(self, url: str, session: aiohttp.ClientSession) -> str:

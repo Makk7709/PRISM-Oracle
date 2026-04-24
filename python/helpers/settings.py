@@ -616,12 +616,12 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "image_gen_openai_model",
             "title": "OpenAI Model",
-            "description": "OpenAI image generation model. GPT-Image-2 is the latest state-of-the-art model (requires verified org). GPT-Image-1.5 / GPT-Image-1 / GPT-Image-1-Mini are previous generations. DALL-E 3 works without verification.",
+            "description": "OpenAI image generation model. GPT-Image-1.5 is recommended (fast ~17s, SOTA quality). GPT-Image-2 is newer but slower (~50s) and can exceed request timeout on long prompts. DALL-E 3 works without organization verification.",
             "type": "select",
             "value": settings["image_gen_openai_model"],
             "options": [
-                {"value": "gpt-image-2", "label": "GPT-Image-2 (Latest - State of the art)"},
-                {"value": "gpt-image-1.5", "label": "GPT-Image-1.5 (Previous SOTA)"},
+                {"value": "gpt-image-1.5", "label": "GPT-Image-1.5 (Recommended - fast SOTA)"},
+                {"value": "gpt-image-2", "label": "GPT-Image-2 (Latest, slower, verified org)"},
                 {"value": "gpt-image-1", "label": "GPT-Image-1 (Legacy - still supported)"},
                 {"value": "gpt-image-1-mini", "label": "GPT-Image-1-Mini (Cheapest GPT-Image)"},
                 {"value": "dall-e-3", "label": "DALL-E 3 (No verification needed)"},
@@ -1970,7 +1970,7 @@ def get_default_settings() -> Settings:
         image_gen_enabled=True,
         image_gen_primary_provider="openai",
         image_gen_fallback_provider="google",
-        image_gen_openai_model="gpt-image-2",  # Latest SOTA (Apr 2026), requires verified org
+        image_gen_openai_model="gpt-image-1.5",  # Fast SOTA (~17s); gpt-image-2 also available but slower (~50s) and may exceed timeout
         image_gen_openai_api_key="",
         image_gen_google_model="imagen-4.0-generate-001",  # GA since Aug 2025
         image_gen_google_api_key="",
