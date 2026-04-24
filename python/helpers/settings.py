@@ -616,12 +616,15 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "image_gen_openai_model",
             "title": "OpenAI Model",
-            "description": "OpenAI image generation model. GPT-Image-1 provides the best quality (requires verified org). DALL-E 3 is excellent and works without verification.",
+            "description": "OpenAI image generation model. GPT-Image-2 is the latest state-of-the-art model (requires verified org). GPT-Image-1.5 / GPT-Image-1 / GPT-Image-1-Mini are previous generations. DALL-E 3 works without verification.",
             "type": "select",
             "value": settings["image_gen_openai_model"],
             "options": [
-                {"value": "gpt-image-1", "label": "GPT-Image-1 (Recommended - Best quality)"},
-                {"value": "dall-e-3", "label": "DALL-E 3 (High quality, no verification needed)"},
+                {"value": "gpt-image-2", "label": "GPT-Image-2 (Latest - State of the art)"},
+                {"value": "gpt-image-1.5", "label": "GPT-Image-1.5 (Previous SOTA)"},
+                {"value": "gpt-image-1", "label": "GPT-Image-1 (Legacy - still supported)"},
+                {"value": "gpt-image-1-mini", "label": "GPT-Image-1-Mini (Cheapest GPT-Image)"},
+                {"value": "dall-e-3", "label": "DALL-E 3 (No verification needed)"},
                 {"value": "dall-e-2", "label": "DALL-E 2 (Faster, cheaper)"},
             ],
         }
@@ -642,12 +645,15 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "image_gen_google_model",
             "title": "Google Imagen Model",
-            "description": "Google Imagen model to use.",
+            "description": "Google Imagen model to use. Imagen 4 family (GA) is the current generation; Imagen 3 is kept for backward compatibility only.",
             "type": "select",
             "value": settings["image_gen_google_model"],
             "options": [
-                {"value": "imagen-3.0-generate-001", "label": "Imagen 3.0 (Latest)"},
-                {"value": "imagen-3.0-fast-generate-001", "label": "Imagen 3.0 Fast"},
+                {"value": "imagen-4.0-generate-001", "label": "Imagen 4 (Recommended - GA)"},
+                {"value": "imagen-4.0-ultra-generate-001", "label": "Imagen 4 Ultra (Best quality, 1 image/req)"},
+                {"value": "imagen-4.0-fast-generate-001", "label": "Imagen 4 Fast (Lower latency)"},
+                {"value": "imagen-3.0-generate-001", "label": "Imagen 3.0 (Legacy)"},
+                {"value": "imagen-3.0-fast-generate-001", "label": "Imagen 3.0 Fast (Legacy)"},
             ],
         }
     )
@@ -1964,9 +1970,9 @@ def get_default_settings() -> Settings:
         image_gen_enabled=True,
         image_gen_primary_provider="openai",
         image_gen_fallback_provider="google",
-        image_gen_openai_model="gpt-image-1",  # Upgraded: Best quality (requires verified org)
+        image_gen_openai_model="gpt-image-2",  # Latest SOTA (Apr 2026), requires verified org
         image_gen_openai_api_key="",
-        image_gen_google_model="imagen-3.0-generate-001",
+        image_gen_google_model="imagen-4.0-generate-001",  # GA since Aug 2025
         image_gen_google_api_key="",
         image_gen_default_size="1024x1024",
         image_gen_default_quality="standard",

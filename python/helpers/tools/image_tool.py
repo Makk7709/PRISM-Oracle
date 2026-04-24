@@ -357,22 +357,56 @@ class ImageTool:
             return await self._placeholder_generate(request)
     
     async def _call_openai(self, request: ImageRequest) -> List[Any]:
-        """Appelle DALL-E via OpenAI."""
+        """Appelle OpenAI (gpt-image-2 famille par défaut, DALL-E legacy pris en charge).
+
+        gpt-image-2 retourne uniquement `b64_json` (bytes décodés ici) et exige
+        des tailles + qualités spécifiques. On mappe le schéma interne vers
+        les valeurs acceptées par l'API et on décode directement en bytes.
+        """
         try:
+            import base64
+
             from openai import AsyncOpenAI
-            
+
             client = AsyncOpenAI()
-            
+
+            # gpt-image-2 accepte uniquement 1024x1024, 1024x1536, 1536x1024, auto
+            size_map = {
+                "256x256": "1024x1024",   # Upscale vers le minimum supporté
+                "512x512": "1024x1024",
+                "1024x1024": "1024x1024",
+                "1792x1024": "1536x1024",
+                "1024x1792": "1024x1536",
+            }
+            api_size = size_map.get(request.size.value, "1024x1024")
+
+            # gpt-image-2 attend low / medium / high / auto
+            quality_map = {
+                "standard": "medium",
+                "hd": "high",
+            }
+            api_quality = quality_map.get(request.quality.value, "medium")
+
             response = await client.images.generate(
-                model="gpt-image-1",  # Upgraded to best quality model
+                model="gpt-image-2",  # Latest SOTA image model (Apr 2026)
                 prompt=request.prompt,
-                size=request.size.value,
-                quality=request.quality.value,
-                n=1,  # gpt-image-1 only supports n=1
+                size=api_size,
+                quality=api_quality,
+                n=1,  # gpt-image family only supports n=1
             )
-            
-            return [img.url for img in response.data]
-            
+
+            # gpt-image-2 ne renvoie que b64_json ; DALL-E legacy renvoie url
+            out: List[Any] = []
+            for img in response.data:
+                b64 = getattr(img, "b64_json", None)
+                if b64:
+                    out.append(base64.b64decode(b64))
+                    continue
+                url = getattr(img, "url", None)
+                if url:
+                    out.append(url)
+            return out
+
         except ImportError:
             raise RuntimeError("openai package not installed")
     

@@ -153,7 +153,7 @@ def test_default_values():
         "image_gen_enabled": True,
         "image_gen_primary_provider": "openai",
         "image_gen_fallback_provider": "google",
-        "image_gen_openai_model": "dall-e-3",
+        "image_gen_openai_model": "gpt-image-2",
         "image_gen_default_size": "1024x1024",
         "image_gen_default_quality": "standard",
     }

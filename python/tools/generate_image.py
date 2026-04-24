@@ -89,7 +89,7 @@ class GenerateImage(Tool):
         primary = current_settings.get("image_gen_primary_provider", "openai")
         fallback = current_settings.get("image_gen_fallback_provider", "google")
         
-        # FORCE OPENAI AS PRIMARY - Always use OpenAI with gpt-image-1 when key is available
+        # FORCE OPENAI AS PRIMARY - Always use OpenAI with gpt-image-2 when key is available
         # Check all possible sources for OpenAI API key
         openai_key = (
             current_settings.get("image_gen_openai_api_key") or
@@ -120,10 +120,12 @@ class GenerateImage(Tool):
             primary = "openai"
             fallback = "google"
             
-            # Also force gpt-image-1 model
-            current_settings["image_gen_openai_model"] = "gpt-image-1"
+            # Force latest SOTA model unless the operator explicitly pinned a different one
+            configured_model = current_settings.get("image_gen_openai_model", "")
+            if not configured_model or configured_model == "gpt-image-1":
+                current_settings["image_gen_openai_model"] = "gpt-image-2"
             PrintStyle(font_color="green").print(
-                f"[Image Gen] Using OpenAI gpt-image-1 (best quality)"
+                f"[Image Gen] Using OpenAI {current_settings['image_gen_openai_model']} (latest SOTA)"
             )
         
         PrintStyle(font_color="cyan").print(f"[Image Gen] Generating image with {primary}...")
@@ -297,7 +299,7 @@ class GenerateImage(Tool):
                 "error": "OpenAI API key not configured"
             }
         
-        model = settings.get("image_gen_openai_model", "gpt-image-1")
+        model = settings.get("image_gen_openai_model", "gpt-image-2")
         
         PrintStyle(font_color="cyan").print(f"[Image Gen] Using OpenAI model: {model}")
         
@@ -413,78 +415,116 @@ class GenerateImage(Tool):
         n: int,
         settings: dict
     ) -> dict[str, Any]:
-        """Generate image using Google Imagen."""
-        # Get API key - try multiple sources
+        """Generate image using Google Imagen (Gemini API :predict endpoint).
+
+        Supports Imagen 4 family (generate / fast / ultra) and legacy Imagen 3.
+        Ultra variant is capped to 1 image per request by the provider.
+        """
         api_key = settings.get("image_gen_google_api_key")
         if not api_key:
-            # Fall back to environment variables (both naming conventions)
             api_key = os.environ.get("API_KEY_GOOGLE") or os.environ.get("GOOGLE_API_KEY")
-        
+
         if not api_key:
             return {
                 "status": "error",
                 "provider": "google",
                 "error": "Google API key not configured"
             }
-        
-        model = settings.get("image_gen_google_model", "imagen-3.0-generate-001")
-        
-        # Map size to aspect ratio
+
+        model = settings.get("image_gen_google_model", "imagen-4.0-generate-001")
+
         aspect_ratio = "1:1"
-        if size == "1792x1024":
+        if size in ("1792x1024", "1536x1024"):
             aspect_ratio = "16:9"
-        elif size == "1024x1792":
+        elif size in ("1024x1792", "1024x1536"):
             aspect_ratio = "9:16"
-        
-        # Prepare request for Vertex AI / Generative AI
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateImages"
+
+        # Ultra variant officially supports only 1 image per call
+        sample_count = 1 if "ultra" in model else min(max(1, n), 4)
+
+        # Correct Gemini API endpoint for Imagen: :predict (not :generateImages)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:predict"
         headers = {
             "Content-Type": "application/json",
-            "x-goog-api-key": api_key
+            "x-goog-api-key": api_key,
         }
-        
+
         payload = {
-            "prompt": prompt,
-            "number_of_images": min(n, 4),
-            "aspect_ratio": aspect_ratio,
-            "safety_filter_level": "BLOCK_ONLY_HIGH",
-            "person_generation": "ALLOW_ADULT"
+            "instances": [{"prompt": prompt}],
+            "parameters": {
+                "sampleCount": sample_count,
+                "aspectRatio": aspect_ratio,
+                "safetyFilterLevel": "block_only_high",
+                "personGeneration": "allow_adult",
+            },
         }
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, json=payload, timeout=120) as response:
-                if response.status != 200:
-                    error_text = await response.text()
+
+        PrintStyle(font_color="cyan").print(
+            f"[Image Gen] Google request: model={model}, aspect={aspect_ratio}, n={sample_count}"
+        )
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload, timeout=120) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        PrintStyle(font_color="red").print(
+                            f"[Image Gen] Google error {response.status}: {error_text[:300]}"
+                        )
+                        try:
+                            error_data = await response.json()
+                            error_msg = error_data.get("error", {}).get("message", f"HTTP {response.status}")
+                        except Exception:
+                            error_msg = error_text[:200]
+                        return {
+                            "status": "error",
+                            "provider": "google",
+                            "error": error_msg,
+                        }
+
+                    data = await response.json()
+
+                    # Imagen :predict returns { "predictions": [ { "bytesBase64Encoded": "...", "mimeType": "image/png" }, ... ] }
+                    images = []
+                    for pred in data.get("predictions", []):
+                        b64 = pred.get("bytesBase64Encoded")
+                        if b64:
+                            mime = pred.get("mimeType", "image/png")
+                            images.append(f"data:{mime};base64,{b64}")
+                        elif "uri" in pred:
+                            images.append(pred["uri"])
+
+                    if not images:
+                        return {
+                            "status": "error",
+                            "provider": "google",
+                            "error": "No images returned by Imagen",
+                        }
+
+                    PrintStyle(font_color="green").print(
+                        f"[Image Gen] Google success: {len(images)} image(s) generated"
+                    )
+
                     return {
-                        "status": "error",
+                        "status": "success",
                         "provider": "google",
-                        "error": f"HTTP {response.status}: {error_text[:200]}"
+                        "model": model,
+                        "images": images,
                     }
-                
-                data = await response.json()
-                
-                # Extract images from response
-                images = []
-                for img in data.get("generatedImages", []):
-                    if "image" in img:
-                        # Base64 encoded
-                        images.append(f"data:image/png;base64,{img['image']['bytesBase64Encoded']}")
-                    elif "uri" in img:
-                        images.append(img["uri"])
-                
-                if not images:
-                    return {
-                        "status": "error",
-                        "provider": "google",
-                        "error": "No images returned"
-                    }
-                
-                return {
-                    "status": "success",
-                    "provider": "google",
-                    "model": model,
-                    "images": images
-                }
+        except aiohttp.ClientError as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] Google connection error: {e}")
+            return {
+                "status": "error",
+                "provider": "google",
+                "error": f"Connection error: {str(e)}",
+            }
+        except Exception as e:
+            PrintStyle(font_color="red").print(f"[Image Gen] Google unexpected error: {e}")
+            return {
+                "status": "error",
+                "provider": "google",
+                "error": str(e),
+            }
 
     async def _download_and_save_image(self, url: str, session: aiohttp.ClientSession) -> str:
         """Download image from URL and save locally, return local path."""
