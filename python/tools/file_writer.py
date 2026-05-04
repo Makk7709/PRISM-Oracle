@@ -3,6 +3,14 @@ File Writer Tool — Create files (PDF, CSV, Excel, text).
 
 This tool provides a simple interface for creating common file formats
 without requiring the agent to write Python code.
+
+Integrity contract (cf. ADR-006 + plan de correction yENoyKIZ):
+  - If the agent passes a §§include(...) directive whose target cannot be
+    resolved (file not in ALLOWED_INCLUDE_DIRS, missing, etc.), the tool
+    MUST fail hard before writing ANY artefact on disk.
+  - The Response.message MUST reflect the actual filesystem state. A success
+    message is a structural commitment that an artefact was correctly produced
+    with the expected content; it must never be returned for a partial render.
 """
 
 import os
@@ -11,6 +19,24 @@ from pathlib import Path
 from python.helpers.tool import Tool, Response
 from python.helpers import files
 from python.helpers.print_style import PrintStyle
+
+
+class IncludeResolutionError(Exception):
+    """
+    Raised when one or more §§include(...) directives in the agent-supplied
+    content cannot be resolved to readable files inside the allowed
+    directories.
+
+    The exception carries the list of failing paths (verbatim, as written by
+    the agent) so the caller can build an actionable error message.
+    """
+
+    def __init__(self, unresolved_paths: list[str]):
+        self.unresolved_paths = list(unresolved_paths)
+        super().__init__(
+            f"{len(self.unresolved_paths)} include directive(s) could not "
+            f"be resolved: {self.unresolved_paths}"
+        )
 
 
 class FileWriter(Tool):
@@ -75,8 +101,16 @@ class FileWriter(Tool):
         # ── Guard: resolve §§include() directives ──────────────────────────
         # Some models (e.g. GPT-5.2) try to use fictional include directives
         # instead of providing the full content. Detect and resolve them.
-        content = self._resolve_includes(content)
-        
+        # CRITICAL: if any directive cannot be resolved we abort BEFORE any
+        # filesystem write — see ADR-006 (tool I/O integrity contract).
+        try:
+            content = self._resolve_includes(content)
+        except IncludeResolutionError as exc:
+            return Response(
+                message=self._format_include_error(exc),
+                break_loop=False,
+            )
+
         # Ensure output directory exists (workspace-local if available)
         workspace = self._resolve_workspace()
         if workspace:
@@ -155,50 +189,92 @@ class FileWriter(Tool):
         Resolve §§include() directives that some models generate instead of
         providing full content. Also handles similar patterns like
         {{include()}}, <<include()>>, @include(), etc.
-        
-        If the entire content is a single include directive pointing to a
-        readable file, replace it with the file contents.
-        If mixed content + includes, resolve inline includes.
+
+        Contract (ADR-006):
+          - If the content has no directives, return it unchanged.
+          - If every directive can be resolved, return the content with all
+            directives replaced inline.
+          - If ANY directive cannot be resolved, raise IncludeResolutionError
+            carrying the list of unresolved paths. NO partial substitution
+            ever leaks to the caller (all-or-nothing atomicity).
         """
         import re
-        
+
         # Pattern: §§include(path), {{include(path)}}, <<include(path)>>, @include(path)
         include_pattern = re.compile(
             r'(?:§§|@@|<<|{{|@)?\s*include\s*\(\s*([^\)]+?)\s*\)\s*(?:>>|}})?',
             re.IGNORECASE,
         )
-        
+
         matches = list(include_pattern.finditer(content))
         if not matches:
             return content
-        
+
         PrintStyle(font_color="yellow").print(
             f"[FileWriter] WARNING: Detected {len(matches)} include directive(s) — "
             f"model sent reference instead of content. Resolving..."
         )
-        
-        # If the ENTIRE content is just one include directive, replace fully
-        if len(matches) == 1 and content.strip() == matches[0].group(0).strip():
-            file_path = matches[0].group(1).strip().strip("'\"")
+
+        # ── Phase 1: pre-resolve every directive without touching content ──
+        # We collect the result for each match and the list of unresolved
+        # paths. This guarantees that we either succeed for ALL directives or
+        # we raise BEFORE any substitution takes place.
+        resolutions: dict[int, str] = {}
+        unresolved: list[str] = []
+        for idx, match in enumerate(matches):
+            file_path = match.group(1).strip().strip("'\"")
             resolved = self._read_include_file(file_path)
-            if resolved:
+            if resolved is None:
+                unresolved.append(file_path)
+            else:
+                resolutions[idx] = resolved
                 PrintStyle(font_color="green").print(
                     f"[FileWriter] Resolved include: {len(resolved)} chars from {file_path}"
                 )
-                return resolved
-        
-        # Multiple includes or mixed content: resolve each one inline
+
+        if unresolved:
+            # Atomicity: no partial render. Caller turns this into a
+            # Response error and refrains from writing any artefact.
+            raise IncludeResolutionError(unresolved)
+
+        # ── Phase 2: substitute in reverse order (preserves indices) ──
         result = content
-        for match in reversed(matches):  # reversed to preserve positions
-            file_path = match.group(1).strip().strip("'\"")
-            resolved = self._read_include_file(file_path)
-            if resolved:
-                result = result[:match.start()] + resolved + result[match.end():]
-                PrintStyle(font_color="green").print(
-                    f"[FileWriter] Resolved inline include: {len(resolved)} chars from {file_path}"
-                )
-        
+        for idx in range(len(matches) - 1, -1, -1):
+            match = matches[idx]
+            result = result[: match.start()] + resolutions[idx] + result[match.end():]
+
         return result
+
+    def _format_include_error(self, exc: IncludeResolutionError) -> str:
+        """
+        Build an agent-actionable error message for an unresolved include.
+
+        Contract (cf. plan de correction §3.2 / invariant I-5):
+          - Cite each requested path verbatim so the model can self-correct.
+          - List the allowed directories explicitly.
+          - State a corrective action (move file or inline content).
+          - No Python traceback, no internal filesystem details beyond the
+            allowed directory names.
+        """
+        bullets = "\n".join(f"  • {p}" for p in exc.unresolved_paths)
+        allowed = "\n".join(f"  • {d}" for d in self.ALLOWED_INCLUDE_DIRS)
+        return (
+            "❌ FileWriter aborted: include directive(s) could not be resolved.\n"
+            "\n"
+            f"Failed paths ({len(exc.unresolved_paths)}):\n"
+            f"{bullets}\n"
+            "\n"
+            "Allowed include directories (relative to project root):\n"
+            f"{allowed}\n"
+            "\n"
+            "Corrective action:\n"
+            "  - Move the referenced file(s) into one of the allowed "
+            "directories above, OR\n"
+            "  - Pass the full file content inline as the `content` argument "
+            "instead of using a §§include(...) directive.\n"
+            "\n"
+            "No artefact was written. Please retry with a corrected payload."
+        )
     
     # Directories from which include directives are allowed to read files.
     # All paths are relative to the project root (files.get_base_dir()).
@@ -300,7 +376,11 @@ class FileWriter(Tool):
                     )
                     return content
 
-                except (SecurityError, FileNotFoundError, OSError):
+                except (SecurityError, FileNotFoundError, OSError, UnicodeDecodeError):
+                    # UnicodeDecodeError: file is binary or non-UTF-8.
+                    # Treat as unresolved so the caller fails hard via
+                    # IncludeResolutionError rather than silently producing
+                    # a corrupted document.
                     continue
 
         # ------------------------------------------------------------------
