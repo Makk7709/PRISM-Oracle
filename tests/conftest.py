@@ -224,3 +224,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "invariant: marks tests that verify invariants (I1, I2, I4)"
     )
+    config.addinivalue_line(
+        "markers",
+        "infra: marks tests that require a running Docker daemon "
+        "(deploy/docker-compose.staging.yml). Skipped by default; run via "
+        "`pytest -m infra tests/infra/`.",
+    )

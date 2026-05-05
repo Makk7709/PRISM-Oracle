@@ -1,0 +1,103 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║         KOREV EVIDENCE — Docker Compose (Staging — Migration RDBMS)         ║
+# ║                                                                              ║
+# ║  Compose AUTONOME utilisé pour valider chaque phase de la migration RDBMS    ║
+# ║  AVANT toute application en production. Tourne en parallèle de la prod sur  ║
+# ║  le VPS OVH (containers et volumes nommés avec suffixe -staging, ports      ║
+# ║  différents — voir variables d'env STAGING_*) ou en local sur poste dev.    ║
+# ║                                                                              ║
+# ║  IMPORTANT — Isolation totale vs. la prod :                                  ║
+# ║   * Réseau Docker dédié `evidence-staging-network`                           ║
+# ║   * Volumes nommés `evidence-*-staging` (jamais partagés avec la prod)       ║
+# ║   * Mots de passe différents (POSTGRES_STAGING_PASSWORD ≠ POSTGRES_PASSWORD) ║
+# ║   * Aucun montage des clés RSA de prod                                       ║
+# ║                                                                              ║
+# ║  Usage :                                                                     ║
+# ║    docker compose -f deploy/docker-compose.staging.yml up -d                ║
+# ║    docker compose -f deploy/docker-compose.staging.yml down                 ║
+# ║                                                                              ║
+# ║  Phase P0 — uniquement le SGBD Postgres pour valider la base d'infra.       ║
+# ║  Le backend staging est ajouté en P1 (cf. ADR-007).                         ║
+# ║                                                                              ║
+# ║  ⚠️  PROJECT NAME FIXE — `name: evidence-staging`                            ║
+# ║                                                                              ║
+# ║  Le `name:` ci-dessous fixe le project name de Docker Compose. Sans cela,    ║
+# ║  Docker Compose utilise le nom du répertoire courant comme project name.    ║
+# ║  Cela a deux conséquences :                                                  ║
+# ║    1. `up` et `down` sont reproductibles depuis n'importe quel dossier.     ║
+# ║    2. `--remove-orphans` (si jamais utilisé) ne peut PAS toucher des        ║
+# ║       containers d'un autre project (donc la prod reste intouchable).       ║
+# ║                                                                              ║
+# ║  ⚠️  N'AJOUTER NI `--remove-orphans` NI N'ARRÊTER CE COMPOSE depuis le      ║
+# ║  même dossier que la prod sans `-p evidence-staging` explicite.             ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+name: evidence-staging
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # POSTGRES STAGING — Postgres 16 + pgvector
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-postgres-staging:
+    image: pgvector/pgvector:pg16
+    container_name: evidence-postgres-staging
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: "${POSTGRES_STAGING_USER:-evidence_staging}"
+      POSTGRES_PASSWORD: "${POSTGRES_STAGING_PASSWORD:?POSTGRES_STAGING_PASSWORD is required}"
+      POSTGRES_DB: "${POSTGRES_STAGING_DB:-evidence_staging}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    # Exposé sur localhost uniquement pour permettre les tests d'infra
+    # depuis le host (psql, scripts de migration). Port différent de la prod.
+    ports:
+      - "${POSTGRES_STAGING_HOST:-127.0.0.1}:${POSTGRES_STAGING_PORT:-5433}:5432"
+
+    volumes:
+      - evidence-postgres-data-staging:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_STAGING_USER:-evidence_staging} -d ${POSTGRES_STAGING_DB:-evidence_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "${PG_STAGING_CPU_LIMIT:-1.0}"
+          memory: "${PG_STAGING_MEMORY_LIMIT:-1G}"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+
+    networks:
+      - evidence-staging-net
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VOLUMES — Strictement séparés des volumes prod
+# ═══════════════════════════════════════════════════════════════════════════════
+volumes:
+  evidence-postgres-data-staging:
+    name: evidence-postgres-data-staging
+    labels:
+      com.korev.evidence.type: "postgres-data-staging"
+      com.korev.evidence.backup: "false"
+      com.korev.evidence.environment: "staging"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RÉSEAU DÉDIÉ
+# ═══════════════════════════════════════════════════════════════════════════════
+networks:
+  evidence-staging-net:
+    name: evidence-staging-network
+    driver: bridge

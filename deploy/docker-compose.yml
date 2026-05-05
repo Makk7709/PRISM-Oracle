@@ -152,6 +152,64 @@ services:
         max-file: "5"
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # POSTGRES — SGBD relationnel (Migration RDBMS, ADR-007)
+  #
+  # PHASE P0 — Le service est défini mais GATÉ par le profil "db".
+  # Avec `docker compose up -d` standard, ce service NE démarre PAS.
+  # Pour le démarrer explicitement (manuel, hors prod) :
+  #     docker compose --profile db up -d evidence-postgres
+  #
+  # Aucun service applicatif (backend, demo, caddy, samba) ne `depends_on` ce
+  # service en P0. Le couplage applicatif sera introduit en P1+ via le pattern
+  # Repository (cf. docs/adr/ADR-007-postgres-pgvector-adoption.md).
+  # ═══════════════════════════════════════════════════════════════════════════
+  evidence-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: evidence-postgres
+    restart: unless-stopped
+    profiles: ["db"]
+
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-evidence}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+      POSTGRES_DB: "${POSTGRES_DB:-evidence}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    # Postgres n'est PAS exposé sur le réseau hôte par défaut.
+    # Décommenter UNIQUEMENT en debug local :
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+
+    volumes:
+      - evidence-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evidence} -d ${POSTGRES_DB:-evidence}"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "${PG_CPU_LIMIT:-2.0}"
+          memory: "${PG_MEMORY_LIMIT:-2G}"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+
+    networks:
+      - evidence-net
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # CADDY — Reverse proxy (HTTPS termination + headers sécurité)
   # ═══════════════════════════════════════════════════════════════════════════
   evidence-caddy:
@@ -342,6 +400,15 @@ volumes:
     labels:
       com.korev.evidence.type: "agent-memory-demo"
       com.korev.evidence.backup: "false"
+
+  # Volume Postgres (ADR-007) — créé même si le profil "db" n'est pas activé,
+  # mais Docker ne provisionne le volume qu'au premier démarrage du service.
+  evidence-postgres-data:
+    name: evidence-postgres-data
+    labels:
+      com.korev.evidence.type: "postgres-data"
+      com.korev.evidence.backup: "true"
+      com.korev.evidence.retention: "30d"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RÉSEAU ISOLÉ
