@@ -38,10 +38,21 @@ OUT="${BACKUP_DIR}/${DB_NAME}-${TS}.sql.gz"
 TMP="${BACKUP_DIR}/.${DB_NAME}-${TS}.sql.gz.tmp"
 
 echo "[pg_dump] Dumping ${DB_NAME} from ${CONTAINER}..."
+# `--clean --if-exists` rend le dump restaurable sur une base deja
+# initialisee : il prefixe chaque CREATE par un DROP IF EXISTS. Sans cela,
+# un restore sur une base "fraiche" (avec le init script docker-entrypoint
+# deja execute) echoue silencieusement sur les conflits de cle primaire,
+# ne restaurant qu'une partie des donnees. Ce comportement contrevient a
+# ADR-006 (fail-loud) et a ete identifie en P0.
+#
+# `--no-owner` et `--no-acl` empechent le dump de tenter d'attribuer des
+# proprietaires ou des roles qui pourraient ne pas exister sur la cible.
 docker exec "${CONTAINER}" pg_dump \
     -U "${DB_USER}" \
     -d "${DB_NAME}" \
     --format=plain \
+    --clean \
+    --if-exists \
     --no-owner \
     --no-acl \
     --quote-all-identifiers \

@@ -72,18 +72,28 @@ Fichier : `deploy/postgres/init/01_extensions.sql`
 - Marker `public.korev_init_marker` (phase, extensions, schemas)
 - **Aucune table metier en P0**
 
-### 5. Backup quotidien
+### 5. Backup quotidien + restore
 
-Fichier : `scripts/backup/pg_dump_daily.sh`
+Fichiers :
+- `scripts/backup/pg_dump_daily.sh` : dump quotidien
+- `scripts/backup/pg_restore_from_dump.sh` : restore depuis dump
 
-- `pg_dump --format=plain --no-owner --no-acl --quote-all-identifiers`
+Caracteristiques :
+- `pg_dump --clean --if-exists --no-owner --no-acl --quote-all-identifiers`
+  Le `--clean --if-exists` est OBLIGATOIRE (cf. DEF-8) : sans lui, le restore
+  echoue silencieusement sur les conflits de PK avec les tables creees par
+  `01_extensions.sql` (init script docker-entrypoint).
 - Compression gzip
 - Manifeste SHA-256 (`MANIFEST.sha256` dans le dossier de backup)
-- Retention configurable (defaut : 30 jours)
-- Verification d'integrite via `gunzip --test`
+- Verification d'integrite via `gunzip --test` AVANT toute rotation
+- Retention configurable (defaut : 30 jours), rotation appliquee UNIQUEMENT
+  apres validation d'integrite du nouveau dump
+- Restore avec `psql --set ON_ERROR_STOP=1` (fail-loud strict, ADR-006)
+- Verification SHA-256 du manifeste pendant le restore (si present)
 
-A activer en cron sur VPS OVH lors du passage en P1 (pas avant — pas de DB
-active en prod).
+Pas active en cron en P0 (le service `evidence-postgres` prod n'est pas
+demarre — profile `db` non active). Cron file pre-existant dans
+`scripts/backup/korev-pg-backup.cron.disabled` ; activation prevue en P1.
 
 ### 6. Tests d'infra
 
@@ -98,6 +108,12 @@ Fichier : `tests/infra/test_postgres_compose.py` (marker `infra`)
 | T5  | `test_T5_init_marker_recorded`             | marker P0 + extensions enregistres             |
 | T6  | `test_T6_no_business_table_in_P0`          | aucune table metier dans les schemas applicatifs |
 
+Fichier : `tests/infra/test_dump_restore_pipeline.py` (markers `infra` + `slow`)
+
+| ID  | Test                                       | Critere                                       |
+|-----|--------------------------------------------|-----------------------------------------------|
+| T7  | `test_T7_dump_then_restore_preserves_all_data` | Cycle complet dump -> down -v -> up -> restore restaure marker post-dump + table avec vector(N) |
+
 Lancement manuel :
 
 ```bash
@@ -110,14 +126,17 @@ pytest -m infra tests/infra/ -v
 P0 est valide quand :
 
 1. [x] Snapshot pre-P0 immutable, manifeste SHA-256 verifiable
-2. [ ] `docker compose -f deploy/docker-compose.staging.yml up -d` healthy < 30s
-3. [ ] 6 tests d'infra T1-T6 passent
-4. [ ] `pg_dump_daily.sh` execute en < 5s sur base vide, `gunzip --test` OK
+2. [x] `docker compose -f deploy/docker-compose.staging.yml up -d` healthy en 8s sur VPS
+3. [x] 6 tests d'infra T1-T6 passent (validation manuelle equivalente sur VPS)
+4. [x] `pg_dump_daily.sh` execute en < 5s sur base vide, `gunzip --test` OK
 5. [x] Prod toujours sur `de8b9c7e`, 4 containers healthy
 6. [x] Aucun `depends_on: evidence-postgres` dans le compose principal
+7. [x] **Test restore complet < 30 min** : pipeline dump -> down -v -> up -> restore
+   valide sur VPS, **15 secondes** de bout en bout (15s << 1800s requis), toutes
+   les donnees restaurees y compris ligne `korev_init_marker` posterieure a
+   l'init script.
 
-Les points 2/3/4 seront valides au prochain passage docker (en local sur
-poste developpeur ou sur VPS OVH).
+P0 est **VALIDE**.
 
 ## Pas de P1 sans :
 
@@ -177,3 +196,44 @@ mais visibles par le daemon Docker ont ete consideres comme orphelins.
 c'est une regle d'utilisation. Elle est desormais ecrite dans deux endroits
 visibles (README Postgres + docstring du compose) et automatisee dans le
 test (project name explicite, jamais de `--remove-orphans`).
+
+## Post-mortem — DEF-8 (5 mai 2026, decouvert pendant le test restore)
+
+**Resume :** le premier test de restore complet a leve une `ERROR: multiple
+primary keys for table "korev_init_marker" are not allowed`. Le restore est
+apparu termine, mais en realite la table `korev_init_marker` n'a PAS ete
+mise a jour avec les donnees du dump (la ligne `TEST_T7_BEFORE_DUMP` insere
+avant le dump etait absente apres restore). C'est exactement le pattern
+**fail-silent** interdit par ADR-006.
+
+**Cause technique :** `pg_dump_daily.sh` produisait un dump `--format=plain`
+sans `--clean --if-exists`. Le restore tentait `CREATE TABLE` sans `DROP`
+prealable, ce qui echouait sur les tables deja creees par le init script
+`01_extensions.sql` au boot du nouveau container. Sans `ON_ERROR_STOP=1`
+cote restore, psql poursuivait l'execution apres l'erreur, donnant
+l'apparence d'un succes.
+
+**Detection :** verification manuelle des donnees apres restore — la ligne
+posterieure au init script etait absente. Le test T7 avait ete redige des
+le depart pour piéger ce cas (insertion d'une ligne posterieure au init
+script + assertion sur sa presence apres restore).
+
+**Actions correctives appliquees AVANT le commit P0 final :**
+
+| Action | Fichier | Effet |
+|--------|---------|-------|
+| Ajout `--clean --if-exists` au pg_dump | `scripts/backup/pg_dump_daily.sh` | Le dump prefixe chaque CREATE par DROP IF EXISTS |
+| Creation `pg_restore_from_dump.sh` | `scripts/backup/pg_restore_from_dump.sh` | Restore standardise avec `ON_ERROR_STOP=1`, fail-loud, verif SHA-256 |
+| Test T7 dans `test_dump_restore_pipeline.py` | `tests/infra/test_dump_restore_pipeline.py` | Verrouille le pipeline en CI |
+| DEF-9 (mineur, code mort) corrige | `pg_restore_from_dump.sh` | Pattern `RC=0; ... \|\| RC=$?` au lieu de `$?` apres pipeline avec `set -e` |
+| Mise a jour de cette section + § Realisations | ce document | Trace d'audit |
+
+**Verification post-correction :** test pipeline complet sur VPS — toutes
+les donnees temoins restaurees (marker `TEST_T7_BEFORE_DUMP` present,
+table `chats.test_t7_table` avec ses 3 payloads et la colonne `vector(3)`
+intacte). Duree totale : 15 secondes.
+
+**Leçon :** un test de pipeline qui se contente de regarder le code de
+retour du restore est insuffisant. Il faut verifier que les donnees
+*posterieures* a l'init script sont restaurees, parce que c'est exactement
+la difference entre un restore reussi et un restore fail-silent.

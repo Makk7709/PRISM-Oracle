@@ -1,0 +1,31 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  KOREV EVIDENCE — Cron file pour pg_dump_daily.sh (P0, ADR-007)             ║
+# ║                                                                              ║
+# ║  Fichier suffixe `.disabled` : NE PAS COPIER tel quel dans /etc/cron.d/.    ║
+# ║  En P0, le service `evidence-postgres` n'est pas demarre en prod (profile   ║
+# ║  `db` non active), donc le cron echouerait avec exit 2 chaque jour.         ║
+# ║                                                                              ║
+# ║  ACTIVATION (a faire en P1, apres `docker compose --profile db up -d`) :    ║
+# ║    sudo cp scripts/backup/korev-pg-backup.cron.disabled \                   ║
+# ║            /etc/cron.d/korev-pg-backup                                      ║
+# ║    sudo chmod 644 /etc/cron.d/korev-pg-backup                               ║
+# ║    sudo chown root:root /etc/cron.d/korev-pg-backup                         ║
+# ║    sudo systemctl reload cron                                               ║
+# ║                                                                              ║
+# ║  Pre-requis avant activation :                                               ║
+# ║    1. Service `evidence-postgres` demarre et healthy                        ║
+# ║    2. POSTGRES_PASSWORD definie dans /home/ubuntu/PRISM-Oracle/deploy/.env  ║
+# ║    3. Repertoire /home/ubuntu/backups/pg cree avec ownership ubuntu:ubuntu  ║
+# ║    4. Espace disque verifie (un dump = quelques MB en P0/P1, plus tard      ║
+# ║       quelques centaines de MB selon volume metier)                         ║
+# ║                                                                              ║
+# ║  Format crontab : minute heure jour mois jour-semaine user commande         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+KOREV_PG_BACKUP_DIR=/home/ubuntu/backups/pg
+KOREV_PG_RETENTION_DAYS=30
+
+# Dump quotidien a 03:00 UTC (cron du conteneur cron-fixed timezone)
+0 3 * * * ubuntu /home/ubuntu/PRISM-Oracle/scripts/backup/pg_dump_daily.sh >> /var/log/korev-pg-backup.log 2>&1
