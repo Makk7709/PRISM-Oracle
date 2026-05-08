@@ -1,50 +1,31 @@
 {
+  "_comment": "Example file for documentation only. Contains no real user, no real password hash, no secret, no production data. Not intended for deployment. Replace placeholders before any real use. See SECURITY.md and docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md.",
+  "_format_version": "1.0",
+  "_warning": "DO NOT COPY THIS FILE TO deploy/users.json AS-IS. The hashes below are NOT valid Argon2id outputs. Generate real hashes via scripts/provision_user.py before deployment.",
   "users": {
-    "amine": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+    "admin_example": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$PLACEHOLDER_NOT_A_REAL_HASH_REGENERATE_BEFORE_USE",
       "role": "admin",
-      "profile": "Administrateur — Direction"
+      "email": "admin@example.com",
+      "organization": "ExampleOrg",
+      "org_role": "OWNER",
+      "profile": "Example administrator profile (fictitious, documentation only)"
     },
-    "nicolas": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
+    "user_example_1": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$PLACEHOLDER_NOT_A_REAL_HASH_REGENERATE_BEFORE_USE",
       "role": "user",
-      "profile": "Analyste — Niveau 2"
+      "email": "user1@example.com",
+      "organization": "ExampleOrg",
+      "org_role": "MEMBER",
+      "profile": "Example standard user profile (fictitious, documentation only)"
     },
-    "luc": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "jeremie": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "coralie": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "dominique": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "laurianne": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "sarah": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "christopher": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "louis": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
-    },
-    "mathias": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$REMPLACEZ_PAR_HASH_REEL",
-      "role": "user"
+    "user_example_2": {
+      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$PLACEHOLDER_NOT_A_REAL_HASH_REGENERATE_BEFORE_USE",
+      "role": "user",
+      "email": "user2@example.com",
+      "organization": "ExampleOrg",
+      "org_role": "MEMBER",
+      "profile": "Example standard user profile (fictitious, documentation only)"
     }
   }
 }

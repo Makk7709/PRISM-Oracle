@@ -1,0 +1,18 @@
+=== Volumetrie Python (fichiers .py — branche HEAD) ===
+Total fichiers Python :
+606
+
+Total lignes Python :
+189744
+
+=== Volumetrie tests ===
+Fichiers de test (tests/) :
+183
+Lignes tests/ :
+68279
+
+=== Documentation .md ===
+Fichiers .md :
+838
+Lignes .md :
+153453

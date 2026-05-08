@@ -1,0 +1,21 @@
+=== KOREV Evidence — Métriques Git auditables ===
+Date d'exécution : 2026-04-28 09:51:24 +0200
+Machine : Darwin MacBook-Pro-de-amine.local arm64
+Git version : git version 2.50.1 (Apple Git-155)
+
+=== HEAD vérifié ===
+7a7abd6a0a39ba10888440fddc1aeba1495906e0
+Date HEAD : 2026-04-24 15:22:38 +0200
+Message  : fix(image-gen): resilient OpenAI calls + safe fallback when Google key missing
+
+=== Diff upstream 9a3a92b6 → HEAD --shortstat ===
+ 898 files changed, 213250 insertions(+), 14434 deletions(-)
+
+=== Cumul commits Amine Mohamed (commande corrigée) ===
+Commits  : 267
+Insertions : +221481
+Suppressions : -17976
+Net : +203505
+
+=== Premier commit Amine ===
+2026-01-15 23:19:29 +0100 26fc5593 🚀 PRISM Oracle v1.0 - Rebranding & Specialization

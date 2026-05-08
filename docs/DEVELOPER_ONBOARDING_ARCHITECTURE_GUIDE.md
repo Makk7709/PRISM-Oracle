@@ -1151,10 +1151,12 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 |-----------|-------------|
 | Repo GitHub | `https://github.com/Makk7709/PRISM-Oracle` |
 | Serveur Production | OVH VPS (`evidence@<IP>`), Docker Compose |
-| Documentation existante | `docs/` (46 fichiers — architecture, installation, legal, consensus, audit, deploiement) |
+| Documentation existante | `docs/` (architecture, installation, legal, consensus, audit, deploiement, GLOSSARY.md, C4 diagrams) |
+| Politique de securite | `SECURITY.md` (divulgation responsable, pratiques crypto, rate limiting, RBAC) |
+| Architecture Decision Records | `docs/adr/` (5 ADR : PRISM, router, Evidence, LiteLLM, extensions) |
 | CI/CD | `.github/workflows/` (main_gate, security_ci, legal_pipeline_ci) |
 | Logs production | `docker logs evidence-backend` ou volume `evidence-logs` |
-| Audit hostile | `audit-hostile-valorisation/` (7 livrables d'audit qualite) |
+| Audit hostile | `audit-hostile-valorisation/` (8 livrables d'audit qualite et valorisation, incluant l'audit du dossier commissaire aux apports) |
 | Societe | KOREV AI — licence proprietaire |
 
 ## Annexe D : Matrice de Priorité (Vue Synthétique)

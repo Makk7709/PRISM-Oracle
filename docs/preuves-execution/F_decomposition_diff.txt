@@ -1,0 +1,27 @@
+=== Decomposition .md du diff upstream → HEAD (correspond a apport O) ===
+ 141 files changed, 26130 insertions(+), 1003 deletions(-)
+
+=== Decomposition .py du diff upstream → HEAD (correspond a apports A-M Python) ===
+ 487 files changed, 159545 insertions(+), 2352 deletions(-)
+
+=== Top 20 fichiers les plus modifies (--numstat tries par insertions) ===
+2123	0	python/helpers/adversarial_instruction.py
+1960	0	python/helpers/legal_orchestrator.py
+1893	0	docs/FEUILLE_DE_ROUTE_CONFORMITE_FORMAT_EVIDENCE.md
+1835	0	webui/js/scheduler.js
+1807	0	python/helpers/legal_pipeline.py
+1705	209	python/helpers/settings.py
+1560	0	python/helpers/strategic_orchestrator.py
+1487	0	tests/golden/pdf_extraction/tables__mixed_content.json
+1422	0	python/helpers/reporting/evidence_native.py
+1385	0	docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md
+1338	0	tests/test_legal_pipeline.py
+1220	0	tests/golden/pdf_extraction/words__unicode_content.json
+1217	0	python/helpers/pdf_extraction/pipeline.py
+1194	0	docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md
+1190	0	python/helpers/reasoning_engine.py
+1172	6	webui/index.html
+1144	0	python/helpers/adversarial_consensus_integration.py
+1091	0	python/helpers/evidence_pdf_engine.py
+1088	0	python/extensions/legal_safe_mode/_10_legal_safe_integration.py
+1077	0	tests/test_metacognition.py

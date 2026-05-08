@@ -1,0 +1,18 @@
+=== Inventaire fichiers Docker ===
+-rw-r--r--@ 1 aminemohamed  staff   1225 Feb 17 14:28 DockerfileLocal
+-rw-r--r--@ 1 aminemohamed  staff   9831 Apr  4 22:51 deploy/Dockerfile.backend
+-rw-r--r--@ 1 aminemohamed  staff   3435 Feb 20 15:55 deploy/Dockerfile.frontend
+-rw-r--r--@ 1 aminemohamed  staff  13380 Apr  2 21:45 deploy/docker-compose.yml
+-rw-r--r--@ 1 aminemohamed  staff  13380 Apr  2 21:45 deploy/docker-compose.yml
+
+=== Validation syntaxe docker-compose (sans daemon) ===
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"argon2id\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"v\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"m\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"mYKeYD4XopeCB4mLL2hDHau5BebRCkAVhSxFU1S612Q\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"argon2id\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"v\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"m\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"mYKeYD4XopeCB4mLL2hDHau5BebRCkAVhSxFU1S612Q\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"argon2id\" variable is not set. Defaulting to a blank string."
+time="2026-04-28T09:52:19+02:00" level=warning msg="The \"v\" variable is not set. Defaulting to a blank string."

@@ -1,8 +1,12 @@
+<!-- markdownlint-disable MD022 MD031 MD032 MD040 MD058 MD060 -->
+
 # KOREV Evidence — Suite de Tests
 
 ## Vue d'ensemble
 
-**2768 tests collectés** — 137 fichiers de tests couvrant sécurité, consensus, pipelines métier, multi-tenant, observabilité, router, et non-régression.
+**État de référence documentaire : 3 910 tests collectés avec paramétrisation** — environ 180 fichiers de tests couvrant sécurité, consensus, pipelines métier, multi-tenant, observabilité, router, audit-proof et non-régression.
+
+> Note du 25 avril 2026 : une collecte locale sous Python 3.9.6 a été interrompue après **3 608 tests collectés** et 19 erreurs de compatibilité de syntaxe/type hints (`|` unions, `dataclass(slots=...)`). Les métriques de référence du dossier de valorisation supposent l'environnement Python supporté par le projet, pas l'interpréteur système macOS 3.9.
 
 ```
 tests/
