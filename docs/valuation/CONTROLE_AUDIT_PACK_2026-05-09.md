@@ -87,7 +87,7 @@ $ for f in legal_orchestrator replay_engine consensus/engine human_review dynami
 | `python/helpers/medical_contract.py` | Non | OK proprietaire |
 | `python/helpers/integrity_block.py` | Non | OK proprietaire |
 
-**8/8 modules de valeur sont confirmes 100% proprietaires.**
+**8 modules de valeur echantillonnes parmi les 17 modules proprietaires KOREV : 8/8 confirmes absents de l'upstream Agent Zero `9a3a92b6`.** L'echantillonnage couvre les modules safety-critical (consensus, adversarial, criticality router, integrity block) et les modules audit-proof (replay, human review, risk register), qui constituent l'essentiel du delta valorisable. Les 9 autres modules proprietaires (Legal-Safe pipeline, evidence document templates, PDF/OCR engine, reasoning engine, metacognition, strategic orchestrator, multi-tenant security, Docker production, tests TDD) n'ont pas tous ete testes individuellement par `git show 9a3a92b6:...` mais sont par construction post-fork (cf. `git log` pour chaque fichier).
 
 ### 2.4 Verification anti-secrets dans le depot
 
@@ -171,7 +171,7 @@ $ for f in legal_orchestrator replay_engine consensus/engine human_review dynami
 
 **OK.** `02_AGENT_ZERO_DELTA.md` documente le delta fichier par fichier (top 20 + tableau analytique par domaine). La phrase de cadrage "Agent Zero est exclu de la valorisation comme actif proprietaire" est presente. Les commandes de verification automatique (`git diff 9a3a92b6..HEAD --shortstat`, `git show 9a3a92b6:python/helpers/legal_orchestrator.py 2>&1`) sont fournies. La reponse a l'objection "ce n'est qu'un fork" est defendable (multiplicateur 6.7x, modules de valeur 100% KOREV, analogie Red Hat / Linux).
 
-Verification automatique : 8/8 modules proprietaires testes sont absents de l'upstream `9a3a92b6`.
+Verification automatique : **8 modules echantillonnes parmi 17 sont confirmes absents de l'upstream `9a3a92b6`** (echantillon couvrant les modules safety-critical et audit-proof). Les 9 autres modules proprietaires sont par construction post-fork (verifiables individuellement par `git log -- <chemin>` qui retourne uniquement des commits posterieurs au fork).
 
 ### 4.4 Coherence des heures
 

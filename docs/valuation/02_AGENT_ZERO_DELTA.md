@@ -114,7 +114,7 @@ Les fichiers `.md` proprietaires representent +26 672 lignes nettes — coherent
 | **Risk register** | Aucun | Registre de risques dynamique, scoring temps reel | `python/helpers/dynamic_risk_register.py` (403 LOC), `python/api/risk_dashboard.py` (98 LOC), extension `_36_risk_assessment.py` (137 LOC) | **100% INCLUS** — apport P |
 | **Security** | Auth simple basique | Argon2id, rate limiting Redis+memoire, RBAC multi-tenant, path safety, upload validation, shell safety, IP filtering, audit logging | `python/security/` (14 fichiers, ~2 553 LOC), `python/helpers/user_manager.py`, `deploy_config.py`, `health_endpoints.py` | **100% INCLUS** — apport H. SECURITY.md documente les pratiques |
 | **Multi-tenant** | Aucun | Isolation par principal/organisation, autorisation par ressource, workspace par tenant | `python/security/authorization.py`, `python/helpers/user_manager.py`, `scripts/provision_*` | **100% INCLUS** — apport H |
-| **Legal / compliance** | Aucun | Pipeline Legal-Safe complet : ingestion Legifrance/Judilibre/CNIL, FTS5, citations, contract drafting, Act Leak Guard, conformite AI Act / RGPD | `python/helpers/legal_*.py` (~12 000 LOC), `contract_drafting/` (~2 540 LOC), `python/extensions/legal_safe_mode/` (~1 030 LOC), `python/legal_sources/` | **100% INCLUS** — apport D |
+| **Legal / compliance** | Aucun | Pipeline Legal-Safe complet : ingestion Legifrance/Judilibre/CNIL, FTS5, citations, contract drafting, Act Leak Guard, alignement architectural avec exigences AI Act et RGPD (auto-evalue, sans certification externe) | `python/helpers/legal_*.py` (~12 000 LOC), `contract_drafting/` (~2 540 LOC), `python/extensions/legal_safe_mode/` (~1 030 LOC), `python/legal_sources/` | **100% INCLUS** — apport D |
 | **Reasoning / metacognition** | Aucun | Reasoning engine baseline tracking, metacognition auto-evaluation, escalade non-diluable | `python/helpers/reasoning_engine.py` (1 190 LOC), `metacognition.py` (1 046 LOC) | **100% INCLUS** — apport F |
 | **Reporting** | Aucun | Rapports stratégiques Evidence-grade, generation auto graphiques PRISM, export PDF | `python/helpers/strategic_orchestrator.py`, `strategic_pipeline.py`, `strategic_charts.py` (664 LOC), `reporting/evidence_native.py`, `reporting/report_*.py` | **100% INCLUS** — apport G |
 | **Observability** | Logs basiques | Structured logs, security audit log, metriques de routage (divergence_rate, would_block, latency) | `python/observability/`, `python/helpers/router/metrics.py` (316 LOC), `python/security/audit.py` | **100% INCLUS** — apport H et C |
@@ -220,7 +220,7 @@ Ces argumentations sont rejetees par tous les comites d'evaluation serieux : la 
 | Profils metiers | 1 (default) | 12 specialises | **12x** |
 | Documentation `.md` | 130 fichiers / 9 426 lignes | 246+ / ~38 100 lignes | **4x** |
 | Pipeline production | DockerfileLocal dev | Docker production multi-stage + Caddy + healthchecks + scripts | — |
-| Conformite | Aucune | AI Act + RGPD framework + audit-proof | — |
+| Alignement reglementaire | Aucun | Framework d'alignement architectural AI Act + RGPD + pipeline audit-proof (auto-evalue, sans certification externe) | — |
 
 ---
 

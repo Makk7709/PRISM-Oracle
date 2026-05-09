@@ -91,7 +91,7 @@
 
 | Critere | Detail |
 |---|---|
-| **Role** | Couche de raisonnement au-dessus du LLM : auto-evaluation, planification de taches, suivi des decisions, baseline tracking, escalade non-diluable (SAFE_REFUSE / HUMAN_REVIEW / ASK_CLARIFY / NONE), no-PII garanti |
+| **Role** | Couche de raisonnement au-dessus du LLM : auto-evaluation, planification de taches, suivi des decisions, baseline tracking, escalade non-diluable (SAFE_REFUSE / HUMAN_REVIEW / ASK_CLARIFY / NONE), no-PII par design (escalade non-diluable et tests adversariaux dedies dans la suite TDD) |
 | **Fichiers** | `reasoning_engine.py` (1 190), `metacognition.py` (1 046). **Total ~2 236 LOC.** |
 | **Complexite** | **Elevee** : invariants critiques (monotonie, non-dilution, no-PII), seuils calibres |
 | **Preuves** | Top 20 : #15 (`reasoning_engine.py` 1 190), #20 (`test_metacognition.py` 1 077) ; 42 tests metacognition policy ; ADR sur l'escalade non-diluable ; documentation README sur les niveaux |

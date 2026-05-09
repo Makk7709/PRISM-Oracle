@@ -50,12 +50,23 @@ found in their respective repositories and distributions:
 - browser-use (MIT License)
 - And other dependencies listed in requirements.txt
 
-NOTE: This project contains NO GPL, AGPL, or SSPL licensed dependencies.
-All 372 packages have been audited (2025-02-08). The original markdown-pdf
-dependency (which pulled PyMuPDF/AGPL) has been replaced by a local MIT-licensed
-shim using reportlab (BSD).
+NOTE: Internal license audit performed on 2025-02-08 covering 372 packages.
+At that date, no GPL, AGPL, or SSPL licensed dependencies were identified.
+The original markdown-pdf dependency (which pulled PyMuPDF/AGPL) was replaced
+by a local MIT-licensed shim using reportlab (BSD).
 
-For a complete list of dependencies and their licenses, run:
+This audit is an internal self-declaration and is NOT a third-party legal
+opinion or certified license scan. Given the time elapsed since the audit
+date and possible dependency updates, an updated license scan is RECOMMENDED
+before any external transmission of this software for valuation, due diligence,
+or commercial transfer purposes.
+
+For a complete list of dependencies and their licenses on the current
+requirements.txt, run:
   pip-licenses --format=markdown
+  pip-licenses --format=json --output-file=licenses_$(date +%Y-%m-%d).json
+
+Recommended annex AE-11 before external transmission: a fresh pip-licenses
+report on the current requirements.txt, dated within 30 days of transmission.
 
 ================================================================================

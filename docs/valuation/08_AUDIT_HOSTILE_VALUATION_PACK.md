@@ -97,7 +97,7 @@ La fourchette finale du pack (**958-1 054 KEUR equilibre**, alignee sur le rappo
 
 | Claim | Statut |
 |---|---|
-| 271 commits Amine | Verifiable par `git log --all --author='Amine' --oneline \| wc -l` |
+| ~271 commits Amine (HEAD `fab5689a`, snapshot d'analyse 5 mai 2026) | Verifiable par `git log --all --author='Amine' --oneline \| wc -l`. Le chiffre exact varie de +/- 1 a 4 commits selon la date de coupe et l'inclusion ou non de branches non-mergees (270 sur HEAD `fab5689a`, 273 sur HEAD `1d05531a`, 274 avec `--all`). Le pack utilise systematiquement le chiffre **271** comme reference snapshot 9 mai 2026. |
 | +225 477 / -18 030 lignes Amine | Verifiable par `git log --all --author='Amine' --shortstat` |
 | 920 fichiers diff upstream -> HEAD | Verifiable par `git diff 9a3a92b6..HEAD --shortstat` |
 | 3 956 tests collectes | Verifiable par `pytest --collect-only -q tests/` ; preuve `A11_pytest_collect_only.txt` |
