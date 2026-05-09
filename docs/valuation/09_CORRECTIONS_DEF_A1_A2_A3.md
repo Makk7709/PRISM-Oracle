@@ -312,4 +312,57 @@ La position de valorisation est **renforcee dans la defense** sans modification 
 
 ---
 
+## 10. Addendum verrouillage final pre-push (10 mai 2026)
+
+Une mission complementaire de verrouillage final a ete executee le 10 mai 2026 sur la branche `diag-grow/transmission-evidence` (HEAD parent `aad0c102`). Elle adresse les recommandations restantes de la section 6 (DEF-A7 option C) et du checklist `10_*.md` §7.4 / §3.5 (hashes Argon2id complets sur fichiers heritages, fichiers untracked sensibles).
+
+### 10.1 Fichiers untracked sensibles deplaces hors Git (DEF-CRITIQUE-1 verrouille)
+
+Les 3 fichiers untracked detectes en Phase 1 d'audit hostile pre-commit (cf. `10_*.md` §3.5) ont ete physiquement deplaces hors du working tree git :
+
+| Fichier source | Destination (hors Git) |
+|---|---|
+| `scripts/add_beatrice_user.py` | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/scripts/` |
+| `scripts/add_epoque_user.py` | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/scripts/` |
+| `docs/preuves-execution/check_server_activity.sh` | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/docs/preuves-execution/` |
+
+Un `README.md` de provenance traceable est cree dans le coffre. La verification `git status --short` ne mentionne plus aucun de ces fichiers en untracked. Tout risque de fuite par `git add .` ulterieur est elimine.
+
+### 10.2 Fichiers trackes herites de main : sanitization complete (artefacts auth)
+
+Le checklist `10_*.md` §7.4 signalait deux fichiers herites de `main` contenant des hashes Argon2id complets reels (hors perimetre transmission DEF-A7 a la date du 9 mai). Pour le verrouillage avant push externe, **ces deux fichiers sont desormais sanitises sur la branche `diag-grow/transmission-evidence`** :
+
+| Fichier | Avant sanitization | Apres sanitization |
+|---|---|---|
+| `deploy/users.demo.json` | 2 hashes Argon2id complets reels (`$argon2id$v=19$m=65536,...$<salt>$<hash>`) | 2 hashes places `$argon2id$PLACEHOLDER_NOT_A_VALID_HASH` + champ top-level `_warning` (ignore par le loader `user_manager.py` qui ne lit que `data.get("users")`) |
+| `scripts/add_tarmac_user.py` | Hash Argon2id complet reel + organisation `TARMAC` + username `tarmac` + profile `TARMAC — Utilisateur` + constante `TARMAC_USER` | Hash placeholder + organisation `ExampleOrg` + username `demo_user` + profile `Demo User — Example` + constante `DEMO_USER` + docstring explicit avec note historique |
+
+JSON valide pour `users.demo.json` (verifie `python3 -m json.tool`). Syntaxe Python valide pour `add_tarmac_user.py` (verifie `ast.parse`). Le nom du fichier `add_tarmac_user.py` est preserve (le contenu sanitise est explicite quant au caractere historique du nom ; aucun rename pour rester aligne avec la contrainte "ne pas supprimer de fichiers legacy trackes sans justification explicite").
+
+**Impact operationnel** : si quelqu'un tente d'utiliser `users.demo.json` ou `add_tarmac_user.py` post-push pour deployer un service de demo reel, l'authentification echouera (hash invalide). C'est **le comportement attendu** : ces fichiers sont desormais transparents quant a leur statut "demo non-fonctionnel par defaut, regenerer avec `scripts/hash_password.py` avant tout deploiement".
+
+### 10.3 Fichier `deploy/users.json.example` (DEF-A7 option C)
+
+Re-verifie en Phase 4 : conforme. Aucune correction requise. JSON valide, 0 PII, 0 organisation reelle, hashes placeholders explicites, emails `@example.com`, 3 meta-fields d'avertissement.
+
+### 10.4 Effet sur la valorisation
+
+**INCHANGE.** Aucune fourchette n'est modifiee. La sanitization des artefacts d'authentification est une mesure de securite avant transmission externe, sans impact sur les heures de reconstruction, les TJM, les coefficients qualite ou les decotes. Le pack defend la meme valeur ; il elimine simplement un risque residuel signale dans `10_*.md` §7.4.
+
+### 10.5 Statut consolide post-verrouillage
+
+| Item | Statut |
+|---|---|
+| DEF-A1 / DEF-A2 / DEF-A3 | CORRIGES (cf. section 3) |
+| DEF-A4 / DEF-A5 / DEF-A6 | DOCUMENTES (cf. section 4) |
+| DEF-A7 option C | EXECUTEE le 9 mai 2026 (sanitization `deploy/users.json.example`) |
+| DEF-CRITIQUE-1 (3 fichiers untracked sensibles) | DEPLACES hors Git le 10 mai 2026 |
+| Hashes Argon2id reels herites (`users.demo.json`, `add_tarmac_user.py`) | SANITISES le 10 mai 2026 |
+| Anti-secrets J-0 final | RELANCE en Phase 6 (cf. `10_*.md`) |
+| Fourchettes valorisation | INCHANGEES |
+| Code applicatif | INCHANGE |
+| Licences | INCHANGEES |
+
+---
+
 *Note de correction etablie le 9 mai 2026 sur la branche `valuation/diag-grow-evidence-pack`, HEAD `fab5689a`. Conforme au protocole `pre-commit-audit.mdc` (phases 1-4). Les decisions de transmission externe (commit, push, envoi a Diag & Grow) restent a la main exclusive de l'apporteur Amine Mohamed.*

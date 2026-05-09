@@ -3,9 +3,8 @@
 # 10 — Checklist finale de transmission Diag & Grow / commissaire aux apports
 
 **Branche de transmission** : `diag-grow/transmission-evidence`
-**HEAD local** : `fab5689a` (5 mai 2026 17:37 +0200)
-**Commit de pack** : a creer en local — non pousse — message `docs(valuation): finalize Evidence valuation pack for Diag & Grow`
-**Date de cette checklist** : 9 mai 2026
+**HEAD local** : `aad0c102` (9 mai 2026, commit pack initial) — voir Annexe verrouillage final pour le HEAD post-sanitization
+**Date de cette checklist** : 9 mai 2026, mise a jour le 10 mai 2026 (Annexe Phase 7 verrouillage)
 **Auditeur** : agent Cursor en posture CTO + securite + auditeur hostile (lecture & ecriture limitee a `docs/valuation/` et `deploy/users.json.example` sanitize)
 **Conformite** : protocole interne `pre-commit-audit.mdc` (Phase 1 relecture contradictoire, Phase 2 checklist, Phase 3 boucle si critique, Phase 4 commit avec trace)
 
@@ -41,7 +40,8 @@ Le pack de valorisation est complet, coherent, et anti-secrets J-0 est positif. 
 | Branche source (analyse) | `valuation/diag-grow-evidence-pack` |
 | Branche `main` | Inchangee — n'a recu aucune des modifications de cette mission |
 | HEAD au depart de la branche | `fab5689a6fc482fc7caa141bfbbe710c6086a182` (5 mai 2026) |
-| HEAD apres commit local (a faire) | A determiner apres `git add` + `git commit` |
+| HEAD apres commit pack initial (9 mai 2026) | `aad0c1025f2a688a94467228aa6ec4196362c1e7` |
+| HEAD apres commit verrouillage (10 mai 2026) | A determiner apres Phase 8 (cf. Annexe verrouillage final) |
 | Working tree au depart | Modifications non commitees heritees de `valuation/diag-grow-evidence-pack` (pack docs/valuation, audit hostile, ADR, preuves d'execution, scripts, tests, SECURITY.md) |
 
 ---
@@ -87,9 +87,9 @@ Lors de la phase 1 d'audit hostile pre-commit (cf. `pre-commit-audit.mdc`), la r
 
 | Fichier | Donnees sensibles detectees | Severite | Decision |
 |---|---|---|---|
-| `scripts/add_beatrice_user.py` | Hash Argon2id complet reel (`$argon2id$v=19$m=65536,t=3,p=4$Shx36b/AfqXIUicYEANgwQ$IiZJDffHFA+o1hQOZx+/vISkGbcVVlfSY470Ei3PuWo`) + prenom reel `Béatrice` + organisation client `Centrale Lille` | **CRITIQUE** | **EXCLU du commit** |
-| `scripts/add_epoque_user.py` | Hash Argon2id complet reel (`$argon2id$v=19$m=65536,t=3,p=4$lNRSLeJTWqgZJ4W2FP6owQ$uyfcVBEayTvnMF8BHvKeXjQsnZA6XKGSLx1C/H9p6FA`) + prenom reel `Benjamin` + organisation client `Epoque` + role `OWNER` | **CRITIQUE** | **EXCLU du commit** |
-| `docs/preuves-execution/check_server_activity.sh` | Script operationnel interne mentionnant explicitement les usernames `tarmac`, `beatrice`, `benj` et les organisations `TARMAC`, `Centrale Lille`, `Epoque` en boucle de log scraping | **IMPORTANT** | **EXCLU du commit** |
+| `scripts/add_beatrice_user.py` | Hash Argon2id complet reel (format `$argon2id$v=19$m=65536,t=3,p=4$<salt-redacted>$<hash-redacted>`) + prenom reel + organisation client academique | **CRITIQUE** | **EXCLU du commit (Phase 9 mai), DEPLACE hors Git (Phase 10 mai)** |
+| `scripts/add_epoque_user.py` | Hash Argon2id complet reel (format `$argon2id$v=19$m=65536,t=3,p=4$<salt-redacted>$<hash-redacted>`) + prenom reel + organisation client + role `OWNER` | **CRITIQUE** | **EXCLU du commit (Phase 9 mai), DEPLACE hors Git (Phase 10 mai)** |
+| `docs/preuves-execution/check_server_activity.sh` | Script operationnel interne mentionnant explicitement plusieurs usernames et organisations clientes en boucle de log scraping | **IMPORTANT** | **EXCLU du commit (Phase 9 mai), DEPLACE hors Git (Phase 10 mai)** |
 
 **Justification de l'exclusion** :
 
@@ -347,7 +347,7 @@ Les commits post-25 avril (`de8b9c7e`, `b11b4d99`, `0d0a35da`) **renforcent la d
 | Dependances locales (`venv/`, `.venv/`, `node_modules/` si present) | Gitignored ; non valorisables |
 | Branche `valuation/diag-grow-evidence-pack` (analyse interne) | Contient encore les 12 prenoms internes + `Epoque` dans `deploy/users.json.example`. **Ne PAS partager cette branche a Diag & Grow.** Partager uniquement `diag-grow/transmission-evidence`. |
 | Branche `main` (si elle contient encore la version non-sanitizee de `deploy/users.json.example`) | Verifier avant tout partage. La sanitization n'est appliquee que sur `diag-grow/transmission-evidence` au 9 mai 2026. |
-| `users.demo.json` et `add_tarmac_user.py` si l'apporteur souhaite eviter tout doute | Decision a la discretion de l'apporteur (cf. §7.4). Par defaut, transmis avec le repo. |
+| `users.demo.json` et `add_tarmac_user.py` | **Sanitises le 10 mai 2026** sur cette branche (cf. Annexe Phase 7 verrouillage). Hashes Argon2id complets remplaces par `$argon2id$PLACEHOLDER_NOT_A_VALID_HASH` ; organisation `TARMAC` remplacee par `ExampleOrg` ; username `tarmac` remplace par `demo_user`. Transmis avec le repo. |
 
 ---
 
@@ -358,7 +358,7 @@ L'apporteur Amine Mohamed doit confirmer **explicitement** chaque ligne avant to
 - [ ] J'ai relu `docs/valuation/07_DIAG_GROW_TRANSMISSION_NOTE.md` et il reflete fidelement ma position.
 - [ ] J'ai relu `docs/valuation/10_FINAL_TRANSMISSION_CHECKLIST.md` (le present document) et je valide chaque section.
 - [ ] J'ai verifie que la branche partagee a Diag & Grow est **bien `diag-grow/transmission-evidence`** et non `valuation/diag-grow-evidence-pack` ni `main`.
-- [ ] J'ai pris une decision documentee sur les hashes Argon2id complets de `users.demo.json` et `add_tarmac_user.py` (§7.4) : OK / a revoir / a clarifier.
+- [ ] J'ai pris connaissance de la sanitization realisee le 10 mai 2026 sur `users.demo.json` et `add_tarmac_user.py` (cf. Annexe Phase 7 verrouillage) et je la valide : OK / a revoir / a clarifier.
 - [ ] J'ai pris une decision documentee sur l'amelioration de `.gitignore` (§7.5) : OK / a revoir / non urgent.
 - [ ] J'ai verifie qu'aucun `deploy/users.json` reel ni `.env` reel ne traine localement et ne risque d'etre push par accident.
 - [ ] J'ai prepare les annexes externes (factures DICA, brevets PRISM, preuves Tarmac, Centrale Lille, echanges clients) si applicables.
@@ -400,6 +400,87 @@ git push origin transmission-diag-grow-2026-05-09
 | Phase 2 — Checklist de defauts | Effectuee : **1 CRITIQUE corrige par exclusion explicite du commit (cf. §3.5)**, 0 Important post-exclusion, 3 Moderes corriges (DEF-A1/A2/A3), 4 Mineurs documentes (DEF-A4/A5/A6 + DEF-A7) |
 | Phase 3 — Re-audit total si critique | **DECLENCHE** (DEF-CRITIQUE-1 sur fichiers untracked) — Boucle complete : audit grep PII / hashes / organisations sur tous les fichiers a commit. Resultat : 0 nouveau Critique residuel apres exclusion des 3 fichiers (cf. §3.5). |
 | Phase 4 — Commit avec trace d'audit | Message inclut mention "audit hostile pre-commit : 1 DEF-CRITIQUE corrige par exclusion ; 0 Critique residuel" + "anti-secrets J-0 documented" + "DEF-A1/A2/A3 corrected" + "DEF-A7 transmission decision documented" |
+
+---
+
+## 18. Annexe — Verrouillage final pre-push (10 mai 2026)
+
+### 18.1 Contexte
+
+Mission complementaire `Verrouillage final Evidence avant push Diag & Grow` executee le 10 mai 2026 sur la branche `diag-grow/transmission-evidence` (HEAD parent au demarrage : `aad0c102`). Objectif : eliminer les risques residuels signales en §7.4 et §3.5 avant tout push externe.
+
+### 18.2 Phase 1 — Verifications Git initiales
+
+- Branche actuelle : `diag-grow/transmission-evidence` (confirmee).
+- HEAD au demarrage du verrouillage : `aad0c102`.
+- 5 derniers commits : `aad0c102` (pack initial), `fab5689a`, `0d0a35da`, `b11b4d99`, `de8b9c7e`.
+- `git diff --name-only origin/main...HEAD` : 45 fichiers (identique a `valuation/diag-grow-evidence-pack...HEAD`). Aucun fichier hors perimetre.
+
+### 18.3 Phase 2 — Mise a l'ecart hors Git des 3 fichiers untracked sensibles
+
+Coffre cree : `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/` avec un `README.md` de provenance traceable.
+
+| Fichier deplace | Destination |
+|---|---|
+| `scripts/add_beatrice_user.py` (57 lignes) | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/scripts/` |
+| `scripts/add_epoque_user.py` (53 lignes) | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/scripts/` |
+| `docs/preuves-execution/check_server_activity.sh` (156 lignes) | `~/KOREV_PRIVATE_NON_GIT/evidence-sensitive-excluded-2026-05-09/docs/preuves-execution/` |
+
+Verification post-deplacement : `git status --short` ne mentionne plus aucun de ces fichiers en untracked.
+
+### 18.4 Phase 3 — Sanitization des artefacts d'authentification heritages
+
+Deux fichiers trackes herites de `main` contenaient des hashes Argon2id complets reels (signales en §7.4). Sanitization complete sur cette branche :
+
+#### 18.4.1 `deploy/users.demo.json`
+
+- 2 hashes Argon2id complets remplaces par `$argon2id$PLACEHOLDER_NOT_A_VALID_HASH`.
+- Champ top-level `_warning` ajoute : *Demo/example only. No real user, no real hash, no production data. Not intended for deployment.*
+- Champ top-level `_format_version` ajoute (alignement avec `deploy/users.json.example`).
+- JSON valide (`python3 -m json.tool` OK).
+- Compatibilite loader : le `user_manager.py` (`python/helpers/user_manager.py` ligne 70) lit uniquement `data.get("users", {})` ; les meta-fields top-level sont ignores. Aucune regression.
+
+#### 18.4.2 `scripts/add_tarmac_user.py`
+
+| Element | Avant | Apres |
+|---|---|---|
+| Hash Argon2id | Format `$argon2id$v=19$m=65536,t=3,p=4$<salt-redacted>$<hash-redacted>` (hash complet reel, redige pour transmission) | `$argon2id$PLACEHOLDER_NOT_A_VALID_HASH` |
+| Organization | `TARMAC` | `ExampleOrg` |
+| Username | `tarmac` | `demo_user` |
+| Profile | `TARMAC — Utilisateur` | `Demo User — Example` |
+| Constante | `TARMAC_USER` | `DEMO_USER` |
+| Docstring | `add TARMAC company + user` | `Demo/example script: add a sanitized example user … No real user, no real hash, no production data. Not intended for deployment.` + note historique sur le nom du fichier |
+
+Syntaxe Python valide (`ast.parse` OK). Le nom du fichier `add_tarmac_user.py` est preserve (pas de rename, alignement avec la contrainte "ne pas supprimer de fichiers legacy trackes sans justification explicite") ; la docstring explicite explicitement le caractere historique du nom.
+
+### 18.5 Phase 4 — Re-verification de `deploy/users.json.example`
+
+Conforme. Aucune correction requise. JSON valide, 0 PII, 0 organisation reelle, hashes placeholders explicites, emails `@example.com`, 3 meta-fields d'avertissement.
+
+### 18.6 Phase 5 — Documentation finale
+
+- `docs/valuation/09_CORRECTIONS_DEF_A1_A2_A3.md` : section 10 ajoutee (addendum verrouillage final).
+- `docs/valuation/10_FINAL_TRANSMISSION_CHECKLIST.md` (le present document) : section 18 (annexe verrouillage final), §13 mise a jour (sanitization), §14 mise a jour (checklist humaine).
+
+### 18.7 Phase 6 — Anti-secrets J-0 final (apres sanitization)
+
+Voir tableau §7.2 et synthese §7.6 du present document. Resultat post-verrouillage : **0 hash Argon2id complet residuel sur les fichiers trackes**. Cf. Phase 6 du commit message pour le detail des grep executes apres sanitization.
+
+### 18.8 Phase 7 — Audit hostile final
+
+- Aucune donnee reelle introduite.
+- Aucun secret introduit.
+- Aucun fichier sensible untracked restant en working tree.
+- Aucun changement applicatif (les modifications portent uniquement sur des artefacts auth de demo et de la documentation).
+- Aucune modification de licence.
+- Fourchettes valorisation INCHANGEES.
+- Agent Zero toujours explicitement exclu de la valorisation proprietaire (cf. `01_VALUATION_SCOPE.md` §D, `02_AGENT_ZERO_DELTA.md`).
+
+### 18.9 Verdict de verrouillage final
+
+**PRET POUR PUSH** — sous reserve de validation humaine finale §14 du present checklist.
+
+Le HEAD de transmission post-verrouillage est documente dans le rapport terminal de la mission de verrouillage (cf. log shell de la mission `Verrouillage final Evidence avant push Diag & Grow`).
 
 ---
 

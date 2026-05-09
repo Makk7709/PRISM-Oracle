@@ -1,14 +1,16 @@
 {
+  "_warning": "Demo/example only. No real user, no real hash, no production data. Not intended for deployment. The password_hash values below are placeholders and will fail authentication. Regenerate real hashes with scripts/hash_password.py before any actual demo run.",
+  "_format_version": "1.0",
   "users": {
     "demo-admin": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$r6N+/PnDfyjOY7rIRIT0CA$BDHYhZHThM7S3eOWcMtcz1GoDk0YO8owuGXIlGYNKXQ",
+      "password_hash": "$argon2id$PLACEHOLDER_NOT_A_VALID_HASH",
       "role": "admin",
       "organization": "demo-org",
       "org_role": "OWNER",
       "profile": "Demo Admin — Evaluation"
     },
     "demo-user": {
-      "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$RL8UJ92UEJ11KT9smxMfnA$6fol0lSDaq/DMAyDIPb0HNpmMOE9VjlARdJCxzkNSt8",
+      "password_hash": "$argon2id$PLACEHOLDER_NOT_A_VALID_HASH",
       "role": "user",
       "organization": "demo-org",
       "org_role": "MEMBER",
