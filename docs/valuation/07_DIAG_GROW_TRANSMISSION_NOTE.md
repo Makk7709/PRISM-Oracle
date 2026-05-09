@@ -3,9 +3,10 @@
 **Apporteur / inventeur** : Amine Mohamed
 **Destinataire** : cabinet Diag & Grow (et / ou commissaire aux apports)
 **Objet** : evaluation de l'actif logiciel KOREV Evidence dans le cadre d'un apport en nature
-**Branche d'analyse** : `valuation/diag-grow-evidence-pack` (analyse interne)
-**Branche de transmission** : `diag-grow/transmission-evidence` (transmission externe Diag & Grow / commissaire — sanitization PII appliquee)
-**HEAD analyse** : `fab5689a` (5 mai 2026)
+**Branche de transmission externe** : `diag-grow/transmission-evidence` (sanitization PII + verrouillage securite appliques) — **branche a transmettre**
+**Branche d'analyse interne** : `valuation/diag-grow-evidence-pack` (analyse) — **a ne pas transmettre**
+**HEAD analyse initial** : `fab5689a` (5 mai 2026)
+**HEAD de transmission post-verrouillage** : `c990cc55` (10 mai 2026)
 **Date de transmission** : a completer par l'apporteur
 **Methode de valorisation principale recommandee** : cout de reproduction (norme IVS 210 — Actifs incorporels)
 
@@ -126,11 +127,11 @@ git log --all --author='Amine' --shortstat
 ### 4.4 Verifications executables (commandes pour Diag & Grow)
 
 ```bash
-# 1. Cloner et se positionner sur le HEAD analyse
+# 1. Cloner et se positionner sur la branche de transmission
 git clone <url-depot> KOREV_Evidence
 cd KOREV_Evidence
-git checkout valuation/diag-grow-evidence-pack
-git rev-parse HEAD     # Doit retourner fab5689a (ou plus recent)
+git checkout diag-grow/transmission-evidence
+git rev-parse HEAD     # Doit retourner c990cc55 (ou plus recent)
 
 # 2. Verifier les metriques Git du pack
 git diff 9a3a92b6..HEAD --shortstat
@@ -300,9 +301,10 @@ Les 4 brevets PRISM en cours sont presentes en annexe au commissaire. Leur valeu
 | Apporteur / inventeur | Amine Mohamed |
 | Entite juridique | KOREV AI |
 | Depot | a transmettre par voie privee (acces GitHub avec token de lecture seule) |
-| Branche d'analyse interne | `valuation/diag-grow-evidence-pack` |
-| Branche de transmission externe | `diag-grow/transmission-evidence` (sanitization `deploy/users.json.example` selon option C de DEF-A7) |
-| HEAD analyse | `fab5689a` (5 mai 2026) |
+| Branche de transmission externe | `diag-grow/transmission-evidence` (sanitization `deploy/users.json.example` selon option C de DEF-A7 + verrouillage securite 10 mai 2026) — **branche a transmettre** |
+| Branche d'analyse interne | `valuation/diag-grow-evidence-pack` — **a ne pas transmettre** (contient les references analyse, version pre-sanitization) |
+| HEAD analyse initial | `fab5689a` (5 mai 2026) |
+| HEAD de transmission post-verrouillage | `c990cc55` (10 mai 2026) |
 | Email de contact | a renseigner par l'apporteur |
 
 ---

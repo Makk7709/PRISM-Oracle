@@ -3,7 +3,8 @@
 # 10 — Checklist finale de transmission Diag & Grow / commissaire aux apports
 
 **Branche de transmission** : `diag-grow/transmission-evidence`
-**HEAD local** : `aad0c102` (9 mai 2026, commit pack initial) — voir Annexe verrouillage final pour le HEAD post-sanitization
+**HEAD post-verrouillage securite** : `c990cc55` (10 mai 2026, commit verrouillage final) — pousse sur `origin/diag-grow/transmission-evidence`
+**HEAD intermediaire (pack initial)** : `aad0c102` (9 mai 2026)
 **Date de cette checklist** : 9 mai 2026, mise a jour le 10 mai 2026 (Annexe Phase 7 verrouillage)
 **Auditeur** : agent Cursor en posture CTO + securite + auditeur hostile (lecture & ecriture limitee a `docs/valuation/` et `deploy/users.json.example` sanitize)
 **Conformite** : protocole interne `pre-commit-audit.mdc` (Phase 1 relecture contradictoire, Phase 2 checklist, Phase 3 boucle si critique, Phase 4 commit avec trace)
@@ -41,7 +42,8 @@ Le pack de valorisation est complet, coherent, et anti-secrets J-0 est positif. 
 | Branche `main` | Inchangee — n'a recu aucune des modifications de cette mission |
 | HEAD au depart de la branche | `fab5689a6fc482fc7caa141bfbbe710c6086a182` (5 mai 2026) |
 | HEAD apres commit pack initial (9 mai 2026) | `aad0c1025f2a688a94467228aa6ec4196362c1e7` |
-| HEAD apres commit verrouillage (10 mai 2026) | A determiner apres Phase 8 (cf. Annexe verrouillage final) |
+| HEAD post-verrouillage securite (10 mai 2026) | `c990cc552fb4cee77f64b2693d362d26f40c406d` — **HEAD final transmis** |
+| Etat distant `origin/diag-grow/transmission-evidence` | `c990cc55` (synchronise avec local) |
 | Working tree au depart | Modifications non commitees heritees de `valuation/diag-grow-evidence-pack` (pack docs/valuation, audit hostile, ADR, preuves d'execution, scripts, tests, SECURITY.md) |
 
 ---
@@ -232,7 +234,7 @@ Verifie : aucun `deploy/users.json` reel n'est tracke a date (`git ls-files | gr
 
 ### 7.6 Verdict anti-secrets J-0
 
-**POSITIF**. Aucun secret reel detecte sur la branche `diag-grow/transmission-evidence` au HEAD `fab5689a` apres sanitization de `deploy/users.json.example`. Les 2 points hors perimetre (§7.4) et les 2 lacunes de `.gitignore` (§7.5) sont documentes pour decision post-transmission.
+**POSITIF**. Aucun secret reel detecte sur la branche `diag-grow/transmission-evidence` au HEAD initial `fab5689a` apres sanitization de `deploy/users.json.example` (9 mai 2026), confirme au HEAD `aad0c102` (commit pack initial), puis au HEAD `c990cc55` post-verrouillage securite final (10 mai 2026, cf. Annexe §18.7). Les 2 lacunes de `.gitignore` (§7.5) sont documentees pour decision post-transmission.
 
 ---
 
@@ -388,7 +390,7 @@ git push origin transmission-diag-grow-2026-05-09
 
 > Bonjour,
 >
-> Vous trouverez ci-joint l'acces a la branche `diag-grow/transmission-evidence` du depot KOREV / Evidence (HEAD `fab5689a`, 5 mai 2026). Le pack de valorisation se trouve dans `docs/valuation/` (11 fichiers, dont `07_DIAG_GROW_TRANSMISSION_NOTE.md` qui est la note de couverture). La distinction Agent Zero (MIT) / Evidence (proprietaire KOREV) est explicitee dans `02_AGENT_ZERO_DELTA.md`. Les fourchettes de valorisation, les decotes et les heures de reconstruction sont documentees dans `04_HOURS_RECONSTRUCTION_REGISTER.md`. Les limites connues sont assumees dans `06_KNOWN_LIMITS_AND_REMEDIATION.md`. L'addendum post-25 avril est dans `audit-hostile-valorisation/09-mise-a-jour-post-p0-yenoyikz.md`. Nous privilegions une valorisation defendable plutot qu'une survalorisation artificielle.
+> Vous trouverez ci-joint l'acces a la branche `diag-grow/transmission-evidence` du depot KOREV / Evidence (HEAD post-verrouillage `c990cc55`, 10 mai 2026 ; ancetre snapshot d'analyse `fab5689a`, 5 mai 2026). Le pack de valorisation se trouve dans `docs/valuation/` (11 fichiers, dont `07_DIAG_GROW_TRANSMISSION_NOTE.md` qui est la note de couverture). La distinction Agent Zero (MIT) / Evidence (proprietaire KOREV) est explicitee dans `02_AGENT_ZERO_DELTA.md`. Les fourchettes de valorisation, les decotes et les heures de reconstruction sont documentees dans `04_HOURS_RECONSTRUCTION_REGISTER.md`. Les limites connues sont assumees dans `06_KNOWN_LIMITS_AND_REMEDIATION.md`. L'addendum post-25 avril est dans `audit-hostile-valorisation/09-mise-a-jour-post-p0-yenoyikz.md`. Nous privilegions une valorisation defendable plutot qu'une survalorisation artificielle.
 
 ---
 
@@ -480,7 +482,7 @@ Voir tableau §7.2 et synthese §7.6 du present document. Resultat post-verrouil
 
 **PRET POUR PUSH** — sous reserve de validation humaine finale §14 du present checklist.
 
-Le HEAD de transmission post-verrouillage est documente dans le rapport terminal de la mission de verrouillage (cf. log shell de la mission `Verrouillage final Evidence avant push Diag & Grow`).
+**HEAD de transmission post-verrouillage securite** : `c990cc552fb4cee77f64b2693d362d26f40c406d` (court : `c990cc55`), cree le 10 mai 2026. C'est le HEAD final pousse sur `origin/diag-grow/transmission-evidence` et a auditer par Diag & Grow / commissaire aux apports. Voir aussi §2 (Branche et HEAD) et le rapport terminal de la mission `Verrouillage final Evidence avant push Diag & Grow`.
 
 ---
 
