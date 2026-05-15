@@ -50,23 +50,59 @@ found in their respective repositories and distributions:
 - browser-use (MIT License)
 - And other dependencies listed in requirements.txt
 
-NOTE: Internal license audit performed on 2025-02-08 covering 372 packages.
-At that date, no GPL, AGPL, or SSPL licensed dependencies were identified.
-The original markdown-pdf dependency (which pulled PyMuPDF/AGPL) was replaced
-by a local MIT-licensed shim using reportlab (BSD).
+================================================================================
+LICENSE AUDIT NOTES (Internal self-declaration)
+================================================================================
+
+History of internal audits:
+
+(1) Initial audit dated 2025-02-08 (covering ~372 packages at that date):
+    At that date, no GPL, AGPL, or SSPL licensed dependencies were identified
+    as direct dependencies. The original markdown-pdf dependency (which pulled
+    PyMuPDF/AGPL) was replaced by a local MIT-licensed shim using reportlab
+    (BSD). Two further GPL-only direct dependencies have since been removed
+    as documented in requirements.txt:
+      - "ansio removed - GPL v3, not used anywhere in codebase"
+      - "html2text removed - GPL-3.0, replaced by markdownify (MIT)"
+
+(2) Updated audit via pip-licenses 5.5.1 dated 2026-05-15
+    (full report: docs/annexes-externes/AE-11_pip-licenses_2026-05-15.md
+     synthesis: docs/annexes-externes/AE-11_pip-licenses_README.md):
+
+    Confirmed:
+      - 0 GPL-only packages (direct or transitive)
+      - 0 AGPL packages
+      - 0 SSPL packages
+
+    Identified and disclosed (compatible with commercial proprietary use):
+      - 5 LGPL packages used by dynamic Python import (LGPL-compatible):
+          chardet (LGPLv2+), crontab (LGPLv2/v3), num2words (LGPL),
+          paramiko (LGPL), pi_heif (LGPLv3)
+      - 5 MPL 2.0 packages (file-level copyleft, unmodified):
+          certifi, legacy-api-wrap, pathspec, pikepdf, tqdm (dual MIT/MPL)
+      - 1 triple-licensed package usable under MPL 1.1 (no GPL contamination):
+          pyphen (GPLv2+ OR LGPLv2+ OR MPL 1.1)
+      - 1 isolable risk: espeakng-loader 0.2.4 dynamically loads
+        eSpeak NG (GPL v3+). Used only for optional TTS (text-to-speech)
+        functionality, NOT part of the 17 proprietary KOREV Evidence modules
+        scoped for valuation. Can be removed without impacting valued scope.
 
 This audit is an internal self-declaration and is NOT a third-party legal
-opinion or certified license scan. Given the time elapsed since the audit
-date and possible dependency updates, an updated license scan is RECOMMENDED
-before any external transmission of this software for valuation, due diligence,
-or commercial transfer purposes.
+opinion or certified license scan. For external valuation, due diligence,
+or commercial transfer purposes, an independent third-party license scan
+may be requested by Diag & Grow / commissaire aux apports.
 
 For a complete list of dependencies and their licenses on the current
 requirements.txt, run:
   pip-licenses --format=markdown
   pip-licenses --format=json --output-file=licenses_$(date +%Y-%m-%d).json
 
-Recommended annex AE-11 before external transmission: a fresh pip-licenses
-report on the current requirements.txt, dated within 30 days of transmission.
+Reference annex AE-11 (delivered with this notice):
+  docs/annexes-externes/AE-11_pip-licenses_2026-05-15.md  (raw scan)
+  docs/annexes-externes/AE-11_pip-licenses_2026-05-15.json (raw scan)
+  docs/annexes-externes/AE-11_pip-licenses_README.md       (analysis)
+
+Validity of the 2026-05-15 scan: 30 days. A fresh scan is recommended
+before any external transmission beyond 2026-06-14.
 
 ================================================================================

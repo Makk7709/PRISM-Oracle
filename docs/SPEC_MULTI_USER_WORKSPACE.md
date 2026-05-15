@@ -12,13 +12,13 @@
 - Les utilisateurs sont définis dans `deploy/users.json` (pas dans .env)
 - Chaque mot de passe DOIT être un hash Argon2id ($argon2id$...)
 - Un plaintext password en production DOIT être REFUSÉ (erreur 500)
-- Format `users.json` :
+- Format `users.json` (exemple structurel, identifiants fictifs) :
   ```json
   {
     "users": {
-      "nicolas":  {"password_hash": "$argon2id$...", "role": "user"},
-      "luc":      {"password_hash": "$argon2id$...", "role": "user"},
-      "amine":    {"password_hash": "$argon2id$...", "role": "admin"}
+      "user1":  {"password_hash": "$argon2id$...", "role": "user"},
+      "user2":  {"password_hash": "$argon2id$...", "role": "user"},
+      "admin":  {"password_hash": "$argon2id$...", "role": "admin"}
     }
   }
   ```
