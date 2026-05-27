@@ -392,6 +392,42 @@ class Delegation(Tool):
                 correlation_id=correlation_id,
             )
 
+        # ═══════════════════════════════════════════════════════════════════════
+        # CONTRADICTOR AGENT (consume RouteDecision.requires_contradictor)
+        # ═══════════════════════════════════════════════════════════════════════
+        # The router DECIDES (requires_contradictor=True/False); we EXECUTE.
+        # See python/helpers/contradictor/orchestration.py.
+        if route_decision is not None:
+            try:
+                from python.helpers.contradictor.orchestration import (
+                    process_contradictor_for_response,
+                )
+
+                (
+                    contradictor_review,
+                    human_review_required,
+                    contradictor_audit,
+                ) = await process_contradictor_for_response(
+                    route_decision=route_decision,
+                    user_question=message,
+                    agent_response=result,
+                    correlation_id=correlation_id,
+                )
+
+                # Expose the structured review and human-review flag to the
+                # parent agent / envelope consumers.
+                self.agent.set_data("_contradictor_review", contradictor_review.to_dict())
+                self.agent.set_data("_contradictor_audit", contradictor_audit)
+                if human_review_required:
+                    self.agent.set_data("_human_review_required", True)
+            except Exception as _contradictor_exc:
+                # The contradictor pipeline is fail-safe: never break the
+                # main response, but always trace the error.
+                logger.error(
+                    f"[CONTRADICTOR] orchestration error [{correlation_id}]: "
+                    f"{_contradictor_exc}"
+                )
+
         # Hint pour longues réponses
         additional = None
         if len(result) >= save_tool_call_file.LEN_MIN:
@@ -662,7 +698,13 @@ Par précaution, la réponse de l'agent subordonné n'est pas transmise.
         if not llm_profile or not route_decision.intents:
             return
         
-        # Mapper les noms d'intent vers les profils d'agent
+        # Mapper les noms d'intent vers les profils d'agent.
+        # CRITIQUE: "contradictor" DOIT mapper sur "contradictor" et JAMAIS
+        # sur "default". Le mapping de divergence (router/metrics.py) mappe
+        # encore sur "default" mais uniquement pour le calcul de divergence
+        # d'audit, pas pour l'orchestration applicative.
+        # Source de verite canonique:
+        # python/helpers/contradictor/profile_mapping.py
         intent_to_profile = {
             "finance": "finance",
             "sales": "sales",
@@ -672,6 +714,7 @@ Par précaution, la réponse de l'agent subordonné n'est pas transmise.
             "researcher": "researcher",
             "marketing": "marketing",
             "multitask": "default",
+            "contradictor": "contradictor",
         }
         
         # Vérifier si le profil LLM est dans les intents détectés
