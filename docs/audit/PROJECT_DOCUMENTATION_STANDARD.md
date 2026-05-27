@@ -44,7 +44,7 @@ Le code observe est structure autour de trois axes techniques :
 2. **Une couche de validation par consensus** (debat collaboratif a trois LLMs, trois rounds, dans `python/helpers/collaborative_consensus.py`) avec une variante "pipeline adversarial" qui peut court-circuiter le debat legacy si elle a deja effectue sa propre validation.
 3. **Une couche operationnelle** comprenant un serveur Flask, ~72 endpoints REST, une persistance Postgres + pgvector annoncee (ADR-007), un proxy TLS Caddy, des partages Samba multi-utilisateurs, et trois serveurs MCP integres (OpenAlex, PubMed, SemanticScholar).
 
-Le projet est documente sur ~865 fichiers Markdown (incluant ADR, audits internes, rapports de valorisation, manuels d'installation, presentations). 170 fichiers de tests sont presents dans `tests/`, organises en sous-dossiers e2e / integration / property / golden / security / regression / harness. Un README revendique 3 846 cas de tests collectes par pytest ; ce chiffre n'a pas ete re-execute dans le present audit.
+Le projet est documente sur ~865 fichiers Markdown (incluant ADR, audits internes, rapports de valorisation, manuels d'installation, presentations). **~179 fichiers de tests** sont presents dans `tests/` au snapshot probatoire du 28 avril 2026, organises en sous-dossiers e2e / integration / property / golden / security / regression / harness ; le decompte courant doit etre regenere avant toute transmission finale si le depot a evolue (commande : `find tests -name "test_*.py" -type f | wc -l`). Le README revendique **3 956 cas de tests collectes** par pytest (snapshot probatoire 28 avril 2026, voir `docs/METRICS_CANONICAL_SOURCE.md`) ; ce chiffre n'a pas ete re-execute dans le present audit.
 
 **Points techniques saillants observes** :
 
@@ -408,7 +408,7 @@ Un fichier `SECURITY.md` est present a la racine. Son contenu n'a pas ete examin
 - 9 sous-dossiers structurels : `e2e/`, `integration/`, `golden/`, `security/`, `property/`, `regression/`, `harness/`, `chat_personalization/`, `infra/`, `fixtures/`.
 - Markers pytest declares dans `pytest.ini` : `fast`, `integration`, `e2e`, `property`, `security`, `slow`, `redis`.
 - Conftest dedies : `tests/conftest.py`, `tests/conftest_pdf.py`.
-- Le README annonce 3 846 cas collectes ; le present audit n'a pas re-execute `pytest --collect-only` (cf. section 12).
+- Le README annonce 3 956 cas collectes (snapshot probatoire 28 avril 2026, source canonique `docs/METRICS_CANONICAL_SOURCE.md`) ; le present audit n'a pas re-execute `pytest --collect-only` (cf. section 12).
 
 ### 9.2 Tests orphelins racine
 
@@ -549,7 +549,7 @@ Cette section liste les **elements observables dans le repo** pouvant soutenir u
 | Point | Pourquoi c'est a confirmer | Impact potentiel |
 |---|---|---|
 | Etat de production des feature flags (`DETERMINISTIC_ROUTER_V2`, `DETERMINISTIC_ROUTER`, `reasoning_pipeline_enabled`, `EVIDENCE_MAX_*`) | Aucun fichier `.env` ou de production trackant les valeurs runtime n'a ete audite dans cette mission. | Modere — le comportement reel des composants d'audit (router, budget, reasoning) depend de leur activation. |
-| Nombre exact de tests collectes par pytest | Le README cite 3 846 ; le present audit n'a pas re-execute `pytest --collect-only`. | Faible — donnee verifiable rapidement, mais a re-mesurer pour transmission externe. |
+| Nombre exact de tests collectes par pytest | Le README cite 3 956 (snapshot probatoire 28 avril 2026, source `docs/METRICS_CANONICAL_SOURCE.md`) ; le present audit n'a pas re-execute `pytest --collect-only`. | Faible — donnee verifiable rapidement, mais a re-mesurer pour transmission externe. |
 | Statut des 4 fichiers `test_*.py` a la racine du repo | Position inhabituelle (hors `tests/`), pas integres explicitement aux workflows CI observes. | Modere — peut signaler des drafts ou des tests deconnectes. |
 | Etat reel de la migration Postgres + pgvector (ADR-007) | ADR documente une transition ; le code de migration et la couverture de tests RDBMS n'ont pas ete inspectes ligne par ligne. | Modere — gap entre roadmap et execution a verifier. |
 | Periodicite et statut des derniers passages CI sur `main` | Le repo expose les workflows mais le present audit n'a pas verifie les runs reels sur GitHub Actions. | Faible — facile a verifier via l'UI GitHub. |

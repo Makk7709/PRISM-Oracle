@@ -30,7 +30,7 @@ Les différenciants par rapport à un ChatGPT-like :
 - **Multi-tenant strict** : isolation par organisation (UUID canonique), rôles OWNER/MEMBER, fail-closed
 - **Pipelines métier spécialisés** : juridique (FTS5 Légifrance), médical (PRISM consensus + FAERS), stratégique (4 agents + consolidation LLM), rédaction contractuelle (Act Leak Guard fail-closed)
 - **Protocole A2A** : communication agent-to-agent via FastA2A (client + serveur)
-- **3846 tests automatises**, 179 fichiers de tests, 71 endpoints API
+- **~3 956 tests collectés** (snapshot probatoire 28 avril 2026 ; 3 846 lors d'un snapshot antérieur début avril ; source canonique : [`docs/METRICS_CANONICAL_SOURCE.md`](./METRICS_CANONICAL_SOURCE.md)), 179 fichiers de tests, 71 endpoints API
 
 ## 1.2 Architecture Macro
 
@@ -877,7 +877,7 @@ curl -s https://<DOMAINE>/healthz
 
 ## 3.3 Tests et Déploiement
 
-### Tests existants (3846 tests, 179 fichiers)
+### Tests existants (~3 956 cas collectés au 28 avril 2026, 179 fichiers ; voir [`METRICS_CANONICAL_SOURCE.md`](./METRICS_CANONICAL_SOURCE.md))
 
 ```bash
 # Tests securite (26 fichiers)
@@ -1185,7 +1185,7 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 - [ ] Lire `python/helpers/dynamic_risk_register.py` (~403 lignes — scoring 6 facteurs, dashboard)
 - [ ] Ouvrir un chat en mode `legal_safe`, poser une question juridique, observer la delegation et la validation multi-LLM dans les logs
 - [ ] Se connecter au serveur production en SSH, verifier `docker compose ps`, lire les derniers logs
-- [ ] Lancer `uv run pytest tests/ -q` et verifier que les 3846 tests passent (sans API key — le network guard bloque les appels reels)
+- [ ] Lancer `uv run pytest tests/ -q` et verifier la collecte (snapshot canonique : ~3 956 cas au 28 avril 2026 ; voir [`METRICS_CANONICAL_SOURCE.md`](./METRICS_CANONICAL_SOURCE.md)). Le network guard bloque les appels reels sans API key.
 - [ ] Lancer `uv run pytest tests/test_replay_engine.py tests/test_human_review.py tests/test_dynamic_risk_register.py tests/test_audit_proof_e2e.py tests/test_hostile_hardening.py -v` pour verifier les 107 tests audit-proof
 - [ ] Verifier la section securite de `python/security/` et lire `image_get.py` comme modele de bonne pratique (safe_path_join + authz)
 

@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/Version-3.0-0A192F?style=for-the-badge)](https://github.com/Makk7709/PRISM-Evidence)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-3846%20Collected-green?style=for-the-badge)](#tests)
+[![Tests](https://img.shields.io/badge/Tests-3956%20Collected%20(snapshot%2028%20avril%202026)-green?style=for-the-badge)](./docs/METRICS_CANONICAL_SOURCE.md)
 
 **Plateforme multi-agents d'IA de confiance pour professions réglementées — juridique, médical, finance, stratégie, cybersécurité.**
 
@@ -32,7 +32,7 @@ Korev Evidence est une plateforme multi-agents d'IA de confiance conçue pour le
 - **Protocole A2A** — Communication agent-to-agent via FastA2A (client + serveur)
 - **Extraction PDF Robuste** — Pipeline avec circuit breakers, timeouts stricts, OCR Tesseract
 - **Speech** — Transcription (Whisper) + synthèse vocale (Kokoro TTS)
-- **3846 Tests** — 179 fichiers de tests, CI/CD GitHub Actions (3 pipelines)
+- **3 956 tests collectés** (snapshot probatoire 28 avril 2026, 179 fichiers, Python 3.11.12 / pytest 9.0.2), CI/CD GitHub Actions (3 pipelines). Source canonique : [`docs/METRICS_CANONICAL_SOURCE.md`](./docs/METRICS_CANONICAL_SOURCE.md)
 
 ---
 
@@ -145,7 +145,7 @@ korev-evidence/
 ├── prompts/                       # System prompts personnalisables
 ├── conf/
 │   └── model_providers.yaml       # Configuration LLM providers
-├── tests/                         # 346 tests unitaires
+├── tests/                         # 179 fichiers — 3 956 cas collectés (snapshot 28 avril 2026)
 └── scripts/
     ├── install-windows.bat        # Installation Windows
     ├── install-mac.sh             # Installation Mac/Linux
@@ -220,7 +220,7 @@ Evidence utilise **OpenRouter** comme provider principal, donnant accès à tous
 
 ## Tests
 
-346 tests unitaires couvrant les composants critiques :
+**3 956 tests collectés** (snapshot probatoire 28 avril 2026, 179 fichiers) couvrant les composants critiques. Source canonique des métriques : [`docs/METRICS_CANONICAL_SOURCE.md`](./docs/METRICS_CANONICAL_SOURCE.md). Les chiffres ci-dessous sont des sous-totaux par suite, indicatifs au même snapshot. Les suites étendues (e2e, security, integration, infra) peuvent être collectées séparément selon l'environnement.
 
 ```bash
 # Lancer tous les tests
@@ -319,7 +319,7 @@ PYTHONPATH=. DETERMINISTIC_ROUTER_V2=2 python scripts/router_prod_validation.py
 
 #### Améliorations
 - Configuration simplifiée (OpenRouter uniquement requis)
-- 346 tests unitaires couvrant les invariants critiques
+- Suite de tests unitaires couvrant les invariants critiques (snapshot historique janvier 2026 ; le snapshot probatoire courant figure dans [`docs/METRICS_CANONICAL_SOURCE.md`](./docs/METRICS_CANONICAL_SOURCE.md))
 - Logs sécurisés sans données utilisateur (No-PII)
 - Documentation client complète (FR)
 
