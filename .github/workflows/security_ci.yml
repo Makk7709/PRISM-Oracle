@@ -55,6 +55,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov
+          # LiteLLM is installed separately to mirror Dockerfile strategy after browser-use/openai pin conflict (commit 2c3e8f09 + deploy/Dockerfile.backend L30-31).
+          pip install --no-deps "litellm==1.79.3"
+          pip install aiohttp fastuuid
       
       - name: Verify Security Dependencies
         run: |
@@ -104,6 +107,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov
+          # LiteLLM is installed separately to mirror Dockerfile strategy after browser-use/openai pin conflict (commit 2c3e8f09 + deploy/Dockerfile.backend L30-31).
+          pip install --no-deps "litellm==1.79.3"
+          pip install aiohttp fastuuid
       
       - name: Run Coverage Gate (excluding Redis-only tests)
         env:
@@ -161,6 +167,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
+          # LiteLLM is installed separately to mirror Dockerfile strategy after browser-use/openai pin conflict (commit 2c3e8f09 + deploy/Dockerfile.backend L30-31).
+          pip install --no-deps "litellm==1.79.3"
+          pip install aiohttp fastuuid
       
       - name: Verify Redis Connection
         run: |
