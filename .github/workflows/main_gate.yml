@@ -71,6 +71,17 @@ jobs:
     name: Security Tests
     runs-on: ubuntu-latest
     
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -105,17 +116,26 @@ jobs:
           pytest tests/security/ -q --tb=short \
             --ignore=tests/security/test_rate_limit_redis.py
       
-      - name: Rate Limit Coverage Gate (90% min, excluding Redis tests)
+      - name: Rate Limit Coverage Gate (90% min, excluding test_rate_limit_redis.py)
         env:
           KOREV_RATE_LIMIT_BACKEND: 'memory'
+          KOREV_REDIS_URL: 'redis://localhost:6379/0'
         run: |
+          # Redis service is provided at job level so that TestRedisBackendCoverage
+          # in test_rate_limit_coverage.py runs instead of being skipped, which
+          # otherwise drops python/security/rate_limit/redis_backend.py coverage
+          # below the 90% gate. test_rate_limit_redis.py itself stays excluded
+          # (it is exercised in the dedicated redis-multi-worker job).
+          # --cov=python.security.ip uses dotted notation so coverage actually
+          # imports python/security/ip.py (slash notation triggered a silent
+          # CoverageWarning: Module python/security/ip was never imported).
           pytest tests/security/test_rate_limit_memory.py \
                  tests/security/test_rate_limit_limiter.py \
                  tests/security/test_rate_limit_coverage.py \
                  tests/security/test_rate_limit.py \
                  tests/security/test_ip.py \
             --cov=python/security/rate_limit \
-            --cov=python/security/ip \
+            --cov=python.security.ip \
             --cov-fail-under=90 \
             --cov-report=term
 
