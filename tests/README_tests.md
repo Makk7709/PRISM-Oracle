@@ -2,20 +2,24 @@
 
 ## Vue d'ensemble
 
-**2768 tests collectés** — 137 fichiers de tests couvrant sécurité, consensus, pipelines métier, multi-tenant, observabilité, router, et non-régression.
+**~3 956 tests collectés** (snapshot probatoire 28 avril 2026, 179 fichiers, Python 3.11.12 / pytest 9.0.2) couvrant sécurité, consensus, pipelines métier, multi-tenant, observabilité, router, et non-régression.
+
+> Source canonique unique : [`docs/METRICS_CANONICAL_SOURCE.md`](../docs/METRICS_CANONICAL_SOURCE.md). Le chiffre `2 768` cité dans les versions antérieures de ce document est un snapshot historique (Q1 2026), conservé en historique de révision pour traçabilité.
 
 ```
 tests/
-├── security/               # 31 fichiers — auth, authorization, rate limiting, multi-tenant, CSRF, path traversal
-├── e2e/                    # 2 fichiers — scénarios end-to-end (PRISM, multi-user)
-├── property/               # 1 fichier — tests de propriétés/invariants
-├── chat_personalization/   # 2 fichiers — style de chat et extensions
+├── security/               # auth, authorization, rate limiting, multi-tenant, CSRF, path traversal
+├── e2e/                    # scénarios end-to-end (PRISM, multi-user)
+├── property/               # tests de propriétés/invariants
+├── chat_personalization/   # style de chat et extensions
 ├── harness/                # Framework de test déterministe
 │   ├── fakes.py           # FakeLLM, FakeTools, FakeMCP, FaultInjector
 │   ├── fixtures.py        # Scénarios E2E
 │   └── assertions.py      # Assertions spécialisées
-└── test_*.py               # 101 fichiers — tests unitaires et intégration
+└── test_*.py               # tests unitaires et intégration
 ```
+
+> Les sous-totaux par dossier (31, 2, 1, 2, 101) cités dans les versions antérieures de ce document reflétaient l'organisation au Q1 2026 ; le snapshot canonique du 28 avril 2026 totalise 179 fichiers répartis. Pour le décompte précis par sous-dossier, exécuter `find tests -name "test_*.py" -type f | wc -l` par répertoire ou voir [`docs/METRICS_CANONICAL_SOURCE.md`](../docs/METRICS_CANONICAL_SOURCE.md) §2.
 
 ## Commandes rapides
 
