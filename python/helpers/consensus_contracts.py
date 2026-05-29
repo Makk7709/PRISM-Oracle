@@ -2,10 +2,28 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         PRISM CONSENSUS CONTRACTS                            ║
 ║                                                                              ║
-║  Schémas Pydantic pour validation fail-closed.                               ║
-║  Toute entrée non conforme est rejetée immédiatement.                        ║
+║  Schémas Pydantic pour validation des contrats du système de consensus.      ║
 ║                                                                              ║
-║  Version: 1.0.0                                                              ║
+║  Périmètre :                                                                 ║
+║  - Enums publics (DecisionTypeEnum, VoteVerdictEnum, ConsensusStatusEnum,    ║
+║    ReliabilityTierEnum) ;                                                    ║
+║  - Schémas Pydantic stricts (DecisionProposalSchema, VoteSchema,             ║
+║    ConsensusResultSchema, ResponseEnvelopeSchema, etc.) ;                    ║
+║  - Fonction `validate_strict` qui RAISE sur entrée non conforme              ║
+║    (fail-closed) ;                                                           ║
+║  - `parse_llm_vote_response` : version STRICTE (raise sur reasoning vide,    ║
+║    JSON malformé, etc.). À ne pas confondre avec                             ║
+║    `consensus_manager.parse_llm_vote_response_lax` qui est tolérante         ║
+║    (defaults silencieux, utilisée sur le chemin production des arbitres).    ║
+║                                                                              ║
+║  Notes audit :                                                               ║
+║  - ConsensusStatusEnum.PENDING est marqué internal-only mais reste valeur    ║
+║    légale du schema. Un validator dédié dans ConsensusResultSchema rejette   ║
+║    désormais explicitement PENDING en sortie publique (post-audit hostile).  ║
+║  - Le module utilise toujours Pydantic v1 (decorators @validator/            ║
+║    @root_validator). Migration v2 prévue dans un chantier dédié.             ║
+║                                                                              ║
+║  Version: 1.1.0 (post-audit hostile)                                         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -106,6 +124,21 @@ class ConsensusResultSchema(BaseModel):
     
     class Config:
         extra = "forbid"
+    
+    @validator("status")
+    def status_must_be_terminal(cls, v):
+        """
+        DEF-CC-3 (audit hostile 29 mai 2026) : PENDING est interne et ne doit
+        jamais apparaître dans un résultat publié. Hard fail si un caller
+        tente de produire un ConsensusResultSchema(status=PENDING).
+        """
+        if v == ConsensusStatusEnum.PENDING:
+            raise ValueError(
+                "ConsensusResultSchema.status=PENDING is internal-only and "
+                "must not be exposed in a result envelope. Use APPROVED, "
+                "REJECTED, NO_CONSENSUS, INFRA_FAILURE or SKIPPED."
+            )
+        return v
 
 
 class LLMVoteResponseSchema(BaseModel):
@@ -370,7 +403,18 @@ class ResearchDossier(BaseModel):
     status: str = "open"  # open, validating, closed
     
     def add_collection_data(self, source: str, data: Dict[str, Any]):
-        """Ajoute des données collectées au dossier."""
+        """
+        Ajoute des données collectées au dossier.
+        
+        DEF-CMI-1 (audit hostile 29 mai 2026) : pour les sources inconnues
+        (ex: "arxiv", "openalex", "semanticscholar"), l'audit log identifie
+        désormais la source d'origine via la clé `_source_origin` ajoutée au
+        payload, et journalise un warning. Conservation du fallback dans
+        tavily_data pour rétro-compatibilité — à remplacer par un champ
+        dédié `other_data` dans une passe ulterieure.
+        """
+        import logging as _logging
+        _logger = _logging.getLogger("consensus_contracts")
         if source == "firecrawl":
             self.firecrawl_data.append(data)
         elif source == "playwright":
@@ -378,8 +422,14 @@ class ResearchDossier(BaseModel):
         elif source == "tavily":
             self.tavily_data.append(data)
         else:
-            # Generic: add to tavily_data as catch-all
-            self.tavily_data.append(data)
+            tagged = dict(data) if isinstance(data, dict) else {"data": data}
+            tagged.setdefault("_source_origin", source)
+            _logger.warning(
+                "ResearchDossier.add_collection_data: source=%r non gérée nativement, "
+                "stockée dans tavily_data avec _source_origin=%r (audit DEF-CMI-1)",
+                source, source,
+            )
+            self.tavily_data.append(tagged)
     
     def get_all_data(self) -> List[Dict[str, Any]]:
         """Retourne toutes les données collectées."""

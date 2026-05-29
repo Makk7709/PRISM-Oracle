@@ -1,12 +1,19 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    RESPONSE TOOL — Gate-Protected Exit Point                 ║
+║                    RESPONSE TOOL — Point de sortie des réponses              ║
 ║                                                                              ║
-║  Point de sortie UNIQUE pour toutes les réponses finales.                    ║
-║  Intègre le CriticalDecisionGate pour valider avant émission.                ║
+║  Point de sortie UNIQUE pour toutes les réponses finales de l'agent.         ║
 ║                                                                              ║
-║  RÈGLE: Aucune réponse critique ne peut sortir sans validation du gate.      ║
+║  ⚠️ ÉTAT ACTUEL (cf. docs/adr/ADR-009-response-gate-disabled.md):            ║
+║     L'intégration du CriticalDecisionGate est DÉSACTIVÉE. `execute()`        ║
+║     retourne la réponse directement, SANS validation par consensus, gate,    ║
+║     ni evidence stricte. Le bloc gate présent plus bas dans `execute()` est  ║
+║     CODE MORT (inatteignable après le `return` anticipé), conservé comme     ║
+║     implémentation de référence fail-soft pour une réactivation future       ║
+║     (Tranche B — voir ADR-009 pour les critères de réactivation).            ║
 ║                                                                              ║
+║  ⚠️ Tant que le gate n'est pas réactivé et alimenté, AUCUNE garantie de      ║
+║     validation des réponses critiques n'est fournie par ce module.           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -22,8 +29,10 @@ class ResponseTool(Tool):
     async def execute(self, **kwargs):
         """
         Exécute la réponse finale.
-        
-        SIMPLIFIED: Retourne directement la réponse sans gate pour le moment.
+
+        ⚠️ GATE DÉSACTIVÉ (cf. ADR-009) : retourne la réponse directement, sans
+        validation par le CriticalDecisionGate. Le bloc de validation plus bas
+        est inatteignable (code mort) et conservé comme référence pour Tranche B.
         """
         # Extraire le texte de réponse
         text = self.args.get("text") or self.args.get("answer") or self.args.get("message", "")
@@ -31,17 +40,25 @@ class ResponseTool(Tool):
             {"text": text},
             fallback_text="Réponse indisponible (erreur de format).",
         )
-        
+
         # ═══════════════════════════════════════════════════════════════════════
-        # SIMPLIFIED: Retourner directement la réponse
+        # GATE DE SORTIE DÉSACTIVÉ — return direct (cf. ADR-009)
         # ═══════════════════════════════════════════════════════════════════════
-        # Le gate complexe causait des blocages silencieux. On bypass pour l'instant.
-        
+        # Historique : la version active du gate déclenchait une bannière
+        # « Non validé par consensus » sur quasiment toutes les réponses
+        # (consensus_result presque toujours None hors pipeline de recherche),
+        # perçue comme un dysfonctionnement. Le gate a alors été court-circuité.
+        # Réactivation conditionnée aux critères d'ADR-009 (Tranche B) :
+        # bannière limitée au LEVEL 3, consensus_result réellement alimenté,
+        # tests end-to-end entrée→sortie.
+
         logger.info(f"Response tool: returning message directly (length={len(envelope.text)})")
         return Response(message=envelope.text, break_loop=True)
-        
+
         # ═══════════════════════════════════════════════════════════════════════
-        # GATE CODE DISABLED TEMPORARILY
+        # CODE MORT CI-DESSOUS — inatteignable après le `return` ci-dessus.
+        # Implémentation de référence fail-soft conservée pour Tranche B (ADR-009).
+        # Ne PAS supposer qu'il s'exécute : il ne s'exécute pas.
         # ═══════════════════════════════════════════════════════════════════════
         
         # ═══════════════════════════════════════════════════════════════════════
