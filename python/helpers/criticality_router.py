@@ -1,16 +1,37 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    CRITICALITY ROUTER — Zero Hallucination Mode              ║
+║                    CRITICALITY ROUTER — Classifieur de requêtes              ║
 ║                                                                              ║
-║  Point de contrôle UNIQUE pour décider si consensus PRISM est requis.        ║
+║  Classifieur qui décide si une requête nécessite consensus PRISM.            ║
 ║                                                                              ║
-║  Règles:                                                                     ║
-║  1. Agent legal_safe ou researcher → TOUJOURS consensus                      ║
-║  2. Domaine LEGAL/MEDICAL/SCIENTIFIC détecté → TOUJOURS consensus            ║
-║  3. Action critique (publish, recommend, diagnose) → TOUJOURS consensus      ║
-║  4. Mode STRICT_EVIDENCE pour domaines critiques (fail-closed)               ║
+║  Comportement réel (voir CriticalityRouter.assess pour le code) :            ║
 ║                                                                              ║
-║  AUCUNE EXCEPTION en production.                                             ║
+║  LEVEL 1 (requête simple — définition, résumé, explication, météo,           ║
+║          traduction, calcul) → consensus BYPASSÉ même pour les profils       ║
+║          critiques (legal_safe, medical, researcher). Voir                   ║
+║          LEVEL1_SIMPLE_PATTERNS.                                             ║
+║                                                                              ║
+║  LEVEL 3 (cas réel, décision à prendre, litige, responsabilité, action       ║
+║          critique type publish/recommend/diagnose) → consensus REQUIS.       ║
+║          Voir LEVEL3_CRITICAL_PATTERNS et CRITICAL_ACTION_PATTERNS.          ║
+║                                                                              ║
+║  LEVEL 2 (zone intermédiaire) → non implémenté en tant que niveau distinct.  ║
+║          Toute requête non-LEVEL-1 et non-LEVEL-3 retombe sur le default     ║
+║          (requires_consensus=False) sauf si force_consensus=True.            ║
+║                                                                              ║
+║  Profils critiques (legal_safe, researcher, medical) → enrichissent le       ║
+║  domaine détecté mais NE FORCENT PAS le consensus à eux seuls. Le bypass     ║
+║  LEVEL 1 reste actif pour ces profils (cf. commentaire au-dessus de          ║
+║  LEVEL1_SIMPLE_PATTERNS plus bas dans ce module).                            ║
+║                                                                              ║
+║  Domaines critiques (LEGAL/MEDICAL/SCIENTIFIC/...) → métadonnées             ║
+║  d'enrichissement uniquement. Ne déclenchent PAS le consensus seuls.         ║
+║                                                                              ║
+║  force_consensus=True passé par le caller → consensus REQUIS                 ║
+║  inconditionnellement, même pour LEVEL 1. C'est la seule garantie absolue.   ║
+║                                                                              ║
+║  CONSENSUS_REQUIRED_PROFILES (exporté pour compat ascendante) n'est plus     ║
+║  utilisé dans assess() ; conservé pour les imports externes (cf. ADR-008).   ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -58,13 +79,15 @@ class DecisionTypeForDomain(str, Enum):
 # AGENT PROFILES REQUIRING CONSENSUS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Ces profils OBLIGENT le consensus - SAUF pour questions triviales
+# DEPRECATED depuis ADR-008-consensus-v1-to-v2-migration.md (29 mai 2026) :
+# cette constante n'est plus consultée dans assess(). La logique de routing
+# repose désormais sur la classification LEVEL 1 / LEVEL 3 et sur
+# force_consensus. Conservée pour compatibilité d'imports existants.
+# Ne pas ajouter de nouveaux profils ici sans rouvrir l'ADR-008.
 CONSENSUS_REQUIRED_PROFILES: Set[str] = {
     "legal_safe",
     "researcher",
-    "medical",  # Agent médical spécialisé - PRISM obligatoire
-    # Ajouter ici les futurs profils critiques
-    # "scientific",
+    "medical",
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -470,7 +493,22 @@ class CriticalityRouter:
         self._compiled_action_patterns = [
             re.compile(p, re.IGNORECASE) for p in self.action_patterns
         ]
-        
+
+        # DEF-CR-5 fix: pre-compile LEVEL 1 and LEVEL 3 patterns once at init
+        # (was compiled inline at every assess() call before).
+        self._compiled_level1_patterns: List[re.Pattern] = []
+        for p in LEVEL1_SIMPLE_PATTERNS:
+            try:
+                self._compiled_level1_patterns.append(re.compile(p, re.IGNORECASE))
+            except re.error:
+                logger.warning("Invalid LEVEL1 pattern skipped: %r", p)
+        self._compiled_level3_patterns: List[re.Pattern] = []
+        for p in LEVEL3_CRITICAL_PATTERNS:
+            try:
+                self._compiled_level3_patterns.append(re.compile(p, re.IGNORECASE))
+            except re.error:
+                logger.warning("Invalid LEVEL3 pattern skipped: %r", p)
+
         # Mode
         if is_production is None:
             env = os.environ.get("EVIDENCE_ENV", "production").lower()
@@ -542,8 +580,8 @@ class CriticalityRouter:
         # ─────────────────────────────────────────────────────────────────────
         # Définitions, résumés, explications, météo, traduction, calculs...
         # Même si ça contient des mots juridiques/médicaux!
+        # (query_hash déjà calculé plus haut dans cette méthode — DEF-CR-4 fix : doublon retiré)
         
-        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
         if self._is_level1_simple(query) and force_consensus is not True:
             logger.info(f"LEVEL 1 (simple) detected, bypassing consensus: '{query[:50]}...'")
             if detected_domain != CriticalDomain.DEFAULT:
@@ -748,18 +786,11 @@ class CriticalityRouter:
         """
         query_lower = query.lower().strip()
         
-        # Vérifier les patterns Level 1
-        for pattern in LEVEL1_SIMPLE_PATTERNS:
-            try:
-                if re.search(pattern, query_lower, re.IGNORECASE):
-                    logger.debug(f"Level 1 pattern matched: {pattern}")
-                    return True
-            except re.error:
-                continue
+        for pattern in self._compiled_level1_patterns:
+            if pattern.search(query_lower):
+                logger.debug(f"Level 1 pattern matched: {pattern.pattern}")
+                return True
         
-        # Heuristiques additionnelles
-        
-        # Émojis seuls ou réponses simples
         if query_lower in ["👋", "🙂", "😊", "👍", "ok", "oui", "non", "yes", "no"]:
             return True
         
@@ -780,14 +811,10 @@ class CriticalityRouter:
         """
         query_lower = query.lower().strip()
         
-        # Vérifier les patterns Level 3
-        for pattern in LEVEL3_CRITICAL_PATTERNS:
-            try:
-                if re.search(pattern, query_lower, re.IGNORECASE):
-                    logger.debug(f"Level 3 critical pattern matched: {pattern}")
-                    return True
-            except re.error:
-                continue
+        for pattern in self._compiled_level3_patterns:
+            if pattern.search(query_lower):
+                logger.debug(f"Level 3 critical pattern matched: {pattern.pattern}")
+                return True
         
         return False
     
@@ -933,7 +960,6 @@ __all__ = [
     "CriticalDomain",
     "DecisionTypeForDomain",
     # Constants
-    "CONSENSUS_REQUIRED_PROFILES",
     "DEBUG_BYPASS_PROFILES",
     # Classes
     "CriticalityAssessment",
@@ -942,3 +968,7 @@ __all__ = [
     "get_criticality_router",
     "assess_criticality",
 ]
+# Note: CONSENSUS_REQUIRED_PROFILES is intentionally NOT in __all__
+# (deprecated by ADR-008). Still importable via direct attribute access for
+# backward compatibility with existing code that does
+# `from python.helpers.criticality_router import CONSENSUS_REQUIRED_PROFILES`.

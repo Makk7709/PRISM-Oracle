@@ -1,16 +1,29 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         PRISM CONSENSUS MANAGER                              ║
+║                  PRISM CONSENSUS MANAGER (composant interne)                 ║
 ║                                                                              ║
-║  Système de consensus multi-IA pour validation des décisions critiques.     ║
+║  Implémentation legacy du système de propositions/votes/quorum.              ║
 ║                                                                              ║
-║  Principes :                                                                 ║
-║  - Vote majoritaire 2/3 entre plusieurs LLMs                                 ║
-║  - Fail-closed : en cas de doute, rejeter                                    ║
-║  - Traçabilité complète de toutes les décisions                              ║
-║  - Timeout strict avec rejet automatique                                     ║
+║  CE MODULE N'EST PAS LE POINT D'ENTRÉE PUBLIC. Le point d'entrée unique      ║
+║  pour toute décision de consensus est `python.consensus.engine.run_consensus`║
+║  (cf. ADR-008-consensus-v1-to-v2-migration.md).                              ║
 ║                                                                              ║
-║  "Evidence ne cherche pas, Evidence instruit un dossier."                        ║
+║  ConsensusManager reste exposé car :                                         ║
+║  - utilisé en interne par engine.run_consensus pour gérer le quorum ;        ║
+║  - exporte des helpers (build_vote_prompt, parse_llm_vote_response_lax,      ║
+║    generate_decision_hash) consommés par les arbitres.                       ║
+║                                                                              ║
+║  Principes du quorum :                                                       ║
+║  - Vote majoritaire 2/3 effectif (effective_votes = total - unavailable) ;   ║
+║  - Fail-closed sur infra failure (aucun vote effectif → INFRA_FAILURE) ;     ║
+║  - Statuts terminaux : APPROVED, REJECTED, NO_CONSENSUS, INFRA_FAILURE.      ║
+║                                                                              ║
+║  Limites connues :                                                           ║
+║  - check_consensus() a des effets de bord sur self.status (non-pure) ;       ║
+║  - L'événement consensus_reached est émis pour APPROVED/REJECTED/            ║
+║    NO_CONSENSUS/INFRA_FAILURE — un listener doit filtrer par data["status"]  ║
+║    s'il n'attend que les consensus réellement atteints ;                     ║
+║  - metrics["average_decision_time"] ne couvre que APPROVED + REJECTED.       ║
 ║                                                                              ║
 ║  Version: 1.0.0                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -459,12 +472,27 @@ class ConsensusManager:
         self.proposals.pop(proposal_id, None)
     
     async def _finalize_proposal(self, proposal_id: str):
-        """Finalise une proposition."""
+        """
+        Finalise une proposition.
+        
+        DEF-CM-1 (audit hostile 29 mai 2026) : idempotence durcie par un
+        garde `_finalized` sur la proposition, en plus du pattern get-then-pop
+        existant. Garantit qu'un second appel sur la meme proposition (race,
+        refactor async futur, invocation manuelle) est no-op : pas de
+        double-comptage de metriques, pas de re-emission d'evenement.
+        """
         proposal = self.proposals.get(proposal_id)
         if not proposal:
             return
         
-        # Annuler timeout
+        if getattr(proposal, "_finalized", False):
+            logger.debug(
+                "_finalize_proposal: proposal %s already finalized, skipping",
+                proposal_id[:8],
+            )
+            return
+        proposal._finalized = True
+        
         if proposal.timeout_task and not proposal.timeout_task.done():
             proposal.timeout_task.cancel()
         
@@ -602,9 +630,19 @@ Réponds UNIQUEMENT avec un objet JSON valide :
 Ne fournis AUCUN texte en dehors du JSON."""
 
 
-def parse_llm_vote_response(response: str) -> Dict[str, Any]:
+def parse_llm_vote_response_lax(response: str) -> Dict[str, Any]:
     """
-    Parse et valide une réponse de vote d'un LLM.
+    Parse une réponse de vote LLM en mode **lax** (tolérant).
+    
+    DEF-ARC-2 (audit hostile 29 mai 2026) : il existe deux fonctions
+    `parse_llm_vote_response` dans le projet. Pour lever l'ambiguïté :
+    
+    - Cette fonction (`parse_llm_vote_response_lax`) accepte des défauts
+      silencieux pour `confidence` (0.5) et `risks_identified` ([]).
+      C'est la version consommée sur le chemin production des arbitres.
+    - `consensus_contracts.parse_llm_vote_response` est strict (Pydantic) :
+      raise sur reasoning vide, JSON malformé, etc. Réservée aux validations
+      contractuelles et tests.
     
     Args:
         response: Réponse JSON du LLM
@@ -613,11 +651,10 @@ def parse_llm_vote_response(response: str) -> Dict[str, Any]:
         Dict avec approve, reasoning, confidence, risks_identified
         
     Raises:
-        ValueError: Si parsing ou validation échoue
+        ValueError: Si parsing JSON échoue ou si approve/reasoning manquent.
     """
     import re
     
-    # Extraire JSON si entouré de texte
     json_match = re.search(r'\{[\s\S]*\}', response)
     if not json_match:
         raise ValueError("No valid JSON object found in response")
@@ -627,18 +664,21 @@ def parse_llm_vote_response(response: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON: {e}")
     
-    # Validation des champs requis
     if "approve" not in parsed or not isinstance(parsed["approve"], bool):
         raise ValueError("Missing or invalid 'approve' field (must be boolean)")
     
     if "reasoning" not in parsed or not isinstance(parsed["reasoning"], str):
         raise ValueError("Missing or invalid 'reasoning' field")
     
-    # Valeurs par défaut pour champs optionnels
     parsed.setdefault("confidence", 0.5)
     parsed.setdefault("risks_identified", [])
     
     return parsed
+
+
+# Backward-compat alias (ADR-008) : ne pas casser les imports existants
+# `from python.helpers.consensus_manager import parse_llm_vote_response`.
+parse_llm_vote_response = parse_llm_vote_response_lax
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

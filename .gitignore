@@ -14,6 +14,10 @@
 
 # Ignore all contents of the virtual environment directory
 .venv/
+.venv-ci311/
+.ci-logs/
+ci-unit-junit.xml
+ci-full-junit.xml
 
 # Handle memory directory
 memory/**

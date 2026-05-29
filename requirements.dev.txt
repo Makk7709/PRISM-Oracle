@@ -1,3 +1,5 @@
 pytest>=8.4.2
 pytest-asyncio>=1.2.0
 pytest-mock>=3.15.1
+# Requis par pytest.ini (timeout = 30) — installé aussi explicitement dans le workflow CI.
+pytest-timeout>=2.3.1
