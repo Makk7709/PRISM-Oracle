@@ -1,7 +1,43 @@
 """
-PRISM Consensus Engine (single entrypoint).
+PRISM Consensus Engine — Single Entrypoint (v2).
 
-All consensus decisions must go through run_consensus().
+POINT D'ENTRÉE UNIQUE pour TOUTE décision de consensus dans KOREV.
+All consensus decisions MUST go through `run_consensus()` exposed here.
+
+Callers DIRECTS autorisés (appellent `run_consensus` directement —
+chemin actif vérifié par tests/test_consensus_entrypoint_delegation.py) :
+
+    - python.helpers.consensus_arbiter.ConsensusOrchestrator.seek_consensus
+        (wrapper de compat ascendante)
+    - python.helpers.consensus_integration.ResearchPipeline
+        .validate_with_consensus (pipeline de recherche)
+    - python.helpers.consensus_mcp_integration.research_with_consensus
+        (façade MCP)
+
+Callers INDIRECTS autorisés (passent par un wrapper ci-dessus) :
+
+    - python.helpers.research_consensus_integration (utilise
+      ConsensusOrchestrator.seek_consensus)
+
+Tout autre point d'appel direct des classes legacy (ConsensusManager,
+ArbiterLLM, ConsensusOrchestrator._select_arbiters / _count_votes /
+_create_no_arbiter_result / _log_audit) est considéré obsolète
+(cf. ADR-008-consensus-v1-to-v2-migration.md).
+
+Contrats :
+    - Retour : ConsensusDecision (dataclass normalisée) avec
+      proposal_id, decision_hash, status (ConsensusStatusEnum),
+      approved (bool), votes, vote_count, decision_time_ms,
+      correlation_id, warnings.
+    - Fail-closed : `_ensure_real_votes_or_raise` interdit qu'une décision
+      soit produite sans vote réel (sauf INFRA_FAILURE explicite).
+    - Idempotence : run_consensus génère un proposal_id unique par appel.
+
+Architecture v1 → v2 :
+    L'ancien chemin (ConsensusManager.propose → submit_vote →
+    check_consensus → _finalize_proposal) est conservé pour les helpers
+    (build_vote_prompt, parse_llm_vote_response, generate_decision_hash)
+    mais n'est plus le pipeline principal. Voir ADR-008.
 """
 
 from __future__ import annotations

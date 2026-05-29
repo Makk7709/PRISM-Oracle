@@ -2,25 +2,42 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    PRISM CONSENSUS INTEGRATION                               ║
 ║                                                                              ║
-║  Intégration du consensus multi-IA avec le pipeline de recherche Evidence.     ║
+║  Pipeline d'orchestration "ResearchPipeline" : collecte multi-MCP →          ║
+║  validation par consensus → clôture du dossier.                              ║
 ║                                                                              ║
-║  Architecture:                                                               ║
-║  ┌─────────────────────────────────────────────────────────────────┐        ║
-║  │  1. COLLECTE                                                     │        ║
-║  │     ├── Firecrawl MCP ──────► Données brutes (web scraping)     │        ║
-║  │     ├── Playwright MCP ─────► Preuves & cas critiques           │        ║
-║  │     └── Tavily MCP ─────────► Signaux faibles / orientation     │        ║
-║  │                                                                  │        ║
-║  │  2. ARBITRAGE                                                    │        ║
-║  │     └── PRISM Consensus ────► 3 modèles IA jugent/arbitrent     │        ║
-║  │                                                                  │        ║
-║  │  3. INTERPRÉTATION                                               │        ║
-║  │     └── ReasoningEngine ────► Décision finale consolidée        │        ║
-║  └─────────────────────────────────────────────────────────────────┘        ║
+║  ARCHITECTURE RÉELLE :                                                       ║
 ║                                                                              ║
-║  "Evidence ne cherche pas, Evidence instruit un dossier."                        ║
+║  1. COLLECTE                                                                 ║
+║     ├── Firecrawl MCP ───► Données brutes (web scraping)                     ║
+║     ├── Playwright MCP ──► Preuves & cas critiques                           ║
+║     └── Tavily MCP ──────► Signaux faibles / orientation                     ║
+║     (note : add_collection_data range les sources inconnues dans             ║
+║      tavily_data par défaut — cf. ResearchDossier.add_collection_data)       ║
 ║                                                                              ║
-║  Version: 1.0.0                                                              ║
+║  2. ARBITRAGE                                                                ║
+║     └── validate_with_consensus() délègue intégralement à                    ║
+║         python.consensus.engine.run_consensus (single entrypoint v2).        ║
+║                                                                              ║
+║     ⚠ Les ArbiterLLM créés par _setup_arbiters() (self.arbiters) ne sont     ║
+║     PLUS utilisés par validate_with_consensus depuis la migration v2.        ║
+║     Ils restent instanciés pour rétrocompatibilité (cf. ADR-008) et          ║
+║     consommés par les tests legacy via _collect_arbiter_vote.                ║
+║                                                                              ║
+║  3. INTERPRÉTATION                                                           ║
+║     └── close_dossier() applique un confidence_score :                       ║
+║         base = 0.9 si consensus approuvé / 0.3 si rejeté / 0.5 si bypass     ║
+║         (require_consensus=False), + bonus marginal selon le nombre de       ║
+║         sources collectées (plafonné à +0.05). Voir                          ║
+║         `_compute_dossier_confidence` pour la formule documentée. Ces        ║
+║         valeurs sont des heuristiques produit, pas un score statistique.     ║
+║                                                                              ║
+║  Note de naming :                                                            ║
+║    ArbiterConfig (ce module) ≠ ArbiterConfig (consensus_arbiter.py). Cette   ║
+║    classe a été renommée LegacyArbiterConfig pour lever l'ambiguïté.         ║
+║                                                                              ║
+║  "Evidence ne cherche pas, Evidence instruit un dossier."                    ║
+║                                                                              ║
+║  Version: 1.1.0 (post-audit hostile)                                         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -57,8 +74,16 @@ logger = logging.getLogger("prism_integration")
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @dataclass
-class ArbiterConfig:
-    """Configuration d'un modèle arbitre."""
+class LegacyArbiterConfig:
+    """
+    Configuration d'un modèle arbitre — version LEGACY (ResearchPipeline).
+    
+    DEF-ARC-3 (audit hostile 29 mai 2026) : ne pas confondre avec
+    `consensus_arbiter.ArbiterConfig` (schema différent : provider/model/
+    priority au lieu de name/model_id/provider). Cette classe-ci sert
+    uniquement aux ArbiterLLM instanciés par ResearchPipeline._setup_arbiters,
+    qui ne sont plus consommés sur le chemin actif depuis ADR-008.
+    """
     name: str
     model_id: str
     provider: str
@@ -67,15 +92,72 @@ class ArbiterConfig:
     max_tokens: int = 500
 
 
+# Backward-compat alias (ADR-008) : ne pas casser les imports existants
+# `from python.helpers.consensus_integration import ArbiterConfig`.
+ArbiterConfig = LegacyArbiterConfig
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONFIDENCE SCORE — formule documentee (DEF-CI-2 fix)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _compute_dossier_confidence(
+    total_sources: int,
+    require_consensus: bool,
+    consensus_result: Optional[Dict[str, Any]],
+) -> float:
+    """
+    Calcule le confidence_score d'un ResearchDossier a sa cloture.
+    
+    DEF-CI-2 (audit hostile 29 mai 2026) : remplace les constantes magiques
+    0.3 / 0.5 / 0.9 par une formule documentee et testable.
+    
+    Formule :
+        base =
+            0.3  si require_consensus=True ET consensus rejete
+            0.9  si require_consensus=True ET consensus approuve
+            0.5  si require_consensus=False  (bypass explicite, score median)
+        
+        ajustement = + min(0.05, 0.01 * total_sources)
+            (bonus marginal pour la richesse des sources, plafonne a +0.05)
+        
+        score = clamp(base + ajustement, 0.0, 1.0)
+    
+    Note : ces valeurs restent des heuristiques produit ; elles n'ont pas
+    vocation a etre interpretees comme une probabilite statistique. La
+    pertinence du score s'evalue par les bornes (rejected < bypass <
+    approved) et la monotonicite (plus de sources => score >=).
+    
+    Args:
+        total_sources: nombre total de sources collectees dans le dossier
+        require_consensus: True si consensus a ete declenche
+        consensus_result: payload retourne par validate_with_consensus
+                          (None si require_consensus=False)
+    
+    Returns:
+        float dans [0.0, 1.0]
+    """
+    if not require_consensus:
+        base = 0.5
+    else:
+        approved = bool(consensus_result and consensus_result.get("approved"))
+        base = 0.9 if approved else 0.3
+    
+    sources_bonus = min(0.05, 0.01 * max(0, total_sources))
+    
+    raw = base + sources_bonus
+    return max(0.0, min(1.0, raw))
+
+
 class ArbiterLLM:
     """
     Interface pour un LLM arbitre dans le système de consensus.
     """
     
-    def __init__(self, config: ArbiterConfig, call_llm_func: Callable):
+    def __init__(self, config: "LegacyArbiterConfig", call_llm_func: Callable):
         """
         Args:
-            config: Configuration de l'arbitre
+            config: Configuration de l'arbitre (LegacyArbiterConfig)
             call_llm_func: Fonction pour appeler le LLM (from models.py)
         """
         self.config = config
@@ -180,19 +262,25 @@ class ResearchPipeline:
         self._setup_listeners()
     
     def _setup_arbiters(self):
-        """Configure les 3 modèles arbitres."""
+        """
+        [LEGACY ADR-008] Instancie 3 ArbiterLLM legacy.
+        
+        Ces arbitres NE SONT PLUS consommés par `validate_with_consensus` qui
+        délègue à `engine.run_consensus`. Conservés uniquement pour les chemins
+        legacy (_collect_arbiter_vote) et la rétro-compatibilité des tests.
+        """
         arbiter_configs = [
-            ArbiterConfig(
+            LegacyArbiterConfig(
                 name="Arbiter_1",
                 model_id=self.config.arbiter_model_1,
                 provider="primary"
             ),
-            ArbiterConfig(
+            LegacyArbiterConfig(
                 name="Arbiter_2",
                 model_id=self.config.arbiter_model_2,
                 provider="secondary"
             ),
-            ArbiterConfig(
+            LegacyArbiterConfig(
                 name="Arbiter_3",
                 model_id=self.config.arbiter_model_3,
                 provider="tertiary"
@@ -439,20 +527,22 @@ class ResearchPipeline:
         Returns:
             Dossier clôturé
         """
+        consensus_result = None
         if require_consensus:
             dossier.status = "validating"
-            approved, result = await self.validate_with_consensus(
+            approved, consensus_result = await self.validate_with_consensus(
                 dossier,
                 final_conclusion
             )
             
             if not approved:
                 logger.warning("⚠️ Conclusion non validée par consensus")
-                dossier.confidence_score = 0.3
-            else:
-                dossier.confidence_score = 0.9
-        else:
-            dossier.confidence_score = 0.5
+        
+        dossier.confidence_score = _compute_dossier_confidence(
+            total_sources=len(dossier.get_all_data()),
+            require_consensus=require_consensus,
+            consensus_result=consensus_result,
+        )
         
         dossier.final_conclusion = final_conclusion
         dossier.status = "closed"

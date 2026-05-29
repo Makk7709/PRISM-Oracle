@@ -2,15 +2,37 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    CRITICAL DECISION GATE                                     ║
 ║                                                                              ║
-║  Point de contrôle UNIQUE et INÉVITABLE pour toutes les décisions critiques. ║
+║  Gate de validation à deux points (entrée + sortie) pour les requêtes        ║
+║  candidates à un domaine critique.                                           ║
 ║                                                                              ║
-║  RÈGLES ABSOLUES:                                                            ║
-║  1. AUCUNE réponse critique ne peut sortir sans passer par ce gate           ║
-║  2. Domaine critique détecté → strict evidence + consensus OBLIGATOIRE       ║
-║  3. Zéro claim sans source en domaine critique                               ║
-║  4. Fail-closed si preuves insuffisantes                                     ║
+║  Comportement réel (voir enforce_or_route + validate_final_output) :         ║
 ║                                                                              ║
-║  Ce module est le SEUL endroit où la règle "consensus requis" est décidée.   ║
+║  ENTRÉE (enforce_or_route) :                                                 ║
+║    - délègue la classification au CriticalityRouter (cf. son docstring) ;    ║
+║    - relaie la décision requires_consensus du router (ne la durcit pas) ;    ║
+║    - journalise un override d'audit si force_consensus=False est passé       ║
+║      alors que le router exige le consensus (log warning, pas de blocage).   ║
+║                                                                              ║
+║  SORTIE (validate_final_output) :                                            ║
+║    - check 1 : si l'assessment exige le consensus et qu'aucun                ║
+║      consensus_result approuvé n'est fourni → FAIL-CLOSED ;                  ║
+║    - check 2 : strict_evidence_mode → vérification de l'EvidencePack ;       ║
+║    - check 3 : assert_no_unsourced_claims (sauf domaines DEFAULT et          ║
+║      COMPLIANCE, qui sont volontairement exemptés — voir fonction            ║
+║      `assert_no_unsourced_claims` plus bas dans ce module).                  ║
+║                                                                              ║
+║  LIMITES CONNUES (audit-ready, à corriger ou documenter) :                   ║
+║    - validate_final_output re-classifie sur l'OUTPUT, pas la query           ║
+║      d'origine. Un output reformulé sans keywords critiques peut faire       ║
+║      retomber l'assessment sur LEVEL 1 → bypass facile par reformulation.    ║
+║      Mitigation depuis la passe d'audit : paramètre `original_query`         ║
+║      optionnel pour rejouer la classification sur la query initiale.         ║
+║    - Le correlation_id de enforce_or_route et celui de                       ║
+║      validate_final_output sont distincts par défaut. Le caller DOIT         ║
+║      passer le correlation_id retourné par enforce_or_route pour assurer     ║
+║      le chaînage d'audit.                                                    ║
+║    - COMPLIANCE est listé comme CriticalDomain mais exempté de               ║
+║      assert_no_unsourced_claims (choix produit, à revalider).                ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -365,6 +387,7 @@ class CriticalDecisionGate:
         context_metadata: Optional[Dict[str, Any]] = None,
         consensus_result: Optional[Dict[str, Any]] = None,
         correlation_id: str = None,
+        original_query: Optional[str] = None,
     ) -> GateResult:
         """
         Point de sortie: valide avant émission finale.
@@ -381,6 +404,15 @@ class CriticalDecisionGate:
             context_metadata: Métadonnées
             consensus_result: Résultat du consensus (si obtenu)
             correlation_id: ID de corrélation
+            original_query: Query utilisateur d'origine. DEF-CDG-2 fix —
+                            si fourni, la criticité est ré-évaluée sur la
+                            query initiale au lieu de l'output. Empêche le
+                            bypass par reformulation de l'output. Le caller
+                            (agent.py, pipeline de recherche, etc.) DOIT
+                            propager la query initiale pour bénéficier de
+                            la garantie. Sans ce paramètre, le comportement
+                            legacy est conservé (re-classification sur
+                            output[:1000]).
             
         Returns:
             GateResult avec can_emit=True/False
@@ -388,9 +420,20 @@ class CriticalDecisionGate:
         start_time = time.time()
         correlation_id = correlation_id or str(uuid.uuid4())
         
-        # Évaluer la criticité du contenu de sortie
+        # DEF-CDG-2 fix: rejouer la classification sur la query d'origine
+        # quand elle est fournie. Sinon, fallback legacy sur output[:1000].
+        classification_text = original_query if original_query else output[:1000]
+        if original_query:
+            logger.debug(
+                "validate_final_output: classification on original_query (DEF-CDG-2 path)"
+            )
+        else:
+            logger.debug(
+                "validate_final_output: classification on output[:1000] (legacy path)"
+            )
+        
         assessment = self.router.assess(
-            query=output[:1000],  # Limiter pour perf
+            query=classification_text,
             agent_profile=agent_profile,
             task_metadata=context_metadata,
         )
@@ -765,20 +808,34 @@ async def validate_final_output(
     context_metadata: Optional[Dict[str, Any]] = None,
     consensus_result: Optional[Dict[str, Any]] = None,
     correlation_id: str = None,
+    original_query: Optional[str] = None,
 ) -> GateResult:
     """
     Fonction raccourci pour validate_final_output.
     
+    DEF-CDG-2 (audit hostile 29 mai 2026) : propagation explicite de
+    `original_query` vers la methode du gate. Les callers qui passent par
+    cette facade module-level (ex: python/tools/response.py) DOIVENT
+    fournir la query d'origine pour benificier de la garantie de
+    non-bypassabilite.
+    
     Usage:
         from python.helpers.critical_decision_gate import validate_final_output
         
-        result = await validate_final_output(output, agent_profile="legal_safe")
+        result = await validate_final_output(
+            output, agent_profile="legal_safe", original_query=user_query
+        )
         if not result.can_emit:
             return result.fail_closed_response
     """
     return await get_decision_gate().validate_final_output(
-        output, agent_profile, evidence_pack, context_metadata, 
-        consensus_result, correlation_id
+        output=output,
+        agent_profile=agent_profile,
+        evidence_pack=evidence_pack,
+        context_metadata=context_metadata,
+        consensus_result=consensus_result,
+        correlation_id=correlation_id,
+        original_query=original_query,
     )
 
 

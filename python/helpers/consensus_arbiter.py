@@ -2,15 +2,35 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║              CONSENSUS ARBITER — Real LLM Voting System                      ║
 ║                                                                              ║
-║  Système d'arbitrage réel via LLMs multiples pour le consensus PRISM.        ║
+║  Couche d'appel des LLMs arbitres (ArbiterCaller) + configuration globale    ║
+║  (ConsensusConfig, load_consensus_config) + wrapper de compatibilité         ║
+║  (ConsensusOrchestrator) qui délègue à engine.run_consensus.                 ║
 ║                                                                              ║
-║  RÈGLES CRITIQUES:                                                           ║
-║  1. CONSENSUS_SIMULATION=false en production (hard fail si true)             ║
-║  2. Chaque arbitre DOIT retourner un vote structuré                          ║
-║  3. Timeout = unavailable (pas REJECT par défaut côté arbitre)               ║
-║  4. Fail-closed au niveau consensus global                                   ║
+║  Composants exportés :                                                       ║
+║    - ArbiterConfig, ConsensusConfig, load_consensus_config :                 ║
+║      configuration arbitres + lecture env (CONSENSUS_*).                     ║
+║    - ArbiterCaller : appel LLM individuel avec timeout/retry/parsing.        ║
+║    - ConsensusOrchestrator : wrapper de compatibilité ascendante.            ║
+║      Son `seek_consensus()` DÉLÈGUE intégralement à                          ║
+║      `python.consensus.engine.run_consensus` (cf. ADR-008). Les méthodes     ║
+║      internes héritées (_select_arbiters, _count_votes,                      ║
+║      _create_no_arbiter_result, _log_audit) ne sont plus invoquées sur le    ║
+║      chemin actif ; elles restent présentes pour compat ascendante et seront ║
+║      retirées dans une passe de cleanup ultérieure. get_audit_log() retourne ║
+║      [] tant que le chemin legacy n'est pas réactivé.                        ║
+║    - verify_no_simulation_in_production : sanity check à appeler au boot.    ║
 ║                                                                              ║
-║  Les votes simulés sont INTERDITS en production.                             ║
+║  Garanties production :                                                      ║
+║    1. CONSENSUS_SIMULATION=false en production (hard fail via                ║
+║       SimulationError si true et environnement production).                  ║
+║    2. Chaque arbitre DOIT retourner un vote structuré (parsé via             ║
+║       parse_llm_vote_response, version lax — voir consensus_manager).        ║
+║    3. Timeout côté arbitre = vote "unavailable" (pas REJECT silencieux).     ║
+║    4. Fail-closed au niveau du consensus global (engine.run_consensus).      ║
+║                                                                              ║
+║  En mode CONSENSUS_SIMULATION=true (dev only) : _generate_simulated_vote     ║
+║  retourne un vote biaisé ~70% APPROVE / 30% REJECT. Cette distribution est   ║
+║  délibérée pour exercer les chemins APPROVED dans les tests d'intégration.   ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -50,7 +70,6 @@ from python.helpers.consensus_manager import (
 # 3. Make import errors explicit and traceable
 
 from python.helpers import llm_provider as _llm_provider
-from python.helpers.print_style import PrintStyle
 
 # Boot validation: ensures we fail early if providers are misconfigured
 _LLM_PROVIDER_AVAILABLE = _llm_provider.is_provider_available()
@@ -394,19 +413,12 @@ class ArbiterCaller:
         arbiter_id = f"{arbiter.provider}:{arbiter.model}"
         start_time = time.time()
         
-        PrintStyle(font_color="cyan").print(
-            f"🔍 call_arbiter: Starting for {arbiter_id}..."
-        )
+        logger.debug("call_arbiter: starting for %s", arbiter_id)
         
         try:
-            # Construire le prompt
-            PrintStyle(font_color="cyan").print(
-                f"🔍 call_arbiter: Building prompt..."
-            )
+            logger.debug("call_arbiter: building prompt")
             prompt = build_vote_prompt(action, context)
-            PrintStyle(font_color="cyan").print(
-                f"🔍 call_arbiter: Prompt built, length={len(prompt)}"
-            )
+            logger.debug("call_arbiter: prompt built, length=%d", len(prompt))
             
             # Appeler le LLM
             response = await self._call_llm(
@@ -451,12 +463,11 @@ class ArbiterCaller:
             
         except Exception as e:
             import traceback
-            PrintStyle(font_color="red", bold=True).print(
-                f"❌ call_arbiter EXCEPTION for {arbiter_id}: {type(e).__name__}: {str(e)[:200]}"
+            logger.error(
+                "call_arbiter EXCEPTION for %s: %s: %s",
+                arbiter_id, type(e).__name__, str(e)[:200],
             )
-            PrintStyle(font_color="red").print(
-                f"   Traceback: {traceback.format_exc()[:500]}"
-            )
+            logger.debug("call_arbiter traceback: %s", traceback.format_exc()[:500])
             
             # ─── SIMULATION FALLBACK ─────────────────────────────────────
             # If simulation is enabled and the real call failed, generate
@@ -508,15 +519,14 @@ class ArbiterCaller:
         Fails fast if provider unavailable (no silent fallback).
         """
         arbiter_name = f"{arbiter.provider}/{arbiter.model}"
-        PrintStyle(font_color="cyan").print(
-            f"🔍 _call_llm: Starting call to {arbiter_name}, timeout={timeout_ms}ms"
+        logger.debug(
+            "_call_llm: starting call to %s, timeout=%dms",
+            arbiter_name, timeout_ms,
         )
         
         # Check if provider is available (already validated at boot in prod)
         if not _LLM_PROVIDER_AVAILABLE:
-            PrintStyle(font_color="red").print(
-                f"❌ _call_llm: LLM provider NOT available!"
-            )
+            logger.error("_call_llm: LLM provider NOT available")
             if self.config.simulation_enabled:
                 logger.warning(
                     f"LLM provider unavailable, using simulation for "
@@ -534,8 +544,9 @@ class ArbiterCaller:
             # Get provider wrapper (validated at module import)
             provider = _llm_provider.get_provider(arbiter.provider, arbiter.model)
             
-            PrintStyle(font_color="cyan").print(
-                f"🔍 _call_llm: Provider created, calling generate() for {arbiter_name}..."
+            logger.debug(
+                "_call_llm: provider created, calling generate() for %s",
+                arbiter_name,
             )
             
             response = await asyncio.wait_for(
@@ -547,19 +558,22 @@ class ArbiterCaller:
                 timeout=timeout_ms / 1000,
             )
             
-            PrintStyle(font_color="green").print(
-                f"✅ _call_llm: Got response from {arbiter_name}: {response[:50]}..."
+            logger.debug(
+                "_call_llm: got response from %s: %s",
+                arbiter_name, response[:50],
             )
             
             return response
         except asyncio.TimeoutError:
-            PrintStyle(font_color="red").print(
-                f"⏱️ _call_llm: TIMEOUT after {timeout_ms}ms for {arbiter_name}"
+            logger.error(
+                "_call_llm: TIMEOUT after %dms for %s",
+                timeout_ms, arbiter_name,
             )
             raise
         except Exception as e:
-            PrintStyle(font_color="red").print(
-                f"❌ _call_llm: ERROR calling {arbiter_name}: {type(e).__name__}: {e}"
+            logger.error(
+                "_call_llm: ERROR calling %s: %s: %s",
+                arbiter_name, type(e).__name__, e,
             )
             raise
     
@@ -669,8 +683,15 @@ class ConsensusOrchestrator:
             timestamp=time.time(),
         )
     
+    # ─────────────────────────────────────────────────────────────────────────
+    # LEGACY HELPERS (non invoqués sur le chemin actif depuis ADR-008)
+    # ─────────────────────────────────────────────────────────────────────────
+    # Conservés pour compat ascendante : seek_consensus() délègue désormais
+    # à engine.run_consensus qui implémente sa propre sélection + comptage.
+    # Cleanup prévu dans une passe ultérieure (cf. ADR-008 §"Negatives / Dette").
+    
     def _select_arbiters(self) -> List[ArbiterConfig]:
-        """Sélectionne les arbitres disponibles."""
+        """[LEGACY ADR-008] Sélectionne les arbitres disponibles (non utilisé sur le chemin actif)."""
         if self.config.offline_mode:
             if self.config.local_arbiters:
                 return self.config.local_arbiters[:self.config.total_providers]
@@ -683,7 +704,7 @@ class ConsensusOrchestrator:
         )[:self.config.total_providers]
     
     def _count_votes(self, votes: List[ArbiterVote]) -> VoteCount:
-        """Compte les votes."""
+        """[LEGACY ADR-008] Compte les votes (non utilisé sur le chemin actif)."""
         count = VoteCount()
         for vote in votes:
             if not vote.available:
@@ -704,7 +725,7 @@ class ConsensusOrchestrator:
         decision_type: DecisionType,
         correlation_id: str,
     ) -> ConsensusResult:
-        """Crée un résultat quand aucun arbitre n'est disponible."""
+        """[LEGACY ADR-008] Crée un résultat quand aucun arbitre n'est disponible (non utilisé sur le chemin actif)."""
         if self.config.fail_on_no_arbiters:
             # Infra failure: no arbiter -> no decision
             status = ConsensusStatus.INFRA_FAILURE
@@ -741,7 +762,7 @@ class ConsensusOrchestrator:
         result: ConsensusResult,
         arbiter_votes: List[ArbiterVote],
     ):
-        """Enregistre l'événement dans l'audit log."""
+        """[LEGACY ADR-008] Enregistre l'événement dans l'audit log (non utilisé sur le chemin actif)."""
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "correlation_id": correlation_id,
@@ -768,7 +789,15 @@ class ConsensusOrchestrator:
         )
     
     def get_audit_log(self) -> List[Dict[str, Any]]:
-        """Retourne le log d'audit."""
+        """
+        [LEGACY ADR-008] Retourne le log d'audit interne.
+        
+        Note d'audit hostile : depuis la migration v2 (engine.run_consensus est
+        désormais le seul chemin actif de seek_consensus), `_log_audit` n'est
+        plus invoqué et cette méthode retourne `[]`. Le journal d'audit réel
+        des décisions de consensus est produit côté `engine.run_consensus`
+        via `ConsensusDecision.warnings` et les logs structurés.
+        """
         return self._audit_log.copy()
     
     def get_metrics(self) -> Dict[str, Any]:
