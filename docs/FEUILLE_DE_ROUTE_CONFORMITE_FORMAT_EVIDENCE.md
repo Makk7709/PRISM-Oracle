@@ -1832,7 +1832,7 @@ Chaque session contient un bloc **AUTO-AUDIT CONTRADICTOIRE** obligatoire.
 ### Regles d'execution
 
 1. L'auto-audit est execute **APRES** toutes les taches et **APRES** les tests unitaires
-2. Le prompt d'audit est copie-colle tel quel dans une nouvelle conversation Cursor avec persona auditeur
+2. Le prompt d'audit est copie-colle tel quel dans une nouvelle session d'audit avec persona auditeur
 3. L'auditeur a acces en lecture seule au code — il ne corrige rien, il constate
 4. Le verdict est note sur 10 et consigne dans le journal des mises a jour
 5. **En dessous de 8/10** : la session est REJETEE, les defauts sont listes, et la session doit etre corrigee avant de passer a la suivante

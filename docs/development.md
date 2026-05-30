@@ -15,7 +15,7 @@ This guide will show you how to setup a local development environment for KOREV 
 
 
 ## To follow this guide you will need:
-1. VS Code compatible IDE (VS Code, Cursor, Windsurf...)
+1. VS Code compatible IDE (VS Code or any compatible variant)
 2. Python environment (Conda, venv, uv...)
 3. Docker (Docker Desktop, docker-ce...)
 4. (optional) Git/GitHub
@@ -37,7 +37,7 @@ This guide will show you how to setup a local development environment for KOREV 
 > In my case, I used `cd ~/Desktop` and `git clone https://github.com/korevai/korev-evidence`, so my project folder is `~/Desktop/korev-evidence`.
 
 ## Step 2: Open project folder in your IDE
-- I will be using plain and clean VS Code for this example to make sure I don't skip any setup part, you can use any of it's variants like Cursor, Windsurf etc.
+- I will be using plain and clean VS Code for this example to make sure I don't skip any setup part, you can use any VS Code compatible variant.
 - KOREV Evidence comes with `.vscode` folder that contains basic setup, recommended extensions, and debugger profiles. These will help us a lot.
 
 1. Open your IDE and open the project folder using `File > Open Folder` and select your folder, in my case `~/Desktop/korev-evidence`.

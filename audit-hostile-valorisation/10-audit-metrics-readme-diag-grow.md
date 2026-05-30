@@ -237,4 +237,4 @@ Recommandation : **Option 2** si le delai le permet (15 min d'effort), sinon **O
 
 | Date | Action | Auteur |
 |---|---|---|
-| 2026-05-27 | Audit hostile complet (PASS 1+2+3) ; corrections appliquees sur README, brochure PME, guides developpeur/entreprise, tests/README, audit cabinet ; creation source canonique | Cursor (mission `chore/diag-grow-metrics-hardening`) |
+| 2026-05-27 | Audit hostile complet (PASS 1+2+3) ; corrections appliquees sur README, brochure PME, guides developpeur/entreprise, tests/README, audit cabinet ; creation source canonique | Amine Mohamed (mission `chore/diag-grow-metrics-hardening`) |

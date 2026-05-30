@@ -125,7 +125,7 @@ print('OK: imports and defaults')
 
 | Date | Résultat | Exécutant |
 |------|----------|-----------|
-| 2026-02-08 | **VALIDÉ** — 26/26 tests chat_personalization, 330+ security | Cursor AI |
+| 2026-02-08 | **VALIDÉ** — 26/26 tests chat_personalization, 330+ security | Amine Mohamed |
 
 ### Checklist exécutée
 

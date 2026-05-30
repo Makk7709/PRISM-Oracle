@@ -9,7 +9,7 @@
 | Date de mise a jour de ce fichier | 2026-05-27 |
 | Branche de redaction | `chore/diag-grow-metrics-hardening` |
 | Commit HEAD audite | `03a5ce95` (`main`) |
-| Mainteneur | Equipe KOREV / Cursor audit |
+| Mainteneur | Amine Mohamed <amine.mohamed@korev-ai.com> |
 
 ---
 
@@ -171,5 +171,5 @@ Toute occurrence de metrique trouvee dans un fichier de `logs/`, `terminals/`, `
 
 | Date | Action | Auteur |
 |---|---|---|
-| 2026-05-27 | Creation du fichier ; consolidation des metriques eparses ; identification du chiffre canonique 3 956 (28 avril 2026) | Cursor (mission `chore/diag-grow-metrics-hardening`) |
-| 2026-05-27 | Ajout section 8 "Logs historiques et occurrences non canoniques" (remediation H-IMP-1) | Cursor (mission `chore/diag-grow-metrics-hardening`) |
+| 2026-05-27 | Creation du fichier ; consolidation des metriques eparses ; identification du chiffre canonique 3 956 (28 avril 2026) | Amine Mohamed (mission `chore/diag-grow-metrics-hardening`) |
+| 2026-05-27 | Ajout section 8 "Logs historiques et occurrences non canoniques" (remediation H-IMP-1) | Amine Mohamed (mission `chore/diag-grow-metrics-hardening`) |

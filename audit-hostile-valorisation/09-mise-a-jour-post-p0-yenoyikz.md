@@ -167,7 +167,7 @@ Cycle complet `dump → down -v → up → restore` chronométré sur le VPS : *
 
 DEF-8 a été identifié et corrigé AVANT tout cron actif en prod (le cron file est livré avec suffixe `.disabled` et ne sera installé qu'en P1). Aucune perte de données réelle. La rigueur de l'audit hostile pre-commit a évité un défaut runtime qui aurait pu casser la sauvegarde silencieusement.
 
-**Impact valorisation :** **favorable**. Démontre la maturité du processus pre-commit-audit (cf. `.cursor/rules/pre-commit-audit.mdc`) et la capacité à détecter des défauts fail-silent avant exposition prod.
+**Impact valorisation :** **favorable**. Démontre la maturité du processus pre-commit-audit (protocole interne de pre-commit-audit) et la capacité à détecter des défauts fail-silent avant exposition prod.
 
 ---
 
@@ -188,7 +188,7 @@ Ces incidents sont **publics dans le dossier interne** et **traçables**. Pour u
 
 ## 7. Audit hostile pre-commit devenu systématique
 
-La règle `.cursor/rules/pre-commit-audit.mdc` impose désormais un protocole obligatoire en 3 phases AVANT tout `git commit` ou `git push` :
+Le protocole interne de pre-commit-audit impose désormais un protocole obligatoire en 3 phases AVANT tout `git commit` ou `git push` :
 
 1. **Relecture contradictoire** du diff cumulé (références croisées, signatures de code, numéros de ligne, dépendances, cohérence comptage).
 2. **Checklist de défauts** explicite avec sévérité (Critique / Important / Modéré / Mineur).

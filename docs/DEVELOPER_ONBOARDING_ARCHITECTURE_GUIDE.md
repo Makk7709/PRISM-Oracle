@@ -938,7 +938,7 @@ uv run pytest tests/ -v
 ### Procedure de deploiement actuelle
 
 ```bash
-# 1. Sur la machine locale — commit avec audit hostile (voir .cursor/rules/pre-commit-audit.mdc)
+# 1. Sur la machine locale — commit avec audit hostile (protocole interne de pre-commit-audit, 3 phases)
 git add <fichiers> && git commit -m "description" && git push origin main
 
 # 2. Sur le serveur (SSH en tant que evidence)

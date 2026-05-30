@@ -2,7 +2,7 @@
 
 # Evidence — Cartographie du pipeline de delegation apres un chat utilisateur
 
-**Auteur** : agent Cursor, posture "architecte logiciel senior systemes multi-agents, orchestration LLM, reverse engineering".
+**Auteur** : Amine Mohamed <amine.mohamed@korev-ai.com> — posture "architecte logiciel senior systemes multi-agents, orchestration LLM, reverse engineering".
 **Date** : 22 mai 2026.
 **Branche** : `diag-grow/transmission-evidence`.
 **HEAD au moment de l'audit** : `641b2c44`.

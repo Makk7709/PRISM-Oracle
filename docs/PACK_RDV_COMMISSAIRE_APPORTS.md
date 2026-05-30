@@ -371,7 +371,7 @@ git diff --check
 
 ## 9. Trace de l'audit hostile pre-remise
 
-Conformement au protocole `pre-commit-audit.mdc`, ce Pack et les documents qu'il reference ont fait l'objet d'une relecture contradictoire en 3 phases.
+Conformement au protocole interne de pre-commit-audit, ce Pack et les documents qu'il reference ont fait l'objet d'une relecture contradictoire en 3 phases.
 
 ### 9.1 Audit du 25 avril 2026 (etat initial)
 
@@ -383,7 +383,7 @@ Conformement au protocole `pre-commit-audit.mdc`, ce Pack et les documents qu'il
 
 ### 9.2 Audit pre-commit applique aux 3 commits posterieurs au 25 avril
 
-Conformement a la regle `.cursor/rules/pre-commit-audit.mdc` (protocole obligatoire en 3 phases avant tout `git commit`), les 3 commits poses entre le 25 avril et le 5 mai 2026 ont ete audites individuellement avant push :
+Conformement au protocole interne de pre-commit-audit (protocole obligatoire en 3 phases avant tout `git commit`), les 3 commits poses entre le 25 avril et le 5 mai 2026 ont ete audites individuellement avant push :
 
 | Commit | DEF cumules | Severite max | Re-audit total | Trace mention dans message commit |
 |---|:---:|:---:|:---:|:---:|

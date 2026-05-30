@@ -218,7 +218,7 @@ L'audit ciblé des fonctions `replay_engine.compute_integrity()` et `integrity_b
 
 ### 10.5 Doctrine pre-commit-audit appliquée systématiquement
 
-La règle `.cursor/rules/pre-commit-audit.mdc` impose un protocole obligatoire en 3 phases avant tout `git commit` ou `git push` (relecture contradictoire du diff, checklist de défauts, re-audit total déclenché par tout défaut Critique/Important corrigé). Cette règle a été appliquée sur les 3 commits post-25 avril : 9 défauts (1 Important + 2 Modérés + 6 Mineurs) cumulés, tous corrigés avant push, **0 défaut résiduel**. Les messages de commit Git portent une mention explicite de l'audit conformément à la phase 4 de la règle. Cet artefact constitue un actif valorisable au titre de la qualité processus.
+Le protocole interne de pre-commit-audit impose un protocole obligatoire en 3 phases avant tout `git commit` ou `git push` (relecture contradictoire du diff, checklist de défauts, re-audit total déclenché par tout défaut Critique/Important corrigé). Ce protocole a été appliqué sur les 3 commits post-25 avril : 9 défauts (1 Important + 2 Modérés + 6 Mineurs) cumulés, tous corrigés avant push, **0 défaut résiduel**. Les messages de commit Git portent une mention explicite de l'audit conformément à la phase 4 du protocole. Cet artefact constitue un actif valorisable au titre de la qualité processus.
 
 ### 10.6 Score de maturité technique — réévaluation interne
 

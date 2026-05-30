@@ -677,11 +677,11 @@ Cette section liste les ambiguites, dependances et risques **reellement observes
 
 ## 14. Prompt de controle anti-hallucination
 
-Ce prompt peut etre execute par un autre agent (Cursor ou equivalent) pour re-auditer le present document.
+Ce prompt peut etre execute par un autre agent d'audit (ou un relecteur independant) pour re-auditer le present document.
 
 ---
 
-### Mission Cursor — Audit hostile du schema de delegation Evidence
+### Mission d'audit — Audit hostile du schema de delegation Evidence
 
 Tu es un auditeur technique senior independant. Ton objectif est de relire integralement le fichier `docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md` et de verifier que chaque affirmation est strictement prouvee par le code de la branche `diag-grow/transmission-evidence` (HEAD reference dans le document).
 
