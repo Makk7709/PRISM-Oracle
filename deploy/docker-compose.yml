@@ -21,6 +21,7 @@ services:
       args:
         BUILD_DATE: "${BUILD_DATE:-}"
         GIT_COMMIT: "${GIT_COMMIT:-}"
+        GIT_BRANCH: "${GIT_BRANCH:-}"
         EVIDENCE_VERSION: "${EVIDENCE_VERSION:-1.0.0}"
     image: korev/evidence-backend:${EVIDENCE_VERSION:-latest}
     container_name: evidence-backend

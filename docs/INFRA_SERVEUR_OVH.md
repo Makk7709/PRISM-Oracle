@@ -107,21 +107,36 @@ ssh -i ~/.ssh/korev_admin_ed25519 ubuntu@54.37.226.42 \
 
 ## Deploiement
 
-### Procedure standard (git pull + rebuild)
+### Prerequis `.env`
+
+Le compose interpole `POSTGRES_PASSWORD` (variable `:?` sans defaut, pour le service
+`evidence-postgres` du profil `db`). Meme si le profil `db` n'est PAS active, un
+`docker compose up` echoue si la cle est absente. Le `.env` de prod doit donc contenir :
+
+```
+POSTGRES_PASSWORD=<valeur forte>   # inerte tant que le profil "db" n'est pas active
+```
+
+### Procedure standard (git pull + rebuild via wrapper)
+
+Toujours deployer via `scripts/deploy_prod.sh` : il exporte `GIT_COMMIT` / `GIT_BRANCH`
+/ `BUILD_DATE` pour estampiller le commit reel dans `VERSION.json` et les labels OCI.
+Un `docker compose up -d --build` direct laisse ces valeurs vides → `VERSION.json` reste
+fige sur l'ancienne valeur du repo (traçabilite trompeuse).
 
 ```bash
 # 1. Push local
 git push origin main
 
-# 2. Pull sur le serveur + rebuild + restart
+# 2. Pull sur le serveur + rebuild + restart (estampillage commit inclus)
 ssh -i ~/.ssh/korev_admin_ed25519 ubuntu@54.37.226.42 \
-  "cd PRISM-Oracle && git stash && git pull origin main && docker compose -f deploy/docker-compose.yml up -d --build"
+  "cd PRISM-Oracle && git stash && git pull --ff-only origin main && ./scripts/deploy_prod.sh"
 ```
 
 ### Commande one-liner depuis le poste local
 
 ```bash
-git push origin main && ssh -i ~/.ssh/korev_admin_ed25519 ubuntu@54.37.226.42 "cd PRISM-Oracle && git stash && git pull origin main && docker compose -f deploy/docker-compose.yml up -d --build"
+git push origin main && ssh -i ~/.ssh/korev_admin_ed25519 ubuntu@54.37.226.42 "cd PRISM-Oracle && git stash && git pull --ff-only origin main && ./scripts/deploy_prod.sh"
 ```
 
 ### Verification post-deploy
