@@ -1,7 +1,7 @@
 # Infrastructure serveur OVH — KOREV Evidence
 
 **Usage** : Reference interne pour les connexions, deploiements et operations serveur.  
-**Derniere mise a jour** : 2026-03-31
+**Derniere mise a jour** : 2026-05-30
 
 ---
 
@@ -226,3 +226,11 @@ docker builder prune --filter until=48h -f
 docker image prune -f
 docker volume prune -f
 ```
+
+---
+
+## Historique de deploiement
+
+| Date | Commit | Contenu | Note operationnelle |
+|---|---|---|---|
+| 2026-05-30 | `c357f45f` | `feat(evidence)`: sorties critiques signees (chat + pipeline legal), gate fail-closed, signature v2 (ADR-010) | **Changement de comportement** : une requete critique repondue sans consensus est desormais bloquee (fail-closed). Signature via cle RSA existante `/evidence/keys/private.pem` (deja montee, ro). Verifier `EVIDENCE_RSA_PRIVATE_KEY_PATH` present dans le container apres deploy. |
