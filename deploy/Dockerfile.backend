@@ -10,7 +10,10 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 1: Python dependencies
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim AS python-deps
+# Base image pinned by digest (reproducibility): the `3.11-slim` tag is mutable
+# and silently drifts to newer Debian releases, which broke a prod rebuild once.
+# This digest is the multi-arch index for python:3.11-slim — update deliberately.
+FROM python:3.11-slim@sha256:a3ab0b966bc4e91546a033e22093cb840908979487a9fc0e6e38295747e49ac0 AS python-deps
 
 WORKDIR /build
 
@@ -35,16 +38,22 @@ RUN pip install --no-cache-dir --upgrade pip wheel "setuptools<81" && \
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 2: Runtime
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim AS runtime
+# Same pinned digest as the build stage (see note above).
+FROM python:3.11-slim@sha256:a3ab0b966bc4e91546a033e22093cb840908979487a9fc0e6e38295747e49ac0 AS runtime
 
-# Build args (pour LABEL OCI)
+# Build args (LABEL OCI + estampillage VERSION.json)
 ARG EVIDENCE_VERSION=1.0.0
+ARG GIT_COMMIT=""
+ARG GIT_BRANCH=""
+ARG BUILD_DATE=""
 
 # Labels
 LABEL org.opencontainers.image.title="KOREV Evidence"
 LABEL org.opencontainers.image.description="KOREV Evidence — Plateforme d'agents IA de confiance"
 LABEL org.opencontainers.image.vendor="KOREV AI"
 LABEL org.opencontainers.image.version="${EVIDENCE_VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 # ── Variables d'environnement ──
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -204,8 +213,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ── Fichier version ──
 # COPY depuis le repo (structure complète : version, short_tag, branch, commit_hash, commit_time)
-# Ce fichier est lu par python/helpers/git.py._load_version_file() pour résoudre evidence_version
+# Ce fichier est lu par python/helpers/git.py._load_version_file() pour résoudre evidence_version.
+# Estampillé avec le commit réel du build quand GIT_COMMIT est fourni (cf scripts/stamp_version.py)
+# afin que l'image rapporte le commit déployé, pas la valeur figée du repo. No-op sans build-arg.
 COPY --chown=evidence:evidence VERSION.json ./VERSION.json
+RUN GIT_COMMIT="${GIT_COMMIT}" GIT_BRANCH="${GIT_BRANCH}" BUILD_DATE="${BUILD_DATE}" \
+    python scripts/stamp_version.py VERSION.json && \
+    chown evidence:evidence VERSION.json
 
 # ── Passer à l'utilisateur non-root ──
 USER evidence
