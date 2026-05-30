@@ -10,7 +10,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from python.helpers.criticality_router import CriticalityRouter
-from python.helpers.consensus_mcp_integration import ConsensusMCPWrapper
 from python.consensus.engine import ConsensusEngine
 
 
@@ -34,19 +33,10 @@ def test_router_decision_log_has_correlation_id(caplog):
     assert payload.get("correlation_id")
 
 
-@pytest.mark.asyncio
-async def test_adapter_collect_log_has_correlation_id(caplog):
-    caplog.set_level("INFO")
-    wrapper = ConsensusMCPWrapper(mcp_handler=None)
-    await wrapper.collect(
-        server="tavily",
-        tool="search",
-        params={"query": "test"},
-        correlation_id="corr-1",
-    )
-    payload = _find_event(caplog.records, "adapter_collect")
-    assert payload is not None
-    assert payload.get("correlation_id") == "corr-1"
+# NOTE (Phase 9 cleanup) : le test du wrapper `ConsensusMCPWrapper.collect` a été
+# supprimé avec le module orphelin `consensus_mcp_integration`. La présence du
+# correlation_id sur le chemin canonique reste couverte par les deux tests
+# router/engine de ce fichier.
 
 
 @pytest.mark.asyncio

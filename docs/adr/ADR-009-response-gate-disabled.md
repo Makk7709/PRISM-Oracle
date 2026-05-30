@@ -1,9 +1,14 @@
 # ADR-009 — Désactivation du gate de validation au point de sortie (`response`)
 
 **Date :** 29 mai 2026
-**Statut :** Accepté (état transitoire, dette tracée)
+**Statut :** Accepté (état transitoire) — **Tranche B tranchée par `ADR-010-critical-output-doctrine.md`** (30 mai 2026)
 **Auteur :** Amine Mohamed
 **Périmètre :** `python/tools/response.py`, `python/helpers/critical_decision_gate.py`
+
+> **Mise à jour 30/05/2026 :** l'arbitrage fail-closed/fail-soft laissé ouvert ci-dessous (section
+> « Doctrine cible (provisoire) » et « Critères de réactivation ») est désormais **tranché** par
+> **ADR-010** : fail-closed par défaut sur le chemin critique, fail-soft uniquement si policy explicite,
+> signature obligatoire. Ce document reste la trace de l'état transitoire « gate désactivé ».
 
 ## Contexte
 

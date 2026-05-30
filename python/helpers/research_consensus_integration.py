@@ -1,5 +1,13 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
+║  ⚠️ DÉPRÉCIÉ (ADR-010, réalignement chemin critique — 30 mai 2026).          ║
+║  Façade redondante au-dessus de `ConsensusOrchestrator.seek_consensus`.      ║
+║  Aucun appelant production sur le chemin critique actif (seul l'agent        ║
+║  médical l'importe de façon optionnelle). À MIGRER vers l'API canonique      ║
+║  `run_consensus`/`seek_consensus` puis SUPPRIMER (cf.                        ║
+║  docs/audit/critical_path_remediation_report.md, P1).                        ║
+║  NE PAS construire de nouveau chemin sur ce module.                          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
 ║            RESEARCH CONSENSUS INTEGRATION — Zero Hallucination               ║
 ║                                                                              ║
 ║  Intégration complète du consensus PRISM dans le flux de recherche.          ║

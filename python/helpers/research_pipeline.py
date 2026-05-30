@@ -1,5 +1,11 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
+║  ⚠️ DÉPRÉCIÉ (ADR-010, réalignement chemin critique — 30 mai 2026).          ║
+║  Pipeline de recherche orphelin (importé seulement par tools/smoke_test).    ║
+║  Doublonne `run_consensus`. À MIGRER (smoke → engine canonique) puis         ║
+║  SUPPRIMER (cf. docs/audit/critical_path_remediation_report.md, P1).         ║
+║  NE PAS construire de nouveau chemin sur ce module.                          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
 ║                     EVIDENCE RESEARCH PIPELINE                                 ║
 ║                                                                              ║
 ║  Pipeline de recherche complet avec :                                        ║

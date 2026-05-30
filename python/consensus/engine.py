@@ -8,16 +8,17 @@ Callers DIRECTS autorisés (appellent `run_consensus` directement —
 chemin actif vérifié par tests/test_consensus_entrypoint_delegation.py) :
 
     - python.helpers.consensus_arbiter.ConsensusOrchestrator.seek_consensus
-        (wrapper de compat ascendante)
-    - python.helpers.consensus_integration.ResearchPipeline
-        .validate_with_consensus (pipeline de recherche)
-    - python.helpers.consensus_mcp_integration.research_with_consensus
-        (façade MCP)
+        (wrapper de compat ascendante — point d'entrée canonique des appelants)
 
-Callers INDIRECTS autorisés (passent par un wrapper ci-dessus) :
+Callers INDIRECTS autorisés (passent par le wrapper ci-dessus) :
 
-    - python.helpers.research_consensus_integration (utilise
+    - python.helpers.research_consensus_integration (DÉPRÉCIÉ — utilise
       ConsensusOrchestrator.seek_consensus)
+
+NOTE (réalignement chemin critique, ADR-010, Phase 9) : les anciennes intégrations
+`consensus_integration.ResearchPipeline` et `consensus_mcp_integration.research_with_consensus`
+ont été SUPPRIMÉES (modules orphelins, aucun appelant production). `research_consensus_integration`
+et `research_pipeline` sont DÉPRÉCIÉS (cf. bannières dans ces modules).
 
 Tout autre point d'appel direct des classes legacy (ConsensusManager,
 ArbiterLLM, ConsensusOrchestrator._select_arbiters / _count_votes /

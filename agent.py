@@ -414,6 +414,43 @@ class Agent:
                 # ═══════════════════════════════════════════════════════════════════
                 pipeline_final_response = self.get_data("_pipeline_final_response")
                 if pipeline_final_response is not None:
+                    # ═══════════════════════════════════════════════════════════════
+                    # FINALISATION CRITIQUE CONSOLIDÉE (ADR-010 / P1-1)
+                    # Toute sortie pipeline (legal / adversarial / contract) passe par
+                    # le MÊME gate de signature v2 que le chemin chat avant émission.
+                    # Sur erreur de finalisation pour une sortie critique → fail-closed.
+                    # ═══════════════════════════════════════════════════════════════
+                    pipeline_requires_consensus = self.get_data("_pipeline_requires_consensus")
+                    try:
+                        from python.helpers.critical_output import finalize_pipeline_short_circuit
+                        _fin = finalize_pipeline_short_circuit(self, pipeline_final_response)
+                        final_text = _fin.output_text
+                        if _fin.signed_output is not None:
+                            self.set_data("_signed_output", _fin.signed_output)
+                        import logging as _logging
+                        _logging.getLogger("agent").info(
+                            "Pipeline gate: decision=%s can_emit=%s [%s]",
+                            _fin.decision.value, _fin.can_emit, _fin.correlation_id,
+                        )
+                    except Exception as _gate_exc:
+                        import logging as _logging
+                        if pipeline_requires_consensus is False:
+                            _logging.getLogger("agent").error(
+                                "Pipeline gate error on non-critical output (emitting raw): %s",
+                                _gate_exc, exc_info=True,
+                            )
+                            final_text = pipeline_final_response
+                        else:
+                            _logging.getLogger("agent").critical(
+                                "Pipeline gate error on critical/undetermined output → FAIL-CLOSED: %s",
+                                _gate_exc, exc_info=True,
+                            )
+                            final_text = (
+                                "⛔ **Sortie pipeline bloquée (fail-closed).** Une erreur interne a "
+                                "empêché la validation/signature de cette réponse critique. "
+                                "Conformément à la doctrine Evidence (ADR-010), elle n'est pas émise."
+                            )
+
                     # Log the short-circuit for auditability
                     self.context.log.log(
                         type="info",
@@ -421,7 +458,7 @@ class Agent:
                         content="Returning pre-computed pipeline response (LLM bypassed)",
                     )
                     # Add to history as AI response
-                    self.hist_add_ai_response(pipeline_final_response)
+                    self.hist_add_ai_response(final_text)
                     
                     # ═══════════════════════════════════════════════════════════════
                     # CRITICAL: Also log as "response" type so UI displays the content
@@ -430,14 +467,18 @@ class Agent:
                     self.context.log.log(
                         type="response",
                         heading=f"{self.agent_name}",
-                        content=pipeline_final_response,
+                        content=final_text,
                     )
                     
-                    # Clear the flag for next request
-                    self.set_data("_pipeline_final_response", None)
-                    self.set_data("_skip_llm", None)
-                    # Return the pipeline response directly
-                    return pipeline_final_response
+                    # Clear pipeline + signing flags for next request
+                    for _k in (
+                        "_pipeline_final_response", "_skip_llm", "_consensus_result",
+                        "_pipeline_requires_consensus", "_output_policy",
+                        "_pipeline_criticality_level", "_pipeline_human_review",
+                    ):
+                        self.set_data(_k, None)
+                    # Return the finalized (signed or fail-closed) pipeline response
+                    return final_text
 
                 printer = PrintStyle(italic=True, font_color="#b3ffd9", padding=False)
 

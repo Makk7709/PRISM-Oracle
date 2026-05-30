@@ -67,6 +67,11 @@ def is_adversarial_pipeline_enabled() -> bool:
     return os.environ.get("ADVERSARIAL_PIPELINE_ENABLED", "0") == "1"
 
 
+# ADR-010 / P1-1 : mapping consensus_status → (consensus_result, requires_consensus).
+# Défini dans un module léger pour rester testable sans booter les providers LLM.
+from python.helpers.legal_signing import map_legal_consensus  # noqa: E402
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # P3.2: ANTI DOUBLE-RUN PROTECTION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -269,6 +274,38 @@ class LegalSafeModeExtension(Extension):
         quand une requête est détectée comme juridique.
         """
         return os.environ.get("LEGAL_SAFE_ALLOW_LLM_FALLBACK", "0") != "1"
+
+    def _set_signing_context(
+        self,
+        agent: "Agent",
+        *,
+        requires_consensus: bool,
+        consensus_result: Optional[dict],
+        criticality_level: str = "LEVEL_3",
+        fail_soft: bool = True,
+        policy_id: str = "legal-pipeline",
+        policy_version: str = "1",
+        human_review: Optional[bool] = None,
+    ) -> None:
+        """Pose le contexte de signature (ADR-010 / P1-1) consommé par le
+        short-circuit de `agent.py` (`finalize_pipeline_short_circuit`).
+
+        `fail_soft=True` est une policy EXPLICITE propre au pipeline legal : une
+        sortie déjà rendue par le pipeline (mode prudent/refus) n'est pas remplacée
+        par un blocage générique ; elle est signée et, si le consensus n'est pas
+        APPROVED, porte une bannière « NON VALIDÉE ». Le secret de signature absent
+        en production reste fail-closed (D6).
+        """
+        agent.set_data("_consensus_result", consensus_result)
+        agent.set_data("_pipeline_requires_consensus", bool(requires_consensus))
+        agent.set_data("_pipeline_criticality_level", criticality_level)
+        agent.set_data("_output_policy", {
+            "policy_id": policy_id,
+            "policy_version": str(policy_version),
+            "fail_soft_allowed": bool(fail_soft),
+        })
+        if human_review is not None:
+            agent.set_data("_pipeline_human_review", bool(human_review))
     
     def _extract_contract_variables(self, user_text: str) -> dict:
         """
@@ -670,6 +707,25 @@ Elle ne constitue pas un avis juridique et ne remplace pas la consultation d'un 
                     agent.set_data("_skip_llm", True)
                     agent.set_data("_pipeline_was_used", True)
                     agent.set_data("_contract_drafting_output", output)
+
+                    # Contexte de signature (ADR-010 / P1-1) : gate d'audit = validation.
+                    if output.gate_passed:
+                        self._set_signing_context(
+                            agent, requires_consensus=True,
+                            consensus_result={
+                                "status": "APPROVED", "approved": True,
+                                "proposal_id": correlation_id, "correlation_id": correlation_id,
+                            },
+                            policy_id="contract-drafting", policy_version="gate-passed",
+                            human_review=True,
+                        )
+                    else:
+                        # Refus (gate échoué) : sortie non opposable, signée sans bannière.
+                        self._set_signing_context(
+                            agent, requires_consensus=False, consensus_result=None,
+                            criticality_level="LEVEL_1",
+                            policy_id="contract-drafting", policy_version="gate-rejected",
+                        )
                     
                     agent.context.log.log(
                         type="info",
@@ -747,6 +803,24 @@ Elle ne constitue pas un avis juridique et ne remplace pas la consultation d'un 
                 agent.set_data("_skip_llm", True)
                 agent.set_data("_pipeline_was_used", True)
                 agent.set_data("_adversarial_dossier_id", dossier.id)
+
+                # Contexte de signature (ADR-010 / P1-1) : la fiabilité du dossier
+                # contradictoire sert d'indicateur de consensus (seuil 0.6).
+                _reliability = (
+                    dossier.audit_report.overall_reliability_score
+                    if dossier.audit_report else 0.5
+                )
+                _approved = _reliability >= 0.6
+                self._set_signing_context(
+                    agent, requires_consensus=True,
+                    consensus_result={
+                        "status": "APPROVED" if _approved else "NO_CONSENSUS",
+                        "approved": _approved, "proposal_id": dossier.id,
+                        "correlation_id": correlation_id,
+                    },
+                    policy_id="adversarial-pipeline", policy_version=dossier.protocol.value,
+                    human_review=not _approved,
+                )
                 
                 # Log success
                 agent.context.log.log(
@@ -906,7 +980,26 @@ Le système d'analyse multi-perspectives n'a pas pu traiter votre demande.
                 agent.set_data("_pipeline_final_response", rendered)
                 agent.set_data("_skip_llm", True)
                 agent.set_data("_pipeline_was_used", True)  # Signal to call_subordinate
-                
+
+                # ═══════════════════════════════════════════════════════════
+                # Contexte de signature (ADR-010 / P1-1) : on respecte la
+                # décision de consensus DU pipeline legal lui-même.
+                #   - APPROVED                     → consensus requis + validé (signé)
+                #   - REJECTED/NO_CONSENSUS/INFRA  → consensus requis non validé
+                #                                    (signé + bannière, policy fail-soft)
+                #   - None (consensus non exécuté) → non critique (signé, sans bannière)
+                # ═══════════════════════════════════════════════════════════
+                _cr, _req = map_legal_consensus(
+                    output.consensus_status, output.consensus_id, correlation_id
+                )
+                _hr = (str(output.risk_tier).lower() == "high") or (str(output.scope).lower() == "board")
+                self._set_signing_context(
+                    agent, requires_consensus=_req, consensus_result=_cr,
+                    criticality_level="LEVEL_3" if _req else "LEVEL_2",
+                    policy_id="legal-pipeline", policy_version=output.mode.value,
+                    human_review=_hr,
+                )
+
                 # Log success
                 agent.context.log.log(
                     type="info",
