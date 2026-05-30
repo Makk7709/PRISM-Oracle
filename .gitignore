@@ -9,6 +9,9 @@
 .cursor/
 .windsurf/
 
+# Internal infra/server reference — MUST NOT be tracked (contains infra topology)
+docs/INFRA_SERVEUR_OVH.md
+
 # ignore test files in root dir
 /*.test.py
 
