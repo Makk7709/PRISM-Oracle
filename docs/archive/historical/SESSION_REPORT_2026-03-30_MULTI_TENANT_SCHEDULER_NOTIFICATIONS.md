@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Compte-rendu de session daté 2026-03-30 (multi-tenant, scheduler, notifications).
+> **Remplacé par** : néant (trace historique de session)
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # Session Report - 2026-03-30
 
 ## Scope

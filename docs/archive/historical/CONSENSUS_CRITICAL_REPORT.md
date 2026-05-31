@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Rapport « verrouillage final » daté 2026-01-25, antérieur à la consolidation `critical_output` et à l'ADR-010.
+> **Remplacé par** : `docs/audit/critical_path_remediation_report.md`, `docs/adr/ADR-010-critical-output-doctrine.md`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # 🔒 CONSENSUS CRITICAL REPORT — Verrouillage Final
 
 > **Version**: 1.0.0

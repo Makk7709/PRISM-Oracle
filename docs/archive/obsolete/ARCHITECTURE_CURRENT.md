@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Obsolète
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Présente comme « entrypoints actuels » des modules supprimés (`consensus_integration.py`, `consensus_mcp_integration.py`) lors du réalignement du chemin critique (mai 2026). L'architecture consensus décrite ici n'existe plus telle quelle dans le code.
+> **Remplacé par** : `docs/audit/critical_request_path_map.md`, `docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md`, `docs/adr/ADR-010-critical-output-doctrine.md`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 PRISM Consensus - Current Architecture (Snapshot)
 =================================================
 

@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Audit pré-déploiement ponctuel daté 2026-02-11.
+> **Remplacé par** : `docs/reports/PROD_READINESS_AUDIT.md` (état prod courant)
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # Audit pré-déploiement — Guide de Déploiement Entreprise v2.0
 
 **Date :** 2026-02-11  

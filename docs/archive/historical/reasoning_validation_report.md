@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Rapport de validation ponctuel daté 2026-01-24 (post-fix P0 « escalade diluée »).
+> **Remplacé par** : README §ReasoningEngine ; code `python/helpers/metacognition.py`, `python/helpers/reasoning_engine.py`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # Rapport de Validation — Moteur de Raisonnement KOREV Evidence
 
 **Date**: 2026-01-24  

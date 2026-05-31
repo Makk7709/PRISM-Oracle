@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Inventaire des chemins consensus daté 2026-01-25, antérieur au réalignement du chemin critique (mai 2026).
+> **Remplacé par** : `docs/audit/critical_request_path_map.md`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # Consensus Paths Inventory
 
 > **Generated**: 2026-01-25

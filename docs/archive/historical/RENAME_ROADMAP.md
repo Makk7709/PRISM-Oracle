@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique (migration terminée)
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Feuille de route de renommage produit (rebranding). La migration est achevée.
+> **Remplacé par** : néant (migration terminée)
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 # 🔄 Feuille de Route : KOREV Evidence → KOREV Evidence
 
 ## Contexte

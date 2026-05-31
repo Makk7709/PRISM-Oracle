@@ -9,6 +9,13 @@ methodology: "Evidence-grade — Hypothèses explicites, sources européennes, F
 
 # KOREV Evidence — Dossier Stratégique
 
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Dossier stratégique daté 2026-01-31 (snapshot board/investisseurs).
+> **Remplacé par** : `docs/DOSSIER_COMMISSAIRE_APPORTS_EVIDENCE.md` (dossier de valorisation courant)
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 **Document Evidence-Grade** — Toute affirmation non sourcée est marquée comme hypothèse.
 
 ---

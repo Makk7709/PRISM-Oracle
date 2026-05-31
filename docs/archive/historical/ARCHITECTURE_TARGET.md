@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique / Remplacé
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Cible consensus « PRISM-first » (janv. 2026). La doctrine « fail-soft : never refuse » décrite ici est remplacée par le **fail-closed par défaut** sur les sorties critiques (ADR-010) ; la cible « single source of truth » est largement réalisée via ADR-008.
+> **Remplacé par** : `docs/adr/ADR-008-consensus-v1-to-v2-migration.md`, `docs/adr/ADR-010-critical-output-doctrine.md`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 PRISM-First Consensus - Target Architecture
 ==========================================
 

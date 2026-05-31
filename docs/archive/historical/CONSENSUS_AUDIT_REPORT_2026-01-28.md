@@ -1,3 +1,10 @@
+> ⚠️ **DOCUMENT ARCHIVÉ**
+> **Statut** : Historique
+> **Date d'archivage** : 2026-05-31
+> **Raison** : Rapport d'audit consensus ponctuel daté 2026-01-28.
+> **Remplacé par** : `docs/audit/critical_path_remediation_report.md`, `docs/audit/critical_path_hostile_audit.md`
+> **Ne pas utiliser comme référence opérationnelle active.**
+
 PRISM-First Audit Report
 ========================
 
