@@ -30,7 +30,7 @@ Points clés :
 - **Routage de criticité** — classification LEVEL 1/2/3 (`python/helpers/criticality_router.py`) déterminant si une requête exige un consensus.
 - **Consensus multi-LLM (PRISM v2)** — API canonique `run_consensus()` (`python/consensus/engine.py`), quorum 2/3 sur votes valides.
 - **Sorties critiques signées** — couche `critical_output` : signature v2 (RSA-PSS-SHA256 en prod, repli HMAC), anti-tamper, **fail-closed par défaut** sur les décisions critiques (voir [ADR-010](./docs/adr/ADR-010-critical-output-doctrine.md)).
-- **Pipelines métier** — juridique (FTS5/Légifrance, Act Leak Guard fail-closed), médical (PRISM + FAERS), stratégique (multi-agents + consolidation).
+- **Pipelines métier** — juridique (recherche plein-texte FTS5 sur sources juridiques officielles, Act Leak Guard / export control fail-closed), médical (PRISM + FAERS), stratégique (multi-agents + consolidation).
 - **Multi-tenant strict** — isolation par organisation, rôles OWNER/MEMBER.
 - **Raisonnement métacognitif** — escalade non-diluable (`metacognition.py`, `reasoning_engine.py`).
 - **Recherche académique** — serveurs MCP (ArXiv, PubMed, Semantic Scholar, OpenAlex, Crossref, EUR-Lex, etc.) ; 3 serveurs fournis localement dans `mcp_servers/` (`openalex`, `pubmed`, `semanticscholar`), les autres via configuration MCP.
@@ -126,13 +126,14 @@ KOREV_Oracle/
 
 ### Moteur de raisonnement (escalade non-diluable)
 
-| Niveau | Seuil | Action |
+| Niveau | Seuil (confiance brute) | Action |
 |--------|-------|--------|
-| `SAFE_REFUSE` / `HUMAN_REVIEW` | confidence < 0.35 | Refus / validation humaine |
-| `ASK_CLARIFY` | confidence < 0.5 | Questions ciblées |
-| `NONE` | confidence ≥ 0.5 | Exécution autonome |
+| `SAFE_REFUSE` | < 0.20 | Refus par précaution |
+| `HUMAN_REVIEW` | 0.20 – 0.35 | Revue humaine requise |
+| `ASK_CLARIFY` | 0.35 – 0.50 | Demande de clarification |
+| `NONE` | ≥ 0.50 | Exécution autonome |
 
-Invariants : monotonie (les signaux ne peuvent que durcir l'escalade), non-dilution, no-PII.
+Seuils définis dans `python/helpers/metacognition.py` (`safe_refuse_threshold=0.2`, `human_review_threshold=0.35`, `escalate_on_confidence_below=0.5`). Invariants : monotonie (les signaux ne peuvent que durcir l'escalade), non-dilution, no-PII.
 
 ---
 
@@ -156,8 +157,8 @@ Doctrine et historique : [ADR-009](./docs/adr/ADR-009-response-gate-disabled.md)
 
 ### Prérequis
 - **Python 3.11+**
-- Clé API **OpenRouter** (LLMs)
-- Optionnel : clé OpenAI (images)
+- Clé API d'au moins un **fournisseur LLM** (OpenRouter, Anthropic, OpenAI, …)
+- Optionnel : clé OpenAI (génération d'images)
 
 ### Installation rapide
 
@@ -208,16 +209,9 @@ Sous-totaux indicatifs et chiffre probatoire : voir [`docs/METRICS_CANONICAL_SOU
 
 ## Configuration des modèles
 
-OpenRouter comme provider principal (`conf/model_providers.yaml`) :
+Approche **multi-provider** via LiteLLM. Les fournisseurs supportés sont déclarés dans [`conf/model_providers.yaml`](./conf/model_providers.yaml) — notamment **Anthropic, OpenAI, Google (Gemini), Mistral, DeepSeek, Groq, OpenRouter, HuggingFace**, ainsi que des moteurs **locaux** (Ollama, LM Studio). Le consensus multi-LLM s'appuie sur plusieurs fournisseurs pour le vote croisé.
 
-| Modèle | Usage recommandé |
-|--------|------------------|
-| `openai/gpt-4o` | Chat principal, tâches complexes |
-| `openai/gpt-4.1-mini` | Utilitaire, tâches rapides |
-| `anthropic/claude-3.5-sonnet` | Raisonnement, code |
-| `google/gemini-2.0-flash` | Multimodal, vision |
-
-Changer de modèle : Paramètres → Agent Settings → Chat Model.
+Le modèle par défaut et les modèles par rôle (chat, utilitaire, embedding) se configurent dans **Paramètres → Agent Settings**. La clé API du fournisseur retenu est fournie via `.env` (ex. `ANTHROPIC_API_KEY`, `API_KEY_OPENROUTER`).
 
 ---
 
