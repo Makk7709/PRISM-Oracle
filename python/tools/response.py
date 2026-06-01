@@ -115,10 +115,13 @@ class ResponseTool(Tool):
             query = _extract_user_query(self.agent)
             assessment = get_criticality_router().assess(query=query, agent_profile=agent_profile)
             requires_consensus = bool(assessment.requires_consensus)  # criticité déterminée
-            criticality_level = (
-                "LEVEL_3" if assessment.requires_consensus
-                else ("LEVEL_2" if assessment.strict_evidence_mode else "LEVEL_1")
-            )
+            # Niveau explicite porté par le router (LEVEL_1/2/3). Fallback défensif
+            # si un assessment minimal (ex. mock) n'expose pas le champ `level`.
+            _level = getattr(assessment, "level", None)
+            if _level is not None:
+                criticality_level = getattr(_level, "value", str(_level))
+            else:
+                criticality_level = "LEVEL_3" if assessment.requires_consensus else "LEVEL_1"
 
             consensus_result = _agent_get(self.agent, "_consensus_result")
             policy = OutputPolicy.from_env_or_data(_agent_get(self.agent, "_output_policy"))

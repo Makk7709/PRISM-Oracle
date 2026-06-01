@@ -209,3 +209,78 @@ def test_empty_consensus_not_faked_success():
     assert normalize_consensus_result(None) is None
     assert normalize_consensus_result({}) is None
     assert is_consensus_valid(None) is False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DOCTRINE DE FRAÎCHEUR (recency) — sortie critique non vérifiée → escalade
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_critical_recency_unverified_escalates_and_banners(hmac_env):
+    # Sortie critique APPROUVÉE mais fraîcheur NON prouvée (défaut None).
+    r = finalize_critical_output(
+        output_text="Le taux applicable est de 25 %.",
+        requires_consensus=True,
+        criticality_level="LEVEL_3",
+        consensus_result=_approved(),
+        input_text="quel est le taux en vigueur ?",
+        # recency_verified non fourni → None → non prouvé
+    )
+    assert r.decision == CriticalOutputDecision.EMIT_SIGNED
+    assert r.can_emit is True
+    assert r.reason == "recency_unverified"
+    # bannière d'obsolescence apposée
+    assert "potentiellement obsolète" in r.output_text
+    # escalade revue humaine (champ signé)
+    assert r.signed_output["audit_metadata"]["human_review_required"] is True
+    assert r.signed_output["recency"]["recency_review_required"] is True
+    assert r.signed_output["recency"]["recency_verified"] is None
+    # signature cohérente avec le texte bannerisé
+    assert verify_evidence_signature(r.signed_output) is True
+
+
+def test_critical_recency_verified_no_banner_no_escalation(hmac_env):
+    # Fraîcheur prouvée en amont → pas de bannière, pas d'escalade forcée.
+    r = finalize_critical_output(
+        output_text="Le taux applicable est de 25 % (source officielle 2026-05-30).",
+        requires_consensus=True,
+        criticality_level="LEVEL_3",
+        consensus_result=_approved(),
+        input_text="quel est le taux en vigueur ?",
+        human_review_required=False,
+        recency_verified=True,
+    )
+    assert r.decision == CriticalOutputDecision.EMIT_SIGNED
+    assert r.reason == "ok"
+    assert "potentiellement obsolète" not in r.output_text
+    assert r.signed_output["audit_metadata"]["human_review_required"] is False
+    assert r.signed_output["recency"]["recency_verified"] is True
+    assert r.signed_output["recency"]["recency_review_required"] is False
+    assert verify_evidence_signature(r.signed_output) is True
+
+
+def test_recency_banner_is_tamper_evident(hmac_env):
+    # Retirer la bannière d'obsolescence d'une sortie critique doit casser la signature.
+    r = finalize_critical_output(
+        output_text="Conclusion critique.",
+        requires_consensus=True,
+        criticality_level="LEVEL_3",
+        consensus_result=_approved(),
+        input_text="q",
+    )
+    assert verify_evidence_signature(r.signed_output) is True
+    tampered = dict(r.signed_output)
+    tampered["output"] = "Conclusion critique."  # bannière retirée
+    assert verify_evidence_signature(tampered) is False
+
+
+def test_noncritical_output_unaffected_by_recency(hmac_env):
+    # Hors chemin critique : pas d'escalade ni de bannière de fraîcheur.
+    r = finalize_critical_output(
+        output_text="Bonjour, voici l'info.",
+        requires_consensus=False,
+        criticality_level="LEVEL_1",
+        input_text="salut",
+    )
+    assert r.decision == CriticalOutputDecision.EMIT_NONCRITICAL_SIGNED
+    assert "potentiellement obsolète" not in r.output_text
+    assert r.signed_output["recency"]["recency_review_required"] is False

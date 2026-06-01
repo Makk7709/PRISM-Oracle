@@ -55,7 +55,7 @@ Conformément à ADR-010 §D7/D8 et au choix de conception validé :
 | `python/helpers/legal_signing.py` | **(P1-1)** `map_legal_consensus` : mapping léger `consensus_status` → `consensus_result` (testable sans boot LLM). |
 | `docs/adr/ADR-010-critical-output-doctrine.md` | Doctrine fail-closed (tranche l'arbitrage ADR-009). |
 | `docs/audit/critical_request_path_map.md` | Cartographie réel vs attendu. |
-| `tests/test_critical_output_doctrine.py` | 15 tests unitaires (9 cas doctrinaux + variantes). |
+| `tests/test_critical_output_doctrine.py` | 19 tests unitaires (9 cas doctrinaux + variantes + 4 cas fraîcheur D9). |
 | `tests/e2e/test_critical_request_signed_output.py` | 2 tests E2E (chaîne réelle + fail-closed). |
 | `tests/test_response_tool_failclosed.py` | 2 tests (garde-fou P0-1 : fail-closed si critique/indéterminé). |
 | `tests/test_legal_pipeline_signed_output.py` | **(P1-1)** 13 tests (mapping 6 statuts + finalisation legal + anti-tamper + fail-closed + E2E extension réelle). |
@@ -215,3 +215,35 @@ EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   de signature.
 - **P2** Persister `signed_output` dans le rapport d'audit + exposer `verify_evidence_signature` via
   un endpoint d'audit (vérification a posteriori automatisée).
+
+---
+
+## 9. Addendum 2026-05-31 — Doctrine de fraîcheur (recency), ADR-010 §D9
+
+**Risque traité :** une analyse critique pouvait être produite à partir de la **connaissance
+d'entraînement périmée** (réponse « outdated ») sans vérification ni avertissement. Le mandat de
+fraîcheur n'existait que de façon **conditionnelle** (mots-clés de recherche `enquête`/`étude`…) et
+sans filet de sécurité côté code.
+
+**Correctifs (deux niveaux) :**
+
+1. **Prompt transverse (préventif).** `prompts/agent.system.freshness_policy.md`, injecté dans **tous**
+   les agents via `python/extensions/system_prompt/_10_system_prompt.py::get_freshness_policy` (juste
+   après l'ancrage de date). Règles strictes : vérifier la fraîcheur via outils avant d'affirmer,
+   indiquer la **date *as-of***, apposer une bannière « potentiellement obsolète » si non vérifiable,
+   interdiction de présenter du périmé comme courant.
+
+2. **Gate (escalade, filet de sécurité).** `finalize_critical_output(..., recency_verified=...)` :
+   sur sortie **critique** à fraîcheur non prouvée (`None`/`False`), **force `human_review_required=True`**
+   (champ signé) + appose la **bannière d'obsolescence** (signée, donc anti-tamper). Pas un blocage :
+   escalade tracée. `finalize_pipeline_short_circuit` lit `_pipeline_recency_verified` (défaut `None`).
+
+**Preuves :** `tests/test_critical_output_doctrine.py` (4 nouveaux cas D9 — escalade+bannière,
+fraîcheur prouvée sans escalade, bannière anti-tamper, hors-critique non impacté) → **19 passed**.
+E2E + legal pipeline + response fail-closed rejoués → **verts** (aucune régression).
+
+**Limite résiduelle (RR-6, Mineur) :** `recency_verified` n'est pas (encore) un champ du payload signé
+v2 ; seule sa conséquence (`human_review_required`) l'est. Couverture explicite = signature v3 (suivi
+P2). De plus, l'établissement *automatique* de `recency_verified=True` (preuve qu'un outil a bien
+fourni des données fraîches) n'est pas encore câblé en amont : par défaut, **toute** sortie critique
+est donc escaladée — posture stricte voulue, à affiner si le bruit de revue devient excessif.

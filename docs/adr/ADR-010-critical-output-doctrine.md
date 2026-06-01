@@ -36,6 +36,21 @@ Toute requête est évaluée par `criticality_router.assess(...)`. Le `criticali
 Il existe **une seule** source de vérité pour `consensus_required` (le router) ; les déclencheurs
 spécifiques (legal_pipeline) doivent **converger** vers cette source, pas la dupliquer.
 
+**Taxonomie de criticité (champ explicite `CriticalityAssessment.level`, ajout 2026-06-01) :**
+- **LEVEL 1** — requête simple (définition, résumé, météo, calcul) : jamais de consensus, *sauf opt-in
+  explicite de l'utilisateur*.
+- **LEVEL 2** — zone professionnelle (analyse, comparaison, conseil) : **pas** de consensus par défaut,
+  mais **activable à la demande**. Deux déclencheurs : (a) **opt-in utilisateur** dans le chat
+  (`CONSENSUS_OPT_IN_PATTERNS` : « par consensus », « /consensus », « second avis »…) → `consensus_opt_in=True` ;
+  (b) `force_consensus=True` du caller.
+- **LEVEL 3** — requête critique (cas réel, décision, litige, responsabilité, action critique) :
+  consensus **toujours** requis.
+
+Le router est resté longtemps binaire (LEVEL 1 / LEVEL 3, LEVEL 2 = défaut implicite non distinct).
+Cet ADR acte la **réintroduction d'un LEVEL 2 distinct** avec consensus opt-in, sans affaiblir le
+fail-closed des sorties critiques (le gate `critical_output` continue de s'appuyer sur
+`requires_consensus`, pas sur le label `level`).
+
 ### D2 — Consensus obligatoire si requis
 Si `consensus_required = true`, un `consensus_result` **valide** (statut terminal `APPROVED` /
 `REJECTED` / `NO_CONSENSUS` / `INFRA_FAILURE`, schéma `ConsensusResultSchema` respecté) est
@@ -80,18 +95,40 @@ La doctrine est implémentée en **consolidant les couches existantes** (gate de
 d'intégrité/`AuditReportRenderer`), point de passage déjà universel sur les chemins classic et
 pipeline. **Aucune nouvelle couche d'abstraction** ni seconde API consensus n'est introduite.
 
+### D9 — Fraîcheur des données (recency) — doctrine stricte
+Une sortie critique repose souvent sur des données **sensibles au temps** (lois en vigueur, taux,
+données marché, faits d'entreprise). Deux mécanismes complémentaires l'encadrent :
+
+1. **Prompt système (préventif, transverse)** : `prompts/agent.system.freshness_policy.md` est injecté
+   dans **tous** les agents (cf. `python/extensions/system_prompt/_10_system_prompt.py`). Il impose,
+   à la date du jour, de **vérifier la fraîcheur via outils avant d'affirmer**, d'indiquer la **date
+   *as-of*** de toute donnée sensible au temps, et d'apposer une bannière « potentiellement obsolète »
+   si la fraîcheur ne peut pas être prouvée.
+
+2. **Gate (filet de sécurité, escalade)** : `finalize_critical_output(..., recency_verified=...)`. Sur
+   une sortie **critique** dont la fraîcheur n'est **pas affirmativement prouvée** (`recency_verified`
+   à `None` ou `False`), le gate **force `human_review_required = True`** (champ couvert par la
+   signature) et appose la **bannière d'obsolescence**. Ce n'est **pas** un blocage (la sortie reste
+   signée et émise), mais une **escalade tracée et opposable** : jamais une donnée périmée présentée
+   comme courante en silence. Une fraîcheur prouvée en amont (`recency_verified=True`) lève l'escalade.
+
+> **Limite assumée (v2)** : le flag `recency_verified` lui-même n'est pas (encore) un champ du payload
+> signé ; sa conséquence — `human_review_required` — l'est. Un passage à une signature v3 couvrant
+> explicitement la fraîcheur est un suivi possible (cf. risques résiduels du rapport de remédiation).
+
 ---
 
 ## Matrice de comportement
 
-| criticality | consensus_required | consensus_result | secret signature | policy.fail_soft | Résultat |
-|---|---|---|---|---|---|
-| non-critique | false | n/a | présent | n/a | sortie signée (non bloquante) |
-| critique | true | valide (APPROVED) | présent | n/a | **sortie signée + consensus_result** |
-| critique | true | absent / invalide / timeout | présent | false | **FAIL-CLOSED (bloqué)** |
-| critique | true | absent / invalide / timeout | présent | **true (explicite)** | sortie + bannière « NON VALIDÉ » tracée |
-| critique | true/false | — | **absent (prod)** | — | **FAIL-CLOSED (bloqué)** |
-| critique | true | REJECTED | présent | false | **FAIL-CLOSED (bloqué, motif: rejected)** |
+| criticality | consensus_required | consensus_result | secret signature | policy.fail_soft | recency_verified | Résultat |
+|---|---|---|---|---|---|---|
+| non-critique | false | n/a | présent | n/a | n/a | sortie signée (non bloquante) |
+| critique | true | valide (APPROVED) | présent | n/a | **true** | **sortie signée + consensus_result** |
+| critique | true | valide (APPROVED) | présent | n/a | **None/false** | **sortie signée + bannière obsolescence + human_review escaladé** |
+| critique | true | absent / invalide / timeout | présent | false | — | **FAIL-CLOSED (bloqué)** |
+| critique | true | absent / invalide / timeout | présent | **true (explicite)** | — | sortie + bannière « NON VALIDÉ » tracée |
+| critique | true/false | — | **absent (prod)** | — | — | **FAIL-CLOSED (bloqué)** |
+| critique | true | REJECTED | présent | false | — | **FAIL-CLOSED (bloqué, motif: rejected)** |
 
 ---
 

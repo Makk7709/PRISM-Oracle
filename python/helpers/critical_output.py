@@ -332,6 +332,23 @@ def _fail_soft_banner(reason: str, correlation_id: str) -> str:
     )
 
 
+def _recency_banner(as_of: str, correlation_id: str) -> str:
+    """Bannière de fraîcheur non vérifiée (doctrine de fraîcheur stricte).
+
+    Apposée par le gate quand une sortie critique n'a pas prouvé l'usage de
+    données à jour. La sortie reste émise (signée) mais est escaladée en revue
+    humaine et explicitement marquée comme potentiellement obsolète.
+    """
+    return (
+        "\n\n---\n"
+        "⚠️ **Fraîcheur des données non vérifiée automatiquement.** "
+        f"Cette sortie critique n'a pas prouvé l'usage de données à jour (as-of {as_of}) "
+        "via des outils de récupération : réponse potentiellement obsolète, "
+        "revue humaine requise avant usage opposable. "
+        f"`correlation_id={correlation_id}`"
+    )
+
+
 def finalize_critical_output(
     *,
     output_text: str,
@@ -344,10 +361,17 @@ def finalize_critical_output(
     model: Optional[str] = None,
     human_review_required: Optional[bool] = None,
     is_production: Optional[bool] = None,
+    recency_verified: Optional[bool] = None,
 ) -> CriticalOutputResult:
     """Applique la doctrine ADR-010 et produit une sortie (signée ou bloquée).
 
     Voir la matrice de comportement de l'ADR-010.
+
+    `recency_verified` (doctrine de fraîcheur stricte) : indique si la fraîcheur
+    des données a été affirmativement prouvée en amont. Sur une sortie critique,
+    une fraîcheur NON prouvée (None ou False) force `human_review_required=True`
+    et appose une bannière « potentiellement obsolète » (escalade, jamais
+    blocage silencieux).
     """
     policy = policy or OutputPolicy()
     if is_production is None:
@@ -357,6 +381,11 @@ def finalize_critical_output(
 
     view = normalize_consensus_result(consensus_result)
     is_critical = bool(requires_consensus)
+
+    # ── Doctrine de fraîcheur : sortie critique sans fraîcheur prouvée → escalade ──
+    recency_unverified = is_critical and (recency_verified is not True)
+    if recency_unverified:
+        human_review_required = True
 
     # ── D2/D3 : consensus requis mais invalide/absent ──
     if is_critical and not is_consensus_valid(view):
@@ -389,10 +418,16 @@ def finalize_critical_output(
             correlation_id=correlation_id,
         )
 
+    # Texte émis : sur sortie critique à fraîcheur non prouvée, bannière obsolescence.
+    # Le texte signé == le texte émis (cohérence de la signature, anti-tamper).
+    emitted_text = output_text
+    if recency_unverified:
+        emitted_text = output_text + _recency_banner(timestamp[:10], correlation_id)
+
     # ── Signature (D5/D6) ──
     try:
         signature = sign_evidence_output(
-            output_text=output_text, input_text=input_text, consensus_view=view,
+            output_text=emitted_text, input_text=input_text, consensus_view=view,
             criticality_level=criticality_level, policy=policy, timestamp=timestamp,
             trace_id=correlation_id, model=model, human_review_required=human_review_required,
         )
@@ -414,16 +449,17 @@ def finalize_critical_output(
         return CriticalOutputResult(
             decision=CriticalOutputDecision.EMIT_UNSIGNED_DEGRADED,
             can_emit=True,
-            output_text=output_text,
+            output_text=emitted_text,
             reason=f"secret de signature absent (hors chemin critique) : {exc}",
             signed_output=None,
             correlation_id=correlation_id,
         )
 
     signed_output = _assemble_signed_output(
-        output_text=output_text, view=view, criticality_level=criticality_level,
+        output_text=emitted_text, view=view, criticality_level=criticality_level,
         requires_consensus=requires_consensus, policy=policy, signature=signature,
         trace_id=correlation_id, model=model, human_review_required=human_review_required,
+        recency_verified=recency_verified,
     )
     decision = (
         CriticalOutputDecision.EMIT_SIGNED if is_critical
@@ -432,8 +468,8 @@ def finalize_critical_output(
     return CriticalOutputResult(
         decision=decision,
         can_emit=True,
-        output_text=output_text,
-        reason="ok",
+        output_text=emitted_text,
+        reason="recency_unverified" if recency_unverified else "ok",
         signed_output=signed_output,
         correlation_id=correlation_id,
     )
@@ -508,6 +544,7 @@ def finalize_pipeline_short_circuit(agent, output_text: str) -> CriticalOutputRe
         "LEVEL_3" if requires_consensus else "LEVEL_1"
     )
     human_review = _get("_pipeline_human_review")
+    recency = _get("_pipeline_recency_verified")
     return finalize_critical_output(
         output_text=output_text,
         requires_consensus=requires_consensus,
@@ -518,6 +555,7 @@ def finalize_pipeline_short_circuit(agent, output_text: str) -> CriticalOutputRe
         trace_id=_get("_legal_safe_correlation_id"),
         model=_agent_model_name(agent),
         human_review_required=bool(human_review) if human_review is not None else None,
+        recency_verified=bool(recency) if recency is not None else None,
     )
 
 
@@ -532,14 +570,22 @@ def _assemble_signed_output(
     trace_id: str,
     model: Optional[str],
     human_review_required: Optional[bool],
+    recency_verified: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Structure de sortie signée audit-ready (ADR-010 §6)."""
     covered = signature.get("covered_fields", {})
+    # Fraîcheur non prouvée sur une sortie critique → marquée + escaladée (signée
+    # via human_review_required, qui fait partie des champs couverts).
+    recency_unverified = bool(requires_consensus) and (recency_verified is not True)
     return {
         "output": output_text,
         "criticality_assessment": {
             "criticality_level": criticality_level,
             "requires_consensus": requires_consensus,
+        },
+        "recency": {
+            "recency_verified": bool(recency_verified) if recency_verified is not None else None,
+            "recency_review_required": recency_unverified,
         },
         # On stocke la vue canonique (status/approved/proposal_id/...) : c'est
         # EXACTEMENT ce qui est couvert par consensus_result_hash, donc reproductible

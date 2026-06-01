@@ -16,6 +16,7 @@ class SystemPrompt(Extension):
         **kwargs: Any
     ):
         date_block = get_date_anchor(self.agent)
+        freshness_block = get_freshness_policy(self.agent)
         main = get_main_prompt(self.agent)
         tools = get_tools_prompt(self.agent)
         mcp_tools = get_mcp_tools_prompt(self.agent)
@@ -23,6 +24,7 @@ class SystemPrompt(Extension):
         project_prompt = get_project_prompt(self.agent)
 
         system_prompt.append(date_block)
+        system_prompt.append(freshness_block)
         system_prompt.append(main)
         system_prompt.append(tools)
         if mcp_tools:
@@ -49,6 +51,27 @@ def get_date_anchor(agent: Agent) -> str:
     year = now.strftime("%Y")
     return agent.read_prompt(
         "agent.system.date_anchor.md",
+        current_datetime=local_str,
+        current_year=year,
+    )
+
+
+def get_freshness_policy(agent: Agent) -> str:
+    """Inject the non-negotiable data-freshness mandate into every agent so that
+    time-sensitive claims are verified against today's date (tool-backed) rather
+    than answered from potentially stale training knowledge."""
+    from python.helpers.localization import Localization
+
+    now = datetime.now(timezone.utc)
+    local_str = Localization.get().utc_dt_to_localtime_str(
+        now, sep=" ", timespec="seconds"
+    )
+    if local_str and "+" in local_str:
+        local_str = local_str.split("+")[0]
+
+    year = now.strftime("%Y")
+    return agent.read_prompt(
+        "agent.system.freshness_policy.md",
         current_datetime=local_str,
         current_year=year,
     )

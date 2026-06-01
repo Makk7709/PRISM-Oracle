@@ -15,9 +15,14 @@
 ║          critique type publish/recommend/diagnose) → consensus REQUIS.       ║
 ║          Voir LEVEL3_CRITICAL_PATTERNS et CRITICAL_ACTION_PATTERNS.          ║
 ║                                                                              ║
-║  LEVEL 2 (zone intermédiaire) → non implémenté en tant que niveau distinct.  ║
-║          Toute requête non-LEVEL-1 et non-LEVEL-3 retombe sur le default     ║
-║          (requires_consensus=False) sauf si force_consensus=True.            ║
+║  LEVEL 2 (zone professionnelle : analyse, comparaison, conseil) → niveau     ║
+║          distinct porté par CriticalityAssessment.level. PAS de consensus     ║
+║          par défaut, MAIS consensus activable :                              ║
+║            - par opt-in EXPLICITE de l'utilisateur dans le chat              ║
+║              (CONSENSUS_OPT_IN_PATTERNS : "par consensus", "/consensus",      ║
+║              "second avis"…) → consensus_opt_in=True, requires_consensus=True ║
+║            - ou par force_consensus=True passé par le caller.               ║
+║          Toute requête non-LEVEL-1 et non-LEVEL-3 est classée LEVEL 2.        ║
 ║                                                                              ║
 ║  Profils critiques (legal_safe, researcher, medical) → enrichissent le       ║
 ║  domaine détecté mais NE FORCENT PAS le consensus à eux seuls. Le bypass     ║
@@ -61,6 +66,22 @@ class CriticalDomain(str, Enum):
     SECURITY = "security"
     COMPLIANCE = "compliance"
     DEFAULT = "default"
+
+
+class CriticalityLevel(str, Enum):
+    """Niveau de criticité explicite d'une requête (taxonomie produit).
+
+    - LEVEL_1 : requête simple (définition, résumé, météo, calcul…). Jamais de
+      consensus, sauf opt-in explicite de l'utilisateur.
+    - LEVEL_2 : zone professionnelle intermédiaire (analyse, comparaison,
+      conseil). Pas de consensus par défaut, MAIS consensus activable à la
+      demande de l'utilisateur (opt-in) ou du caller (force_consensus).
+    - LEVEL_3 : requête critique (cas réel, décision, litige, responsabilité,
+      action critique). Consensus toujours requis.
+    """
+    LEVEL_1 = "LEVEL_1"
+    LEVEL_2 = "LEVEL_2"
+    LEVEL_3 = "LEVEL_3"
 
 
 class DecisionTypeForDomain(str, Enum):
@@ -399,6 +420,31 @@ CRITICAL_ACTION_PATTERNS: List[str] = [
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CONSENSUS OPT-IN — demande EXPLICITE de l'utilisateur (LEVEL 2 → consensus)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Ces patterns capturent une demande EXPLICITE de consensus formulée par
+# l'utilisateur dans le chat. Ils sont volontairement spécifiques pour éviter
+# les faux positifs (ex. « qu'est-ce que le consensus scientifique ? » ne doit
+# PAS déclencher de consensus). Exige soit un marqueur (/consensus, [consensus]),
+# soit une formulation d'intention non ambiguë.
+CONSENSUS_OPT_IN_PATTERNS: List[str] = [
+    r"/consensus\b",                              # commande explicite
+    r"\[consensus\]",                             # tag explicite
+    r"\b(?:par|avec|en)\s+consensus\b",           # "valide par consensus"
+    r"\bconsensus\s+multi[\s\-]?agents?\b",       # "consensus multi-agents"
+    r"\b(?:utilise|active|lance|d[ée]clenche|fais|faire|applique|passe)\s+(?:le\s+|un\s+)?consensus\b",
+    r"\b(?:demande|veux|souhaite|exige)\s+(?:un\s+)?consensus\b",
+    r"\bsecond(?:e)?\s+avis\b",                   # "un second avis"
+    r"\bdeuxi[èe]me\s+avis\b",
+    r"\bdouble\s+avis\b",
+    r"\bsecond\s+opinion\b",
+    r"\b(?:by|via|through)\s+consensus\b",
+    r"\bcross[\s\-]?check\s+by\s+consensus\b",
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # DETECTION RESULTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -426,12 +472,22 @@ class CriticalityAssessment:
     # Flags
     can_bypass: bool = False  # True uniquement en dev/test
     bypass_reason: Optional[str] = None
+
+    # Niveau de criticité explicite (taxonomie produit LEVEL_1/2/3).
+    # Défaut LEVEL_2 = zone professionnelle intermédiaire (ni simple, ni critique).
+    level: CriticalityLevel = CriticalityLevel.LEVEL_2
+
+    # True si le consensus a été déclenché par une demande explicite de
+    # l'utilisateur (opt-in) plutôt que par la criticité intrinsèque (LEVEL 3).
+    consensus_opt_in: bool = False
     
     def to_dict(self) -> Dict[str, Any]:
         """Sérialise pour audit."""
         return {
             "requires_consensus": self.requires_consensus,
             "strict_evidence_mode": self.strict_evidence_mode,
+            "level": self.level.value,
+            "consensus_opt_in": self.consensus_opt_in,
             "domain": self.domain.value,
             "decision_type": self.decision_type.value,
             "confidence": self.confidence,
@@ -509,6 +565,14 @@ class CriticalityRouter:
             except re.error:
                 logger.warning("Invalid LEVEL3 pattern skipped: %r", p)
 
+        # Opt-in consensus utilisateur (LEVEL 2 → consensus à la demande).
+        self._compiled_optin_patterns: List[re.Pattern] = []
+        for p in CONSENSUS_OPT_IN_PATTERNS:
+            try:
+                self._compiled_optin_patterns.append(re.compile(p, re.IGNORECASE))
+            except re.error:
+                logger.warning("Invalid opt-in pattern skipped: %r", p)
+
         # Mode
         if is_production is None:
             env = os.environ.get("EVIDENCE_ENV", "production").lower()
@@ -559,19 +623,29 @@ class CriticalityRouter:
             detected_domain = profile_domain_map[profile_lower]
             domain_confidence = max(domain_confidence, 0.9)
             domain_matches = domain_matches + [f"profile:{profile_lower}"]
+
+        # ── Opt-in consensus utilisateur ──
+        # caller_forced : le caller impose le consensus (force_consensus=True).
+        # user_opt_in   : l'utilisateur le DEMANDE dans le chat ET le caller n'a
+        #                 pas tranché (force_consensus is None). Un force_consensus
+        #                 explicite (True/False) prime toujours sur l'opt-in user.
+        caller_forced = force_consensus is True
+        user_opt_in = (force_consensus is None) and self._detect_consensus_opt_in(query)
         
         # ═══════════════════════════════════════════════════════════════════════
         # CLASSIFICATION À 3 NIVEAUX
         # ═══════════════════════════════════════════════════════════════════════
         #
         # LEVEL 1 — SIMPLE: définition, résumé, explication, météo, traduction
-        #           → JAMAIS de consensus, réponse directe
+        #           → JAMAIS de consensus, SAUF opt-in explicite de l'utilisateur
         #
         # LEVEL 2 — PROFESSIONNEL: analyse, comparaison, conseil
-        #           → PAS de consensus par défaut, réponse structurée
+        #           → PAS de consensus par défaut, MAIS consensus à la demande
+        #             (opt-in utilisateur via CONSENSUS_OPT_IN_PATTERNS, ou
+        #              force_consensus=True du caller)
         #
         # LEVEL 3 — CRITIQUE: cas réel, décision à prendre, litige, responsabilité
-        #           → SEUL niveau qui déclenche le consensus
+        #           → consensus TOUJOURS requis
         #
         # ═══════════════════════════════════════════════════════════════════════
         
@@ -582,7 +656,10 @@ class CriticalityRouter:
         # Même si ça contient des mots juridiques/médicaux!
         # (query_hash déjà calculé plus haut dans cette méthode — DEF-CR-4 fix : doublon retiré)
         
-        if self._is_level1_simple(query) and force_consensus is not True:
+        # L'opt-in utilisateur (et a fortiori force_consensus=True) prime sur le
+        # bypass LEVEL 1 : si l'utilisateur DEMANDE explicitement un consensus,
+        # même une requête simple y est soumise.
+        if self._is_level1_simple(query) and not caller_forced and not user_opt_in:
             logger.info(f"LEVEL 1 (simple) detected, bypassing consensus: '{query[:50]}...'")
             if detected_domain != CriticalDomain.DEFAULT:
                 reasons.append(f"Domain context: {detected_domain.value}")
@@ -602,12 +679,16 @@ class CriticalityRouter:
                     force_consensus is not True
                 ),
                 query_hash=query_hash,
+                level=CriticalityLevel.LEVEL_1,
+                consensus_opt_in=False,
             )
             logger.info(json.dumps({
                 "event": "router_decision",
                 "correlation_id": query_hash,
                 "query_hash": query_hash,
                 "requires_consensus": assessment.requires_consensus,
+                "level": assessment.level.value,
+                "consensus_opt_in": assessment.consensus_opt_in,
                 "domain": assessment.domain.value,
                 "decision_type": assessment.decision_type.value,
                 "reasons": assessment.reasons[:5],
@@ -644,21 +725,35 @@ class CriticalityRouter:
         # RÈGLE 3: Force consensus si demandé explicitement
         # ─────────────────────────────────────────────────────────────────────
         
-        if force_consensus is True:
+        if caller_forced:
             reasons.append("Consensus forced by caller")
             is_level3 = True
+        elif user_opt_in:
+            reasons.append("Consensus requested by user (opt-in)")
         
         # ─────────────────────────────────────────────────────────────────────
         # DÉCISION FINALE
         # ─────────────────────────────────────────────────────────────────────
-        # Consensus UNIQUEMENT pour:
-        # - LEVEL 3 (cas réels, décisions critiques)
-        # - force_consensus=True (explicite)
+        # Consensus pour:
+        # - LEVEL 3 (cas réels, décisions critiques) → toujours
+        # - force_consensus=True (caller explicite)
+        # - opt-in utilisateur explicite (LEVEL 2 sur demande)
         
         requires_consensus = (
-            force_consensus is True or
-            is_level3
+            caller_forced or
+            is_level3 or
+            user_opt_in
         )
+
+        # Niveau explicite : LEVEL 1 a déjà fait un retour anticipé plus haut.
+        # Ici, soit LEVEL 3 (critique intrinsèque ou forcé caller), soit LEVEL 2
+        # (zone professionnelle, avec ou sans consensus opt-in).
+        level = CriticalityLevel.LEVEL_3 if is_level3 else CriticalityLevel.LEVEL_2
+
+        # consensus_opt_in = True UNIQUEMENT si l'opt-in utilisateur est le
+        # déclencheur réel (la requête ne serait PAS critique sinon). Sur une
+        # requête intrinsèquement LEVEL 3, le flag reste False (criticité = driver).
+        consensus_opt_in_flag = user_opt_in and not is_level3
         
         # Strict evidence mode pour LEVEL 3 + domaines critiques
         strict_evidence = is_level3 and detected_domain in {
@@ -697,6 +792,8 @@ class CriticalityRouter:
             can_bypass=can_bypass,
             bypass_reason="Debug profile in non-production" if can_bypass else None,
             query_hash=query_hash,
+            level=level,
+            consensus_opt_in=consensus_opt_in_flag,
         )
         
         logger.info(json.dumps({
@@ -704,6 +801,8 @@ class CriticalityRouter:
             "correlation_id": query_hash,
             "query_hash": query_hash,
             "requires_consensus": assessment.requires_consensus,
+            "level": assessment.level.value,
+            "consensus_opt_in": assessment.consensus_opt_in,
             "domain": assessment.domain.value,
             "decision_type": assessment.decision_type.value,
             "reasons": assessment.reasons[:5],
@@ -818,6 +917,19 @@ class CriticalityRouter:
         
         return False
     
+    def _detect_consensus_opt_in(self, query: str) -> bool:
+        """Détecte une demande EXPLICITE de consensus formulée par l'utilisateur.
+
+        Spécifique par construction (cf. CONSENSUS_OPT_IN_PATTERNS) afin d'éviter
+        les faux positifs sur le mot « consensus » employé descriptivement.
+        """
+        query_lower = query.lower().strip()
+        for pattern in self._compiled_optin_patterns:
+            if pattern.search(query_lower):
+                logger.debug(f"Consensus opt-in pattern matched: {pattern.pattern}")
+                return True
+        return False
+
     # Alias pour rétro-compatibilité
     def _is_trivial_question(self, query: str) -> bool:
         """Alias pour rétro-compatibilité."""
@@ -958,6 +1070,7 @@ def assess_criticality(
 __all__ = [
     # Enums
     "CriticalDomain",
+    "CriticalityLevel",
     "DecisionTypeForDomain",
     # Constants
     "DEBUG_BYPASS_PROFILES",
