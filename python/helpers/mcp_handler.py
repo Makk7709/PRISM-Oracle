@@ -814,6 +814,12 @@ class MCPConfig(BaseModel):
 
 T = TypeVar("T")
 
+# Extra seconds added on top of the per-operation read timeout to derive the HARD
+# session timeout (covers the otherwise-unbounded stdio transport spawn). Keep small:
+# the inner session read timeout should normally fire first; this only guarantees an
+# upper bound so MCP can never deadlock the message loop under FD/process pressure.
+_MCP_HARD_TIMEOUT_BUFFER_SECONDS = 5
+
 
 class MCPClientBase(ABC):
     # server: Union[MCPServerLocal, MCPServerRemote] # Defined in __init__
@@ -848,60 +854,83 @@ class MCPClientBase(ABC):
         """
         Manages the lifecycle of an MCP session for a single operation.
         Creates a temporary session, executes coro_func with it, and ensures cleanup.
+
+        The whole operation (transport spawn + session.initialize + coro_func) is
+        bounded by a HARD timeout (`asyncio.wait_for`). This is critical: the stdio
+        transport spawn (`stdio_client`) is otherwise NOT time-bounded, so under file
+        descriptor pressure it could hang forever while `MCPConfig.__lock` is held,
+        deadlocking every subsequent message prompt build (`get_tools_prompt`).
+        See tests/test_mcp_init_timeout.py and the 2026-06-03 incident report.
+        On timeout we fail-open: the caller marks the server as errored and the agent
+        keeps responding without this tool.
         """
         operation_name = coro_func.__name__  # For logging
-        # PrintStyle(font_color="cyan").print(f"MCPClientBase ({self.server.name}): Creating new session for operation '{operation_name}'...")
-        # Store the original exception outside the async block
-        original_exception = None
-        try:
-            async with AsyncExitStack() as temp_stack:
-                try:
+        hard_timeout = max(1, int(read_timeout_seconds)) + _MCP_HARD_TIMEOUT_BUFFER_SECONDS
 
-                    stdio, write = await self._create_stdio_transport(temp_stack)
-                    # PrintStyle(font_color="cyan").print(f"MCPClientBase ({self.server.name} - {operation_name}): Transport created. Initializing session...")
-                    session = await temp_stack.enter_async_context(
-                        ClientSession(
-                            stdio,  # type: ignore
-                            write,  # type: ignore
-                            read_timeout_seconds=timedelta(
-                                seconds=read_timeout_seconds
-                            ),
+        async def _run() -> T:
+            # Store the original exception outside the async block
+            original_exception = None
+            try:
+                async with AsyncExitStack() as temp_stack:
+                    try:
+
+                        stdio, write = await self._create_stdio_transport(temp_stack)
+                        # PrintStyle(font_color="cyan").print(f"MCPClientBase ({self.server.name} - {operation_name}): Transport created. Initializing session...")
+                        session = await temp_stack.enter_async_context(
+                            ClientSession(
+                                stdio,  # type: ignore
+                                write,  # type: ignore
+                                read_timeout_seconds=timedelta(
+                                    seconds=read_timeout_seconds
+                                ),
+                            )
                         )
-                    )
-                    await session.initialize()
+                        await session.initialize()
 
-                    result = await coro_func(session)
+                        result = await coro_func(session)
 
-                    return result
-                except Exception as e:
-                    # Store the original exception and raise a dummy exception
-                    excs = getattr(e, "exceptions", None)  # Python 3.11+ ExceptionGroup
-                    if excs:
-                        original_exception = excs[0]
-                    else:
-                        original_exception = e
-                    # Create a dummy exception to break out of the async block
-                    raise RuntimeError("Dummy exception to break out of async block")
-        except Exception as e:
-            # Check if this is our dummy exception
-            if original_exception is not None:
-                e = original_exception
-            # We have the original exception stored
+                        return result
+                    except Exception as e:
+                        # Store the original exception and raise a dummy exception
+                        excs = getattr(e, "exceptions", None)  # Python 3.11+ ExceptionGroup
+                        if excs:
+                            original_exception = excs[0]
+                        else:
+                            original_exception = e
+                        # Create a dummy exception to break out of the async block
+                        raise RuntimeError("Dummy exception to break out of async block")
+            except Exception as e:
+                # Check if this is our dummy exception
+                if original_exception is not None:
+                    e = original_exception
+                # We have the original exception stored
+                PrintStyle(
+                    background_color="#AA4455", font_color="white", padding=False
+                ).print(
+                    f"MCPClientBase ({self.server.name} - {operation_name}): Error during operation: {type(e).__name__}: {e}"
+                )
+                raise e  # Re-raise the original exception
+            # This line should ideally be unreachable if the try/except logic within
+            # the 'async with' is exhaustive. Kept to satisfy linters.
+            raise RuntimeError(
+                f"MCPClientBase ({self.server.name} - {operation_name}): _execute_with_session exited 'async with' block unexpectedly."
+            )
+
+        try:
+            return await asyncio.wait_for(_run(), timeout=hard_timeout)
+        except (asyncio.TimeoutError, TimeoutError):
+            # Fail-open: the spawn/init exceeded the hard cap (e.g. FD exhaustion).
+            # Never let MCP block the message loop indefinitely.
             PrintStyle(
                 background_color="#AA4455", font_color="white", padding=False
             ).print(
-                f"MCPClientBase ({self.server.name} - {operation_name}): Error during operation: {type(e).__name__}: {e}"
+                f"MCPClientBase ({self.server.name} - {operation_name}): hard timeout "
+                f"after {hard_timeout}s — aborting spawn/init (fail-open)."
             )
-            raise e  # Re-raise the original exception
-        # finally:
-        #     PrintStyle(font_color="cyan").print(
-        #         f"MCPClientBase ({self.server.name} - {operation_name}): Session and transport will be closed by AsyncExitStack."
-        #     )
-        # This line should ideally be unreachable if the try/except/finally logic within the 'async with' is exhaustive.
-        # Adding it to satisfy linters that might not fully trace the raise/return paths through async context managers.
-        raise RuntimeError(
-            f"MCPClientBase ({self.server.name} - {operation_name}): _execute_with_session exited 'async with' block unexpectedly."
-        )
+            raise TimeoutError(
+                f"MCP session for '{self.server.name}' ({operation_name}) timed out "
+                f"after {hard_timeout}s"
+            )
 
     async def update_tools(self) -> "MCPClientBase":
         # PrintStyle(font_color="cyan").print(f"MCPClientBase ({self.server.name}): Starting 'update_tools' operation...")
