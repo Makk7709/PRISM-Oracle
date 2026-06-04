@@ -78,7 +78,7 @@ def main():
             )
 
     header = (
-        "/* Polices auto-hébergées (Playfair Display, Space Grotesk).\n"
+        "/* Polices auto-hébergées (Playfair Display, Space Grotesk, Rubik, Roboto Mono).\n"
         "   Généré par scripts/_vendor_fonts.py — supprime la dépendance Google Fonts\n"
         "   (SonarQube Web:S5725 + RGPD : aucun appel tiers au chargement). */\n\n"
     )

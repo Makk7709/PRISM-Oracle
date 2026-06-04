@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """One-shot script: add TARMAC company + user to deploy/users.json.
 
+Le hash du mot de passe n'est PAS codé en dur (SonarQube python:S2068) : il est lu
+depuis la variable d'environnement TARMAC_PASSWORD_HASH (fail-closed si absente).
+
 Run on the server:
-    cd PRISM-Oracle && python3 scripts/add_tarmac_user.py
+    cd PRISM-Oracle && TARMAC_PASSWORD_HASH='$argon2id$...' python3 scripts/add_tarmac_user.py
 
 This script is idempotent — safe to run multiple times.
 """
