@@ -13,16 +13,45 @@ import sys
 
 USERS_JSON = os.path.join(os.path.dirname(__file__), "..", "deploy", "users.json")
 
-TARMAC_USER = {
-    "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$3+ZCWqfPXQU7oHuWVBC5bA$Jqe4rKaK6A8BEFRk8OyhXQX09yKc7/zysZOvEabOU6A",
-    "role": "user",
-    "organization": "TARMAC",
-    "org_role": "OWNER",
-    "profile": "TARMAC — Utilisateur",
-}
+# Variable d'environnement portant le hash argon2id du compte (jamais en dur dans le
+# code — SonarQube python:S2068). À générer hors dépôt, ex. :
+#   python -c "from argon2 import PasswordHasher; print(PasswordHasher().hash('<pwd>'))"
+PASSWORD_HASH_ENV = "TARMAC_PASSWORD_HASH"
+
+
+def require_password_hash() -> str:
+    """Retourne le hash depuis l'environnement, ou échoue (fail-closed)."""
+    value = os.environ.get(PASSWORD_HASH_ENV, "").strip()
+    if not value:
+        print(
+            f"ERROR: variable d'environnement {PASSWORD_HASH_ENV} absente.\n"
+            f"Fournir le hash argon2id du compte, ex. :\n"
+            f"  {PASSWORD_HASH_ENV}='$argon2id$...' python3 scripts/add_tarmac_user.py",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    if not value.startswith("$argon2"):
+        print(
+            f"ERROR: {PASSWORD_HASH_ENV} ne ressemble pas à un hash argon2 "
+            f"(attendu un préfixe '$argon2...', pas un mot de passe en clair).",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    return value
+
+
+def build_tarmac_user(password_hash: str) -> dict:
+    return {
+        "password_hash": password_hash,
+        "role": "user",
+        "organization": "TARMAC",
+        "org_role": "OWNER",
+        "profile": "TARMAC — Utilisateur",
+    }
 
 
 def main():
+    tarmac_user = build_tarmac_user(require_password_hash())
     path = os.path.abspath(USERS_JSON)
 
     if not os.path.isfile(path):
@@ -38,7 +67,7 @@ def main():
         print("User 'tarmac' already exists — skipping")
         sys.exit(0)
 
-    users["tarmac"] = TARMAC_USER
+    users["tarmac"] = tarmac_user
     data["users"] = users
 
     with open(path, "w", encoding="utf-8") as f:

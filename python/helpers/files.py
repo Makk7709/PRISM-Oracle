@@ -342,10 +342,12 @@ def delete_dir(relative_path: str):
                 for root, dirs, files in os.walk(abs_path, topdown=False):
                     for name in files:
                         file_path = os.path.join(root, name)
-                        os.chmod(file_path, 0o777)
+                        # 0o700 (propriétaire seul) suffit pour supprimer ; 0o777
+                        # ouvrirait une fenêtre world-writable inutile (SonarQube S2612).
+                        os.chmod(file_path, 0o700)
                     for name in dirs:
                         dir_path = os.path.join(root, name)
-                        os.chmod(dir_path, 0o777)
+                        os.chmod(dir_path, 0o700)
 
                 # try again after changing permissions
                 shutil.rmtree(abs_path, ignore_errors=True)
