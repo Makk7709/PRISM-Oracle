@@ -34,12 +34,45 @@ class EventLoopThread:
     def _run_event_loop(self):
         if not self.loop:
             raise RuntimeError("Event loop is not initialized")
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        loop = self.loop
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_forever()
+        finally:
+            # Libère les ressources OS de la boucle (1 epoll + 2 socketpair self-pipe).
+            # Sans ce close(), chaque boucle terminée/remplacée fuit ~3 file descriptors
+            # (incident prod 2026-06-03 : saturation des FD -> blocage du spawn MCP).
+            try:
+                pending = [t for t in asyncio.all_tasks(loop) if not t.done()]
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
+                loop.run_until_complete(loop.shutdown_asyncgens())
+            except Exception:
+                pass  # best-effort drain ; on ferme la boucle quoi qu'il arrive
+            finally:
+                loop.close()
 
     def terminate(self):
-        if self.loop and self.loop.is_running():
-            self.loop.stop()
+        loop = self.loop
+        thread = self.thread
+        # `loop.stop()` doit être planifié SUR le thread de la boucle, sinon run_forever
+        # ne rend jamais la main (le close() du finally n'est jamais atteint -> fuite FD).
+        if loop is not None and loop.is_running():
+            try:
+                loop.call_soon_threadsafe(loop.stop)
+            except RuntimeError:
+                pass  # boucle déjà fermée/arrêtée
+        # Attendre la fin du thread garantit que le close() a bien libéré les FD.
+        if (
+            thread is not None
+            and thread.is_alive()
+            and thread is not threading.current_thread()
+        ):
+            thread.join(timeout=5)
         self.loop = None
         self.thread = None
 
@@ -120,30 +153,9 @@ class DeferredTask:
         if self._future and not self._future.done():
             self._future.cancel()
 
-        if (
-            terminate_thread
-            and self.event_loop_thread.loop
-            and self.event_loop_thread.loop.is_running()
-        ):
-
-            def cleanup():
-                tasks = [
-                    t
-                    for t in asyncio.all_tasks(self.event_loop_thread.loop)
-                    if t is not asyncio.current_task(self.event_loop_thread.loop)
-                ]
-                for task in tasks:
-                    task.cancel()
-                    try:
-                        # Give tasks a chance to cleanup
-                        if self.event_loop_thread.loop:
-                            self.event_loop_thread.loop.run_until_complete(
-                                asyncio.gather(task, return_exceptions=True)
-                            )
-                    except Exception:
-                        pass  # Ignore cleanup errors
-
-            self.event_loop_thread.loop.call_soon_threadsafe(cleanup)
+        if terminate_thread:
+            # terminate() planifie l'arrêt sur le thread de la boucle, draine les tâches
+            # en attente et ferme la boucle (libération déterministe des FD).
             self.event_loop_thread.terminate()
 
     def kill_children(self) -> None:

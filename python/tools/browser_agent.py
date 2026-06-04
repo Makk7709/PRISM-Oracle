@@ -121,8 +121,12 @@ class State:
 
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                loop.run_until_complete(self.browser_session.close()) if self.browser_session else None
-                loop.close()
+                try:
+                    loop.run_until_complete(self.browser_session.close()) if self.browser_session else None
+                finally:
+                    # close() même si la fermeture de session lève, sinon la boucle
+                    # (epoll + socketpair) fuit (incident FD 2026-06-03).
+                    loop.close()
             except Exception as e:
                 PrintStyle().error(f"Error closing browser session: {e}")
             finally:
