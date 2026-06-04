@@ -1,4 +1,5 @@
 import asyncio
+import os
 import threading
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -58,7 +59,7 @@ class _FakeScheduler:
 
 def _build_poll_handler() -> tuple[Flask, Poll]:
     app = Flask("test-app")
-    app.secret_key = "test-secret"
+    app.secret_key = os.urandom(16)  # secret éphémère (jamais en dur — SonarQube S6779)
     handler = Poll(app, threading.Lock())
     return app, handler
 
@@ -157,7 +158,7 @@ def test_poll_hides_tasks_from_other_users(monkeypatch):
 
 def test_scheduler_task_create_persists_task_owner(monkeypatch):
     app = Flask("test-app-create")
-    app.secret_key = "test-secret"
+    app.secret_key = os.urandom(16)  # secret éphémère (jamais en dur — SonarQube S6779)
     handler = SchedulerTaskCreate(app, threading.Lock())
 
     captured = {}

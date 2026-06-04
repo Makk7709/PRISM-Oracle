@@ -11,6 +11,7 @@ vrais positifs en TDD, neutralisation tracée et justifiée des faux positifs, p
 | Catégorie | Findings | Vrais positifs corrigés | Faux positifs neutralisés (tracés) |
 |---|---:|---:|---:|
 | `python:S2068` / `javascript:S2068` (credentials hard-coded) | ~30 | 1 (hash sorti du code) | ~29 (fixtures de test, placeholder UI, exemples) |
+| `python:S6779` (Flask secret keys disclosed) — **BLOCKER** | 2 | 2 (corrigés à la source, secret éphémère) | 0 |
 | `python:S2612` (file permissions world-accessible) | 2 | 2 | 0 |
 | `Web:S5725` (remote artifacts sans intégrité) | 2 | 2 (+ 2 hors-liste corrigés) | 0 |
 
@@ -38,6 +39,16 @@ durcissements, corrigés.
 > Bénéfice complémentaire : suppression de tout appel tiers au chargement de l'UI → **argument RGPD**
 > (aucune fuite d'IP/UA vers Google au rendu). Provenance reproductible : `scripts/_vendor_fonts.py`.
 
+### 2.2bis `python:S6779` — Flask secret keys should not be disclosed (BLOCKER)
+
+| Emplacement | Verdict | Action | Preuve |
+|---|---|---|---|
+| `tests/test_scheduler_visibility.py:61,160` → `app.secret_key = "test-secret"` | Faux positif (secret FACTICE d'un Flask de **test**, aucune divulgation réelle) — mais sévérité BLOCKER | Corrigé **à la source** : `app.secret_key = os.urandom(16)` (secret éphémère, plus aucun littéral) | 3 tests verts ; grep confirme **aucun** `secret_key = "..."` hors `tests/`, donc **aucun secret Flask en dur en code de prod** |
+
+> Choix : suppression du littéral à la source plutôt qu'exclusion Sonar — un BLOCKER doit
+> disparaître, pas être masqué. Les autres tests passent le secret via `create_app(secret_key=...)`
+> (non flaggé par S6779) ; ils restent couverts par la règle S2068 ci-dessous.
+
 ### 2.3 `python:S2068` / `javascript:S2068` — Credentials hard-coded (MAJOR)
 
 #### a) Vrai positif (corrigé)
@@ -53,7 +64,7 @@ durcissements, corrigés.
 | `python/helpers/settings.py:198` | `PASSWORD_PLACEHOLDER = "****PSWD****"` — masque d'affichage UI, pas un secret |
 | `python/helpers/settings.py:1393` | Exemple `EMAIL_PASSWORD="..."` dans un **libellé d'aide** de l'UI |
 | `webui/components/settings/secrets/example-secrets.html` | Fichier d'**exemple** de la doc UI |
-| `tests/**` (~29 occurrences : `test_multi_user_auth`, `test_login_rate_limit_e2e`, `test_multi_tenant_security`, `test_multi_user_e2e`, `test_multi_user_flask`, `test_dump_restore_pipeline`) | **Fixtures de test** avec valeurs FACTICES (ex. `"plaintext_not_hashed"`), requises par les tests d'authentification |
+| `tests/**` (plusieurs fichiers : `test_multi_user_auth`, `test_login_rate_limit_e2e`, `test_multi_tenant_security`, `test_multi_user_e2e`, `test_multi_user_flask`, `test_dump_restore_pipeline`, `infra/test_postgres_compose`, `security/test_session_scope_resolution`) | **Fixtures de test** avec valeurs FACTICES (ex. `"plaintext_not_hashed"`, `secret_key="test-secret"`), requises par les tests d'authentification |
 
 > Neutralisation **non silencieuse** : règles `sonar.issue.ignore.multicriteria` documentées avec motif
 > dans `sonar-project.properties`. Les fichiers de test restent analysés pour toutes les autres règles.
@@ -64,6 +75,7 @@ durcissements, corrigés.
 
 | Fichier | Nature |
 |---|---|
+| `tests/test_scheduler_visibility.py` | fix S6779 BLOCKER (secret Flask éphémère) |
 | `python/helpers/files.py` | fix S2612 (0o700) |
 | `tests/test_files_delete_perms.py` | test régression S2612 (créé) |
 | `scripts/add_tarmac_user.py` | fix S2068 (hash via env) |
