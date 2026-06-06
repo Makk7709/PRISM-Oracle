@@ -40,8 +40,6 @@ async def preload():
         # async tasks to preload
         tasks = [
             preload_embedding(),
-            # preload_whisper(),
-            # preload_kokoro()
         ]
 
         await asyncio.gather(*tasks, return_exceptions=True)

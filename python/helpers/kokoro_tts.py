@@ -28,14 +28,9 @@ def _safe_notify(*args, **kwargs):
 
 async def preload():
     try:
-        # return await runtime.call_development_function(_preload)
         return await _preload()
     except Exception as e:
-        # if not runtime.is_development():
         raise e
-        # Fallback to direct execution if RFC fails in development
-        # PrintStyle.standard("RFC failed, falling back to direct execution...")
-        # return await _preload()
 
 
 async def _preload():
@@ -68,13 +63,9 @@ async def _preload():
 
 async def is_downloading():
     try:
-        # return await runtime.call_development_function(_is_downloading)
         return _is_downloading()
     except Exception as e:
-        # if not runtime.is_development():
         raise e
-        # Fallback to direct execution if RFC fails in development
-        # return _is_downloading()
 
 
 def _is_downloading():
@@ -82,13 +73,9 @@ def _is_downloading():
 
 async def is_downloaded():
     try:
-        # return await runtime.call_development_function(_is_downloaded)
         return _is_downloaded()
     except Exception as e:
-        # if not runtime.is_development():
         raise e
-        # Fallback to direct execution if RFC fails in development
-        # return _is_downloaded()
 
 def _is_downloaded():
     return _pipeline is not None
@@ -97,7 +84,6 @@ def _is_downloaded():
 async def synthesize_sentences(sentences: list[str]):
     """Generate audio for multiple sentences and return concatenated base64 audio"""
     try:
-        # return await runtime.call_development_function(_synthesize_sentences, sentences)
         return await _synthesize_sentences(sentences)
     except Exception as e:
         # if not runtime.is_development():

@@ -24,10 +24,8 @@ def _safe_notify(*args, **kwargs):
 
 async def preload(model_name:str):
     try:
-        # return await runtime.call_development_function(_preload, model_name)
         return await _preload(model_name)
     except Exception as e:
-        # if not runtime.is_development():
         raise e
         
 async def _preload(model_name:str):
@@ -58,7 +56,6 @@ async def _preload(model_name:str):
         is_updating_model = False
 
 async def is_downloading():
-    # return await runtime.call_development_function(_is_downloading)
     return _is_downloading()
 
 def _is_downloading():
@@ -66,19 +63,14 @@ def _is_downloading():
 
 async def is_downloaded():
     try:
-        # return await runtime.call_development_function(_is_downloaded)
         return _is_downloaded()
     except Exception as e:
-        # if not runtime.is_development():
         raise e
-        # Fallback to direct execution if RFC fails in development
-        # return _is_downloaded()
 
 def _is_downloaded():
     return _model is not None
 
 async def transcribe(model_name:str, audio_bytes_b64: str):
-    # return await runtime.call_development_function(_transcribe, model_name, audio_bytes_b64)
     return await _transcribe(model_name, audio_bytes_b64)
 
 

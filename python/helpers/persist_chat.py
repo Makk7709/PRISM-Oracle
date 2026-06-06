@@ -247,17 +247,6 @@ def _deserialize_agents(
     return zero or Agent(0, config, context)
 
 
-# def _deserialize_history(history: list[dict[str, Any]]):
-#     result = []
-#     for hist in history:
-#         content = hist.get("content", "")
-#         msg = (
-#             HumanMessage(content=content)
-#             if hist.get("type") == "human"
-#             else AIMessage(content=content)
-#         )
-#         result.append(msg)
-#     return result
 
 
 def _deserialize_log(data: dict[str, Any]) -> "Log":

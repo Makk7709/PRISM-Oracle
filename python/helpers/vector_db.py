@@ -69,7 +69,6 @@ class VectorDB:
             docstore=InMemoryDocstore(),
             index_to_docstore_id={},
             distance_strategy=DistanceStrategy.COSINE,
-            # normalize_L2=True,
             relevance_score_fn=cosine_normalizer,
         )
 

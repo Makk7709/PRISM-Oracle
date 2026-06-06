@@ -5,13 +5,10 @@ import re
 from typing import Tuple
 from python.helpers.log import Log
 from python.helpers.print_style import PrintStyle
-# from python.helpers.strings import calculate_valid_match_lengths
 
 
 class SSHInteractiveSession:
 
-    # end_comment = "# @@==>> SSHInteractiveSession End-of-Command  <<==@@"
-    # ps1_label = "SSHInteractiveSession CLI>"
 
     def __init__(
         self, logger: Log, hostname: str, port: int, username: str, password: str, cwd: str|None = None
@@ -122,7 +119,6 @@ class SSHInteractiveSession:
             timeout <= 0 or time.time() - start_time < timeout
         ):
 
-            # data = self.shell.recv(1024)
             data = self.receive_bytes()
 
             # # Trim own command from output

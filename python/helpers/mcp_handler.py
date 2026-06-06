@@ -755,9 +755,6 @@ class MCPConfig(BaseModel):
                     prompt += (
                         f"\n### {server_name}.{tool['name']}:\n"
                         f"{tool['description']}\n\n"
-                        # f"#### Categories:\n"
-                        # f"* kind: MCP Server Tool\n"
-                        # f'* server: "{server_name}" ({server.description})\n\n'
                         # f"#### Arguments:\n"
                     )
 

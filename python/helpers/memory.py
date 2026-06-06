@@ -4,7 +4,6 @@ from langchain.storage import InMemoryByteStore, LocalFileStore
 from langchain.embeddings import CacheBackedEmbeddings
 from python.helpers import guids
 
-# from langchain_chroma import Chroma
 from langchain_community.vectorstores import FAISS
 
 # faiss needs to be patched for python 3.12 on arm #TODO remove once not needed
@@ -179,7 +178,6 @@ class Memory:
                 embeddings=embedder,
                 allow_dangerous_deserialization=True,
                 distance_strategy=DistanceStrategy.COSINE,
-                # normalize_L2=True,
                 relevance_score_fn=Memory._cosine_normalizer,
             )  # type: ignore
 
@@ -210,7 +208,6 @@ class Memory:
                 docstore=InMemoryDocstore(),
                 index_to_docstore_id={},
                 distance_strategy=DistanceStrategy.COSINE,
-                # normalize_L2=True,
                 relevance_score_fn=Memory._cosine_normalizer,
             )
 
@@ -371,9 +368,6 @@ class Memory:
 
             # Delete documents with IDs over the threshold score
             if document_ids:
-                # fnd = self.db.get(where={"id": {"$in": document_ids}})
-                # if fnd["ids"]: self.db.delete(ids=fnd["ids"])
-                # tot += len(fnd["ids"])
                 await self.db.adelete(ids=document_ids)
                 tot += len(document_ids)
 

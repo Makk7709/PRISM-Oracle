@@ -81,3 +81,38 @@ Suppression de **code CSS commenté** (`S125`, 19 findings) et d'une **règle vi
 **Audit hostile** : commentaires descriptifs de section préservés (non flaggés) ; accolades
 équilibrées sur les 7 fichiers ; aucune règle vide introduite (le seul `{}` résiduel est
 `|| {}` d'une expression Alpine, pré-existant). **0 défaut.**
+
+### Paquet S125-sep — séparateurs décoratifs Python (python:S125, 163 findings)
+
+`python:S125` total = **204** findings sur 105 fichiers. Classification automatique :
+- **163 séparateurs décoratifs** (`# ────`/`# ═══`) → faux positifs « commented code ».
+- **34 vrais blocs de code commenté** → traités au paquet suivant.
+- **7 « autres »** = commentaires inline sur du vrai code (`return False  # UNSUPPORTED`) → FP.
+
+Action : suppression des 163 lignes de pure décoration via `tmp/sonar/remove_separators.py`,
+qui **re-vérifie le contenu de chaque ligne** (refus si ce n'est pas un séparateur). Les
+libellés de section (`# FINANCE`, …) restent. **163/163 conformes, 0 skip.**
+
+**Audit hostile** : compilation des 87 fichiers → 87/87 OK ; diff = 163 deletions, 0 ligne
+ajoutée hors décoration, 0 ligne de code ; gitlinks `mcp_servers/*` exclus (dirty
+préexistant). **0 défaut.** Commit `4b7199e0`.
+
+### Paquet S125-code — vrai code commenté Python (python:S125, 34 findings → 14 fichiers)
+
+Suppression des blocs de code réellement commenté (méthodes mortes `_clean_text`/`_chunk_text`
+dans `synthesize.py`, chemins RFC dev désactivés dans `kokoro_tts.py`/`whisper.py`, imports
+morts dans `memory.py`/`messages.py`/`shell_ssh.py`, fonction `_deserialize_history` morte
+dans `persist_chat.py`, etc.) via `tmp/sonar/remove_code_comments.py`.
+
+**Garde-fou** : toute ligne ciblée doit être un commentaire ou une ligne vide ; sinon le
+fichier est abandonné (anti off-by-one / anti-régression). 14/14 fichiers traités, **0
+abandon**, 130 lignes retirées. Compilation 14/14 OK ; diff = commentaires/vides uniquement.
+
+**Faux positifs conservés (prose, pas du code)** — non touchés :
+- `python/helpers/legal_orchestrator.py:296` — `# MEDIUM, HIGH, CRITICAL + non-INFO = required`
+  (commentaire explicatif du `return True`).
+- `python/helpers/legal_pipeline.py:1179-1181` — documentation des seuils de consensus
+  (`LOW/MEDIUM: 2/3`, `BOARD: …`, `HIGH: unanimity`).
+- `python/helpers/rfc.py:63` — `# import module` (libellé pédagogique, pas du code exécutable).
+
+**0 défaut.**

@@ -97,7 +97,6 @@ class SchedulerTaskCreate(ApiHandler):
 
         # Validate required fields
         if not name or not prompt:
-            # return {"error": "Missing required fields: name, system_prompt, prompt"}
             raise ValueError("Missing required fields: name, system_prompt, prompt")
 
         task = None
