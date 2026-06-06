@@ -655,7 +655,7 @@ class BrowserCompatibleChatWrapper(ChatOpenRouter):
                 if resp.choices[0].message.content is not None and not resp.choices[0].message.content.startswith("{"): # type: ignore
                     js = dirty_json.parse(resp.choices[0].message.content) # type: ignore
                     resp.choices[0].message.content = dirty_json.stringify(js) # type: ignore
-        except Exception as e:
+        except Exception:
             pass
 
         return resp

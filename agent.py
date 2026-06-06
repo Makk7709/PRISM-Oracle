@@ -597,7 +597,7 @@ class Agent:
                             f"LOOP_GUARD_TRIGGERED: {e.reason.value} — {e.detail}"
                         )
                         return format_budget_exceeded_response(e)
-                    except InterventionException as e:
+                    except InterventionException:
                         pass  # intervention message has been handled in handle_intervention(), proceed with conversation loop
                     except RepairableException as e:
                         # Forward repairable errors to the LLM, maybe it can fix them
@@ -625,7 +625,7 @@ class Agent:
                     kvps=e.state.to_dict(),
                 )
                 return format_budget_exceeded_response(e)
-            except InterventionException as e:
+            except InterventionException:
                 pass  # just start over
             except Exception as e:
                 self.handle_critical_exception(e)
@@ -1148,7 +1148,7 @@ class Agent:
                     parsed=response,
                 )
 
-        except Exception as e:
+        except Exception:
             pass
 
     def get_tool(
@@ -1174,7 +1174,7 @@ class Agent:
                 classes = extract_tools.load_classes_from_file(
                     "python/tools/" + name + ".py", Tool  # type: ignore[arg-type]
                 )
-            except Exception as e:
+            except Exception:
                 pass
         tool_class = classes[0] if classes else Unknown
         return tool_class(

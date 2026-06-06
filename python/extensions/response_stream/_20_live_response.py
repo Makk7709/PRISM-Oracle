@@ -37,5 +37,5 @@ class LiveResponse(Extension):
             # update log message
             log_item = loop_data.params_temporary["log_item_response"]
             log_item.update(content=parsed["tool_args"]["text"])
-        except Exception as e:
+        except Exception:
             pass

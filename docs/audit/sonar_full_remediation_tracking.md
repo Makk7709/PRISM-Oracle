@@ -303,3 +303,26 @@ import top-level (fin réelle calculée par AST pour gérer les imports multi-li
   (`test_pdf_migration_parity`, `test_rebrand_agent_zero`) sont **préexistants** — prouvé en
   rejouant ces fichiers sur l'arbre **sans** mes modifs (échouent à l'identique). Round-trip
   `git stash` revérifié : 0 marqueur de conflit, 19/19 compilent, import OK. **0 défaut résiduel.**
+
+### Paquet S1481-py — variables locales inutilisées (python:S1481, 165 findings ; via ruff F841)
+
+`findings.json` ne porte pas le contexte ; détection croisée avec **ruff F841** (105 occurrences :
+68 prod, 37 tests ; 17 = binding d'exception `as e` inutilisé, 17 « safe-fix », 88 « unsafe-fix »).
+
+**Sous-lot A — bindings d'exception inutilisés (16 corrigés, 13 fichiers)** : `except X as e:` →
+`except X:` quand `e` n'est **jamais** lu dans le handler (blocs `pass`/`return`/assignation simple).
+Fichiers : `agent.py` (×4), `models.py`, `api/tunnel_proxy.py`, `tools/browser_agent.py`, et 6
+extensions de masquage/stream + `system_prompt`/`update_check`/`rename_chat`.
+
+**Audit hostile — 1 DEF CRITIQUE évité** : ruff classait `mcp_handler.py:899` en « safe-fix »
+alors que `e` y **est** réutilisé (`raise e` L909) sur le chemin où `original_exception is None` —
+retirer `as e` provoquerait un `NameError` runtime (= la régression déjà revertée en session
+antérieure). **Exclu du fix** (revert ciblé après `ruff --fix`).
+- Filet de sécurité AST : aucun handler `except` sans binding (dans les fichiers modifiés) ne
+  référence `e` → 0 danger.
+- `py_compile` 13/13 OK ; ruff F841 : 105 → **89** (les 16 visés résolus ; le 1 « fixable »
+  restant = `mcp_handler`, assumé non corrigé). **0 défaut.**
+
+**Sous-lot B (à suivre)** : les 88 affectations `var = <expr>` inutilisées (« unsafe-fix » ruff) —
+audit cas par cas (RHS pur → suppression ; appel à effet de bord → garder l'appel ; tâches
+asyncio `task = create_task(...)` → ne pas supprimer la ligne).
