@@ -1,4 +1,5 @@
 import asyncio
+import os
 import paramiko
 import time
 import re
@@ -8,6 +9,39 @@ from python.helpers.print_style import PrintStyle
 
 # Constantes (déduplication littéraux — python:S1192)
 _ERR_SHELL_NOT_CONNECTED = "Shell not connected"
+
+# Hôtes loopback : le shell SSH de l'agent ne cible que son propre sandbox de
+# code-exec. Sur loopback, auto-ajouter la clé d'hôte n'expose à aucun MITM.
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "host.docker.internal"})
+
+
+def _is_loopback_host(hostname) -> bool:
+    if not hostname:
+        return False
+    return str(hostname).strip().lower() in _LOOPBACK_HOSTS
+
+
+def _configure_host_key_verification(client: "paramiko.SSHClient", hostname) -> None:
+    """Durcissement S-4 (audit qualité 2026-06).
+
+    - Loopback (sandbox local) : AutoAddPolicy toléré (aucune surface MITM).
+    - Hôte distant : on charge les known_hosts système et on REJETTE toute clé
+      inconnue (détection d'usurpation / changement de clé d'hôte).
+    - Échappatoire opt-in (NON sûre) : KOREV_SSH_TRUST_UNKNOWN_HOSTS=1 force
+      l'auto-trust même pour un hôte distant (pour un RFC-SSH distant historique
+      sans known_hosts). À éviter en production.
+    """
+    trust_unknown = os.environ.get("KOREV_SSH_TRUST_UNKNOWN_HOSTS", "").strip().lower() in (
+        "1", "true", "yes",
+    )
+    if _is_loopback_host(hostname) or trust_unknown:
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec B507 - loopback (pas de MITM) ou opt-in explicite KOREV_SSH_TRUST_UNKNOWN_HOSTS
+    else:
+        try:
+            client.load_system_host_keys()
+        except Exception:  # nosec B110 - known_hosts absent => RejectPolicy ci-dessous reste strict
+            pass
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
 
 
 class SSHInteractiveSession:
@@ -22,7 +56,7 @@ class SSHInteractiveSession:
         self.username = username
         self.password = password
         self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        _configure_host_key_verification(self.client, hostname)
         self.shell = None
         self.full_output = b""
         self.last_command = b""

@@ -37,14 +37,16 @@ Bandit/semgrep signalent des *patterns* ; voici le tri vrai-risque / faux-positi
 | S-1 | MD5 (B324) | `knowledge_import.py:26` | **FAUX POSITIF** — checksum de détection de changement, non cryptographique | `usedforsecurity=False` (silence + intention) |
 | S-2 | MD5 (B324) | `router/routing_contract.py:300` | **FAUX POSITIF** — hash stable d'ID de contrat | `usedforsecurity=False` |
 | S-3 | MD5 (B324) | `strategic_charts.py:586` | **FAUX POSITIF** — hash de nom de fichier de graphique | `usedforsecurity=False` |
-| S-4 | Paramiko `AutoAddPolicy` (B507) | `shell_ssh.py:25` | **RÉEL (by-design)** — auto-trust hôte inconnu → MITM au 1ᵉʳ connect | décision : `RejectPolicy` + known_hosts, ou documenter le risque assumé |
+| S-4 | Paramiko `AutoAddPolicy` (B507) | `shell_ssh.py:25` | **RÉEL (by-design)** — auto-trust hôte inconnu → MITM au 1ᵉʳ connect | **FAIT** : AutoAdd réservé au loopback (sandbox), `RejectPolicy`+known_hosts pour tout hôte distant ; échappatoire opt-in `KOREV_SSH_TRUST_UNKNOWN_HOSTS` |
 | S-5 | SQLi (B608) | `legal_sources/indexing.py:458` | **FAUX POSITIF** — placeholders `?` paramétrés, valeurs liées (`chunk_ids`) | aucune (pattern sûr) |
 | S-6 | `os.execv` args tainted (semgrep ERROR) | `process.py:32` | **FAUX POSITIF** — self-restart avec `sys.argv` propre (pas d'entrée externe) | aucune / `# nosemgrep` documenté |
 | S-7 | Logger credential disclosure | `critical_output.py:483` | **FAUX POSITIF** — log "secret absent" (fail-soft), ne logge PAS le secret | aucune |
 | S-8 | File perms `0o700` | `files.py:347,350` | **FAUX POSITIF** — `0o700` = owner-only (c'est justement le *durcissement* A1) | aucune (règle semgrep trop stricte) |
 | S-9 | `requests` sans timeout (B113) | `api/tunnel_proxy.py:22,31` | **RÉEL (mineur)** — risque de blocage indéfini | ajouter `timeout=` |
 
-**Bilan sécurité applicative** : 0 vulnérabilité exploitable confirmée. 4 HIGH bandit = 3 MD5 non-crypto (faux positifs, fix cosmétique 1 ligne) + 1 Paramiko (risque by-design à arbitrer). 1 vrai défaut mineur (timeout HTTP).
+**Bilan sécurité applicative** : 0 vulnérabilité exploitable confirmée. Les 4 HIGH bandit sont
+**tous traités** (bandit HIGH 4 → 0) : 3 MD5 non-crypto annotés `usedforsecurity=False`, Paramiko
+durci (loopback-only + RejectPolicy distant). Défaut mineur timeout HTTP corrigé.
 
 ## Risque réel n°1 — Dépendances vulnérables (CVE)
 
