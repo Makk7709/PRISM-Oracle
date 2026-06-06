@@ -74,18 +74,6 @@ const memoryDashboardStore = {
     this.searchQuery = "";
     this.areaFilter = "";
 
-    // // Get current memory subdirectory from application context
-    // await this.getCurrentMemorySubdir();
-
-    // await this.loadMemorySubdirs();
-
-    // // Automatically search with selected subdirectory
-    // if (this.selectedMemorySubdir) {
-    //   await this.searchMemories();
-    // }
-
-    // // Start polling for live updates as soon as dashboard is open
-    // this.startPolling();
   },
 
   async getCurrentMemorySubdir() {

@@ -9,55 +9,6 @@ import { store as  notificationsStore } from "/components/notifications/notifica
 import { store as projectsStore } from "/components/projects/projects-store.js"
 
 // Ensure the showToast function is available
-// if (typeof window.showToast !== 'function') {
-//     window.showToast = function(message, type = 'info') {
-//         console.log(`[Toast ${type}]: ${message}`);
-//         // Create toast element if not already present
-//         let toastContainer = document.getElementById('toast-container');
-//         if (!toastContainer) {
-//             toastContainer = document.createElement('div');
-//             toastContainer.id = 'toast-container';
-//             toastContainer.style.position = 'fixed';
-//             toastContainer.style.bottom = '20px';
-//             toastContainer.style.right = '20px';
-//             toastContainer.style.zIndex = '9999';
-//             document.body.appendChild(toastContainer);
-//         }
-
-//         // Create the toast
-//         const toast = document.createElement('div');
-//         toast.className = `toast toast-${type}`;
-//         toast.style.padding = '10px 15px';
-//         toast.style.margin = '5px 0';
-//         toast.style.backgroundColor = type === 'error' ? '#f44336' :
-//                                     type === 'success' ? '#4CAF50' :
-//                                     type === 'warning' ? '#ff9800' : '#2196F3';
-//         toast.style.color = 'white';
-//         toast.style.borderRadius = '4px';
-//         toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-//         toast.style.width = 'auto';
-//         toast.style.maxWidth = '300px';
-//         toast.style.wordWrap = 'break-word';
-
-//         toast.innerHTML = message;
-
-//         // Add to container
-//         toastContainer.appendChild(toast);
-
-//         // Auto remove after 3 seconds
-//         setTimeout(() => {
-//             if (toast.parentNode) {
-//                 toast.style.opacity = '0';
-//                 toast.style.transition = 'opacity 0.5s ease';
-//                 setTimeout(() => {
-//                     if (toast.parentNode) {
-//                         toast.parentNode.removeChild(toast);
-//                     }
-//                 }, 500);
-//             }
-//         }, 3000);
-//     };
-// }
 
 // Add this near the top of the scheduler.js file, outside of any function
 const showToast = function(message, type = 'info') {
@@ -781,7 +732,6 @@ const fullComponentImplementation = function() {
         async saveTask() {
             // Validate task data
             if (!this.editingTask.name.trim() || !this.editingTask.prompt.trim()) {
-                // showToast('Task name and prompt are required', 'error');
                 alert('Task name and prompt are required');
                 return;
             }

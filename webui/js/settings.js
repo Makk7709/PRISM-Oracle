@@ -288,21 +288,6 @@ const settingsModalProxy = {
 };
 
 
-// function initSettingsModal() {
-
-//     window.openSettings = function () {
-//         proxy.openModal().then(result => {
-//             console.log(result);  // This will log the result when the modal is closed
-//         });
-//     }
-
-//     return proxy
-// }
-
-
-// document.addEventListener('alpine:init', () => {
-//     Alpine.store('settingsModal', initSettingsModal());
-// });
 
 document.addEventListener('alpine:init', function () {
     // Initialize the root store first to ensure it exists before components try to access it

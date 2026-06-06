@@ -965,4 +965,3 @@ export const store = createStore("speech", model);
 
 // Event listeners
 document.addEventListener("settings-updated", () => store.loadSettings());
-// document.addEventListener("DOMContentLoaded", () => speechStore.init());

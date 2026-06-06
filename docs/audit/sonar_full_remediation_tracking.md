@@ -116,3 +116,30 @@ abandon**, 130 lignes retirées. Compilation 14/14 OK ; diff = commentaires/vide
 - `python/helpers/rfc.py:63` — `# import module` (libellé pédagogique, pas du code exécutable).
 
 **0 défaut.**
+
+### Paquet S125-js — code JavaScript commenté (javascript:S125, 24 findings → 8 fichiers)
+
+Suppression de 107 lignes de code JS commenté + **suppression du module mort
+`webui/js/timeout.js`** (16 lignes 100 % commentées en syntaxe TS, **aucune référence**
+dans `webui/` → fichier supprimé via `git rm`).
+
+Détail : `node_eval.js` (console.log debug), `speech-store.js` (listener désactivé),
+`notification-store.js` (auto-cleanup mort), `memory-dashboard-store.js` (init mort),
+`modals.js` (bloc removeChild commenté + meta-commentaire associé), `scheduler.js`
+(définition `showToast` morte L12-60 — la vraie est à L63 ; + 1 `showToast` commenté L784),
+`settings.js` (`initSettingsModal` mort).
+
+**Faux positif conservé** : `webui/js/modals.js:125`
+`const componentPath = modalPath; // \`modals/${modalPath}/modal.html\`;` = **code actif**
+avec commentaire inline → non touché.
+
+**Audit hostile** : garde-fou (lignes vides/`//`/`/*`/`*` uniquement) → 0 abandon ; diff =
+commentaires/vides uniquement (0 ligne de code retirée, 0 ajout) ; `node --check` en mode
+module sur les 5 fichiers ES → 5/5 OK ; `settings.js`/`node_eval.js` OK. **0 défaut.**
+
+### css:S125 (19 findings) — déjà couverts par le Paquet 1
+
+Les 6 fichiers porteurs (`simple-action-buttons.css`, `notification-toast-stack.html`,
+`project-edit-basic-data.html`, `memory-detail-modal.html`, `settings.css`, `toast.css`)
+ont été nettoyés au Paquet 1. Les numéros de ligne du rapport pointent désormais vers du
+code actif (lignes décalées) → **aucune action**, déjà résolu.

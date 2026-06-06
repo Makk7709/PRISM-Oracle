@@ -202,27 +202,6 @@ export function closeModal(modalPath = null) {
   // First remove the show class to trigger the transition
   modal.element.classList.remove("show");
 
-  // commented out to prevent race conditions
-
-  // // Remove the modal element from DOM after animation
-  // modal.element.addEventListener(
-  //   "transitionend",
-  //   () => {
-  //     // Make sure the modal is completely removed from the DOM
-  //     if (modal.element.parentNode) {
-  //       modal.element.parentNode.removeChild(modal.element);
-  //     }
-  //   },
-  //   { once: true }
-  // );
-
-  // // Fallback in case the transition event doesn't fire
-  // setTimeout(() => {
-  //   if (modal.element.parentNode) {
-  //     modal.element.parentNode.removeChild(modal.element);
-  //   }
-  // }, 500); // 500ms should be enough for the transition to complete
-
   // remove immediately
   if (modal.element.parentNode) {
     modal.element.parentNode.removeChild(modal.element);

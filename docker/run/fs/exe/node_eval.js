@@ -9,7 +9,6 @@ function customRequire(moduleName) {
   try {
     // Try resolving from CWD's node_modules using Node's require.resolve
     const cwdPath = require.resolve(moduleName, { paths: [path.join(process.cwd(), 'node_modules')] });
-    // console.log("resolved path:", cwdPath);
     return require(cwdPath);
   } catch (cwdErr) {
     try {

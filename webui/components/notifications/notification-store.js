@@ -39,14 +39,8 @@ const model = {
   initialize() {
     this.loading = true;
     this.updateUnreadCount();
-    // this.removeOldNotifications();
     this.toastStack = [];
 
-    // // Auto-cleanup old notifications and toasts
-    // setInterval(() => {
-    //   this.removeOldNotifications();
-    //   this.cleanupExpiredToasts();
-    // }, 5 * 60 * 1000); // Every 5 minutes
   },
 
   // Update notifications from polling data
@@ -86,7 +80,6 @@ const model = {
 
     // Update UI state
     this.updateUnreadCount();
-    // this.removeOldNotifications();
   },
 
   adjustNotificationData(notification) {
