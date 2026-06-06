@@ -582,6 +582,9 @@ class AsyncAIChatReplacement:
 
 from browser_use.llm import ChatOllama, ChatOpenRouter, ChatGoogle, ChatAnthropic, ChatGroq, ChatOpenAI
 
+# Constantes (déduplication littéraux — python:S1192)
+_PREFIX_SENTENCE_TRANSFORMERS = "sentence-transformers/"
+
 class BrowserCompatibleChatWrapper(ChatOpenRouter):
     """
     A wrapper for browser agent that can filter/sanitize messages
@@ -706,8 +709,8 @@ class LocalSentenceTransformerWrapper(Embeddings):
         model = model.strip().strip('"').strip("'")
 
         # Remove the "sentence-transformers/" prefix if present
-        if model.startswith("sentence-transformers/"):
-            model = model[len("sentence-transformers/") :]
+        if model.startswith(_PREFIX_SENTENCE_TRANSFORMERS):
+            model = model[len(_PREFIX_SENTENCE_TRANSFORMERS) :]
 
         # Filter kwargs for SentenceTransformer only (no LiteLLM params like 'stream_timeout')
         st_allowed_keys = {
@@ -772,7 +775,7 @@ def _get_litellm_embedding(
 ):
     # Check if this is a local sentence-transformers model
     if provider_name == "huggingface" and model_name.startswith(
-        "sentence-transformers/"
+        _PREFIX_SENTENCE_TRANSFORMERS
     ):
         # Use local sentence-transformers instead of LiteLLM for local models
         provider_name, model_name, kwargs = _adjust_call_args(

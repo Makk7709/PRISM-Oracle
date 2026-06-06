@@ -12,6 +12,9 @@ from agent import AgentContext
 from python.helpers import persist_chat
 from python.helpers.projects import get_context_project_name, load_basic_project_data
 
+# Constantes (déduplication littéraux — python:S1192)
+_ERR_TASK_UUID_REQUIRED = "Task UUID is required"
+
 DEFAULT_WAIT_TIMEOUT = 300
 
 
@@ -102,7 +105,7 @@ class SchedulerTool(Tool):
     async def show_task(self, **kwargs) -> Response:
         task_uuid: str = kwargs.get("uuid", "")
         if not task_uuid:
-            return Response(message="Task UUID is required", break_loop=False)
+            return Response(message=_ERR_TASK_UUID_REQUIRED, break_loop=False)
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
             return Response(message=f"Task not found: {task_uuid}", break_loop=False)
@@ -114,7 +117,7 @@ class SchedulerTool(Tool):
     async def run_task(self, **kwargs) -> Response:
         task_uuid: str = kwargs.get("uuid", "")
         if not task_uuid:
-            return Response(message="Task UUID is required", break_loop=False)
+            return Response(message=_ERR_TASK_UUID_REQUIRED, break_loop=False)
         task_context: str | None = kwargs.get("context", None)
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
@@ -132,7 +135,7 @@ class SchedulerTool(Tool):
     async def delete_task(self, **kwargs) -> Response:
         task_uuid: str = kwargs.get("uuid", "")
         if not task_uuid:
-            return Response(message="Task UUID is required", break_loop=False)
+            return Response(message=_ERR_TASK_UUID_REQUIRED, break_loop=False)
 
         task: ScheduledTask | AdHocTask | PlannedTask | None = TaskScheduler.get().get_task_by_uuid(task_uuid)
         if not task:
@@ -284,7 +287,7 @@ class SchedulerTool(Tool):
     async def wait_for_task(self, **kwargs) -> Response:
         task_uuid: str = kwargs.get("uuid", "")
         if not task_uuid:
-            return Response(message="Task UUID is required", break_loop=False)
+            return Response(message=_ERR_TASK_UUID_REQUIRED, break_loop=False)
 
         scheduler = TaskScheduler.get()
         task: ScheduledTask | AdHocTask | PlannedTask | None = scheduler.get_task_by_uuid(task_uuid)

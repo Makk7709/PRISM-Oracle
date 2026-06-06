@@ -1,5 +1,8 @@
 import asyncio, os, sys, platform, errno
 
+# Constantes (déduplication littéraux — python:S1192)
+_ERR_TTY_NOT_STARTED = "TTYSpawn is not started"
+
 _IS_WIN = platform.system() == "Windows"
 if _IS_WIN:
     import winpty  # pip install pywinpty # type: ignore
@@ -64,7 +67,7 @@ class TTYSession:
 
     async def send(self, data: str | bytes):
         if self._proc is None:
-            raise RuntimeError("TTYSpawn is not started")
+            raise RuntimeError(_ERR_TTY_NOT_STARTED)
         if isinstance(data, str):
             data = data.encode(self.encoding)
         self._proc.stdin.write(data)  # type: ignore
@@ -75,7 +78,7 @@ class TTYSession:
 
     async def wait(self):
         if self._proc is None:
-            raise RuntimeError("TTYSpawn is not started")
+            raise RuntimeError(_ERR_TTY_NOT_STARTED)
         return await self._proc.wait()
 
     def kill(self):
@@ -136,7 +139,7 @@ class TTYSession:
     # ── internal: stream raw output into the queue ────────────────────
     async def _pump_stdout(self):
         if self._proc is None:
-            raise RuntimeError("TTYSpawn is not started")
+            raise RuntimeError(_ERR_TTY_NOT_STARTED)
         reader = self._proc.stdout
         while True:
             chunk = await reader.read(4096)  # grab whatever is ready # type: ignore

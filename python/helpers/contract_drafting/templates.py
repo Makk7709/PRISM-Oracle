@@ -33,6 +33,10 @@ from typing import Dict, List
 
 from python.helpers.contract_drafting.models import TemplateVersion
 
+# Constantes (déduplication littéraux — python:S1192)
+_REVIEWER_INTERNAL = "KOREV Legal — Internal Review"
+_SEP_LINE = "══════════════════════════════════════════════════════"
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEMPLATE: CONDITIONS PARTICULIÈRES (CP)
@@ -535,7 +539,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="CP",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — CP licence ON-PREM",
         ],
@@ -545,7 +549,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="CG",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — CG licence ON-PREM avec PI, responsabilité, résiliation",
         ],
@@ -555,7 +559,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_1",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — description logiciel + modules + pré-requis",
         ],
@@ -565,7 +569,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_2",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — SLA P1/P2/P3, support, maintenance ON-PREM",
         ],
@@ -575,7 +579,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_3",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — sécurité, accès distant, journalisation",
         ],
@@ -585,7 +589,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_4",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — DPA art. 28 RGPD (conditionnel si accès distant)",
         ],
@@ -595,7 +599,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_5",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — réversibilité, fin contrat, droit de survie",
         ],
@@ -605,7 +609,7 @@ _TEMPLATE_VERSIONS: Dict[str, TemplateVersion] = {
         section="ANNEXE_6",
         version="1.0.0",
         last_review_date=date(2026, 2, 1),
-        reviewer="KOREV Legal — Internal Review",
+        reviewer=_REVIEWER_INTERNAL,
         changelog=[
             "1.0.0 (2026-02-01): Version initiale — grille tarifaire, indexation Syntec, pénalités SLA",
         ],
@@ -656,9 +660,9 @@ def get_template_versions_summary() -> str:
         str — résumé formaté
     """
     lines = [
-        "══════════════════════════════════════════════════════",
+        _SEP_LINE,
         "        REGISTRE DES VERSIONS — TEMPLATES CONTRACTUELS",
-        "══════════════════════════════════════════════════════",
+        _SEP_LINE,
         "",
     ]
     for section, tv in sorted(_TEMPLATE_VERSIONS.items()):
@@ -667,5 +671,5 @@ def get_template_versions_summary() -> str:
         if tv.legal_basis:
             lines.append(f"               base: {tv.legal_basis}")
     lines.append("")
-    lines.append("══════════════════════════════════════════════════════")
+    lines.append(_SEP_LINE)
     return "\n".join(lines)

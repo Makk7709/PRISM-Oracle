@@ -14,6 +14,13 @@ from python.helpers.providers import get_providers
 from python.helpers.secrets import get_default_secrets_manager
 from python.helpers import dirty_json
 
+# Constantes (déduplication littéraux — python:S1192)
+_DESC_MODEL_EXACT_NAME = "Exact name of model from selected provider"
+_TITLE_RPM_LIMIT = "Requests per minute limit"
+_TITLE_INPUT_TPM_LIMIT = "Input tokens per minute limit"
+_DESC_EXTRA_PARAMS = "Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string."
+_DEFAULT_MCP_SERVERS_JSON = '{\n    "mcpServers": {}\n}'
+
 
 class Settings(TypedDict):
     version: str
@@ -221,7 +228,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "chat_model_name",
             "title": "Chat model name",
-            "description": "Exact name of model from selected provider",
+            "description": _DESC_MODEL_EXACT_NAME,
             "type": "text",
             "value": settings["chat_model_name"],
         }
@@ -273,7 +280,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     chat_model_fields.append(
         {
             "id": "chat_model_rl_requests",
-            "title": "Requests per minute limit",
+            "title": _TITLE_RPM_LIMIT,
             "description": "Limits the number of requests per minute to the chat model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["chat_model_rl_requests"],
@@ -283,7 +290,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     chat_model_fields.append(
         {
             "id": "chat_model_rl_input",
-            "title": "Input tokens per minute limit",
+            "title": _TITLE_INPUT_TPM_LIMIT,
             "description": "Limits the number of input tokens per minute to the chat model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["chat_model_rl_input"],
@@ -304,7 +311,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "chat_model_kwargs",
             "title": "Chat model additional parameters",
-            "description": "Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string.",
+            "description": _DESC_EXTRA_PARAMS,
             "type": "textarea",
             "value": _dict_to_env(settings["chat_model_kwargs"]),
         }
@@ -334,7 +341,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "util_model_name",
             "title": "Utility model name",
-            "description": "Exact name of model from selected provider",
+            "description": _DESC_MODEL_EXACT_NAME,
             "type": "text",
             "value": settings["util_model_name"],
         }
@@ -353,7 +360,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     util_model_fields.append(
         {
             "id": "util_model_rl_requests",
-            "title": "Requests per minute limit",
+            "title": _TITLE_RPM_LIMIT,
             "description": "Limits the number of requests per minute to the utility model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["util_model_rl_requests"],
@@ -363,7 +370,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     util_model_fields.append(
         {
             "id": "util_model_rl_input",
-            "title": "Input tokens per minute limit",
+            "title": _TITLE_INPUT_TPM_LIMIT,
             "description": "Limits the number of input tokens per minute to the utility model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["util_model_rl_input"],
@@ -384,7 +391,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "util_model_kwargs",
             "title": "Utility model additional parameters",
-            "description": "Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string.",
+            "description": _DESC_EXTRA_PARAMS,
             "type": "textarea",
             "value": _dict_to_env(settings["util_model_kwargs"]),
         }
@@ -414,7 +421,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "embed_model_name",
             "title": "Embedding model name",
-            "description": "Exact name of model from selected provider",
+            "description": _DESC_MODEL_EXACT_NAME,
             "type": "text",
             "value": settings["embed_model_name"],
         }
@@ -433,7 +440,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     embed_model_fields.append(
         {
             "id": "embed_model_rl_requests",
-            "title": "Requests per minute limit",
+            "title": _TITLE_RPM_LIMIT,
             "description": "Limits the number of requests per minute to the embedding model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["embed_model_rl_requests"],
@@ -443,7 +450,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     embed_model_fields.append(
         {
             "id": "embed_model_rl_input",
-            "title": "Input tokens per minute limit",
+            "title": _TITLE_INPUT_TPM_LIMIT,
             "description": "Limits the number of input tokens per minute to the embedding model. Waits if the limit is exceeded. Set to 0 to disable rate limiting.",
             "type": "number",
             "value": settings["embed_model_rl_input"],
@@ -454,7 +461,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "embed_model_kwargs",
             "title": "Embedding model additional parameters",
-            "description": "Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string.",
+            "description": _DESC_EXTRA_PARAMS,
             "type": "textarea",
             "value": _dict_to_env(settings["embed_model_kwargs"]),
         }
@@ -484,7 +491,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "browser_model_name",
             "title": "Web Browser model name",
-            "description": "Exact name of model from selected provider",
+            "description": _DESC_MODEL_EXACT_NAME,
             "type": "text",
             "value": settings["browser_model_name"],
         }
@@ -544,7 +551,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
         {
             "id": "browser_model_kwargs",
             "title": "Web Browser model additional parameters",
-            "description": "Any other parameters supported by <a href='https://docs.litellm.ai/docs/set_keys' target='_blank'>LiteLLM</a>. Format is KEY=VALUE on individual lines, like .env file. Value can also contain JSON objects - when unquoted, it is treated as object, number etc., when quoted, it is treated as string.",
+            "description": _DESC_EXTRA_PARAMS,
             "type": "textarea",
             "value": _dict_to_env(settings["browser_model_kwargs"]),
         }
@@ -1812,9 +1819,9 @@ def normalize_settings(settings: Settings) -> Settings:
 
     # Auto-load MCP config from file if current setting is empty
     mcp_servers = copy.get("mcp_servers", "")
-    if not mcp_servers or mcp_servers.strip() in ['', '{}', '[]', '{\n    "mcpServers": {}\n}']:
+    if not mcp_servers or mcp_servers.strip() in ['', '{}', '[]', _DEFAULT_MCP_SERVERS_JSON]:
         loaded_config = _load_mcp_config_from_file()
-        if loaded_config and loaded_config not in ['{}', '[]', '{\n    "mcpServers": {}\n}']:
+        if loaded_config and loaded_config not in ['{}', '[]', _DEFAULT_MCP_SERVERS_JSON]:
             copy["mcp_servers"] = loaded_config
 
     return copy
@@ -1908,7 +1915,7 @@ def _load_mcp_config_from_file() -> str:
         PrintStyle(font_color="yellow").print(
             f"⚠ Could not load mcp_config.json: {e}"
         )
-    return '{\n    "mcpServers": {}\n}'
+    return _DEFAULT_MCP_SERVERS_JSON
 
 
 def get_default_settings() -> Settings:

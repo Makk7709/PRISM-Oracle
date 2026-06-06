@@ -24,6 +24,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
+# Constantes (déduplication littéraux — python:S1192)
+_SEP_LINE = "══════════════════════════════════════════════════════"
+
 
 # ENUMS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -163,9 +166,9 @@ class GateVerdict:
             str — rapport d'audit textuel
         """
         lines = [
-            "══════════════════════════════════════════════════════",
+            _SEP_LINE,
             "        AUDIT CONTRACTUEL — LEGAL_SAFE GATE          ",
-            "══════════════════════════════════════════════════════",
+            _SEP_LINE,
             f"Verdict: {self.verdict.value}",
             f"P0: {self.p0_count()} | P1: {self.p1_count()} | "
             f"P2: {sum(1 for f in self.findings if f.severity == FindingSeverity.P2)}",
@@ -190,7 +193,7 @@ class GateVerdict:
             lines.append("Aucun finding détecté.")
             lines.append("")
         
-        lines.append("══════════════════════════════════════════════════════")
+        lines.append(_SEP_LINE)
         return "\n".join(lines)
 
 

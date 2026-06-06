@@ -46,6 +46,9 @@ from typing import (
     Union,
 )
 
+# Constantes (déduplication littéraux — python:S1192)
+_PHRASE_STEP_BY_STEP = "step by step"
+
 
 # ============================================================================
 # EXCEPTION SANITIZATION (NO-PII)
@@ -218,7 +221,7 @@ class TraceStep:
         "let me think",
         "let's think",
         "step-by-step",
-        "step by step",
+        _PHRASE_STEP_BY_STEP,
         "chain-of-thought",
         "chain of thought",
         "scratchpad",
@@ -551,7 +554,7 @@ class ReasoningEngine:
             "let me think",
             "let's think",
             "step-by-step",
-            "step by step",
+            _PHRASE_STEP_BY_STEP,
             "chain-of-thought",
             "chain of thought",
             "scratchpad",
@@ -845,7 +848,7 @@ Task to decompose (analyze structure, not content):
             return TaskComplexity.TRIVIAL
         
         # Complex: multi-step indicators
-        complex_patterns = ["and then", "after that", "step by step", "multiple", "analyze and"]
+        complex_patterns = ["and then", "after that", _PHRASE_STEP_BY_STEP, "multiple", "analyze and"]
         if any(p in query_lower for p in complex_patterns):
             return TaskComplexity.COMPLEX
         

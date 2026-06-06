@@ -12,6 +12,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+# Constantes (déduplication littéraux — python:S1192)
+_TERMS_NAME_PISTE = "CGU PISTE"
+
+# Constantes (déduplication littéraux — python:S1192)
+_LICENSE_ETALAB = "Licence Ouverte 2.0 (Etalab)"
+_URL_ETALAB_LICENSE = "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
+_URL_PISTE_CGU = "https://piste.gouv.fr/cgu"
+
 
 class LegalSource(str, Enum):
     """Sources de données juridiques supportées."""
@@ -202,42 +210,42 @@ class Provenance:
 SOURCE_COMPLIANCE = {
     LegalSource.LEGI: {
         "source_name": "DILA (Direction de l'Information Légale et Administrative)",
-        "license_name": "Licence Ouverte 2.0 (Etalab)",
-        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
-        "terms_name": "CGU PISTE",
-        "terms_url": "https://piste.gouv.fr/cgu",
+        "license_name": _LICENSE_ETALAB,
+        "license_url": _URL_ETALAB_LICENSE,
+        "terms_name": _TERMS_NAME_PISTE,
+        "terms_url": _URL_PISTE_CGU,
         "access_mode": AccessMode.API_KEY_CGU,
     },
     LegalSource.JORF: {
         "source_name": "DILA (Direction de l'Information Légale et Administrative)",
-        "license_name": "Licence Ouverte 2.0 (Etalab)",
-        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
-        "terms_name": "CGU PISTE",
-        "terms_url": "https://piste.gouv.fr/cgu",
+        "license_name": _LICENSE_ETALAB,
+        "license_url": _URL_ETALAB_LICENSE,
+        "terms_name": _TERMS_NAME_PISTE,
+        "terms_url": _URL_PISTE_CGU,
         "access_mode": AccessMode.API_KEY_CGU,
     },
     LegalSource.CASS: {
         "source_name": "Cour de cassation",
-        "license_name": "Licence Ouverte 2.0 (Etalab)",
-        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "license_name": _LICENSE_ETALAB,
+        "license_url": _URL_ETALAB_LICENSE,
         "terms_name": "CGU PISTE + CGU Réutilisation Cour de cassation",
         "terms_url": "https://www.courdecassation.fr/conditions-generales-dutilisation-pour-la-reutilisation-des-donnees-issues-des-decisions-de-justice",
         "access_mode": AccessMode.API_KEY_CGU,
     },
     LegalSource.JADE: {
         "source_name": "DILA (données Conseil d'État)",
-        "license_name": "Licence Ouverte 2.0 (Etalab)",
-        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "license_name": _LICENSE_ETALAB,
+        "license_url": _URL_ETALAB_LICENSE,
         "terms_name": "Conditions DILA FTPS",
         "terms_url": "https://echanges.dila.gouv.fr/OPENDATA/AVERTISSEMENT-Donnees_a_caractere_personnel.pdf",
         "access_mode": AccessMode.REQUEST_TO_ADMIN,
     },
     LegalSource.CONSTIT: {
         "source_name": "Conseil constitutionnel",
-        "license_name": "Licence Ouverte 2.0 (Etalab)",
-        "license_url": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
-        "terms_name": "CGU PISTE",
-        "terms_url": "https://piste.gouv.fr/cgu",
+        "license_name": _LICENSE_ETALAB,
+        "license_url": _URL_ETALAB_LICENSE,
+        "terms_name": _TERMS_NAME_PISTE,
+        "terms_url": _URL_PISTE_CGU,
         "access_mode": AccessMode.API_KEY_CGU,
     },
 }

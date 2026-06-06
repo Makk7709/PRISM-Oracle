@@ -46,6 +46,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 # Import templates
 from python.helpers.pdf_templates import PDFTemplate, get_template, detect_template, TEMPLATES
 
+# Constantes (déduplication littéraux — python:S1192)
+_FONT_HELVETICA_BOLD = 'Helvetica-Bold'
+
 
 # STYLES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -75,7 +78,7 @@ def create_styles(template: Optional[PDFTemplate] = None):
         accent_color = HexColor('#4A7CFF')      # PRISM accent
         text_color = HexColor('#4A5568')         # PRISM text secondary
         light_bg = HexColor('#F0F4FF')           # PRISM accent bg
-        title_font = 'Helvetica-Bold'
+        title_font = _FONT_HELVETICA_BOLD
         body_font = 'Helvetica'
         code_font = 'Courier'
         title_size = 24
@@ -409,7 +412,7 @@ class MarkdownToPDF:
                 # Header style
                 ('BACKGROUND', (0, 0), (-1, 0), header_bg),
                 ('TEXTCOLOR', (0, 0), (-1, 0), white),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTNAME', (0, 0), (-1, 0), _FONT_HELVETICA_BOLD),
                 ('FONTSIZE', (0, 0), (-1, 0), 9),
                 ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
@@ -652,13 +655,13 @@ def create_page_callback(template: Optional[PDFTemplate] = None):
             
             # Header text (left)
             if header_text:
-                canvas.setFont('Helvetica-Bold', 8)
+                canvas.setFont(_FONT_HELVETICA_BOLD, 8)
                 canvas.setFillColor(primary_color)
                 canvas.drawString(2*cm, height - 1.5*cm, header_text)
             
             # Confidential notice (right)
             if confidential:
-                canvas.setFont('Helvetica-Bold', 8)
+                canvas.setFont(_FONT_HELVETICA_BOLD, 8)
                 canvas.setFillColor(HexColor('#c53030'))
                 canvas.drawRightString(width - 2*cm, height - 1.5*cm, confidential)
         

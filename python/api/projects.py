@@ -2,6 +2,9 @@ from flask import session
 from python.helpers.api import ApiHandler, Input, Output, Request, Response
 from python.helpers import projects
 
+# Constantes (déduplication littéraux — python:S1192)
+_ERR_PROJECT_NAME_REQUIRED = "Project name is required"
+
 
 class Projects(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
@@ -72,7 +75,7 @@ class Projects(ApiHandler):
 
     def load_project(self, name: str|None):
         if name is None:
-            raise ValueError("Project name is required")
+            raise ValueError(_ERR_PROJECT_NAME_REQUIRED)
         self._check_project_access(name)
         return projects.load_edit_project_data(name)
 
@@ -86,7 +89,7 @@ class Projects(ApiHandler):
 
     def delete_project(self, name: str|None):
         if name is None:
-            raise ValueError("Project name is required")
+            raise ValueError(_ERR_PROJECT_NAME_REQUIRED)
         self._check_project_access(name)
         return projects.delete_project(name)
 
@@ -94,7 +97,7 @@ class Projects(ApiHandler):
         if not context_id:
             raise ValueError("Context ID is required")
         if not name:
-            raise ValueError("Project name is required")
+            raise ValueError(_ERR_PROJECT_NAME_REQUIRED)
         self._check_project_access(name)
         return projects.activate_project(context_id, name)
 
@@ -105,7 +108,7 @@ class Projects(ApiHandler):
 
     def get_file_structure(self, name: str|None, settings: dict|None):
         if not name:
-            raise ValueError("Project name is required")
+            raise ValueError(_ERR_PROJECT_NAME_REQUIRED)
         self._check_project_access(name)
         basic_data = projects.load_basic_project_data(name)
         if settings:

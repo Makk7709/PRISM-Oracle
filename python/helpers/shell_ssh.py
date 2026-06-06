@@ -6,6 +6,9 @@ from typing import Tuple
 from python.helpers.log import Log
 from python.helpers.print_style import PrintStyle
 
+# Constantes (déduplication littéraux — python:S1192)
+_ERR_SHELL_NOT_CONNECTED = "Shell not connected"
+
 
 class SSHInteractiveSession:
 
@@ -93,7 +96,7 @@ class SSHInteractiveSession:
 
     async def send_command(self, command: str):
         if not self.shell:
-            raise RuntimeError("Shell not connected")
+            raise RuntimeError(_ERR_SHELL_NOT_CONNECTED)
         self.full_output = b""
         # if len(command) > 10: # if command is long, add end_comment to split output
         #     command = (command + " \\\n" +SSHInteractiveSession.end_comment + "\n")
@@ -107,7 +110,7 @@ class SSHInteractiveSession:
         self, timeout: float = 0, reset_full_output: bool = False
     ) -> Tuple[str, str]:
         if not self.shell:
-            raise RuntimeError("Shell not connected")
+            raise RuntimeError(_ERR_SHELL_NOT_CONNECTED)
 
         if reset_full_output:
             self.full_output = b""
@@ -163,7 +166,7 @@ class SSHInteractiveSession:
 
     def receive_bytes(self, num_bytes=1024):
         if not self.shell:
-            raise RuntimeError("Shell not connected")
+            raise RuntimeError(_ERR_SHELL_NOT_CONNECTED)
         # Receive initial chunk of data
         shell = self.shell
         data = self.shell.recv(num_bytes)

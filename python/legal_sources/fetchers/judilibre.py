@@ -27,6 +27,9 @@ from ..models import (
 )
 from .base import BaseFetcher
 
+# Constantes (déduplication littéraux — python:S1192)
+_COURT_CASSATION = "Cour de cassation"
+
 logger = logging.getLogger("legal_sources.judilibre")
 
 # Mapping short API chamber codes → long labels & citation abbreviations
@@ -331,7 +334,7 @@ class JudilibreFetcher(BaseFetcher):
             # Provenance — Licence Ouverte 2.0 (Etalab) pour Judilibre
             provenance = Provenance(
                 source=LegalSource.CASS,
-                source_name="Cour de cassation",
+                source_name=_COURT_CASSATION,
                 origin_id=decision_id,
                 origin_url=origin_url,
                 retrieved_at=datetime.utcnow(),
@@ -356,7 +359,7 @@ class JudilibreFetcher(BaseFetcher):
                 date=decision_date,
                 text=text,
                 summary=raw_data.get("summary"),
-                court="Cour de cassation",
+                court=_COURT_CASSATION,
                 chamber=chamber_label,
                 formation=formation,
                 decision_number=pourvoi,
@@ -390,7 +393,7 @@ class JudilibreFetcher(BaseFetcher):
             return {"label": raw, "short": raw[:10], "jur": "social"}
         if "com" in key:
             return {"label": raw, "short": raw[:10], "jur": "commercial"}
-        return {"label": raw or "Cour de cassation", "short": raw[:10] if raw else "", "jur": "civil"}
+        return {"label": raw or _COURT_CASSATION, "short": raw[:10] if raw else "", "jur": "civil"}
 
     @staticmethod
     def _parse_date(date_str: Optional[str]) -> Optional[datetime]:

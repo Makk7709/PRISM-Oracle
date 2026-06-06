@@ -249,3 +249,57 @@ un finding cosmétique) :
 **Audit hostile** : `node --check` (module) sur les 6 fichiers → 6/6 OK ; re-détection
 finale → seuls les 4 cas différés (assumés) subsistent ; revue visuelle des 10 swaps
 (branches correctement permutées). **0 défaut.**
+
+### Paquet S1192-py — littéraux dupliqués → constantes (python:S1192, 41 findings → 24 fichiers)
+
+`findings.json` ne porte pas le texte du littéral ; chaque cible a été identifiée par
+analyse **token-aware** (`tokenize`), indépendante des numéros de ligne décalés par les
+paquets précédents. Extraction via un outil token-aware (`tmp/sonar/extract_const.py`) :
+remplace **uniquement** les tokens STRING identiques (jamais une sous-chaîne ni un f-string)
+et insère la constante `_UPPER` (privée → pas d'export) au niveau module, après le dernier
+import top-level (fin réelle calculée par AST pour gérer les imports multi-lignes).
+
+**26 findings corrigés** (19 fichiers de production), littéraux-**valeurs** uniquement :
+- Messages d'erreur : `shell_ssh` (« Shell not connected »), `tty_session`
+  (« TTYSpawn is not started »), `scheduler` (« Task UUID is required »), `projects`
+  (« Project name is required »), `legal_agent_contracts` (« Must not be empty »).
+- Constantes techniques : `replay` (`application/json`), `pdf_generator` (`Helvetica-Bold`),
+  `strategic_charts` (`offset points`), `reasoning_engine` (`step by step`),
+  `persistence/stores` (`KOREV_REDIS_URL` + URL Redis par défaut), `models.py`
+  (préfixe `sentence-transformers/`), `legal_citations_db` (regex `R\d{3}-…`).
+- Contenu métier : `settings` (5 libellés/description LiteLLM + JSON MCP par défaut),
+  `legal_sources/models` (licence Etalab, URLs Etalab/PISTE, « CGU PISTE »),
+  `contract_drafting/templates` (« KOREV Legal — Internal Review » ×8 + séparateur),
+  `contract_drafting/models` (séparateur), `evidence_document/templates`
+  (« CONFIDENTIEL - SECRET MÉDICAL »), `judilibre` (« Cour de cassation »).
+
+**15 findings DIFFÉRÉS — extraction non pertinente / risquée (documentés)** :
+- **Fixtures de test** (7) : `tests/fixtures/legal_corpus.py` (6), `tests/fixtures/pdf_generator.py`
+  (1) — duplication = **données de test** intentionnelles ; extraire des constantes nuit à la
+  lisibilité des fixtures (pratique courante : exclure les tests de S1192).
+- **Clés de dictionnaire / vocabulaire métier** (3) : `memory.py` (`"memory"`/clés),
+  `legal_diff.py` (« responsabilité »/« obligation » dans des listes de mots-clés),
+  `legal_rendering.py` (`"operational"`) — extraire une constante pour une clé/valeur de
+  data-structure est un anti-pattern (perte de lisibilité, pas le défaut visé par S1192).
+- **`strategic_orchestrator.py` (5) — behavior-adjacent, NON modifié** : le dict
+  `doc_type_labels` est dupliqué 3× mais **pas à l'identique** — L1434 porte
+  `"Plan Go-To-Market"` là où les 2 autres copies ont `"Plan Go-to-Market"` (casse). Une
+  déduplication changerait **silencieusement** le titre PDF d'un chemin. Conformément au
+  protocole d'audit (pas de changement de comportement caché), l'extraction est différée et
+  l'**incohérence de casse est remontée** pour décision produit.
+
+**Audit hostile** :
+- **DEF-1 (CRITIQUE, corrigé)** : 1ʳᵉ insertion dans `evidence_document/templates.py` plaçait
+  la constante **après son usage** (imports top-level dispersés en milieu de fichier →
+  `import re` ~L502 postérieur au dict `TEMPLATES` ~L429). `py_compile` ne détecte pas la
+  résolution de noms ; l'**import réel** a révélé le `NameError`. Corrigé : constante remontée
+  juste après les imports du haut.
+- **Contrôle systématique post-DEF-1** : vérification statique AST « constante définie avant
+  toutes ses utilisations » sur **les 19 fichiers** → 0 problème ; `import` runtime des modules
+  modifiés → OK (l'échec isolé de `shell_ssh` = import circulaire **préexistant** dans
+  `helpers/strings`, mon diff n'ajoute aucun import).
+- `py_compile` 19/19 OK ; chaque littéral extrait ne subsiste qu'**une fois** (sa définition).
+- **Non-régression** : `run_tests.sh local` → **3426 passed**, 36 skipped. Les 82 `failed`
+  (`test_pdf_migration_parity`, `test_rebrand_agent_zero`) sont **préexistants** — prouvé en
+  rejouant ces fichiers sur l'arbre **sans** mes modifs (échouent à l'identique). Round-trip
+  `git stash` revérifié : 0 marqueur de conflit, 19/19 compilent, import OK. **0 défaut résiduel.**

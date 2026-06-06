@@ -12,6 +12,10 @@ from python.helpers.files import get_abs_path, make_dirs, read_file, write_file
 from python.observability.runtime import ObservabilityMetrics, log_observability_event
 from python.helpers.organization import normalize_org_id
 
+# Constantes (déduplication littéraux — python:S1192)
+_ENV_REDIS_URL = "KOREV_REDIS_URL"
+_DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+
 
 def _org_eq(a, b) -> bool:
     """Normalized organization comparison for store filtering."""
@@ -139,7 +143,7 @@ class JsonTaskStore(TaskStore):
 
 class RedisTaskStore(TaskStore):
     def __init__(self, redis_url: Optional[str] = None, key_prefix: str = "evidence:scheduler:"):
-        self.redis_url = redis_url or os.environ.get("KOREV_REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url = redis_url or os.environ.get(_ENV_REDIS_URL, _DEFAULT_REDIS_URL)
         self.key_prefix = key_prefix
         self._client = None
 
@@ -333,7 +337,7 @@ class InMemoryNotificationStore(NotificationStore):
 
 class RedisNotificationStore(NotificationStore):
     def __init__(self, redis_url: Optional[str] = None, key_prefix: str = "evidence:notifications:"):
-        self.redis_url = redis_url or os.environ.get("KOREV_REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url = redis_url or os.environ.get(_ENV_REDIS_URL, _DEFAULT_REDIS_URL)
         self.key_prefix = key_prefix
         self._client = None
         self._guid_cache = None
@@ -512,7 +516,7 @@ class PersistenceConfig:
     def from_env(cls) -> "PersistenceConfig":
         return cls(
             backend=os.environ.get("KOREV_PERSISTENCE_BACKEND", "json").strip().lower(),
-            redis_url=os.environ.get("KOREV_REDIS_URL", "redis://localhost:6379/0"),
+            redis_url=os.environ.get(_ENV_REDIS_URL, _DEFAULT_REDIS_URL),
         )
 
 

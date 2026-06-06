@@ -17,6 +17,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+# Constantes (déduplication littéraux — python:S1192)
+_RE_ARTICLE_CODE = r"R\d{3}-\d+(?:-\d+)?"
+
 
 # ENUMS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -111,15 +114,15 @@ CODE_ARTICLE_PATTERNS = {
     ],
     CodeType.COMMERCE: [
         r"L\d{3}-\d+(?:-\d+)?",  # Ex: L123-4
-        r"R\d{3}-\d+(?:-\d+)?",
+        _RE_ARTICLE_CODE,
     ],
     CodeType.PENAL: [
         r"\d{3}-\d+(?:-\d+)?",  # Ex: 311-1, 222-33-2
-        r"R\d{3}-\d+(?:-\d+)?",
+        _RE_ARTICLE_CODE,
     ],
     CodeType.CONSOMMATION: [
         r"L\d{3}-\d+(?:-\d+)?",
-        r"R\d{3}-\d+(?:-\d+)?",
+        _RE_ARTICLE_CODE,
     ],
     CodeType.GENERAL_IMPOTS: [
         r"\d{1,4}(?:\s*[A-Z])?(?:\s*bis)?(?:\s*ter)?",  # Ex: 38, 39 A, 44 sexies

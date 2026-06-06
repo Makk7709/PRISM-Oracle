@@ -30,6 +30,9 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+# Constantes (déduplication littéraux — python:S1192)
+_TEXTCOORDS_OFFSET = "offset points"
+
 logger = logging.getLogger("strategic_charts")
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -337,7 +340,7 @@ def _generate_line_chart(table: ParsedTable, title: str, output_path: str) -> Op
             for xi, v in enumerate(values):
                 fmt = f"{v:,.0f}" if v >= 100 else f"{v:.1f}"
                 ax.annotate(fmt, (year_labels[xi], v),
-                            textcoords="offset points", xytext=(0, 10),
+                            textcoords=_TEXTCOORDS_OFFSET, xytext=(0, 10),
                             ha="center", fontsize=8, color=color)
             plotted += 1
 
@@ -401,7 +404,7 @@ def _generate_bar_chart(table: ParsedTable, title: str, output_path: str) -> Opt
         fmt = f"{val:,.0f}" if abs(val) >= 100 else f"{val:.1f}"
         ax.annotate(fmt, (bar.get_x() + bar.get_width() / 2, bar.get_height()),
                     ha="center", va="bottom", fontsize=9, fontweight="bold",
-                    xytext=(0, 4), textcoords="offset points")
+                    xytext=(0, 4), textcoords=_TEXTCOORDS_OFFSET)
 
     ax.set_title(title, pad=12)
     if table.headers and num_col_idx < len(table.headers):
@@ -460,7 +463,7 @@ def _generate_hbar_chart(table: ParsedTable, title: str, output_path: str) -> Op
             fmt = f"{val:,.0f}" if abs(val) >= 100 else f"{val:.1f}"
             ax.annotate(fmt, (bar.get_width(), bar.get_y() + bar.get_height() / 2),
                         ha="left", va="center", fontsize=9, fontweight="bold",
-                        xytext=(4, 0), textcoords="offset points")
+                        xytext=(4, 0), textcoords=_TEXTCOORDS_OFFSET)
 
         ax.set_yticks(y_pos)
         ax.set_yticklabels(labels)

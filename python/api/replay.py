@@ -20,6 +20,9 @@ from python.helpers.replay_engine import (
 )
 from python.security.authorization import can_access_audit_reports
 
+# Constantes (déduplication littéraux — python:S1192)
+_MIMETYPE_JSON = "application/json"
+
 try:
     from python.security.security_audit import log_security_event
 except Exception:
@@ -57,7 +60,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"Access denied","reason":"' + reason + '"}',
                 status=403,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         action = input.get("action", "snapshot")
@@ -84,7 +87,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"context_id required"}',
                 status=400,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         snap = load_snapshot(context_id)
@@ -92,7 +95,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"Snapshot not found"}',
                 status=404,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         return {"ok": True, "snapshot": snap.to_dict()}
@@ -102,7 +105,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"context_id required"}',
                 status=400,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         snap = load_snapshot(context_id)
@@ -110,7 +113,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"Snapshot not found"}',
                 status=404,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         valid = verify_snapshot_integrity(snap)
@@ -138,7 +141,7 @@ class Replay(ApiHandler):
             return Response(
                 '{"error":"original and replayed fields required"}',
                 status=400,
-                mimetype="application/json",
+                mimetype=_MIMETYPE_JSON,
             )
 
         report = compare_responses(original, replayed)

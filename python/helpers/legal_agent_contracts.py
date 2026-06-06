@@ -34,6 +34,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
+# Constantes (déduplication littéraux — python:S1192)
+_ERR_MUST_NOT_BE_EMPTY = "Must not be empty"
+
 
 # CONSTANTS & WHITELIST
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -227,12 +230,12 @@ class LegalTextVersion:
         """Validate the version."""
         if not self.text_id:
             raise ContractValidationError(
-                "LegalTextVersion", "text_id", "Must not be empty"
+                "LegalTextVersion", "text_id", _ERR_MUST_NOT_BE_EMPTY
             )
         
         if not self.version_id:
             raise ContractValidationError(
-                "LegalTextVersion", "version_id", "Must not be empty"
+                "LegalTextVersion", "version_id", _ERR_MUST_NOT_BE_EMPTY
             )
         
         if self.effective_from is None:
@@ -613,7 +616,7 @@ class ClaimProposal:
         """Validate the artifact."""
         if not self.claim_text:
             raise ContractValidationError(
-                "ClaimProposal", "claim_text", "Must not be empty"
+                "ClaimProposal", "claim_text", _ERR_MUST_NOT_BE_EMPTY
             )
         
         if self.claim_type == ClaimType.CITED:

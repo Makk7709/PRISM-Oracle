@@ -21,6 +21,9 @@ Polices TTF avec support Unicode complet:
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+# Constantes (déduplication littéraux — python:S1192)
+_LABEL_CONFIDENTIAL_MEDICAL = "CONFIDENTIEL - SECRET MÉDICAL"
+
 # Import font registration (auto-registers on import)
 try:
     from .fonts import register_fonts, FONTS
@@ -427,9 +430,9 @@ TEMPLATES: Dict[str, Template] = {
         confidential_labels={
             "public": "",
             "internal": "",
-            "confidential": "CONFIDENTIEL - SECRET MÉDICAL",
-            "strictly_confidential": "CONFIDENTIEL - SECRET MÉDICAL",
-            "secret": "CONFIDENTIEL - SECRET MÉDICAL"
+            "confidential": _LABEL_CONFIDENTIAL_MEDICAL,
+            "strictly_confidential": _LABEL_CONFIDENTIAL_MEDICAL,
+            "secret": _LABEL_CONFIDENTIAL_MEDICAL
         },
         
         cover_page_style="standard",
