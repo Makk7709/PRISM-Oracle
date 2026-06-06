@@ -414,3 +414,60 @@ l'absolu (blob) ; convertir les 56 `.js` seuls n'apporterait rien et rendrait le
 **Action** : neutralisé en FP tracé dans `sonar-project.properties`
 (`sonar.issue.ignore.multicriteria.s6859webui` → `javascript:S6859` sur `webui/**/*`). **0 ligne de
 code modifiée**, donc **0 risque de régression UI**. Retire les 91 findings du gate Sonar.
+
+---
+
+## Tier 4 — `python:S1172` (paramètres inutilisés, 35 findings) — tri + correctifs
+
+**Constat** : contrairement à S6859 (FP architectural uniforme), S1172 ici est un **mélange**.
+Retirer un paramètre change une signature → impacte appelants, overrides, callbacks. Sévérité
+**MINOR**. Cartographie AST des 35 findings (helper `tmp/sonar/inspect_s1172.py`, robuste à la dérive
+de lignes) → classement en 4 groupes.
+
+### Groupe A — retraits sûrs (vestige pur, appelants maîtrisés)
+
+- `python/helpers/process.py:get_server(server)` → **`server` retiré** : **0 appelant** dans tout le
+  repo (les `get_server*` voisins sont des méthodes `MCPConfig` distinctes), arg ignoré (renvoyait le
+  global `_server`). Vestige de copier-coller depuis `set_server`.
+
+### Groupe B — singletons suspects investigués (2 vrais correctifs, qui UTILISENT le param)
+
+| Fonction | Verdict | Action |
+|---|---|---|
+| `contradictor/orchestration.py:build_audit_log(agent_response)` | **Lacune de traçabilité** : la réponse auditée n'était pas hachée alors que la docstring promet « questions and responses are hashed ». | **Fix** : ajout `"response_hash": _stable_hash(agent_response)` au dict d'audit (TDD : `test_contradictor_audit_trace_contains_required_fields`). |
+| `metacognition.py:_apply_hardening_signals(raw_confidence)` | Docstring « (pour log) » jamais tenue ; l'appelant (`escalation_computed`) **logge déjà** `raw_confidence`. Param réellement vestigial. | **Fix** : `raw_confidence` retiré (2 appelants internes mis à jour). Restaure la signature historique documentée `(base, signals, flags)`. |
+
+### Groupe C — singletons suspects MAIS légitimes (documentés, won't-fix par design)
+
+- `legal_diff.py:qualify_change(change_type)` : la qualification se calcule **entièrement** par diff de
+  mots-clés `before`/`after`, qui encode déjà l'ajout/retrait → `change_type` **redondant**. Fonction
+  publique appelée positionnellement par de nombreux tests → retrait = casse disproportionnée pour MINOR.
+- `pdf_extraction/pipeline.py:calculate_overall_confidence(pdf_type)` : seul `pdf_type_confidence`
+  (le score) sert ; le type est subsumé par ce score → redondant.
+- `pdf_extraction/pipeline.py:detect_table_regions(config)` : **stub assumé** (« For now… A real
+  implementation would cluster… use DBSCAN ») ; `config` sert dans l'implémentation cible (le voisin
+  `cluster_columns` l'utilise). Param de signature prévu.
+- `pdf_extraction/pipeline.py:try_optional_engines(words)` : Camelot ré-extrait depuis le fichier (pas
+  de `words` pré-extraits) → `words` forward-compat pour l'uniformité des moteurs.
+
+### Groupe D — contrats d'API / familles à signature uniforme (won't-fix par design)
+
+- **Familles de dispatch** (signature uniforme volontaire) : `memory_consolidation._handle_*`
+  + `_extract_search_keywords`/`_analyze_memory_consolidation` (`log_item` ×6), `reasoning_engine._handle_trivial`
+  + `_try_alternative`/`build_decision_tree`, `tty_session._spawn_*` (`echo`, signature cross-plateforme),
+  `evidence_document/renderer._render_*` + `_build_assumptions_section` (`template` ×3, `strict`).
+- **Miroirs d'interface / API documentée** : `python/api/message.communicate(input)` (miroir de
+  `ApiHandler.process(self, input, request)` — retirer déplacerait juste le finding sur l'override),
+  `legal_orchestrator.run_legal_pipeline(route_decision)` / `execute_consensus(call_llm_func)`
+  (API documentée appelée par des dizaines de tests + prod), `integrity_block.verify_signature`
+  (`query`/`response`/`document` — stabilité de signature du vérifieur).
+- **Forward-compat / logging** : `correlation_id`, `validate_medical_output(force_sync)`,
+  `contract_drafting(contract_type, max_retries)`, `research_executor.call(timeout_ms)`,
+  `research_pipeline._decompose_with_llm(max_depth)`, `create_fail_closed_response(query_context)`,
+  `_format_rejected_conclusion(query)`, `record_timeout(engine)`.
+
+**Bilan S1172** : 3 findings résolus dans le code (1 retrait sûr + 2 correctifs qui *utilisent* le
+paramètre comme prévu, dont **1 vrai renforcement de traçabilité d'audit**) ; 32 documentés
+won't-fix-par-design (familles uniformes, contrats d'API, redondances, stubs, forward-compat). **Aucun
+retrait de signature risqué pour un gain MINOR.** Tests : 80/80 verts (contradictor + métacognition
++ doctrine) ; ruff ARG : 0 sur les 3 fonctions corrigées.

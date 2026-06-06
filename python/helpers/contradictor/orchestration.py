@@ -89,6 +89,7 @@ def build_audit_log(
         "human_review_required": bool(human_review_required),
         # Hashed payloads — no PII in audit logs
         "input_hash": _stable_hash(user_question),
+        "response_hash": _stable_hash(agent_response),
         "output_hash": review.output_hash(),
         "route_decision_hash": _route_decision_hash(route_decision),
         # Convenience snapshot of the validated payload (already non-PII per contract)

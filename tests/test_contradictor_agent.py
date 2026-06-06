@@ -611,6 +611,7 @@ class TestContradictorAuditTrace:
             "human_review_required",
             "input_hash",
             "output_hash",
+            "response_hash",
             "route_decision_hash",
         }
         missing = required_fields - set(audit.keys())
@@ -619,6 +620,9 @@ class TestContradictorAuditTrace:
         assert isinstance(audit["input_hash"], str) and audit["input_hash"]
         assert isinstance(audit["output_hash"], str) and audit["output_hash"]
         assert isinstance(audit["route_decision_hash"], str) and audit["route_decision_hash"]
+        # S1172/traçabilité : la réponse auditée DOIT être hachée (cf. docstring "responses are hashed").
+        assert isinstance(audit["response_hash"], str) and audit["response_hash"]
+        assert audit["response_hash"] == orchestration_module._stable_hash("recommendation")
         assert audit["correlation_id"] == "cid-audit"
         assert audit["requires_contradictor"] is True
         assert audit["contradictor_invoked"] is True

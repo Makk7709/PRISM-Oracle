@@ -469,7 +469,6 @@ class Metacognition:
                     base_escalation,
                     signals,
                     outcome.flags,
-                    raw_confidence,
                 )
                 
                 self._log_event("escalation_computed", debug_id, {
@@ -732,7 +731,6 @@ class Metacognition:
         base_escalation: EscalationType,
         signals: List[UncertaintySignal],
         flags: List[ReasoningFlag],
-        raw_confidence: float,
     ) -> EscalationType:
         """
         Applique le durcissement via signaux/flags.
@@ -745,7 +743,6 @@ class Metacognition:
             base_escalation: Escalade de base (plancher)
             signals: Signaux d'incertitude détectés
             flags: Flags du raisonnement
-            raw_confidence: Confiance brute (pour log)
         
         Returns:
             Escalade finale (>= base_escalation en sévérité)
@@ -803,7 +800,7 @@ class Metacognition:
         Conservé pour compatibilité ascendante.
         """
         base = self._compute_base_escalation(confidence)
-        return self._apply_hardening_signals(base, signals, flags, confidence)
+        return self._apply_hardening_signals(base, signals, flags)
     
     # ========================================================================
     # CLARIFICATION
