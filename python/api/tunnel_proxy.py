@@ -19,7 +19,7 @@ async def process(input: dict) -> dict | Response:
     # first verify the service is running:
     service_ok = False
     try:
-        response = requests.post(f"http://localhost:{tunnel_api_port}/", json={"action": "health"})
+        response = requests.post(f"http://localhost:{tunnel_api_port}/", json={"action": "health"}, timeout=5)
         if response.status_code == 200:
             service_ok = True
     except Exception:
@@ -28,7 +28,7 @@ async def process(input: dict) -> dict | Response:
     # forward this request to the tunnel service if OK
     if service_ok:
         try:
-            response = requests.post(f"http://localhost:{tunnel_api_port}/", json=input)
+            response = requests.post(f"http://localhost:{tunnel_api_port}/", json=input, timeout=30)
             return response.json()
         except Exception as e:
             return {"error": str(e)}

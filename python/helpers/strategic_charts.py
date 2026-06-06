@@ -583,7 +583,8 @@ def generate_charts_from_markdown(
         if generator is None:
             continue
 
-        table_hash = hashlib.md5(table.raw_markdown.encode()).hexdigest()[:8]
+        # hash de nom de fichier de graphique, non cryptographique
+        table_hash = hashlib.md5(table.raw_markdown.encode(), usedforsecurity=False).hexdigest()[:8]
         filename = f"chart_{kind.value}_{table_hash}.png"
         filepath = os.path.join(output_dir, filename)
 

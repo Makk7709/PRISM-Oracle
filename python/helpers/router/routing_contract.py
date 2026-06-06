@@ -297,7 +297,8 @@ class RouteDecision:
             "injection_blocked": self.injection_blocked,
         }
         content = json.dumps(stable_data, sort_keys=True)
-        return hashlib.md5(content.encode()).hexdigest()[:12]
+        # hash stable d'ID de contrat (snapshot testing), non cryptographique
+        return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()[:12]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -23,7 +23,7 @@ class KnowledgeImport(TypedDict):
 
 
 def calculate_checksum(file_path: str) -> str:
-    hasher = hashlib.md5()
+    hasher = hashlib.md5(usedforsecurity=False)  # checksum de détection de changement, non cryptographique
     with open(file_path, "rb") as f:
         buf = f.read()
         hasher.update(buf)
