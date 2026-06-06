@@ -31,7 +31,21 @@ imports absolus (`S6859`), complexité cognitive (`S3776`), paramètres inutilis
 | # | Tier | Règles | Fichiers | Nb | Statut | Audit | Commit |
 |---:|:---:|---|---:|---:|---|---|---|
 | 1 | 1 | css:S125, css:S4658 | 7 | 20 | ✅ corrigé | 0 défaut | 35be1ed5 |
-| R1 | 1 | python:S1481 (ruff F841, sûrs) | 5 | 8 | ✅ corrigé | 1 régression évitée | _(en cours)_ |
+| R1 | 1 | python:S1481 (ruff F841, sûrs) | 5 | 8 | ✅ corrigé | 1 régression évitée | 1ffa1ab7 |
+| 2a | 1 | css:S4667 (style vide) | 6 | 6 | ✅ corrigé | 0 défaut | _(en cours)_ |
+| 2b | 2 | css:S4666, css:S7924 (sélecteurs dupliqués) | — | 13 | ⏸️ différé | render-affecting | — |
+
+### Paquet 2a — blocs `<style></style>` vides (css:S4667)
+
+Suppression de 6 balises `<style></style>` **vides** dans des composants projets/speech :
+`project-edit-file-structure`, `project-edit-instructions`, `project-edit-memory` (2e bloc,
+le vrai bloc 48-70 conservé), `project-edit-secrets`, `project-file-structure-test`,
+`settings/speech/microphone`. **Audit** : balises `<style>` équilibrées après coup. 0 défaut.
+
+> **Différé (2b)** : `css:S4666`/`css:S7924` (sélecteurs/règles dupliqués, ex. `.server-list`,
+> `.tool-count`, badges scheduler « subset used in sidebar ») touchent la **cascade/le rendu**
+> et certains doublons sont **inter-fichiers** → fusion à faire avec contrôle visuel, dans une
+> passe dédiée. Non bâclé.
 
 ### Paquet R1 — ruff-assisté (python:S1481, sous-ensemble sûr)
 
