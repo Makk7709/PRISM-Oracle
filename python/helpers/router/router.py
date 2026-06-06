@@ -134,186 +134,62 @@ def decide_route(
     # STEP 2: Score all intents (including unavailable for critical check)
     # ─────────────────────────────────────────────────────────────────────────
     
-    intent_scores: Dict[IntentName, Tuple[float, List[str]]] = {}
-    unavailable_critical_intents: List[IntentName] = []
-    
-    for intent_name, policy in INTENT_POLICIES.items():
-        score, matched = _score_intent(text_lower, policy)
-        
-        # Apply blockers
-        if score > 0 and policy.blockers:
-            for blocker in policy.blockers:
-                if blocker in text_lower:
-                    score *= 0.1  # Heavily penalize
-                    reasons.append(f"Intent {intent_name.value} blocked by '{blocker}'")
-                    break
-        
-        if score >= policy.min_score_threshold:
-            # Check if this critical intent is unavailable
-            if intent_name not in available_agents:
-                if policy.is_critical:
-                    unavailable_critical_intents.append(intent_name)
-                    reasons.append(f"Critical intent {intent_name.value} detected but unavailable")
-                continue  # Don't add to scores if unavailable
-            
-            intent_scores[intent_name] = (score, matched)
+    intent_scores, unavailable_critical_intents = _score_all_available_intents(
+        text_lower, available_agents, reasons
+    )
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 3: Check board-level triggers
     # ─────────────────────────────────────────────────────────────────────────
     
-    board_score = _score_board_level(text_lower)
-    is_board_level = force_board_level or board_score >= BOARD_LEVEL_THRESHOLD
-    
-    if is_board_level:
-        reasons.append(f"Board-level triggered (score={board_score:.1f})")
-        
-        # Add core intents if board-level
-        for core_intent in BOARD_LEVEL_CORE_INTENTS:
-            if core_intent in available_agents and core_intent not in intent_scores:
-                intent_scores[core_intent] = (
-                    BOARD_LEVEL_THRESHOLD * 0.5,  # Base score
-                    ["board-level-core"]
-                )
-                reasons.append(f"Added {core_intent.value} as board-level core")
+    is_board_level = _apply_board_level_intents(
+        text_lower, force_board_level, intent_scores, available_agents, reasons
+    )
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 4: Apply multi-intent rules (ONLY if board-level for legal rule)
     # ─────────────────────────────────────────────────────────────────────────
     
-    detected_intents = set(intent_scores.keys())
-    
-    for rule in MULTI_INTENT_RULES:
-        # Check if rule requires board-level
-        requires_board = getattr(rule, 'require_board_level', False)
-        if requires_board and not is_board_level:
-            continue  # Skip this rule if not board-level
-        
-        should_add = False
-        
-        if rule.condition == "all":
-            should_add = rule.if_intents.issubset(detected_intents)
-        elif rule.condition == "any":
-            should_add = bool(rule.if_intents & detected_intents)
-        
-        if should_add and rule.add_intent in available_agents:
-            if rule.add_intent not in intent_scores:
-                intent_scores[rule.add_intent] = (3.0, ["multi-intent-rule"])
-                reasons.append(f"Added {rule.add_intent.value}: {rule.reason}")
+    _apply_multi_intent_rules(intent_scores, is_board_level, available_agents, reasons)
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 5: Build RouteIntent list
     # ─────────────────────────────────────────────────────────────────────────
     
-    intents: List[RouteIntent] = []
-    
-    for intent_name, (score, matched) in intent_scores.items():
-        policy = INTENT_POLICIES.get(intent_name)
-        
-        # Normalize score to 0-1 range
-        normalized_score = min(score / 10.0, 1.0)
-        
-        intents.append(RouteIntent(
-            name=intent_name,
-            score=normalized_score,
-            matched_keywords=matched[:5],
-            is_required=policy.is_critical if policy else False,
-            reason=f"Score {score:.1f} from {len(matched)} matches",
-        ))
-    
-    # Sort by score descending (deterministic due to stable sorting)
-    intents.sort(key=lambda x: (-x.score, x.name.value))
+    intents = _build_sorted_route_intents(intent_scores)
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 6: Check unavailable critical intents
     # ─────────────────────────────────────────────────────────────────────────
     
-    if unavailable_critical_intents:
-        # Ensure we have at least one intent for contract compliance
-        if not intents:
-            intents = [RouteIntent(
-                name=IntentName.MULTITASK,
-                score=0.1,
-                matched_keywords=[],
-                is_required=False,
-                reason="fallback (critical unavailable)",
-            )]
-        
-        return RouteDecision(
-            verdict=RouteVerdict.REFUSE,
-            intents=intents,
-            routing_strength=0.0,
-            is_board_level=is_board_level,
-            requires_contradictor=False,
-            reasons=reasons + [f"Critical agents unavailable: {[i.value for i in unavailable_critical_intents]}"],
-            policy_version=POLICY_VERSION,
-            clarification_prompt=f"Cette requête nécessite l'agent {unavailable_critical_intents[0].value} qui est indisponible.",
-            missing_info=[f"agent_{i.value}" for i in unavailable_critical_intents],
-            injection_blocked=injection_blocked,
-            injection_attempt=injection_attempt if injection_blocked else "",
-            route_id=route_id,
-            input_hash=input_hash,
-        )
+    unavailable_decision = _build_unavailable_critical_decision(
+        unavailable_critical_intents=unavailable_critical_intents,
+        intents=intents,
+        is_board_level=is_board_level,
+        reasons=reasons,
+        injection_blocked=injection_blocked,
+        injection_attempt=injection_attempt,
+        route_id=route_id,
+        input_hash=input_hash,
+    )
+    if unavailable_decision is not None:
+        return unavailable_decision
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 7: Handle injection enforcement (SECURITY DECISION)
     # ─────────────────────────────────────────────────────────────────────────
     
-    if injection_blocked:
-        # Determine if this is a HIGH-STAKES context
-        # High-stakes = board-level OR critical intent OR strategic signal
-        has_critical_intent = any(
-            i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL, IntentName.RESEARCHER}
-            for i in intents
-        )
-        
-        # Strategic signal: high routing_strength + finance/legal
-        # This catches due diligence, cession, JV even without board-level trigger
-        top_score = intents[0].score if intents else 0.0
-        has_strategic_signal = (
-            top_score >= 0.3 and  # Normalized 0.3 = raw 3.0+
-            any(i.name in {IntentName.FINANCE, IntentName.LEGAL_SAFE} for i in intents)
-        )
-        
-        is_high_stakes = is_board_level or has_critical_intent or has_strategic_signal
-        
-        if is_high_stakes:
-            # HIGH-STAKES + INJECTION → ALWAYS NEEDS_CLARIFICATION
-            # This is a hard security rule, not a soft preference
-            if not intents:
-                intents = [RouteIntent(
-                    name=IntentName.MULTITASK,
-                    score=0.3,
-                    matched_keywords=[],
-                    is_required=False,
-                    reason="fallback (injection + high-stakes)",
-                )]
-            
-            clarification_msg = (
-                "⚠️ Une instruction de contournement a été détectée dans votre demande. "
-                "Pour des raisons de sécurité, veuillez reformuler sans instructions "
-                "d'override (ex: 'ignore les règles', 'ne pas appeler legal')."
-            )
-            
-            return RouteDecision(
-                verdict=RouteVerdict.NEEDS_CLARIFICATION,
-                intents=intents,
-                routing_strength=0.3,
-                is_board_level=is_board_level,
-                requires_contradictor=False,
-                reasons=reasons + [f"HIGH-STAKES injection blocked: {injection_attempt[:30]}"],
-                policy_version=POLICY_VERSION,
-                clarification_prompt=clarification_msg,
-                missing_info=["reformulation_sans_override"],
-                injection_blocked=True,
-                injection_attempt=injection_attempt,
-                route_id=route_id,
-                input_hash=input_hash,
-            )
-        
-        # LOW-STAKES injection: proceed but log + ignore override instruction
-        # The injection is flagged but we route normally based on keywords
-        reasons.append("Injection detected (low-stakes), routing on keywords only")
+    injection_decision = _resolve_injection_enforcement(
+        injection_blocked=injection_blocked,
+        intents=intents,
+        is_board_level=is_board_level,
+        reasons=reasons,
+        injection_attempt=injection_attempt,
+        route_id=route_id,
+        input_hash=input_hash,
+    )
+    if injection_decision is not None:
+        return injection_decision
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 8: Determine verdict
@@ -349,26 +225,7 @@ def decide_route(
     # STEP 10: Calculate routing_strength (coverage score, NOT probability)
     # ─────────────────────────────────────────────────────────────────────────
     
-    if intents:
-        # Weighted average of top intents + floor boost if above threshold
-        top_scores = [i.score for i in intents[:3]]
-        base_strength = sum(top_scores) / len(top_scores)
-        
-        # If primary intent exceeded its policy threshold, boost floor to 0.65
-        # This prevents "low confidence" on clearly matched intents
-        primary_exceeded_threshold = any(
-            i.score >= 0.3 for i in intents[:1]  # Primary scored 3.0+ raw
-        )
-        if primary_exceeded_threshold:
-            routing_strength = max(base_strength, 0.65)
-        else:
-            routing_strength = base_strength
-    else:
-        routing_strength = 0.0
-    
-    # Boost for board-level (more intents = better coverage)
-    if is_board_level and len(intents) >= 2:
-        routing_strength = min(routing_strength * 1.1, 0.95)
+    routing_strength = _compute_routing_strength(intents, is_board_level)
     
     # ─────────────────────────────────────────────────────────────────────────
     # STEP 11: Determine if contradictor needed
@@ -418,6 +275,292 @@ def decide_route(
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTERNAL FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def _apply_board_level_intents(
+    text_lower: str,
+    force_board_level: bool,
+    intent_scores: Dict[IntentName, Tuple[float, List[str]]],
+    available_agents: Set[IntentName],
+    reasons: List[str],
+) -> bool:
+    """STEP 3: Detect board-level mode and seed core intents accordingly.
+
+    Mutates `intent_scores` and `reasons` in place. Returns whether board-level was
+    triggered (forced or board score over threshold).
+    """
+    board_score = _score_board_level(text_lower)
+    is_board_level = force_board_level or board_score >= BOARD_LEVEL_THRESHOLD
+
+    if is_board_level:
+        reasons.append(f"Board-level triggered (score={board_score:.1f})")
+
+        # Add core intents if board-level
+        for core_intent in BOARD_LEVEL_CORE_INTENTS:
+            if core_intent in available_agents and core_intent not in intent_scores:
+                intent_scores[core_intent] = (
+                    BOARD_LEVEL_THRESHOLD * 0.5,  # Base score
+                    ["board-level-core"]
+                )
+                reasons.append(f"Added {core_intent.value} as board-level core")
+
+    return is_board_level
+
+
+def _apply_multi_intent_rules(
+    intent_scores: Dict[IntentName, Tuple[float, List[str]]],
+    is_board_level: bool,
+    available_agents: Set[IntentName],
+    reasons: List[str],
+) -> None:
+    """STEP 4: Add derived intents from MULTI_INTENT_RULES.
+
+    Mutates `intent_scores` and `reasons` in place. Rules flagged `require_board_level`
+    are skipped unless board-level is active.
+    """
+    detected_intents = set(intent_scores.keys())
+
+    for rule in MULTI_INTENT_RULES:
+        # Check if rule requires board-level
+        requires_board = getattr(rule, 'require_board_level', False)
+        if requires_board and not is_board_level:
+            continue  # Skip this rule if not board-level
+
+        should_add = False
+
+        if rule.condition == "all":
+            should_add = rule.if_intents.issubset(detected_intents)
+        elif rule.condition == "any":
+            should_add = bool(rule.if_intents & detected_intents)
+
+        if should_add and rule.add_intent in available_agents:
+            if rule.add_intent not in intent_scores:
+                intent_scores[rule.add_intent] = (3.0, ["multi-intent-rule"])
+                reasons.append(f"Added {rule.add_intent.value}: {rule.reason}")
+
+
+def _build_unavailable_critical_decision(
+    *,
+    unavailable_critical_intents: List[IntentName],
+    intents: List[RouteIntent],
+    is_board_level: bool,
+    reasons: List[str],
+    injection_blocked: bool,
+    injection_attempt: str,
+    route_id: str,
+    input_hash: str,
+) -> Optional[RouteDecision]:
+    """STEP 6: If a critical intent was detected but is unavailable, REFUSE.
+
+    Returns None when there is no unavailable critical intent (continue normally).
+    Injects a MULTITASK fallback intent when none remain, to satisfy the contract.
+    """
+    if not unavailable_critical_intents:
+        return None
+
+    # Ensure we have at least one intent for contract compliance
+    if not intents:
+        intents = [RouteIntent(
+            name=IntentName.MULTITASK,
+            score=0.1,
+            matched_keywords=[],
+            is_required=False,
+            reason="fallback (critical unavailable)",
+        )]
+
+    return RouteDecision(
+        verdict=RouteVerdict.REFUSE,
+        intents=intents,
+        routing_strength=0.0,
+        is_board_level=is_board_level,
+        requires_contradictor=False,
+        reasons=reasons + [f"Critical agents unavailable: {[i.value for i in unavailable_critical_intents]}"],
+        policy_version=POLICY_VERSION,
+        clarification_prompt=f"Cette requête nécessite l'agent {unavailable_critical_intents[0].value} qui est indisponible.",
+        missing_info=[f"agent_{i.value}" for i in unavailable_critical_intents],
+        injection_blocked=injection_blocked,
+        injection_attempt=injection_attempt if injection_blocked else "",
+        route_id=route_id,
+        input_hash=input_hash,
+    )
+
+
+def _resolve_injection_enforcement(
+    *,
+    injection_blocked: bool,
+    intents: List[RouteIntent],
+    is_board_level: bool,
+    reasons: List[str],
+    injection_attempt: str,
+    route_id: str,
+    input_hash: str,
+) -> Optional[RouteDecision]:
+    """STEP 7: Apply the injection security rule.
+
+    - Not blocked → None (continue normally).
+    - Blocked + HIGH-STAKES (board-level / critical intent / strategic signal) →
+      returns a NEEDS_CLARIFICATION decision (hard security rule).
+    - Blocked + low-stakes → appends a reason and returns None (route on keywords).
+    """
+    if not injection_blocked:
+        return None
+
+    # Determine if this is a HIGH-STAKES context
+    # High-stakes = board-level OR critical intent OR strategic signal
+    has_critical_intent = any(
+        i.name in {IntentName.LEGAL_SAFE, IntentName.MEDICAL, IntentName.RESEARCHER}
+        for i in intents
+    )
+
+    # Strategic signal: high routing_strength + finance/legal
+    # This catches due diligence, cession, JV even without board-level trigger
+    top_score = intents[0].score if intents else 0.0
+    has_strategic_signal = (
+        top_score >= 0.3 and  # Normalized 0.3 = raw 3.0+
+        any(i.name in {IntentName.FINANCE, IntentName.LEGAL_SAFE} for i in intents)
+    )
+
+    is_high_stakes = is_board_level or has_critical_intent or has_strategic_signal
+
+    if is_high_stakes:
+        # HIGH-STAKES + INJECTION → ALWAYS NEEDS_CLARIFICATION
+        # This is a hard security rule, not a soft preference
+        if not intents:
+            intents = [RouteIntent(
+                name=IntentName.MULTITASK,
+                score=0.3,
+                matched_keywords=[],
+                is_required=False,
+                reason="fallback (injection + high-stakes)",
+            )]
+
+        clarification_msg = (
+            "⚠️ Une instruction de contournement a été détectée dans votre demande. "
+            "Pour des raisons de sécurité, veuillez reformuler sans instructions "
+            "d'override (ex: 'ignore les règles', 'ne pas appeler legal')."
+        )
+
+        return RouteDecision(
+            verdict=RouteVerdict.NEEDS_CLARIFICATION,
+            intents=intents,
+            routing_strength=0.3,
+            is_board_level=is_board_level,
+            requires_contradictor=False,
+            reasons=reasons + [f"HIGH-STAKES injection blocked: {injection_attempt[:30]}"],
+            policy_version=POLICY_VERSION,
+            clarification_prompt=clarification_msg,
+            missing_info=["reformulation_sans_override"],
+            injection_blocked=True,
+            injection_attempt=injection_attempt,
+            route_id=route_id,
+            input_hash=input_hash,
+        )
+
+    # LOW-STAKES injection: proceed but log + ignore override instruction
+    # The injection is flagged but we route normally based on keywords
+    reasons.append("Injection detected (low-stakes), routing on keywords only")
+    return None
+
+
+def _score_all_available_intents(
+    text_lower: str,
+    available_agents: Set[IntentName],
+    reasons: List[str],
+) -> Tuple[Dict[IntentName, Tuple[float, List[str]]], List[IntentName]]:
+    """STEP 2: Score every intent policy against the (canonical) text.
+
+    Appends explanatory messages to `reasons` (mutated in place to preserve ordering).
+    Returns (intent_scores, unavailable_critical_intents):
+    - intent_scores: only intents that reached threshold AND are available.
+    - unavailable_critical_intents: critical intents detected but not available.
+    """
+    intent_scores: Dict[IntentName, Tuple[float, List[str]]] = {}
+    unavailable_critical_intents: List[IntentName] = []
+
+    for intent_name, policy in INTENT_POLICIES.items():
+        score, matched = _score_intent(text_lower, policy)
+
+        # Apply blockers
+        if score > 0 and policy.blockers:
+            for blocker in policy.blockers:
+                if blocker in text_lower:
+                    score *= 0.1  # Heavily penalize
+                    reasons.append(f"Intent {intent_name.value} blocked by '{blocker}'")
+                    break
+
+        if score >= policy.min_score_threshold:
+            # Check if this critical intent is unavailable
+            if intent_name not in available_agents:
+                if policy.is_critical:
+                    unavailable_critical_intents.append(intent_name)
+                    reasons.append(f"Critical intent {intent_name.value} detected but unavailable")
+                continue  # Don't add to scores if unavailable
+
+            intent_scores[intent_name] = (score, matched)
+
+    return intent_scores, unavailable_critical_intents
+
+
+def _compute_routing_strength(
+    intents: List[RouteIntent],
+    is_board_level: bool,
+) -> float:
+    """STEP 10: Compute routing_strength (coverage score, NOT a probability).
+
+    Pure transform. Weighted average of the top-3 intent scores, with a 0.65 floor
+    when the primary intent exceeded its policy threshold, and a board-level boost
+    (×1.1, capped 0.95) when board-level with ≥2 intents.
+    """
+    if intents:
+        # Weighted average of top intents + floor boost if above threshold
+        top_scores = [i.score for i in intents[:3]]
+        base_strength = sum(top_scores) / len(top_scores)
+
+        # If primary intent exceeded its policy threshold, boost floor to 0.65
+        # This prevents "low confidence" on clearly matched intents
+        primary_exceeded_threshold = any(
+            i.score >= 0.3 for i in intents[:1]  # Primary scored 3.0+ raw
+        )
+        if primary_exceeded_threshold:
+            routing_strength = max(base_strength, 0.65)
+        else:
+            routing_strength = base_strength
+    else:
+        routing_strength = 0.0
+
+    # Boost for board-level (more intents = better coverage)
+    if is_board_level and len(intents) >= 2:
+        routing_strength = min(routing_strength * 1.1, 0.95)
+    return routing_strength
+
+
+def _build_sorted_route_intents(
+    intent_scores: Dict[IntentName, Tuple[float, List[str]]],
+) -> List[RouteIntent]:
+    """STEP 5: Build the RouteIntent list from raw scores and sort deterministically.
+
+    Pure transform (no shared-state mutation). Score normalized to 0-1 (raw/10, capped),
+    sorted by (-score, intent name) for stable, deterministic ordering.
+    """
+    intents: List[RouteIntent] = []
+
+    for intent_name, (score, matched) in intent_scores.items():
+        policy = INTENT_POLICIES.get(intent_name)
+
+        # Normalize score to 0-1 range
+        normalized_score = min(score / 10.0, 1.0)
+
+        intents.append(RouteIntent(
+            name=intent_name,
+            score=normalized_score,
+            matched_keywords=matched[:5],
+            is_required=policy.is_critical if policy else False,
+            reason=f"Score {score:.1f} from {len(matched)} matches",
+        ))
+
+    # Sort by score descending (deterministic due to stable sorting)
+    intents.sort(key=lambda x: (-x.score, x.name.value))
+    return intents
+
 
 def _score_intent(text: str, policy: IntentPolicy) -> Tuple[float, List[str]]:
     """

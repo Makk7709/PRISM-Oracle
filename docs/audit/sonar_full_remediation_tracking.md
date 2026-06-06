@@ -471,3 +471,34 @@ paramètre comme prévu, dont **1 vrai renforcement de traçabilité d'audit**) 
 won't-fix-par-design (familles uniformes, contrats d'API, redondances, stubs, forward-compat). **Aucun
 retrait de signature risqué pour un gain MINOR.** Tests : 80/80 verts (contradictor + métacognition
 + doctrine) ; ruff ARG : 0 sur les 3 fonctions corrigées.
+
+---
+
+## Tier 4 — `python:S3776` (complexité cognitive, 123 findings) — refactors par cycles
+
+**Méthode** : 1 fonction = 1 cycle (filet golden en place → refactor à comportement constant →
+tests verts → audit hostile → commit). On commence par les fonctions **les mieux couvertes** (le
+filet anti-régression prime sur le rang de complexité brut).
+
+### Cycle 1 — `router/router.py:decide_route` (le plus complexe : CC 55, rang F)
+
+**Pourquoi en premier** : cerveau du routage MAIS couverture massive (76 tests router + cité dans
+25 fichiers de tests) et fonction **strictement déterministe** → filet golden idéal. Déjà structurée
+en STEP 0-12 → extraction mécanique.
+
+**Refactor (comportement constant, 6 helpers extraits)** :
+
+- `_score_all_available_intents` (STEP 2, bloc le plus imbriqué), `_apply_board_level_intents` (STEP 3),
+  `_apply_multi_intent_rules` (STEP 4), `_build_sorted_route_intents` (STEP 5),
+  `_build_unavailable_critical_decision` (STEP 6, early-return → `Optional[RouteDecision]`),
+  `_resolve_injection_enforcement` (STEP 7, early-return → `Optional[RouteDecision]`),
+  `_compute_routing_strength` (STEP 10).
+- Mutations d'état partagé (`reasons`, `intent_scores`) préservées **par référence** pour garder
+  l'ordre exact des messages ; early-returns transformés en pattern `if (d := helper(...)) is not None`.
+
+**Résultat** : `decide_route` **CC 55 (rang F) → 14 (rang C)** ; tous les helpers en rang A/B
+(max B/10). **0 ligne de logique modifiée.**
+
+**Audit hostile** : ordre des STEP préservé (board-level avant multi-intent ; STEP 6 avant STEP 7) ;
+mutation par référence vérifiée ; 0 défaut. **Tests : 224/224 verts** (router, déterminisme, contrat,
+métriques, injection_handling, board_level_collision, strategic_pipeline_e2e).
