@@ -10,7 +10,7 @@ function getTextContent(element,html=false) {
     // Skip action buttons
     if (child.classList.contains("action-buttons")) continue;
     // If the child is an image, copy its src URL
-    if (child.tagName && child.tagName.toLowerCase() === "img") {
+    if (child.tagName?.toLowerCase() === "img") {
       if (child.src) textParts.push(child.src);
       continue;
     }

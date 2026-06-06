@@ -385,7 +385,7 @@ const model = {
   async speakWithBrowser(text, waitForPrevious = false, terminator = null) {
     // wait for previous to finish if requested
     while (waitForPrevious && this.isSpeaking) await sleep(25);
-    if (terminator && terminator()) return;
+    if (terminator?.()) return;
 
     // stop previous if any
     this.stopAudio();
@@ -409,7 +409,7 @@ const model = {
 
       // wait for previous to finish if requested
       while (waitForPrevious && this.isSpeaking) await sleep(25);
-      if (terminator && terminator()) return;
+      if (terminator?.()) return;
 
       // stop previous if any
       this.stopAudio();
@@ -418,7 +418,7 @@ const model = {
         if (response.audio_parts) {
           // Multiple chunks - play sequentially
           for (const audioPart of response.audio_parts) {
-            if (terminator && terminator()) return;
+            if (terminator?.()) return;
             await this.playAudio(audioPart);
             await sleep(100); // Brief pause
           }
@@ -701,7 +701,7 @@ class MicrophoneInput {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId:
-            selectedDevice && selectedDevice.deviceId
+            selectedDevice?.deviceId
               ? { exact: selectedDevice.deviceId }
               : undefined,
           echoCancellation: true,

@@ -97,7 +97,7 @@ const fullComponentImplementation = function() {
             document.addEventListener('click', (event) => {
                 // Check if a tab was clicked
                 const clickedTab = event.target.closest('.settings-tab');
-                if (clickedTab && clickedTab.getAttribute('data-tab') === 'scheduler') {
+                if (clickedTab?.getAttribute('data-tab') === 'scheduler') {
                     setTimeout(() => {
                         this.fetchTasks();
                     }, 100);
@@ -166,12 +166,12 @@ const fullComponentImplementation = function() {
 
                 // Clean up any Flatpickr instances
                 const createInput = document.getElementById('newPlannedTime-create');
-                if (createInput && createInput._flatpickr) {
+                if (createInput?._flatpickr) {
                     createInput._flatpickr.destroy();
                 }
 
                 const editInput = document.getElementById('newPlannedTime-edit');
-                if (editInput && editInput._flatpickr) {
+                if (editInput?._flatpickr) {
                     editInput._flatpickr.destroy();
                 }
             };
@@ -239,7 +239,7 @@ const fullComponentImplementation = function() {
                 const data = await response.json();
 
                 // Check if data.tasks exists and is an array
-                if (!data || !data.tasks) {
+                if (!data?.tasks) {
                     console.error('Invalid response: data.tasks is missing', data);
                     this.tasks = [];
                 } else if (!Array.isArray(data.tasks)) {
@@ -343,7 +343,7 @@ const fullComponentImplementation = function() {
 
         // Format plan for display
         formatPlan(task) {
-            if (!task || !task.plan) return 'No plan';
+            if (!task?.plan) return 'No plan';
 
             const todoCount = Array.isArray(task.plan.todo) ? task.plan.todo.length : 0;
             const inProgress = task.plan.in_progress ? 'Yes' : 'No';
@@ -400,7 +400,7 @@ const fullComponentImplementation = function() {
 
         deriveActiveProject() {
             const selected = chatsStore?.selectedContext || null;
-            if (!selected || !selected.project) {
+            if (!selected?.project) {
                 return null;
             }
 
@@ -523,7 +523,7 @@ const fullComponentImplementation = function() {
                 project: initialProject,
                 dedicated_context: true,
             };
-            this.selectedProjectSlug = initialProject && initialProject.name ? initialProject.name : '';
+            this.selectedProjectSlug = initialProject?.name ? initialProject.name : '';
 
             // Set up Flatpickr after the component is visible
             this.$nextTick(() => {
@@ -546,7 +546,7 @@ const fullComponentImplementation = function() {
             // Create a deep copy to avoid modifying the original
             this.editingTask = JSON.parse(JSON.stringify(task));
             const projectSlug = task.project_name || null;
-            const projectDisplay = (task.project && task.project.name) || projectSlug;
+            const projectDisplay = (task.project?.name) || projectSlug;
             const projectColor = task.project_color || (task.project ? task.project.color : '') || '';
             this.editingTask.project = projectSlug || projectDisplay ? {
                 name: projectSlug,
@@ -554,7 +554,7 @@ const fullComponentImplementation = function() {
                 color: projectColor,
             } : null;
             this.editingTask.dedicated_context = !!task.dedicated_context;
-            this.selectedProjectSlug = this.editingTask.project && this.editingTask.project.name ? this.editingTask.project.name : '';
+            this.selectedProjectSlug = this.editingTask.project?.name ? this.editingTask.project.name : '';
 
             // Debug log
             console.log('Task data for editing:', task);
@@ -673,13 +673,13 @@ const fullComponentImplementation = function() {
             // Clean up Flatpickr instances
             const destroyFlatpickr = (inputId) => {
                 const input = document.getElementById(inputId);
-                if (input && input._flatpickr) {
+                if (input?._flatpickr) {
                     console.log(`Destroying Flatpickr instance for ${inputId}`);
                     input._flatpickr.destroy();
 
                     // Also remove any wrapper elements that might have been created
                     const wrapper = input.closest('.scheduler-flatpickr-wrapper');
-                    if (wrapper && wrapper.parentNode) {
+                    if (wrapper?.parentNode) {
                         // Move the input back to its original position
                         wrapper.parentNode.insertBefore(input, wrapper);
                         // Remove the wrapper
@@ -761,7 +761,7 @@ const fullComponentImplementation = function() {
                 taskData.attachments = Array.isArray(this.editingTask.attachments)
                     ? this.editingTask.attachments
                         .map(line => typeof line === 'string' ? line.trim() : line)
-                        .filter(line => line && line.trim().length > 0)
+                        .filter(line => line?.trim().length > 0)
                     : [];
 
                 // Handle task type specific data
@@ -890,7 +890,7 @@ const fullComponentImplementation = function() {
                 showToast(this.isCreating ? 'Task created successfully' : 'Task updated successfully', 'success');
 
                 // Immediately update the UI if the response includes the task
-                if (responseData && responseData.task) {
+                if (responseData?.task) {
                     console.log('Task received in response:', responseData.task);
 
                     // Update the tasks array
@@ -914,7 +914,7 @@ const fullComponentImplementation = function() {
                 // Clean up Flatpickr instances
                 const destroyFlatpickr = (inputId) => {
                     const input = document.getElementById(inputId);
-                    if (input && input._flatpickr) {
+                    if (input?._flatpickr) {
                         input._flatpickr.destroy();
                     }
                 };
@@ -1069,7 +1069,7 @@ const fullComponentImplementation = function() {
                 showToast('Task deleted successfully', 'success');
 
                 // If we were viewing the detail of the deleted task, close the detail view
-                if (this.selectedTaskForDetail && this.selectedTaskForDetail.uuid === taskId) {
+                if (this.selectedTaskForDetail?.uuid === taskId) {
                     this.closeTaskDetail();
                 }
 
@@ -1451,14 +1451,14 @@ const fullComponentImplementation = function() {
             // Clear any existing Flatpickr instances to prevent duplication
             if (mode === 'all' || mode === 'create') {
                 const createInput = document.getElementById('newPlannedTime-create');
-                if (createInput && createInput._flatpickr) {
+                if (createInput?._flatpickr) {
                     createInput._flatpickr.destroy();
                 }
             }
 
             if (mode === 'all' || mode === 'edit') {
                 const editInput = document.getElementById('newPlannedTime-edit');
-                if (editInput && editInput._flatpickr) {
+                if (editInput?._flatpickr) {
                     editInput._flatpickr.destroy();
                 }
             }

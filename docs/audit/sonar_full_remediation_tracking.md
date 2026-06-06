@@ -180,3 +180,22 @@ convertis à la main après **vérification de la définition** (`imageTagRegex`
 
 **Audit hostile** : `node --check` (module) sur les 5 fichiers → 5/5 OK ; diff = uniquement
 `.replace(` → `.replaceAll(` (aucune autre modification). **0 défaut.**
+
+### Paquet S6582-js — optional chaining (javascript:S6582, 33 findings → 11 fichiers)
+
+⚠️ Mes paquets précédents ont **décalé les numéros de ligne** de plusieurs fichiers
+(`scheduler.js` -50, `settings.js` -15, …). J'ai donc repéré les motifs par **pattern**
+(`BASE && BASE.x` auto-garde) et non par numéro de ligne — plus robuste.
+
+Règles sûres appliquées : `BASE && BASE.x` → `BASE?.x`, `BASE && BASE()` → `BASE?.()`,
+`!BASE || !BASE.x` → `!BASE?.x` (le backreference garantit que c'est le même objet qui se
+garde lui-même = exactement la redondance ciblée par S6582). Contextes vérifiés : gardes
+`if`, négations, ternaires, appels, assignements — tous équivalents en comportement.
+
+41 motifs corrigés (les 33 findings + extras trouvés par pattern) : 3 chaînes 3 niveaux
+collapsées à la main (`authData?.settings?.sections`, `kvps?.attachments?.length`,
+`window.Alpine?.store?.(…)`), 38 mono-niveau par script restreint aux lignes inspectées.
+
+**Audit hostile** : `node --check` (module) sur les 11 fichiers → 11/11 OK ; revue visuelle
+des 41 lignes du diff (équivalence sémantique confirmée) ; re-scan final → **0 redondance
+`X && X.` restante** dans les 11 fichiers. **0 défaut.**

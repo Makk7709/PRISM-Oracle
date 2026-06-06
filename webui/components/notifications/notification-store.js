@@ -56,7 +56,7 @@ const model = {
     }
 
     // Process new notifications and add to toast stack
-    if (pollData.notifications && pollData.notifications.length > 0) {
+    if (pollData.notifications?.length > 0) {
       pollData.notifications.forEach((notification) => {
         // should we toast the notification?
         const shouldToast = !notification.read;
@@ -92,11 +92,11 @@ const model = {
   // NEW: Add notification to toast stack
   addToToastStack(notification) {
     // If notification has a group, remove any existing toasts with the same group
-    if (notification.group && notification.group.trim() !== "") {
+    if (notification.group?.trim() !== "") {
       const existingToast = this.toastStack.find(
         (t) => t.group === notification.group
       );
-      if (existingToast && existingToast.toastId)
+      if (existingToast?.toastId)
         this.removeFromToastStack(existingToast.toastId);
     }
 
@@ -114,7 +114,7 @@ const model = {
     // Enforce max stack limit (remove oldest)
     while (this.toastStack.length > maxToasts) {
       const oldest = this.toastStack[0];
-      if (oldest && oldest.toastId) this.removeFromToastStack(oldest.toastId);
+      if (oldest?.toastId) this.removeFromToastStack(oldest.toastId);
     }
 
     // Set auto-dismiss timer

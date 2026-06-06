@@ -59,7 +59,7 @@ const model = {
   },
 
   _applyScroll(event) {
-    if (!event || !event.target) {
+    if (!event?.target) {
       return;
     }
     

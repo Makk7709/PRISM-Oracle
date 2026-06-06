@@ -19,7 +19,7 @@ const model = {
 
   init() {
     const gi = globalThis.gitinfo;
-    if (gi && gi.version && gi.version !== "unknown") {
+    if (gi?.version && gi.version !== "unknown") {
       this.versionNo = gi.version;
       this.commitTime = gi.commit_time && gi.commit_time !== "unknown" ? gi.commit_time : "";
     }

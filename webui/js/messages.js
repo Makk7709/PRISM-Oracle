@@ -189,7 +189,7 @@ export function _drawMessage(
   drawKvpsIncremental(bodyDiv, kvps, false);
 
   // Handle content
-  if (content && content.trim().length > 0) {
+  if (content?.trim().length > 0) {
     if (markdown) {
       let contentDiv = bodyDiv.querySelector(".msg-content");
       if (!contentDiv) {
@@ -457,7 +457,7 @@ export function drawMessageUser(
 
   // Handle content
   let textDiv = messageDiv.querySelector(".message-text");
-  if (content && content.trim().length > 0) {
+  if (content?.trim().length > 0) {
     if (!textDiv) {
       textDiv = document.createElement("div");
       textDiv.classList.add("message-text");
@@ -476,7 +476,7 @@ export function drawMessageUser(
 
   // Handle attachments
   let attachmentsContainer = messageDiv.querySelector(".attachments-container");
-  if (kvps && kvps.attachments && kvps.attachments.length > 0) {
+  if (kvps?.attachments?.length > 0) {
     if (!attachmentsContainer) {
       attachmentsContainer = document.createElement("div");
       attachmentsContainer.classList.add("attachments-container");

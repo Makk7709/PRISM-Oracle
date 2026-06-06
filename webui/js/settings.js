@@ -7,7 +7,7 @@ const settingsModalProxy = {
 
     // Computed property for filtered sections
     get filteredSections() {
-        if (!this.settings || !this.settings.sections) return [];
+        if (!this.settings?.sections) return [];
         const filteredSections = this.settings.sections.filter(section => section.tab === this.activeTab);
 
         // If no sections match the current tab (or all tabs are missing), show all sections
@@ -136,7 +136,7 @@ const settingsModalProxy = {
                     const schedulerTab = document.querySelector('.settings-tab[title="Task Scheduler"]');
                     console.log(`Current active tab after direct set: ${modalAD.activeTab}`);
                     console.log('Scheduler tab active after direct initialization?',
-                        schedulerTab && schedulerTab.classList.contains('active'));
+                        schedulerTab?.classList.contains('active'));
 
                     // Explicitly start polling if we're on the scheduler tab
                     if (modalAD.activeTab === 'scheduler') {
@@ -349,7 +349,7 @@ document.addEventListener('alpine:init', function () {
 
                     if (response.ok) {
                         const data = await response.json();
-                        if (data && data.settings) {
+                        if (data?.settings) {
                             this.settingsData = data.settings;
                         } else {
                             console.error('Invalid settings data format');
@@ -555,7 +555,7 @@ document.addEventListener('alpine:init', function () {
 // Show toast notification - now uses new notification system
 function showToast(message, type = 'info') {
     // Use new frontend notification system based on type
-    if (window.Alpine && window.Alpine.store && window.Alpine.store('notificationStore')) {
+    if (window.Alpine?.store?.('notificationStore')) {
         const store = window.Alpine.store('notificationStore');
         switch (type.toLowerCase()) {
             case 'error':

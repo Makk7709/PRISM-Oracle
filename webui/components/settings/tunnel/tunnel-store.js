@@ -162,7 +162,7 @@ const model = {
       // Find the auth_login and auth_password in the settings
       let hasAuth = false;
 
-      if (authData && authData.settings && authData.settings.sections) {
+      if (authData?.settings?.sections) {
         for (const section of authData.settings.sections) {
           if (section.fields) {
             const authLoginField = section.fields.find(

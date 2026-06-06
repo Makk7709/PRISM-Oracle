@@ -110,7 +110,7 @@ const memoryDashboardStore = {
 
         // Sort alphabetically but ensure "default" is always first
         subdirs = subdirs.filter((dir) => dir !== "default").sort();
-        if (response.subdirs && response.subdirs.includes("default")) {
+        if (response.subdirs?.includes("default")) {
           subdirs.unshift("default");
         } else {
           subdirs.unshift("default");
@@ -353,7 +353,7 @@ Timestamp: ${this.formatTimestamp(memory.timestamp)}
 Source: ${memory.knowledge_source ? "Knowledge" : "Conversation"}
 ${memory.source_file ? `File: ${memory.source_file}` : ""}
 ${
-  memory.tags && memory.tags.length > 0 ? `Tags: ${memory.tags.join(", ")}` : ""
+  memory.tags?.length > 0 ? `Tags: ${memory.tags.join(", ")}` : ""
 }`;
 
     // Add custom metadata if present
@@ -553,7 +553,7 @@ ${memory.content_full}
     try {
       // Check if this is the memory currently being viewed in detail modal
       const isViewingThisMemory =
-        this.detailMemory && this.detailMemory.id === memory.id;
+        this.detailMemory?.id === memory.id;
 
       const response = await API.callJsonApi("memory_dashboard", {
         action: "delete",
