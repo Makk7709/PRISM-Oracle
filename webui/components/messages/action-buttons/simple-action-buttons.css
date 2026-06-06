@@ -26,12 +26,9 @@
   height: 26px;
   cursor: pointer;
   background-color: var(--color-background);
-  /* border: 1px solid var(--color-border); */
-  /* transition: background-color var(--transition-speed) ease-in-out; */
   color: var(--color-text);
   padding: 0;
   font-size: 14px;
-  /* opacity: 0.7; */
   margin: 0;
 }
 
