@@ -294,7 +294,7 @@ export function addBlankTargetsToLinks(str) {
     if (internalPath) {
       anchor.setAttribute("href", "#");
       anchor.removeAttribute("target");
-      anchor.setAttribute("onclick", `event.preventDefault(); openFileLink('${internalPath.replace(/'/g, "\\'")}');`);
+      anchor.setAttribute("onclick", `event.preventDefault(); openFileLink('${internalPath.replaceAll(/'/g, "\\'")}');`);
       anchor.classList.add("download-link");
     }
 
@@ -943,9 +943,9 @@ function sanitizeKvps(kvps) {
 
 function convertToTitleCase(str) {
   return str
-    .replace(/_/g, " ") // Replace underscores with spaces
+    .replaceAll(/_/g, " ") // Replace underscores with spaces
     .toLowerCase() // Convert the entire string to lowercase
-    .replace(/\b\w/g, function (match) {
+    .replaceAll(/\b\w/g, function (match) {
       return match.toUpperCase(); // Capitalize the first letter of each word
     });
 }
@@ -955,7 +955,7 @@ function convertImageTags(content) {
   const imageTagRegex = /<image>(.*?)<\/image>/g;
 
   // Replace <image> tags with <img> tags with base64 source
-  const updatedContent = content.replace(
+  const updatedContent = content.replaceAll(
     imageTagRegex,
     (match, base64Content) => {
       return `<img src="data:image/jpeg;base64,${base64Content}" alt="Image Attachment" style="max-width: 250px !important;"/>`;
@@ -979,7 +979,7 @@ function convertImgFilePaths(str) {
 }
 
 export function convertIcons(str) {
-  return str.replace(
+  return str.replaceAll(
     /icon:\/\/([a-zA-Z0-9_]+)/g,
     '<span class="icon material-symbols-outlined">$1</span>'
   );
@@ -993,7 +993,7 @@ function escapeHTML(str) {
     "'": "&#39;",
     '"': "&quot;",
   };
-  return str.replace(/[&<>'"]/g, (char) => escapeChars[char]);
+  return str.replaceAll(/[&<>'"]/g, (char) => escapeChars[char]);
 }
 
 function convertGeneratedImageDownloadLinks(str) {
@@ -1003,7 +1003,7 @@ function convertGeneratedImageDownloadLinks(str) {
   // Match paths inside or outside of HTML tags, with optional /app or /a0 prefix (legacy)
   const pathPattern = /(?:\/app|\/a0)?\/tmp\/generated_images\/([a-zA-Z0-9_\-\.]+\.png)/g;
   
-  return str.replace(pathPattern, (match, filename) => {
+  return str.replaceAll(pathPattern, (match, filename) => {
     const downloadUrl = `/image_get?path=tmp/generated_images/${filename}`;
     return `<a href="${downloadUrl}" download="${filename}" class="download-link" style="color: var(--prism-accent); text-decoration: underline;">⬇️ ${filename}</a>`;
   });
@@ -1040,7 +1040,7 @@ function convertPathsToLinks(str) {
       // if it *starts* with '<', it's a tag -> leave untouched
       if (chunk.startsWith("<")) return chunk;
       // otherwise run your link-generation
-      return chunk.replace(pathRegex, generateLinks);
+      return chunk.replaceAll(pathRegex, generateLinks);
     })
     .join("");
 }

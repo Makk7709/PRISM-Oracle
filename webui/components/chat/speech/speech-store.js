@@ -536,7 +536,7 @@ const model = {
     );
 
     // Replace inline code ticks with content preserved
-    text = text.replace(/`([^`]*)`/g, "$1"); // remove backticks but keep content
+    text = text.replaceAll(/`([^`]*)`/g, "$1"); // remove backticks but keep content
 
     // Handle HTML tags
     text = handlePatterns(
@@ -555,10 +555,10 @@ const model = {
     );
 
     // Remove markdown links: [label](url) → label
-    text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
+    text = text.replaceAll(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
 
     // Remove markdown formatting: *, _, #
-    text = text.replace(/[*_#]+/g, "");
+    text = text.replaceAll(/[*_#]+/g, "");
 
     // Handle tables - both complete and partial
     // Check if text contains a table-like pattern
@@ -574,18 +574,18 @@ const model = {
         }
       } else {
         // Just handle individual table rows
-        text = text.replace(/\|[^\n]*\|/g, tablePlaceholder);
+        text = text.replaceAll(/\|[^\n]*\|/g, tablePlaceholder);
       }
     }
 
     // Remove emojis and private unicode blocks
-    text = text.replace(
+    text = text.replaceAll(
       /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g,
       ""
     );
 
     // Replace URLs with just the domain name
-    text = text.replace(/https?:\/\/[^\s]+/g, (match) => {
+    text = text.replaceAll(/https?:\/\/[^\s]+/g, (match) => {
       try {
         return new URL(match).hostname;
       } catch {
@@ -597,13 +597,13 @@ const model = {
     // text = text.replace(/\S+@\S+/g, "");
 
     // Replace UUIDs with 'UUID'
-    text = text.replace(
+    text = text.replaceAll(
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
       "UUID"
     );
 
     // Collapse multiple spaces/tabs to a single space, but preserve newlines
-    text = text.replace(/[ \t]+/g, " ");
+    text = text.replaceAll(/[ \t]+/g, " ");
 
     // Function to merge consecutive placeholders of any type
     function mergePlaceholders(txt, placeholder, replacement) {
@@ -614,7 +614,7 @@ const model = {
         txt = txt.replace(regex, placeholder);
       }
       // Replace all remaining placeholders with human-readable text
-      return txt.replace(new RegExp(placeholder, "g"), replacement);
+      return txt.replaceAll(new RegExp(placeholder, "g"), replacement);
     }
 
     // Apply placeholder merging for both types

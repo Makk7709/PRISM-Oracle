@@ -66,21 +66,21 @@ export function rewriteInlineImagePaths(input) {
   let out = input;
 
   // Normalize broken local-host URLs first so markdown/image src gets fixed.
-  out = out.replace(/https?:\/\/(?:app|korev|a0)(?=\/)/gi, "");
-  out = out.replace(/file:\/\/\/?(?:app|korev|a0)\//gi, "/");
+  out = out.replaceAll(/https?:\/\/(?:app|korev|a0)(?=\/)/gi, "");
+  out = out.replaceAll(/file:\/\/\/?(?:app|korev|a0)\//gi, "/");
 
   // Convert img:// and sandbox:// internal schemes.
-  out = out.replace(/img:\/\/\/?/g, "/image_get?path=");
-  out = out.replace(/sandbox:\/\/\/?/g, "/image_get?path=");
+  out = out.replaceAll(/img:\/\/\/?/g, "/image_get?path=");
+  out = out.replaceAll(/sandbox:\/\/\/?/g, "/image_get?path=");
 
   // Route local image paths through image_get for robust serving.
-  out = out.replace(
+  out = out.replaceAll(
     /(^|[\s('"`>])(?:\/(?:app|korev|a0))?\/+(tmp\/(?:generated_images|generated|uploads)\/[^\s"')>]+)/gi,
     (full, prefix, p1) => (IMAGE_EXT_RE.test(p1) ? `${prefix}${toImageGetPath(p1)}` : full)
   );
 
   // Clean duplicate slashes in image_get path parameter.
-  out = out.replace(/(\/image_get\?path=)\/+/g, "$1");
+  out = out.replaceAll(/(\/image_get\?path=)\/+/g, "$1");
 
   return out;
 }

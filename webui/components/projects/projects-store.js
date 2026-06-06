@@ -54,13 +54,13 @@ const model = {
     // a helper function to convert title to a folder safe name
     const s = str
       .normalize("NFD") // remove all diacritics and replace it with the latin character
-      .replace(/[\u0300-\u036f]/g, "")
+      .replaceAll(/[\u0300-\u036f]/g, "")
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "_") // replace all special symbols with _
-      .replace(/\s+/g, "_") // replace spaces with _
-      .replace(/_{2,}/g, "_") // condense multiple underscores into 1
-      .replace(/^-+|-+$/g, "") // remove any leading and trailing underscores
-      .replace(/^_+|_+$/g, "");
+      .replaceAll(/[^a-z0-9\s-]/g, "_") // replace all special symbols with _
+      .replaceAll(/\s+/g, "_") // replace spaces with _
+      .replaceAll(/_{2,}/g, "_") // condense multiple underscores into 1
+      .replaceAll(/^-+|-+$/g, "") // remove any leading and trailing underscores
+      .replaceAll(/^_+|_+$/g, "");
     return s;
   },
 
@@ -398,7 +398,7 @@ const model = {
   getSelectedAbsPath(...relPath) {
     return ["/korev/usr/projects", this.selectedProject.name, ...relPath]
       .join("/")
-      .replace(/\/+/g, "/");
+      .replaceAll(/\/+/g, "/");
   },
 
   async editActiveProject() {

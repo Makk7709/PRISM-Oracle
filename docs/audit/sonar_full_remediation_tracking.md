@@ -164,3 +164,19 @@ manuellement (`microphone.html` : `store` n'apparaissait que dans une chaîne
 **Audit hostile** : diff = lignes `import` uniquement (35 ins / 35 del, 0 autre) ;
 `node --check` (module) sur `messages.js` → OK ; side-effect d'enregistrement des stores
 préservé sur les 30 fichiers. **0 défaut.**
+
+### Paquet S7781-js — `replaceAll` (javascript:S7781, 32 findings → 5 fichiers)
+
+`S7781` n'est levé **que** pour `.replace()` avec une regex **globale** (flag `g`) →
+conversion 1:1 sûre `.replace(/…/g, …)` → `.replaceAll(/…/g, …)` (replaceAll exige le
+flag global, présent). Aucun changement de comportement (replace avec `/g` remplace déjà
+toutes les occurrences).
+
+Fichiers : `speech-store.js`, `projects-store.js`, `link-normalizer.mjs`, `messages.js`,
+`speech_browser.js`. 25 cas convertis par script (flag global prouvé sur la même ligne :
+regex littérale `/…g/` ou `new RegExp(…, "…g…")`), 7 cas multi-ligne / regex en variable
+convertis à la main après **vérification de la définition** (`imageTagRegex`, `pathPattern`,
+`pathRegex` = `new RegExp(…, "g")`, etc. — tous globaux).
+
+**Audit hostile** : `node --check` (module) sur les 5 fichiers → 5/5 OK ; diff = uniquement
+`.replace(` → `.replaceAll(` (aucune autre modification). **0 défaut.**
