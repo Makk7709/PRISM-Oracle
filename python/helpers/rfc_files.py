@@ -352,14 +352,14 @@ def _read_file_binary_impl(file_path: str) -> str:
         raise FileNotFoundError(f"File not found: {file_path}")
 
     if not os.path.isfile(file_path):
-        raise Exception(f"Path is not a file: {file_path}")
+        raise ValueError(f"Path is not a file: {file_path}")
 
     try:
         with open(file_path, 'rb') as file:
             content = file.read()
             return base64.b64encode(content).decode('utf-8')
     except Exception as e:
-        raise Exception(f"Failed to read file {file_path}: {str(e)}")
+        raise RuntimeError(f"Failed to read file {file_path}: {str(e)}")
 
 
 def _write_file_binary_impl(file_path: str, b64_content: str) -> bool:
@@ -386,7 +386,7 @@ def _write_file_binary_impl(file_path: str, b64_content: str) -> bool:
 
         return True
     except Exception as e:
-        raise Exception(f"Failed to write file {file_path}: {str(e)}")
+        raise RuntimeError(f"Failed to write file {file_path}: {str(e)}")
 
 
 def _delete_file_impl(file_path: str) -> bool:
@@ -397,13 +397,13 @@ def _delete_file_impl(file_path: str) -> bool:
         raise FileNotFoundError(f"File not found: {file_path}")
 
     if not os.path.isfile(file_path):
-        raise Exception(f"Path is not a file: {file_path}")
+        raise ValueError(f"Path is not a file: {file_path}")
 
     try:
         os.remove(file_path)
         return True
     except Exception as e:
-        raise Exception(f"Failed to delete file {file_path}: {str(e)}")
+        raise RuntimeError(f"Failed to delete file {file_path}: {str(e)}")
 
 
 def _delete_folder_impl(folder_path: str) -> bool:
@@ -414,13 +414,13 @@ def _delete_folder_impl(folder_path: str) -> bool:
         raise FileNotFoundError(f"Folder not found: {folder_path}")
 
     if not os.path.isdir(folder_path):
-        raise Exception(f"Path is not a directory: {folder_path}")
+        raise ValueError(f"Path is not a directory: {folder_path}")
 
     try:
         shutil.rmtree(folder_path)
         return True
     except Exception as e:
-        raise Exception(f"Failed to delete folder {folder_path}: {str(e)}")
+        raise RuntimeError(f"Failed to delete folder {folder_path}: {str(e)}")
 
 
 def _list_folder_impl(folder_path: str, include_hidden: bool = False) -> list:
@@ -431,7 +431,7 @@ def _list_folder_impl(folder_path: str, include_hidden: bool = False) -> list:
         raise FileNotFoundError(f"Folder not found: {folder_path}")
 
     if not os.path.isdir(folder_path):
-        raise Exception(f"Path is not a directory: {folder_path}")
+        raise ValueError(f"Path is not a directory: {folder_path}")
 
     try:
         items = []
@@ -458,7 +458,7 @@ def _list_folder_impl(folder_path: str, include_hidden: bool = False) -> list:
         return items
 
     except Exception as e:
-        raise Exception(f"Failed to list folder {folder_path}: {str(e)}")
+        raise RuntimeError(f"Failed to list folder {folder_path}: {str(e)}")
 
 
 def _make_dirs_impl(folder_path: str) -> bool:
@@ -469,7 +469,7 @@ def _make_dirs_impl(folder_path: str) -> bool:
         os.makedirs(folder_path, exist_ok=True)
         return True
     except Exception as e:
-        raise Exception(f"Failed to create directories {folder_path}: {str(e)}")
+        raise RuntimeError(f"Failed to create directories {folder_path}: {str(e)}")
 
 
 def _path_exists_impl(file_path: str) -> bool:
@@ -534,7 +534,7 @@ def _move_file_impl(source_path: str, destination_path: str) -> bool:
         os.rename(source_path, destination_path)
         return True
     except Exception as e:
-        raise Exception(f"Failed to move file {source_path} to {destination_path}: {str(e)}")
+        raise RuntimeError(f"Failed to move file {source_path} to {destination_path}: {str(e)}")
 
 
 def _read_directory_impl(dir_path: str) -> str:
@@ -545,7 +545,7 @@ def _read_directory_impl(dir_path: str) -> str:
         raise FileNotFoundError(f"Directory not found: {dir_path}")
 
     if not os.path.isdir(dir_path):
-        raise Exception(f"Path is not a directory: {dir_path}")
+        raise ValueError(f"Path is not a directory: {dir_path}")
 
     temp_zip_path = None
     try:
@@ -575,7 +575,7 @@ def _read_directory_impl(dir_path: str) -> str:
         # Clean up temporary file if it exists
         if temp_zip_path is not None and os.path.exists(temp_zip_path):
             os.unlink(temp_zip_path)
-        raise Exception(f"Failed to zip directory {dir_path}: {str(e)}")
+        raise RuntimeError(f"Failed to zip directory {dir_path}: {str(e)}")
 
 
 def _read_file_as_base64_impl(file_path: str) -> str:
@@ -586,14 +586,14 @@ def _read_file_as_base64_impl(file_path: str) -> str:
         raise FileNotFoundError(f"File not found: {file_path}")
 
     if not os.path.isfile(file_path):
-        raise Exception(f"Path is not a file: {file_path}")
+        raise ValueError(f"Path is not a file: {file_path}")
 
     try:
         with open(file_path, 'rb') as file:
             content = file.read()
             return base64.b64encode(content).decode('utf-8')
     except Exception as e:
-        raise Exception(f"Failed to read file {file_path}: {str(e)}")
+        raise RuntimeError(f"Failed to read file {file_path}: {str(e)}")
 
 
 def _write_file_from_base64_impl(file_path: str, content: str) -> bool:
@@ -619,4 +619,4 @@ def _write_file_from_base64_impl(file_path: str, content: str) -> bool:
 
         return True
     except Exception as e:
-        raise Exception(f"Failed to write file {file_path}: {str(e)}")
+        raise RuntimeError(f"Failed to write file {file_path}: {str(e)}")

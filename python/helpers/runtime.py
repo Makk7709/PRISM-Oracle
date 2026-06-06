@@ -217,7 +217,7 @@ def _get_rfc_password() -> str:
     """Get RFC password from env. Raises Exception if not set (handled by caller)."""
     password = dotenv.get_dotenv_value(dotenv.KEY_RFC_PASSWORD)
     if not password:
-        raise Exception("RFC password not configured.")
+        raise RuntimeError("RFC password not configured.")
     return password
 
 

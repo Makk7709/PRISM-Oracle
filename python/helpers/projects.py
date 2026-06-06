@@ -238,7 +238,7 @@ def activate_project(context_id: str, name: str):
     data = load_edit_project_data(name)
     context = AgentContext.get(context_id)
     if context is None:
-        raise Exception("Context not found")
+        raise RuntimeError("Context not found")
     display_name = str(data.get("title", name))
     display_name = display_name[:22] + "..." if len(display_name) > 25 else display_name
     context.set_data(CONTEXT_DATA_KEY_PROJECT, name)
@@ -256,7 +256,7 @@ def deactivate_project(context_id: str):
 
     context = AgentContext.get(context_id)
     if context is None:
-        raise Exception("Context not found")
+        raise RuntimeError("Context not found")
     context.set_data(CONTEXT_DATA_KEY_PROJECT, None)
     context.set_output_data(CONTEXT_DATA_KEY_PROJECT, None)
 

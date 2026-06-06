@@ -11,20 +11,20 @@ import os
 class UploadWorkDirFiles(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         if "files[]" not in request.files:
-            raise Exception("No files uploaded")
+            raise ValueError("No files uploaded")
 
         current_path = request.form.get("path", "")
         uploaded_files = request.files.getlist("files[]")
         _, workspace = self._session_user_info()
         allowed, _ = self._authorize_workspace_access(workspace, action="workspace_upload_files")
         if not allowed:
-            raise Exception("Access denied")
+            raise PermissionError("Access denied")
         base = workspace
 
         successful, failed = await upload_files(uploaded_files, current_path, base)
 
         if not successful and failed:
-            raise Exception("All uploads failed")
+            raise RuntimeError("All uploads failed")
 
         result = await runtime.call_development_function(
             get_work_dir_files.get_files, current_path, base

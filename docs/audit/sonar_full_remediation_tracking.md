@@ -199,3 +199,30 @@ collapsées à la main (`authData?.settings?.sections`, `kvps?.attachments?.leng
 **Audit hostile** : `node --check` (module) sur les 11 fichiers → 11/11 OK ; revue visuelle
 des 41 lignes du diff (équivalence sémantique confirmée) ; re-scan final → **0 redondance
 `X && X.` restante** dans les 11 fichiers. **0 défaut.**
+
+### Paquet S112-py — exceptions génériques (python:S112, 49 findings → 17 fichiers)
+
+`raise Exception(...)` générique → exception spécifique, choisie par sémantique :
+- **ValueError** : validation d'entrée / argument manquant ou invalide (handlers API
+  `projects`, `upload*`, `knowledge_*`, `nudge` ; `rfc_files` « Path is not a … » ;
+  `rfc` « Invalid RFC hash »).
+- **PermissionError** : accès refusé (`projects`, `upload_work_dir_files`).
+- **RuntimeError** : état/IO/ressource (`shell_ssh`/`shell_local` « Shell not connected »,
+  `rfc_files` « Failed to … », `projects` « Context not found », `memory`, `runtime`,
+  `settings`, `playwright`).
+
+**46 raises de production convertis** ; 0 `raise Exception(` restant dans les fichiers prod.
+
+**Audit hostile — risque d'interception vérifié** :
+- handler API top-level = `except Exception` (`api.py:108`) → toute sous-classe reste
+  capturée → 500 inchangé.
+- TOUS les `except RuntimeError` étroits du dépôt inspectés (`defer`, `critical_output`,
+  `legal_orchestrator:1903`, `task_scheduler:577`, monologue `_35/_36`, `integrity_block`,
+  `api.py`) sont scopés sur `loop.stop`/`asyncio.get_event_loop`/`sign_evidence_output`/
+  `getattr(g,…)` — **aucun** n'enveloppe d'appel aux helpers convertis → pas d'interception.
+- compilation 15/15 OK ; diff = lignes `raise` uniquement.
+
+**Faux positifs (laissés)** : `tests/test_metacognition_policy.py:713/758` (`Exception(...)`
+créée volontairement comme **donnée de test** pour `sanitize_exception`) et
+`tests/test_research_executor.py:377` (`raise Exception("Simulated failure")` simulant un
+échec en test) — modifier le type fausserait l'intention du test. **0 défaut.**

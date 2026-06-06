@@ -25,13 +25,13 @@ class LocalInteractiveSession:
 
     async def send_command(self, command: str):
         if not self.session:
-            raise Exception("Shell not connected")
+            raise RuntimeError("Shell not connected")
         self.full_output = ""
         await self.session.sendline(command)
  
     async def read_output(self, timeout: float = 0, reset_full_output: bool = False) -> Tuple[str, Optional[str]]:
         if not self.session:
-            raise Exception("Shell not connected")
+            raise RuntimeError("Shell not connected")
 
         if reset_full_output:
             self.full_output = ""

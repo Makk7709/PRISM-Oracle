@@ -29,7 +29,7 @@ class Projects(ApiHandler):
             elif action == "file_structure":
                 data = self.get_file_structure(input.get("name", None), input.get("settings"))
             else:
-                raise Exception("Invalid action")
+                raise ValueError("Invalid action")
 
             return {
                 "ok": True,
@@ -54,7 +54,7 @@ class Projects(ApiHandler):
         data = projects.load_basic_project_data(name)
         owner = data.get("owner", "")
         if owner and owner != username:
-            raise Exception(f"Access denied: project '{name}' belongs to another user")
+            raise PermissionError(f"Access denied: project '{name}' belongs to another user")
 
     def get_active_projects_list(self):
         username, role = self._current_user()
@@ -62,7 +62,7 @@ class Projects(ApiHandler):
 
     def create_project(self, project: dict|None):
         if project is None:
-            raise Exception("Project data is required")
+            raise ValueError("Project data is required")
         username, _ = self._current_user()
         if username:
             project["owner"] = username
@@ -72,13 +72,13 @@ class Projects(ApiHandler):
 
     def load_project(self, name: str|None):
         if name is None:
-            raise Exception("Project name is required")
+            raise ValueError("Project name is required")
         self._check_project_access(name)
         return projects.load_edit_project_data(name)
 
     def update_project(self, project: dict|None):
         if project is None:
-            raise Exception("Project data is required")
+            raise ValueError("Project data is required")
         self._check_project_access(project["name"])
         data = projects.EditProjectData(**project)
         name = projects.update_project(project["name"], data)
@@ -86,26 +86,26 @@ class Projects(ApiHandler):
 
     def delete_project(self, name: str|None):
         if name is None:
-            raise Exception("Project name is required")
+            raise ValueError("Project name is required")
         self._check_project_access(name)
         return projects.delete_project(name)
 
     def activate_project(self, context_id: str|None, name: str|None):
         if not context_id:
-            raise Exception("Context ID is required")
+            raise ValueError("Context ID is required")
         if not name:
-            raise Exception("Project name is required")
+            raise ValueError("Project name is required")
         self._check_project_access(name)
         return projects.activate_project(context_id, name)
 
     def deactivate_project(self, context_id: str|None):
         if not context_id:
-            raise Exception("Context ID is required")
+            raise ValueError("Context ID is required")
         return projects.deactivate_project(context_id)
 
     def get_file_structure(self, name: str|None, settings: dict|None):
         if not name:
-            raise Exception("Project name is required")
+            raise ValueError("Project name is required")
         self._check_project_access(name)
         basic_data = projects.load_basic_project_data(name)
         if settings:
