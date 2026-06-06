@@ -143,3 +143,24 @@ Les 6 fichiers porteurs (`simple-action-buttons.css`, `notification-toast-stack.
 `project-edit-basic-data.html`, `memory-detail-modal.html`, `settings.css`, `toast.css`)
 ont été nettoyés au Paquet 1. Les numéros de ligne du rapport pointent désormais vers du
 code actif (lignes décalées) → **aucune action**, déjà résolu.
+
+### Paquet S1128-js — imports nommés inutilisés (javascript:S1128, 35 findings → 30 fichiers)
+
+Les composants Alpine font `import { store } from ".../X-store.js"` mais ne référencent
+**jamais** le binding `store` : chaque `X-store.js` s'auto-enregistre via `createStore(...)`
+au niveau module (side-effect), et les templates utilisent la magie Alpine `$store.X`
+(sans rapport avec le binding importé).
+
+**Correctif** (préserve le comportement) : `import { store } from "X";` → `import "X";`
+(import nu). Le binding inutilisé disparaît (clear S1128) **et** le module reste chargé
+→ le store reste enregistré. 35/35 lignes converties (1:1, 30 fichiers).
+
+**Garde anti-régression** : script refusant la conversion si le binding est réellement
+utilisé comme identifiant JS (recherche `\bNOM\b` non précédé de `$`, hors lignes
+d'import/commentaire, dans les blocs `<script>`). 2 faux positifs de la garde levés
+manuellement (`microphone.html` : `store` n'apparaissait que dans une chaîne
+`"…-store.js"` ; `messages.js` : commentaire `// keep here, required in html` préservé).
+
+**Audit hostile** : diff = lignes `import` uniquement (35 ins / 35 del, 0 autre) ;
+`node --check` (module) sur `messages.js` → OK ; side-effect d'enregistrement des stores
+préservé sur les 30 fichiers. **0 défaut.**
