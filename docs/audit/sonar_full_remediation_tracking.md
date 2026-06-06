@@ -386,3 +386,31 @@ Deux affectations « mortes » repérées pendant S1481 méritaient une investig
 
 **Bilan bugs latents** : 0 bug fonctionnel confirmé ; 2 cas de code mort trompeur nettoyés.
 ruff F841 **2 → 1** (reste `mcp_handler:896`, différé assumé).
+
+---
+
+## Tier 4 — `javascript:S6859` (imports absolus webui, 91 findings) — FAUX POSITIF assumé
+
+**Règle Sonar** : « utiliser des chemins d'import relatifs » (cible les projets bundlés/Node où
+`/` = chemin filesystem absolu).
+
+**Pourquoi c'est un FP ici** : le webui est servi par
+`Flask(static_folder="./webui", static_url_path="/")`. Les imports `import "/components/..."` /
+`from "/js/..."` sont des **URL racine navigateur** (modules ES natifs servis verbatim à `/`), pas
+des chemins bundler. Ici `/` = **origine HTTP**, donc l'absolu est **correct et intentionnel** (stable
+même si un fichier est déplacé).
+
+**Preuve dure (pourquoi convertir CASSERAIT l'UI)** : `webui/js/components.js` charge les scripts
+module **inline** des fragments `.html` en les transformant en **Blob** (`URL.createObjectURL`). Dans
+un module Blob, un import **relatif** se résout contre l'URL du blob (sans arborescence) → **cassé** ;
+seul un chemin **racine-absolu** se résout (contre l'origine). De plus, le regex de réécriture du
+loader ne matche que `import X from "Y"`, alors que les 35 imports HTML sont des imports **à effet de
+bord** `import "/x.js";` (sans `from`) → non réécrits, donc l'absolu y est **obligatoire**.
+
+**Répartition** : 91 findings / 49 fichiers (56 en `.js`, 35 en `.html`). Les 35 HTML *exigent*
+l'absolu (blob) ; convertir les 56 `.js` seuls n'apporterait rien et rendrait le codebase incohérent
+(HTML absolu + JS relatif) + fragiliserait (aucun test JS/webui).
+
+**Action** : neutralisé en FP tracé dans `sonar-project.properties`
+(`sonar.issue.ignore.multicriteria.s6859webui` → `javascript:S6859` sur `webui/**/*`). **0 ligne de
+code modifiée**, donc **0 risque de régression UI**. Retire les 91 findings du gate Sonar.
