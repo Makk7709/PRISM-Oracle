@@ -294,7 +294,7 @@ class TestHelperFunctions:
         """Test génération de hash unique."""
         hash1 = generate_decision_hash("action1", {"ctx": 1})
         hash2 = generate_decision_hash("action2", {"ctx": 2})
-        hash3 = generate_decision_hash("action1", {"ctx": 1})
+        generate_decision_hash("action1", {"ctx": 1})
         
         # Hashes différents pour inputs différents
         assert hash1 != hash2

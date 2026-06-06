@@ -46,7 +46,7 @@ def format_citation(
         >>> format_citation(chunk_meta, format="full")
         "Art. 1134 Code civil, version en vigueur au 01/01/2024 (LEGITEXT000006070721)"
     """
-    source = chunk_meta.get("source", "")
+    chunk_meta.get("source", "")
     citation = chunk_meta.get("citation", "")
     pinpoint = chunk_meta.get("pinpoint", "")
     provenance = chunk_meta.get("provenance", {})

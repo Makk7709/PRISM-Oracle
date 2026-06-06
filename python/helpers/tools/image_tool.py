@@ -217,7 +217,7 @@ class ImageResult:
         """Retourne des références markdown vers les images."""
         refs = []
         for i, path in enumerate(self.file_paths):
-            name = Path(path).name
+            Path(path).name
             refs.append(f"![Image {i+1}]({path})")
         return refs
 

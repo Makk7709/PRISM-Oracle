@@ -91,7 +91,7 @@ class TestSuggestiveQuestions:
         
         # A clause question should give similar risk regardless of framing
         base = "clause de non-concurrence CDI"
-        ctx1 = detect_legal_context(base)
+        detect_legal_context(base)
         ctx2 = detect_legal_context(f"N'est-ce pas que {base} est nulle ?")
         
         # Both should be in a reasonable range (not artificially inflated)

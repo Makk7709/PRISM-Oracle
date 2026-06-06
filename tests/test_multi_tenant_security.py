@@ -34,7 +34,7 @@ def login(username: str, password: str) -> requests.Session:
     s = requests.Session()
     s.verify = True
 
-    login_page = s.get(f"{BASE_URL}/login", allow_redirects=False)
+    s.get(f"{BASE_URL}/login", allow_redirects=False)
 
     resp = s.post(f"{BASE_URL}/login", data={
         "username": username,
@@ -107,7 +107,7 @@ def test_cross_org_isolation():
     print(f"  aya sees {len(aya_ctxs)} chats, {len(aya_tasks)} tasks")
 
     # T2: aya should NOT see amine's chats (she's MEMBER)
-    aya_ctx_ids = {ctx.get("id") for ctx in aya_ctxs}
+    {ctx.get("id") for ctx in aya_ctxs}
     # amine's contexts minus aya's should not overlap (unless aya created some that amine also sees)
     # More precisely: aya should only see her own chats
     t2_pass = True
@@ -170,7 +170,7 @@ def test_christopher_purged():
     """T8: Christopher's data is fully purged."""
     print("\n--- Christopher Purge Test ---")
     try:
-        chris_session = login("christopher", "Evidence2026!")
+        login("christopher", "Evidence2026!")
         record("T8", False, "christopher can still login!")
     except RuntimeError:
         record("T8", True, "christopher login rejected (account deleted)")

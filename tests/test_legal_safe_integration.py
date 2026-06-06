@@ -297,7 +297,7 @@ def test_schema_validation():
     print("  Test 3: Rejet si temperature != 0...")
     try:
         try:
-            bad_response = LegalSafeResponse(
+            LegalSafeResponse(
                 scope=Scope(jurisdiction_requested=Jurisdiction.FR),
                 classification=Classification(
                     domain=LegalDomain.CONTRATS,

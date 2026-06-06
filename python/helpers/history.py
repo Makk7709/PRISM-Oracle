@@ -286,7 +286,6 @@ class Bulk(Record):
     def from_dict(data: dict, history: "History"):
         bulk = Bulk(history=history)
         bulk.summary = data["summary"]
-        cls = data["_cls"]
         bulk.records = [Record.from_dict(r, history=history) for r in data["records"]]
         return bulk
 

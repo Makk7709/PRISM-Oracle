@@ -2052,7 +2052,7 @@ def _apply_settings(previous: Settings | None):
 
         # reload whisper model if necessary
         if not previous or _settings["stt_model_size"] != previous["stt_model_size"]:
-            task = defer.DeferredTask().start_task(
+            defer.DeferredTask().start_task(
                 whisper.preload, _settings["stt_model_size"]
             )  # TODO overkill, replace with background task
 
@@ -2110,7 +2110,7 @@ def _apply_settings(previous: Settings | None):
                     type="info", content="Finished updating MCP settings.", temp=True
                 )
 
-            task2 = defer.DeferredTask().start_task(
+            defer.DeferredTask().start_task(
                 update_mcp_settings, config.mcp_servers
             )  # TODO overkill, replace with background task
 
@@ -2125,7 +2125,7 @@ def _apply_settings(previous: Settings | None):
 
                 DynamicMcpProxy.get_instance().reconfigure(token=token)
 
-            task3 = defer.DeferredTask().start_task(
+            defer.DeferredTask().start_task(
                 update_mcp_token, current_token
             )  # TODO overkill, replace with background task
 
@@ -2137,7 +2137,7 @@ def _apply_settings(previous: Settings | None):
 
                 DynamicA2AProxy.get_instance().reconfigure(token=token)
 
-            task4 = defer.DeferredTask().start_task(
+            defer.DeferredTask().start_task(
                 update_a2a_token, current_token
             )  # TODO overkill, replace with background task
 

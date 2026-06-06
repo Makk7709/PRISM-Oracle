@@ -36,11 +36,10 @@ def validate_document(md_content: str) -> List[ValidationResult]:
     # ═══════════════════════════════════════════════════════════════════════════
     
     # Trouver les chiffres dans le texte
-    numbers_in_text = re.findall(r'(\d+(?:[\s.,]\d+)*(?:\s*[kMB€%])?)', md_content)
+    re.findall(r'(\d+(?:[\s.,]\d+)*(?:\s*[kMB€%])?)', md_content)
     
     # Vérifier la présence de sources
     sources_section = "## Sources citées" in md_content
-    hypotheses_section = "## C. Hypothèses structurantes" in md_content
     
     # Vérifier que les tableaux d'hypothèses existent
     hypothesis_tables = len(re.findall(r'\|\s*H-[A-Z]+-\d+\s*\|', md_content))
@@ -190,7 +189,7 @@ def validate_document(md_content: str) -> List[ValidationResult]:
     # ═══════════════════════════════════════════════════════════════════════════
     
     # Compter les lignes de tableau avec données
-    table_rows = re.findall(r'\|\s*[^|]+\s*\|', md_content)
+    re.findall(r'\|\s*[^|]+\s*\|', md_content)
     hypothesis_rows = re.findall(r'\|\s*H-[A-Z]+-\d+\s*\|', md_content)
     risk_indicators = ["Risque", "Impact", "Mitigation", "Probabilité"]
     risk_tables = any(r in md_content for r in risk_indicators)

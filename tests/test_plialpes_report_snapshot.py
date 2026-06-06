@@ -524,7 +524,7 @@ class TestPlialpesSections:
     
     def test_all_decisions_have_alternatives(self, plialpes_report):
         """Toutes les décisions ont des alternatives documentées."""
-        content = plialpes_report.generate()
+        plialpes_report.generate()
         for decision in plialpes_report.decisions:
             assert len(decision.alternatives) >= 2, \
                 f"Décision {decision.id} n'a pas assez d'alternatives"

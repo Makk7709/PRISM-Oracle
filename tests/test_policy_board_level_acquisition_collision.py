@@ -102,7 +102,7 @@ class TestBoardLevelThreshold:
     
     def test_strategy_alone_triggers_board_level(self):
         """'Stratégie' with enough strategic context should trigger board-level."""
-        decision = decide_route("Stratégie de croissance pour la direction")
+        decide_route("Stratégie de croissance pour la direction")
         
         # Should be board-level due to "stratégie" + "direction"
         # But may not be if threshold is high enough

@@ -222,7 +222,6 @@ def create_kill_tests() -> List[KillTest]:
         """Patch le quorum de 2/3 à 1/3."""
         from python.helpers import consensus_manager
         
-        original_check = consensus_manager.DecisionProposal.check_consensus
         
         def broken_check(self):
             """Quorum cassé: 1 vote suffit."""
@@ -257,7 +256,6 @@ def create_kill_tests() -> List[KillTest]:
         """Patch abstain pour compter comme approve."""
         from python.helpers import consensus_manager
         
-        original_get_count = consensus_manager.DecisionProposal.get_vote_count
         
         def broken_get_count(self):
             """BROKEN: Abstain compte comme approve."""
@@ -321,7 +319,7 @@ def create_kill_tests() -> List[KillTest]:
         from python.helpers import criticality_router
         
         # Remove legal_safe from required profiles
-        original_profiles = criticality_router.CONSENSUS_REQUIRED_PROFILES.copy()
+        criticality_router.CONSENSUS_REQUIRED_PROFILES.copy()
         
         def broken_context():
             criticality_router.CONSENSUS_REQUIRED_PROFILES.discard("legal_safe")

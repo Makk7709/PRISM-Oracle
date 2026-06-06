@@ -156,7 +156,7 @@ def detect_action_request(user_message: str) -> tuple[bool, list[str]]:
     # AND the message contains file-related terms OR is clearly imperative
     has_action_verbs = len(detected_actions) > 0
     has_file_context = any(p.search(message_lower) for p in COMPILED_PATTERNS.get("files", []))
-    is_imperative = message_lower.strip().split()[0] if message_lower.strip() else ""
+    message_lower.strip().split()[0] if message_lower.strip() else ""
     
     # Action request if: action verbs + (file context OR starts with action verb)
     is_action_request = has_action_verbs and (has_file_context or len(detected_actions) >= 1)

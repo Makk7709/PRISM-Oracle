@@ -109,7 +109,7 @@ class TestMarketStudyE2E:
         # Detect and enrich
         context = detect_strategic_context(query)
         base_decision = decide_route(query)
-        enriched = enrich_route_decision(base_decision, context)
+        enrich_route_decision(base_decision, context)
         
         # Properly sourced response
         sourced_response = {

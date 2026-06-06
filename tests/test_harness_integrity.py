@@ -455,7 +455,6 @@ class TestNetworkGuardCoverage:
         try:
             import models
             if hasattr(models, "LiteLLMChatWrapper"):
-                wrapper_class = models.LiteLLMChatWrapper
                 # The method should be patched to raise
                 # We can't easily test this without an instance,
                 # but we verify the conftest has the patching code

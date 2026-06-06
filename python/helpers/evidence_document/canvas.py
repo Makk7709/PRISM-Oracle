@@ -127,7 +127,6 @@ def create_canvas_maker(template: Template, confidentiality: Optional[str] = Non
         def save(self):
             """Finalise avec le total de pages."""
             # Le total est maintenant connu
-            total = TemplateCanvas._page_count
             
             # Reset pour prochaine utilisation
             TemplateCanvas._page_count = 0

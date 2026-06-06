@@ -469,11 +469,10 @@ def assign_words_to_cells(
     if not col_boundaries or not row_boundaries:
         return []
     
-    cell_config = config.tables.geometry.cell_assignment
     post_config = config.tables.geometry.postprocessing
     
-    num_cols = len(col_boundaries)
-    num_rows = len(row_boundaries)
+    len(col_boundaries)
+    len(row_boundaries)
     
     # Build cell grid
     cell_texts: dict[tuple[int, int], list[str]] = {}

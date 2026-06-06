@@ -166,7 +166,7 @@ class TestNoiseRobustness:
             )
             
             await asyncio.sleep(0.1)
-            status = manager.get_proposal_status(proposal_id)
+            manager.get_proposal_status(proposal_id)
             
             # 3/5 valid votes, all approve = should still work
             # Note: quorum is ceil(5*2/3) = 4, so 3 approves NOT enough

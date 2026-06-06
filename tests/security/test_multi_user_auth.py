@@ -202,7 +202,7 @@ class TestT03_PlaintextRejection:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            mgr = UserManager(plaintext_users_json, strict=False)
+            UserManager(plaintext_users_json, strict=False)
             assert any("plaintext" in str(warning.message).lower() for warning in w)
 
 

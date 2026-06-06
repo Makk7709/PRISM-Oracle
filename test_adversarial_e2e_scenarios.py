@@ -224,7 +224,7 @@ async def run_scenario_juridique(pipeline):
     
     # Simulation de décision humaine
     print_section("DÉCISION HUMAINE SIMULÉE")
-    success = pipeline.record_decision(
+    pipeline.record_decision(
         dossier.id,
         "accept_with_reserves",
         [

@@ -10,7 +10,7 @@ class Synthesize(ApiHandler):
         ctxid = input.get("ctxid", "")
         
         if ctxid:
-            context = self.use_context(ctxid)
+            self.use_context(ctxid)
 
 
         try:

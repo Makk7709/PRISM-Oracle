@@ -494,9 +494,6 @@ class MCPConfig(BaseModel):
             instance = cls.get_instance()
             # Directly update the servers attribute of the existing instance or re-initialize carefully
             # For simplicity and to ensure __init__ logic runs if needed for setup:
-            new_instance_data = {
-                "servers": servers_data
-            }  # Prepare data for re-initialization or update
 
             # Option 1: Re-initialize the existing instance (if __init__ is idempotent for other fields)
             instance.__init__(servers_list=servers_data)

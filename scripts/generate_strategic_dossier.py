@@ -349,7 +349,7 @@ def generate_clients_evolution_chart():
     
     for i, (key, scenario) in enumerate(SCENARIOS.items()):
         color = COLORS[key]
-        bars = ax.bar(x + i*width, scenario.clients, width, 
+        ax.bar(x + i*width, scenario.clients, width, 
                      label=scenario.name, color=color, alpha=0.8)
     
     ax.set_xlabel('Année', fontsize=11)
@@ -374,7 +374,7 @@ def generate_breakeven_analysis_chart():
     scenario = SCENARIOS["central"]
     revenues = [r / 1_000_000 for r in scenario.calculate_revenue()]
     costs = [c / 1_000_000 for c in scenario.calculate_costs()]
-    ebitda = [e / 1_000_000 for e in scenario.calculate_ebitda()]
+    [e / 1_000_000 for e in scenario.calculate_ebitda()]
     
     ax.fill_between(scenario.years, revenues, costs, 
                    where=[r >= c for r, c in zip(revenues, costs)],

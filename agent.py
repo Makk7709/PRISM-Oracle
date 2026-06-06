@@ -282,7 +282,7 @@ class AgentContext:
             budget_limits = get_limits(agent)
             check_depth(budget_state, budget_limits, agent.agent_name)
 
-            msg_template = (
+            (
                 agent.hist_add_user_message(msg)  # type: ignore
                 if user
                 else agent.hist_add_tool_result(

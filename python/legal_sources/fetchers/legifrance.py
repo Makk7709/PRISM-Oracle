@@ -284,11 +284,11 @@ class LegiFranceFetcher(BaseFetcher):
             
             # Dates
             date_debut = self._parse_date(raw_data.get("dateDebut"))
-            date_fin = self._parse_date(raw_data.get("dateFin"))
+            self._parse_date(raw_data.get("dateFin"))
             date_mod = self._parse_date(raw_data.get("dateModification"))
             
             # Status (en vigueur ou abrogé)
-            status = raw_data.get("etat", "").upper()
+            raw_data.get("etat", "").upper()
             
             # Citation
             citation = self._build_citation(code_name, article_num)

@@ -21,7 +21,7 @@ class ImageGet(ApiHandler):
     async def process(self, input: dict, request: Request) -> dict | Response:
         # input data
         path = input.get("path", request.args.get("path", ""))
-        metadata = (
+        (
             input.get("metadata", request.args.get("metadata", "false")).lower()
             == "true"
         )
@@ -87,9 +87,9 @@ class ImageGet(ApiHandler):
         from python.security.path_safety import safe_path_join, SecurityError
         try:
             if runtime.is_development():
-                resolved = safe_path_join(base_dir, path, allow_symlinks=True)
+                safe_path_join(base_dir, path, allow_symlinks=True)
             else:
-                resolved = safe_path_join(base_dir, path, allow_symlinks=False)
+                safe_path_join(base_dir, path, allow_symlinks=False)
         except SecurityError:
             raise ValueError("Path is outside of allowed directory")
 

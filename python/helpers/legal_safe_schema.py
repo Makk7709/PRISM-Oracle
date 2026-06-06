@@ -387,12 +387,6 @@ class LegalSafeResponse(BaseModel):
             triggers.append(ReviewTrigger.OUT_OF_SCOPE)
         
         # Règle 9: Domaines sensibles
-        sensitive_domains = [
-            LegalDomain.DROIT_TRAVAIL,
-            LegalDomain.FISCAL,
-            LegalDomain.IMMIGRATION,
-            LegalDomain.RGPD_DONNEES,
-        ]
         if self.classification.domain == LegalDomain.DROIT_TRAVAIL:
             triggers.append(ReviewTrigger.EMPLOYMENT_LAW_SENSITIVE)
         if self.classification.domain == LegalDomain.FISCAL:
@@ -429,7 +423,7 @@ class LegalSafeResponse(BaseModel):
         md = self.output.user_facing_markdown.lower()
         
         # Le markdown doit contenir au moins un élément clé du JSON
-        required_elements = [
+        [
             self.conclusion.answer[:50].lower() if len(self.conclusion.answer) > 50 else self.conclusion.answer.lower(),
         ]
         

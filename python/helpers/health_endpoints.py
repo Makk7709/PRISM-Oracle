@@ -200,7 +200,7 @@ class HealthChecker:
         try:
             from python.helpers.consensus_manager import ConsensusManager
             # Just check it can be instantiated
-            manager = ConsensusManager(timeout_ms=5000, total_providers=3)
+            ConsensusManager(timeout_ms=5000, total_providers=3)
             latency = int((time.time() - start) * 1000)
             
             return ComponentCheck(

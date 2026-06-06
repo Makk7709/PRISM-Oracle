@@ -119,7 +119,7 @@ async def test_criticality_router():
     
     from python.helpers.criticality_router import get_criticality_router, assess_criticality
     
-    router = get_criticality_router()
+    get_criticality_router()
     
     test_cases = [
         ("Mon client risque la prison pour fraude fiscale", "legal_safe", True),

@@ -511,7 +511,7 @@ class TestP4NightlyE2E:
         from tests.fixtures.legal_corpus import create_test_index
         
         # Build index
-        index = create_test_index(tmp_path)
+        create_test_index(tmp_path)
         
         # Run pipeline
         output = await run_legal_pipeline(

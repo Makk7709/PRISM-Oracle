@@ -872,7 +872,7 @@ class TestP2RouterHook:
         # Test with hook enabled (default)
         with patch.dict(os.environ, {"LEGAL_PIPELINE_HOOK": "1", "LEGAL_PIPELINE_ENABLED": "1"}):
             # May still be False if LEGAL_PIPELINE_AVAILABLE is False
-            result = ext.should_use_legal_pipeline()
+            ext.should_use_legal_pipeline()
             # Just check it runs without error
 
 

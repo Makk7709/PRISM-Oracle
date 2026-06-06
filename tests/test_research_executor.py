@@ -74,7 +74,7 @@ class TestIntentDetection:
     @pytest.mark.asyncio
     async def test_paper_search_uses_semanticscholar(self, executor, mock_caller):
         """Paper search should call semanticscholar first."""
-        result = await executor.execute("Find papers on machine learning")
+        await executor.execute("Find papers on machine learning")
         
         calls = mock_caller.get_calls()
         assert len(calls) >= 1
@@ -84,7 +84,7 @@ class TestIntentDetection:
     @pytest.mark.asyncio
     async def test_latest_papers_uses_arxiv_first(self, executor, mock_caller):
         """Latest papers should use arXiv first."""
-        result = await executor.execute(
+        await executor.execute(
             "Latest research on transformers",
             intent=ResearchIntent.PAPER_LATEST,
         )
@@ -96,7 +96,7 @@ class TestIntentDetection:
     @pytest.mark.asyncio
     async def test_doi_lookup_uses_crossref(self, executor, mock_caller):
         """DOI lookup should use crossref."""
-        result = await executor.execute(
+        await executor.execute(
             "Get DOI 10.1234/test",
             intent=ResearchIntent.DOI_LOOKUP,
         )
@@ -108,7 +108,7 @@ class TestIntentDetection:
     @pytest.mark.asyncio
     async def test_eu_legislation_uses_eurlex(self, executor, mock_caller):
         """EU legislation should use eurlex only."""
-        result = await executor.execute(
+        await executor.execute(
             "Find GDPR regulation",
             intent=ResearchIntent.EU_LEGISLATION,
         )
@@ -163,7 +163,7 @@ class TestPolicyEnforcement:
     @pytest.mark.asyncio
     async def test_eurlex_not_used_for_paper_search(self, executor, mock_caller):
         """EUR-Lex should not be used for paper search."""
-        result = await executor.execute(
+        await executor.execute(
             "papers on deep learning",
             intent=ResearchIntent.PAPER_SEARCH,
         )

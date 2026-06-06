@@ -642,10 +642,10 @@ def main():
     )
     
     # === Commande verify ===
-    verify_parser = subparsers.add_parser("verify", help="Vérifier l'intégrité")
+    subparsers.add_parser("verify", help="Vérifier l'intégrité")
     
     # === Commande stats ===
-    stats_parser = subparsers.add_parser("stats", help="Afficher les statistiques")
+    subparsers.add_parser("stats", help="Afficher les statistiques")
     
     args = parser.parse_args()
     

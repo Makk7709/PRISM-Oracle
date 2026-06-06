@@ -111,13 +111,13 @@ class TestValidateRouteDecision:
         
         if decision.verdict == RouteVerdict.NEEDS_CLARIFICATION:
             # Should have clarification info
-            has_info = (
+            (
                 decision.clarification_prompt != "" or 
                 len(decision.missing_info) > 0
             )
             # Note: current implementation may not require this
             # but it's good practice
-            errors = validate_route_decision(decision)
+            validate_route_decision(decision)
             # Should still be valid even without clarification prompt
             # (validation is lenient on this)
 

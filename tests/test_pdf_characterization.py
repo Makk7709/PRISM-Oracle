@@ -491,7 +491,7 @@ class TestMigrationInvariants:
         from python.helpers.pdf_extraction import extract_from_pdf
         result = extract_from_pdf(str(any_valid_pdf))
         summary = result.summary()
-        summary_str = json.dumps(summary)
+        json.dumps(summary)
         # Should not contain any word from the PDF
         assert "text" not in summary or isinstance(summary.get("text"), type(None))
 

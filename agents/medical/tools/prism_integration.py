@@ -279,7 +279,7 @@ non validées par consensus multi-LLM pour garantir la sécurité patient.
         # ÉTAPE 1: Vérification domaine médical
         # ═══════════════════════════════════════════════════════════════════
         
-        assessment = self._verify_medical_domain(query)
+        self._verify_medical_domain(query)
         
         logger.info(
             f"[MEDICAL PRISM] Validating output for query: {query[:100]}... "

@@ -8,7 +8,7 @@ class Transcribe(ApiHandler):
         ctxid = input.get("ctxid", "")
 
         if ctxid:
-            context = self.use_context(ctxid)
+            self.use_context(ctxid)
 
 
         set = settings.get_settings()

@@ -2048,7 +2048,7 @@ class AdversarialInstructionPipeline:
             dossier.current_phase = 6
             dossier.log_event(6, "phase_started", {})
             
-            trace = self.traceability_manager.generate_trace(dossier)
+            self.traceability_manager.generate_trace(dossier)
             
             dossier.log_event(6, "phase_completed", {
                 "trace_generated": True,

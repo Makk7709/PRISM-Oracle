@@ -303,7 +303,7 @@ class TestAntiInjection:
         ]
         
         for prompt in legitimate_prompts:
-            decision = decide_route(prompt)
+            decide_route(prompt)
             # These should NOT be flagged as injection
             # (though they might match some patterns, context matters)
 

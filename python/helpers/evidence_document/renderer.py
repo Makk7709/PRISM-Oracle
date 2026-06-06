@@ -333,7 +333,7 @@ def _render_to_stream(doc: Document, stream, strict: bool = False) -> None:
     # For board-level: we show "Page X" without total, or use estimate
     
     # Estimate pages (rough: ~5 elements per page)
-    estimated_pages = max(1, len(elements) // 5)
+    max(1, len(elements) // 5)
     
     pdf_doc = SimpleDocTemplate(
         stream,

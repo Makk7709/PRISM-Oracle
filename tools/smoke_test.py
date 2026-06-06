@@ -289,7 +289,7 @@ class SmokeTestRunner:
             
             from python.helpers.consensus_manager import ConsensusManager, DecisionType, VoteType
             
-            manager = ConsensusManager(timeout_ms=5000, total_providers=3)
+            ConsensusManager(timeout_ms=5000, total_providers=3)
             
             duration = int((time.time() - start) * 1000)
             
@@ -316,7 +316,7 @@ class SmokeTestRunner:
             from python.helpers.research_pipeline import create_pipeline
             
             # Create pipeline in offline mode
-            pipeline = create_pipeline(settings={
+            create_pipeline(settings={
                 "consensus_enabled": False,  # Skip consensus for smoke test
             })
             

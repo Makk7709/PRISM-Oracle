@@ -72,7 +72,7 @@ class TestSimpleQuery:
             })
             
             # Simple query
-            dossier = await pipeline._open_dossier("Quelle est la capitale de la France?")
+            await pipeline._open_dossier("Quelle est la capitale de la France?")
             
             # Should not have called any MCP tools
             assert mcp.get_call_count() == 0, \
@@ -89,7 +89,7 @@ class TestSimpleQuery:
             })
             
             start = time.time()
-            dossier = await pipeline._open_dossier("Simple question")
+            await pipeline._open_dossier("Simple question")
             elapsed = (time.time() - start) * 1000
             
             assert elapsed < 100, f"Simple query took {elapsed}ms, should be <100ms"
@@ -159,7 +159,7 @@ class TestResearchQuery:
             
             mcp.register_tool("tavily", "search", suspicious_search)
             
-            pipeline = create_pipeline(mcp_handler=mcp, settings={
+            create_pipeline(mcp_handler=mcp, settings={
                 "consensus_enabled": False,
             })
             
@@ -285,7 +285,7 @@ class TestCorrelationId:
         async def run():
             pipeline = create_pipeline(settings={"consensus_enabled": False})
             
-            dossier = await pipeline._open_dossier("Test")
+            await pipeline._open_dossier("Test")
             
             # Check audit log
             audit = pipeline.get_audit_log()
@@ -379,7 +379,7 @@ class TestAntiBypass:
             })
             
             # Normal operation should not call admin tools
-            dossier = await pipeline._open_dossier("Normal query")
+            await pipeline._open_dossier("Normal query")
             
             # Check no admin calls
             assert_no_bypass(mcp.call_log, ["admin/delete_all"])

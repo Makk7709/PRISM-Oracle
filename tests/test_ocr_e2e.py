@@ -239,7 +239,7 @@ class TestE2EMultiPageOCR:
 
         config = get_scan_config()
         start = time.time()
-        result = extract_from_pdf(str(e2e_multipage_scanned_pdf), config=config)
+        extract_from_pdf(str(e2e_multipage_scanned_pdf), config=config)
         elapsed = time.time() - start
 
         assert elapsed < 60.0, f"3-page OCR took {elapsed:.1f}s (>60s budget)"

@@ -273,7 +273,6 @@ def _classify_table(table: ParsedTable) -> Optional[Tuple[ChartKind, str]]:
     if _SWOT_RE.search(header_text):
         return None
 
-    row_labels = [r[0] for r in table.rows if r]
     numeric_cols = 0
     for row in table.rows:
         for cell in row[1:]:
@@ -368,7 +367,7 @@ def _generate_bar_chart(table: ParsedTable, title: str, output_path: str) -> Opt
 
     _apply_prism_style()
 
-    labels = [r[0].strip() for r in table.rows if r]
+    [r[0].strip() for r in table.rows if r]
 
     num_col_idx = None
     for ci in range(1, len(table.headers)):

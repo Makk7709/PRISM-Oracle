@@ -443,7 +443,7 @@ class TaskPlanner:
             Plan complet
         """
         plan_id = f"plan_{uuid.uuid4().hex[:10]}"
-        start_time = time.time()
+        time.time()
         
         self._log_event("planning_start", plan_id, {"query_hash": context.query_hash})
         

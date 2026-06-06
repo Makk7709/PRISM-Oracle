@@ -323,7 +323,7 @@ class TestMemoryBackendCoverage:
         backend.advance_time(200000)  # Way past stale threshold
         
         # Run cleanup
-        removed = backend.cleanup()
+        backend.cleanup()
         
         # Should have cleaned up old entries
         assert backend._cleanup_count >= 1

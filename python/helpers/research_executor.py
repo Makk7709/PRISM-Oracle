@@ -541,7 +541,6 @@ class ResearchExecutor:
         args: Dict[str, Dict[str, Any]] = {}
         
         # Arguments communs
-        base_args = {"query": query, **params}
         
         # Arguments spécifiques par tool
         if intent in (ResearchIntent.PAPER_SEARCH, ResearchIntent.PAPER_LATEST, ResearchIntent.PAPER_INFLUENTIAL):

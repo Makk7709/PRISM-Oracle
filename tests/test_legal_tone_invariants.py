@@ -263,11 +263,6 @@ class TestNoNormativeConclusions:
     
     def test_factual_citations_allowed(self):
         """Factual citations from sources are allowed."""
-        allowed_texts = [
-            "L'article dispose que certaines clauses sont réputées non écrites.",
-            "La Cour a jugé que la clause litigieuse était abusive.",  # Reporting, not concluding
-            "Le texte prévoit la nullité dans certains cas.",
-        ]
         
         # These should not violate because they report/cite, not conclude
         # Note: some may trigger patterns - that's expected for edge cases
@@ -412,10 +407,6 @@ class TestEdgeCases:
         """Quoted legal text should not be flagged even if it contains patterns."""
         # When we QUOTE a law that says "il est interdit", that's reporting
         # The key is OUR language, not the source's language
-        quoted_texts = [
-            'L\'article dispose: "Il est interdit de..."',  # Quote from law
-            'La Cour a jugé: "Le contrat est nul."',  # Quote from judgment
-        ]
         
         # These are edge cases - the system should ideally recognize quotes
         # For now, we acknowledge this limitation

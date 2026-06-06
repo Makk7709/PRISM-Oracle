@@ -189,7 +189,7 @@ def markdown_to_paragraphs(md_content: str, styles: dict) -> list:
             elements.append(Paragraph(element.get_text(), styles['Heading3']))
             elements.append(Spacer(1, 0.2*cm))
         elif element.name == 'p':
-            text = str(element)
+            str(element)
             # Vérifier si c'est une image
             if element.find('img'):
                 img = element.find('img')

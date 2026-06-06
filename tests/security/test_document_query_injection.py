@@ -304,7 +304,6 @@ class TestExpressionInjectionDocumentQuery:
 
         # Mock the search to capture the filter
         captured_filters = []
-        original_search = store.search_documents
 
         async def capture_search(query, limit=10, threshold=0.5, filter=""):
             captured_filters.append(filter)

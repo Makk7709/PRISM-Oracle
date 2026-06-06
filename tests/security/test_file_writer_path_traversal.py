@@ -189,7 +189,7 @@ class TestReadIncludeFilePathTraversal:
         ATTACK: §§include(/Users/<user>/.env)
         """
         home_env = os.path.join(os.path.expanduser("~"), ".env")
-        result = writer._read_include_file(home_env)
+        writer._read_include_file(home_env)
         # Even if .env doesn't exist, the function shouldn't attempt to read it
         # This is about path validation, not file existence
 

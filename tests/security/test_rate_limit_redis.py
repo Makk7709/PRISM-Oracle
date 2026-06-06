@@ -218,7 +218,6 @@ class TestRedisBackendBackoff:
         result1 = redis_backend.check(key, config)
         
         assert result1.allowed is False
-        retry1 = result1.retry_after
         
         # We can't easily wait in tests, but we can check violations increase
         assert result1.violations == 1

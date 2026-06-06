@@ -117,7 +117,7 @@ class TestSnapshotPersistence:
 
     def test_save_creates_directory(self, tmp_base):
         snap = capture_snapshot(context_id="new-ctx-dir", query="test")
-        path = save_snapshot(snap, base_dir=tmp_base)
+        save_snapshot(snap, base_dir=tmp_base)
         assert os.path.isdir(os.path.join(tmp_base, "tmp", "chats", "new-ctx-dir"))
 
     def test_serialization_is_valid_json(self, sample_snapshot, tmp_base):
@@ -139,7 +139,6 @@ class TestIntegrityVerification:
         assert verify_snapshot_integrity(sample_snapshot) is False
 
     def test_tampered_query_fails(self, sample_snapshot):
-        original_hash = sample_snapshot.integrity_hash
         sample_snapshot.query = "TAMPERED QUERY"
         assert verify_snapshot_integrity(sample_snapshot) is False
 

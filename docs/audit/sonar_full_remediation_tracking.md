@@ -323,6 +323,34 @@ antérieure). **Exclu du fix** (revert ciblé après `ruff --fix`).
 - `py_compile` 13/13 OK ; ruff F841 : 105 → **89** (les 16 visés résolus ; le 1 « fixable »
   restant = `mcp_handler`, assumé non corrigé). **0 défaut.**
 
-**Sous-lot B (à suivre)** : les 88 affectations `var = <expr>` inutilisées (« unsafe-fix » ruff) —
-audit cas par cas (RHS pur → suppression ; appel à effet de bord → garder l'appel ; tâches
-asyncio `task = create_task(...)` → ne pas supprimer la ligne).
+**Sous-lot B — affectations `var = <expr>` inutilisées (88 traitées, 58 fichiers)** :
+transformation **universellement préservante** (outil AST `tmp/sonar/transform_f841.py`) :
+- RHS **sans aucun** `Call`/`Await`/`Yield` → suppression de l'instruction (pur, 0 effet de bord).
+- RHS **contenant un appel** → on garde l'expression (on retire seulement `var =`), préservant
+  TOUS les effets de bord. Cas critiques validés : lancements `defer.DeferredTask().start_task()`
+  (settings ×4), `subparsers.add_parser()` (enregistrement sous-commandes), `files.create_dir_safe()`,
+  `memory.Memory.get()`, `await self._get_chat_context()`, `_verify_medical_domain()`,
+  `safe_path_join()` (validation sécurité), constructions/`record_decision()` en tests.
+
+**Audit hostile** :
+- **DEF (corrigés en cours de route)** : `ast.get_source_segment` perdait les parenthèses
+  englobantes (`x = ( EXPR )`) → 3 `IndentationError`. Corrigé : coupe juste après le `=`
+  (les lignes d'origine, donc les parenthèses, sont gardées verbatim) → `py_compile` 58/58 OK.
+- **Cascades** : retirer un binding a révélé 1 2ᵉ affectation inutilisée (`image_get.py` branche
+  `if`) → corrigée pareillement (appel `safe_path_join` conservé).
+- **2 findings DIFFÉRÉS et documentés** :
+  - `mcp_handler.py:896/899` — `except Exception as e:` où `e` **est** réutilisé (`raise e`) sur le
+    chemin `original_exception is None` ; ruff le classe « safe-fix » à tort → retirer `as e`
+    causerait un `NameError`. **Non corrigé** (assumé).
+  - `consensus_arbiter.py:193` — `consensus_enabled = ui_settings.get(...)` : la variable est
+    **calculée mais jamais appliquée** (le toggle UI consensus ne gate rien). Plutôt que de
+    supprimer silencieusement un flag censé piloter le comportement, **revert + bug latent
+    remonté** pour décision produit.
+- **Non-régression** : `run_tests.sh local` → **3426 passed**, 36 skipped, 82 failed
+  **tous pré-existants** (prouvé : `git stash` de mes 58 fichiers puis rejeu des 4 fichiers
+  suspects — `pdf_characterization`, `evidence_document`, `chat_style`, `dockerfile_ocr` —
+  qui échouent à l'identique, deps PDF/PyMuPDF/Docker/OCR absentes). Round-trip `git stash`
+  revérifié (58/58 compilent, 0 marqueur de conflit).
+
+**Bilan S1481** : ruff F841 **105 → 2** (104 résolus : 16 bindings d'exception + 88 affectations ;
+les 2 résiduels = différés assumés ci-dessus).
