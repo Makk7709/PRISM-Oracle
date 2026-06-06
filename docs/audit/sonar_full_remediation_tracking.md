@@ -226,3 +226,26 @@ des 41 lignes du diff (équivalence sémantique confirmée) ; re-scan final → 
 créée volontairement comme **donnée de test** pour `sanitize_exception`) et
 `tests/test_research_executor.py:377` (`raise Exception("Simulated failure")` simulant un
 échec en test) — modifier le type fausserait l'intention du test. **0 défaut.**
+
+### Paquet S7735-js — conditions négatives (javascript:S7735 no-negated-condition, 14 findings → 7 fichiers)
+
+Règle de **lisibilité** : `if (<négatif>) {A} else {B}` → `if (<positif>) {B} else {A}`
+(inversion + permutation des branches). Détection précise par **appariement d'accolades**
+(les `if (!…)` sans `else` = gardes, non concernées), car les paquets précédents ont
+décalé les numéros de ligne.
+
+**10 cas corrigés** (swaps simples à deux branches, équivalence stricte) :
+`input-store.js` (`!response.ok`), `speech-store.js` (`processed !== inputText`),
+`mcp-servers-store.js` (`dark != "false"`), `messages.js` ×2 (`!preElement`, `!messageDiv`),
+`scheduler.js` ×2 (`!isNaN(...)`), `memory-dashboard-store.js` ×3 (`!silent`).
+
+**4 cas DIFFÉRÉS** (inversion nuirait à la lisibilité / risque de swap disproportionné pour
+un finding cosmétique) :
+- `scheduler.js:242` et `:599` — chaînes `if / else if / else` (inverser le 1er test
+  imposerait de restructurer toute la chaîne).
+- `scheduler.js:1515` — `else` contenant toute la définition d'un composant (gros bloc).
+- `preferences-store.js:72` — `else if (storedDarkMode !== null)` dans une chaîne.
+
+**Audit hostile** : `node --check` (module) sur les 6 fichiers → 6/6 OK ; re-détection
+finale → seuls les 4 cas différés (assumés) subsistent ; revue visuelle des 10 swaps
+(branches correctement permutées). **0 défaut.**

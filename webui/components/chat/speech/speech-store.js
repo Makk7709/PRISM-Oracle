@@ -512,15 +512,15 @@ const model = {
       let processed = inputText.replace(closedPattern, replacement || "");
 
       // If the text changed, it means we found and replaced closed patterns
-      if (processed !== inputText) {
-        return processed;
-      } else {
+      if (processed === inputText) {
         // No closed patterns found, check for unclosed ones
         const unclosedMatch = inputText.match(unclosedPattern);
         if (unclosedMatch) {
           // Replace the unclosed pattern
           return inputText.replace(unclosedPattern, replacement || "");
         }
+      } else {
+        return processed;
       }
 
       // No patterns found, return original

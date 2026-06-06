@@ -355,11 +355,11 @@ const fullComponentImplementation = function() {
                     const nextTime = new Date(task.plan.todo[0]);
 
                     // Verify it's a valid date before formatting
-                    if (!isNaN(nextTime.getTime())) {
-                        nextRun = formatDateTime(nextTime, 'short');
-                    } else {
+                    if (isNaN(nextTime.getTime())) {
                         nextRun = 'Invalid date';
                         console.warn(`Invalid date format in plan.todo[0]: ${task.plan.todo[0]}`);
+                    } else {
+                        nextRun = formatDateTime(nextTime, 'short');
                     }
                 } catch (error) {
                     console.error(`Error formatting next run time: ${error.message}`);
@@ -827,10 +827,10 @@ const fullComponentImplementation = function() {
                     for (const dateStr of this.editingTask.plan.todo) {
                         try {
                             const date = new Date(dateStr);
-                            if (!isNaN(date.getTime())) {
-                                validatedTodo.push(date.toISOString());
-                            } else {
+                            if (isNaN(date.getTime())) {
                                 console.warn(`Skipping invalid date in todo list: ${dateStr}`);
+                            } else {
+                                validatedTodo.push(date.toISOString());
                             }
                         } catch (error) {
                             console.warn(`Error processing date: ${error.message}`);

@@ -229,15 +229,15 @@ export function _drawMessage(
 
     } else {
       let preElement = bodyDiv.querySelector(".msg-content");
-      if (!preElement) {
+      if (preElement) {
+        // Update classes
+        preElement.className = `msg-content ${contentClasses.join(" ")}`;
+      } else {
         preElement = document.createElement("pre");
         preElement.classList.add("msg-content", ...contentClasses);
         preElement.style.whiteSpace = "pre-wrap";
         preElement.style.wordBreak = "break-word";
         bodyDiv.appendChild(preElement);
-      } else {
-        // Update classes
-        preElement.className = `msg-content ${contentClasses.join(" ")}`;
       }
 
       let spanElement = preElement.querySelector("span");
@@ -437,13 +437,13 @@ export function drawMessageUser(
 ) {
   // Find existing message div or create new one
   let messageDiv = messageContainer.querySelector(".message");
-  if (!messageDiv) {
+  if (messageDiv) {
+    // Ensure it has the correct classes if it already exists
+    messageDiv.className = "message message-user";
+  } else {
     messageDiv = document.createElement("div");
     messageDiv.classList.add("message", "message-user");
     messageContainer.appendChild(messageDiv);
-  } else {
-    // Ensure it has the correct classes if it already exists
-    messageDiv.className = "message message-user";
   }
 
   // Handle heading

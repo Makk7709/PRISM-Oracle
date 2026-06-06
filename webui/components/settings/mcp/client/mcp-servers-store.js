@@ -17,10 +17,10 @@ const model = {
       const editor = ace.edit("mcp-servers-config-json");
 
       const dark = localStorage.getItem("darkMode");
-      if (dark != "false") {
-        editor.setTheme("ace/theme/github_dark");
-      } else {
+      if (dark == "false") {
         editor.setTheme("ace/theme/tomorrow");
+      } else {
+        editor.setTheme("ace/theme/github_dark");
       }
 
       editor.session.setMode("ace/mode/json");

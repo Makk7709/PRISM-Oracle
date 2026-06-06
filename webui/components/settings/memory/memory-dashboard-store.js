@@ -191,37 +191,37 @@ const memoryDashboardStore = {
         this.knowledgeCount = response.knowledge_count || 0;
         this.conversationCount = response.conversation_count || 0;
 
-        if (!silent) {
-          this.message = response.message || null;
-          this.currentPage = 1; // Reset to first page when loading new data
-        } else {
+        if (silent) {
           // For silent updates, adjust current page if it exceeds available pages
           if (this.currentPage > this.totalPages && this.totalPages > 0) {
             this.currentPage = this.totalPages;
           }
+        } else {
+          this.message = response.message || null;
+          this.currentPage = 1; // Reset to first page when loading new data
         }
 
         // Mark this subdirectory as initialized
         this.memoryInitialized[this.selectedMemorySubdir] = true;
       } else {
-        if (!silent) {
+        if (silent) {
+          // For silent updates, just log the error but don't break the UI
+          console.warn("Memory dashboard polling failed:", response.error);
+        } else {
           this.error = response.error || "Failed to search memories";
           this.memories = [];
           this.message = null;
-        } else {
-          // For silent updates, just log the error but don't break the UI
-          console.warn("Memory dashboard polling failed:", response.error);
         }
       }
     } catch (error) {
-      if (!silent) {
+      if (silent) {
+        // For silent updates, just log the error but don't break the UI
+        console.warn("Memory dashboard polling error:", error);
+      } else {
         this.error = error.message || "Failed to search memories";
         this.memories = [];
         this.message = null;
         console.error("Memory search error:", error);
-      } else {
-        // For silent updates, just log the error but don't break the UI
-        console.warn("Memory dashboard polling error:", error);
       }
     } finally {
       if (!silent) {

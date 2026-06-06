@@ -121,10 +121,7 @@ const model = {
           body: formData,
         });
 
-        if (!response.ok) {
-          if (globalThis.toast)
-            globalThis.toast(await response.text(), "error");
-        } else {
+        if (response.ok) {
           const data = await response.json();
           if (globalThis.toast) {
             globalThis.toast(
@@ -132,6 +129,9 @@ const model = {
               "success"
             );
           }
+        } else {
+          if (globalThis.toast)
+            globalThis.toast(await response.text(), "error");
         }
       } catch (e) {
         if (globalThis.toastFetchError) {
