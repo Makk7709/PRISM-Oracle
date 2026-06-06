@@ -354,3 +354,35 @@ transformation **universellement préservante** (outil AST `tmp/sonar/transform_
 
 **Bilan S1481** : ruff F841 **105 → 2** (104 résolus : 16 bindings d'exception + 88 affectations ;
 les 2 résiduels = différés assumés ci-dessus).
+
+---
+
+## Bugs latents — investigation ciblée (post-S1481)
+
+Deux affectations « mortes » repérées pendant S1481 méritaient une investigation de fond
+(et non une suppression mécanique), pour vérifier qu'elles ne masquaient pas un bug fonctionnel.
+
+### LAT-1 — `consensus_arbiter.py` : `consensus_enabled` lu puis jamais appliqué
+
+- **Symptôme** : `load_consensus_config()` lisait `ui_settings.get("consensus_enabled", True)`
+  dans une variable locale jamais réutilisée. À première vue : le toggle UI « activer le consensus »
+  serait ignoré → bug critique potentiel.
+- **Investigation** : `ConsensusConfig` (le dataclass renvoyé ici) décrit le **COMMENT** du consensus
+  (arbitres, timeouts, simulation), **pas le SI**. L'activation/désactivation est appliquée **en amont**
+  dans le pipeline de recherche (gating PRISM), pas dans l'arbitre. Le `dataclass` n'a d'ailleurs
+  **aucun champ `enabled`** → la lecture locale était structurellement incapable d'avoir un effet.
+- **Verdict** : **PAS un bug fonctionnel** — le toggle est bien respecté ailleurs. La ligne était du
+  **code mort trompeur** (suggérait un effet inexistant).
+- **Action** : lecture retirée + commentaire d'intention ajouté (pourquoi le flag ne se relit PAS ici).
+- **Preuve** : `tests/test_consensus_*` **44/44 OK** ; `load_consensus_config()` charge bien 3 arbitres.
+
+### LAT-2 — `image_get.py` : expression `metadata` morte
+
+- **Symptôme** : une expression `input.get("metadata", …) == "true"` était évaluée puis jetée (le
+  consommateur — bloc d'enrichissement metadata — est commenté).
+- **Verdict** : code mort (fonctionnalité désactivée), **pas une régression** : la route utilisait déjà
+  `path` (et non un `resolved`) ; `safe_path_join` (validation/anti-traversal) est **conservé**.
+- **Action** : expression morte retirée, appel de validation préservé.
+
+**Bilan bugs latents** : 0 bug fonctionnel confirmé ; 2 cas de code mort trompeur nettoyés.
+ruff F841 **2 → 1** (reste `mcp_handler:896`, différé assumé).

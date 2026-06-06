@@ -183,14 +183,15 @@ def load_consensus_config() -> ConsensusConfig:
     arbiters = []
     timeout_ms = 10000
     quorum_ratio = 0.67
-    consensus_enabled = True
+    # NB: l'activation/désactivation du consensus (toggle UI "consensus_enabled")
+    # est appliquée EN AMONT dans le pipeline de recherche (research_pipeline /
+    # research_consensus_integration), pas ici. ConsensusConfig décrit le COMMENT
+    # (arbitres, timeouts, simulation), pas le SI. Ne pas relire le flag ici : il
+    # serait silencieusement ignoré (ConsensusConfig n'a pas de champ `enabled`).
     
     try:
         from python.helpers import settings as _settings
         ui_settings = _settings.get_settings()
-        
-        # Check if consensus is enabled in UI
-        consensus_enabled = ui_settings.get("consensus_enabled", True)
         
         # Load timeout and quorum from UI
         timeout_ms = int(ui_settings.get("consensus_timeout_ms", 10000))
