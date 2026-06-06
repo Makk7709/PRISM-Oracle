@@ -37,7 +37,6 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 
 FIXTURES_DIR = Path(__file__).parent / "pdfs"
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # REGISTRY
 # ═══════════════════════════════════════════════════════════════════════════════
 

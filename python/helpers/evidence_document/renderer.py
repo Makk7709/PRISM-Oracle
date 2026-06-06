@@ -675,7 +675,6 @@ def _render_figure(figure: Figure, template: Template, styles: dict):
         return Paragraph(f"<i>[Figure: {sanitize_text(figure.caption or figure.path)}]</i>", styles['Body'])
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # SECTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -54,7 +54,6 @@ from python.helpers.reasoning_engine import (
 logger = logging.getLogger("research_executor")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 

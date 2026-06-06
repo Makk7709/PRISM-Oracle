@@ -210,7 +210,6 @@ async def _default_llm_callable(prompt: str) -> str:
 LLMCallable = Callable[[str], Awaitable[str]]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # PUBLIC: invoke_contradictor
 # ═══════════════════════════════════════════════════════════════════════════════
 

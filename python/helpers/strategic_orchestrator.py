@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger("strategic_orchestrator")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -148,7 +147,6 @@ class StrategicResult:
     pipeline_tracker: Optional["PipelineTracker"] = field(default=None, repr=False)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # DETECTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -692,7 +690,6 @@ Tu es un directeur commercial. Ta mission:
     return prompts.get(agent_profile, prompts["researcher"])
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # ORCHESTRATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1545,7 +1542,6 @@ KOREV Evidence refuse de valider un document stratégique avec sourcing insuffis
     return "\n".join(sections)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

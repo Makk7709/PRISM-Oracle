@@ -670,7 +670,6 @@ def print_comparative_summary(dossiers: dict):
     print("      • Chaque dossier a sa trace complète pour audit a posteriori")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 

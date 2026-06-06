@@ -28,7 +28,6 @@ from python.helpers.source_taxonomy import (
 )
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Enums
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -281,7 +280,6 @@ class TestInferSourceOrigin:
         assert infer_source_origin() == SourceOrigin.AUTRE
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Fiabilite
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -308,7 +306,6 @@ class TestReliability:
         assert get_reliability_for_type(SourceTypeFR.CIRCULAIRE) <= get_reliability_for_type(SourceTypeFR.AVIS_AUTORITE)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # classify_source (integration)
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -316,7 +316,6 @@ class PdfPlumberBackend(PDFBackend):
         return PdfPlumberDocument(pdfplumber.open(io.BytesIO(data)))
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # FACTORY
 # ═══════════════════════════════════════════════════════════════════════════════
 

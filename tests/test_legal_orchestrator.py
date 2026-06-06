@@ -69,7 +69,6 @@ from python.helpers.legal_rendering import (
 from python.helpers.legal_retrieval import RetrievalResult, RetrievalContext
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -370,7 +369,6 @@ class TestFeatureFlagDisabled:
                 os.environ["LEGAL_PIPELINE_ENABLED"] = env_backup
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # T7: Observability - correlation_id in logs
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -418,7 +416,6 @@ class TestObservability:
         assert metrics.latency_p50 == 150.0  # Median of [100, 200]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # T8: Rendering - bandeau + disclaimer + sources
 # ═══════════════════════════════════════════════════════════════════════════════
 

@@ -182,7 +182,6 @@ class TestIntegrityBlockSerialization:
         assert set(d.keys()) == expected_keys
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # AuditReportRenderer
 # ═══════════════════════════════════════════════════════════════════════════════
 

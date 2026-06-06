@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from pydantic import BaseModel, Field, model_validator
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # ENUMS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -810,7 +809,6 @@ def get_required_agents(doc_types: List[StrategicDocumentType]) -> List[str]:
     return list(required)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

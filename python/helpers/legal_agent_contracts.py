@@ -35,7 +35,6 @@ from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS & WHITELIST
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -784,7 +783,6 @@ def validate_artifact_batch(artifacts: List[Dict[str, Any]]) -> List[Dict[str, A
     return results
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

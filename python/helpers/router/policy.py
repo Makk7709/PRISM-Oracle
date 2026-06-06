@@ -55,7 +55,6 @@ class IntentPolicy:
 
 INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # FINANCE
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.FINANCE: IntentPolicy(
@@ -102,7 +101,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         blockers=["patient", "medical", "diagnostic", "symptom"],
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # SALES
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.SALES: IntentPolicy(
@@ -138,7 +136,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         blockers=["patient", "medical"],  # Removed juridique/tribunal - can have commercial+legal
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # LEGAL_SAFE
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.LEGAL_SAFE: IntentPolicy(
@@ -186,7 +183,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         ],
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # MEDICAL
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.MEDICAL: IntentPolicy(
@@ -225,7 +221,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         blockers=["saas", "software", "startup", "marketing campaign", "pricing strategy"],
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # DEVELOPER
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.DEVELOPER: IntentPolicy(
@@ -289,7 +284,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         ],
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # MARKETING
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.MARKETING: IntentPolicy(
@@ -326,7 +320,6 @@ INTENT_POLICIES: Dict[IntentName, IntentPolicy] = {
         blockers=["tribunal", "juridique", "patient"],
     ),
     
-    # ─────────────────────────────────────────────────────────────────────────────
     # MULTITASK (fallback)
     # ─────────────────────────────────────────────────────────────────────────────
     IntentName.MULTITASK: IntentPolicy(
@@ -596,7 +589,6 @@ STRATEGIC_DOCUMENT_THRESHOLD: float = 4.0
 POLICY_VERSION = "1.2.0"  # Updated for strategic document support
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

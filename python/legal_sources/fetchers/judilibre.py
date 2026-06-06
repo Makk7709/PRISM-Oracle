@@ -280,7 +280,6 @@ class JudilibreFetcher(BaseFetcher):
             logger.error(f"Judilibre fetch by ID error: {e}")
             return None
 
-    # ──────────────────────────────────────────────
     # Parser
     # ──────────────────────────────────────────────
     def parse(self, raw_data: Dict[str, Any]) -> Optional[LegalDoc]:

@@ -43,7 +43,6 @@ from python.helpers.contract_drafting.templates import (
 logger = logging.getLogger("contract_drafting.orchestrator")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

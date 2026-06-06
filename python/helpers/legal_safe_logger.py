@@ -24,7 +24,6 @@ from typing import Any, Optional
 from .legal_safe_schema import LegalSafeResponse, ReviewTrigger
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -499,7 +498,6 @@ def log_legal_safe_error(
     return LegalSafeLogger.get_instance().log_error(correlation_id, error, input_text)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

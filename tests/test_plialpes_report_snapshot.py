@@ -47,7 +47,6 @@ from python.helpers.reporting.evidence_native import (
 )
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -94,7 +93,6 @@ def plialpes_report():
         ("Backup WORM immuable hors site", "R-005", "", ConfidenceBadge.PARTIAL),
     ]
     
-    # ─────────────────────────────────────────────────────────────────────────
     # CONTEXTE & PÉRIMÈTRE
     # ─────────────────────────────────────────────────────────────────────────
     
@@ -122,7 +120,6 @@ def plialpes_report():
         ],
     )
     
-    # ─────────────────────────────────────────────────────────────────────────
     # HYPOTHÈSES
     # ─────────────────────────────────────────────────────────────────────────
     
@@ -434,7 +431,6 @@ def plialpes_report():
         Action("Audit conformité NIS2 externe", "Auditeur externe", "Tout", "Rapport conformité", ConfidenceBadge.UNVERIFIED),
     ]
     
-    # ─────────────────────────────────────────────────────────────────────────
     # PREUVES & VÉRIFICATION
     # ─────────────────────────────────────────────────────────────────────────
     
@@ -452,7 +448,6 @@ def plialpes_report():
         UnverifiedPoint("Efficacité réelle du SOC externalisé", "Dépend du choix du MSSP", ImpactLevel.HIGH, "POC avec 2-3 MSSP avant engagement"),
     ]
     
-    # ─────────────────────────────────────────────────────────────────────────
     # LIMITES & FAIL_CLOSED
     # ─────────────────────────────────────────────────────────────────────────
     

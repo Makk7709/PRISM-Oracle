@@ -12,7 +12,6 @@ from python.helpers import audit_light
 from python.extensions.message_loop_end._20_audit_light_append import AuditLightAppend
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -63,7 +62,6 @@ def test_resolve_model_label():
     assert audit_light.resolve_model_label(FakeModelConfig(provider="", name="local")) == "local"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXTENSION
 # ═══════════════════════════════════════════════════════════════════════════════
 

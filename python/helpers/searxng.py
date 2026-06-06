@@ -15,7 +15,6 @@ import asyncio
 from typing import Any
 from python.helpers.print_style import PrintStyle
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 DEFAULT_SEARXNG_URL = "http://localhost:55510"

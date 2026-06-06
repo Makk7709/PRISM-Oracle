@@ -272,7 +272,6 @@ def assert_no_unsupported_claims(response: Dict[str, Any]) -> None:
             f"UNSUPPORTED claims not allowed: {claim}"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXPORTS
 # ═══════════════════════════════════════════════════════════════════════════════
 

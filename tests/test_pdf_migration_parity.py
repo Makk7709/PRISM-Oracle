@@ -34,7 +34,6 @@ from python.helpers.pdf_extraction.pdf_backend import (
 )
 from tests.fixtures.pdf_generator import list_fixtures, get_fixture_path
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 

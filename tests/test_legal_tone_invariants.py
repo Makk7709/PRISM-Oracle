@@ -18,7 +18,6 @@ import re
 from datetime import date
 from typing import Any, Dict, List, Pattern, Set
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -447,7 +446,6 @@ class TestEdgeCases:
             assert not violations, f"Conditional statement incorrectly flagged: {text}"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # RUN
 # ═══════════════════════════════════════════════════════════════════════════════
 

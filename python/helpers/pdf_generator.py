@@ -47,7 +47,6 @@ from reportlab.pdfbase.ttfonts import TTFont
 from python.helpers.pdf_templates import PDFTemplate, get_template, detect_template, TEMPLATES
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # STYLES
 # ═══════════════════════════════════════════════════════════════════════════════
 

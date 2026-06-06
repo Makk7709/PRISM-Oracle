@@ -48,7 +48,6 @@ from python.helpers.consensus_contracts import (
 logger = logging.getLogger("evidence_pipeline")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # ENUMS & CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
