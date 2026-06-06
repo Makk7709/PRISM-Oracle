@@ -351,7 +351,7 @@ class MarkdownToPDF:
             if not text or not text.strip():
                 return None
             return Paragraph(text, style)
-        except Exception as e:
+        except Exception:
             # Fallback: strip all formatting and use plain text
             try:
                 plain_text = re.sub(r'<[^>]+>', '', text)
@@ -442,7 +442,7 @@ class MarkdownToPDF:
             
             table.setStyle(style)
             return table
-        except Exception as e:
+        except Exception:
             # Table parsing failed - return None
             return None
     
@@ -601,7 +601,7 @@ class MarkdownToPDF:
                 
                 i += 1
                 
-            except Exception as e:
+            except Exception:
                 # Log error but continue processing
                 i += 1
                 continue

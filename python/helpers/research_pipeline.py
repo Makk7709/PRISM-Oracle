@@ -571,7 +571,7 @@ La conclusion doit être professionnelle et objective.
         try:
             conclusion = await self.call_llm(prompt)
             return conclusion
-        except Exception as e:
+        except Exception:
             return f"Conclusion: {analysis.get('summary', 'Erreur')} [Confiance: {analysis.get('confidence', 'N/A')}]"
     
     async def close_dossier(

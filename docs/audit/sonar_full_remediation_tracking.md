@@ -30,7 +30,26 @@ imports absolus (`S6859`), complexité cognitive (`S3776`), paramètres inutilis
 
 | # | Tier | Règles | Fichiers | Nb | Statut | Audit | Commit |
 |---:|:---:|---|---:|---:|---|---|---|
-| 1 | 1 | css:S125, css:S4658 | 7 | 20 | ✅ corrigé | 0 défaut | _(en cours)_ |
+| 1 | 1 | css:S125, css:S4658 | 7 | 20 | ✅ corrigé | 0 défaut | 35be1ed5 |
+| R1 | 1 | python:S1481 (ruff F841, sûrs) | 5 | 8 | ✅ corrigé | 1 régression évitée | _(en cours)_ |
+
+### Paquet R1 — ruff-assisté (python:S1481, sous-ensemble sûr)
+
+Approche hybride : `ruff check --select F841 --fix` (corrections **sûres** uniquement) sur
+les 83 fichiers porteurs de `S1481`. Sur 165 findings, **9 seulement** étaient auto-fixables
+sûrement (72 nécessiteraient `--unsafe-fixes` — supprimer `x = func()` pourrait retirer un
+appel à effet de bord → écartés, traités manuellement plus tard).
+
+8 corrections retenues (suppression d'un `except … as e` où `e` est inutilisé) :
+`python/api/poll.py`, `python/api/upload.py` (×2), `python/helpers/pdf_generator.py` (×3),
+`python/helpers/research_pipeline.py`, `python/helpers/vector_db.py`.
+
+**Audit hostile — régression détectée et corrigée** : ruff a aussi proposé de retirer
+`as e` dans `python/helpers/mcp_handler.py:902`, MAIS `e` y est **utilisé** (l.910/912) et
+seulement **réassigné conditionnellement** (`if original_exception is not None`). Sur le
+chemin `original_exception is None`, la suppression aurait provoqué un `NameError`.
+→ Fichier **reverté** ; ruff avait sur-corrigé un F841 non flaggé par Sonar. Leçon : les
+auto-fixes sont relus un par un, jamais committés en aveugle. Compile OK + tests poll verts.
 
 ### Paquet 1 — détail
 

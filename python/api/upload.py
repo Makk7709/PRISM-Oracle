@@ -63,10 +63,10 @@ class UploadFile(ApiHandler):
                 file.save(str(target_path))
                 saved_filenames.append(safe_filename)
                 
-            except (UploadValidationError, SecurityError) as e:
+            except (UploadValidationError, SecurityError):
                 # Log but don't expose internal details
                 errors.append(f"File '{file.filename}': validation failed")
-            except Exception as e:
+            except Exception:
                 errors.append(f"File '{file.filename}': upload error")
 
         result = {"filenames": saved_filenames}
