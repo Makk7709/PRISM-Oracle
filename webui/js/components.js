@@ -8,6 +8,20 @@ const componentCache = {};
 // Lock map to prevent multiple simultaneous imports of the same component
 const importLocks = new Map();
 
+// Max time to wait for an external <link>/<script src> to fire onload/onerror.
+// Without this, a never-settling load promise would hang Promise.all forever
+// and the component's loading indicator would never be removed.
+const ASSET_LOAD_TIMEOUT_MS = 8000;
+
+// Resolve (never reject) once the asset settles or the timeout elapses, so a
+// stalled stylesheet/script can't brick the whole component.
+function withAssetTimeout(promise) {
+  return Promise.race([
+    promise.catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, ASSET_LOAD_TIMEOUT_MS)),
+  ]);
+}
+
 export async function importComponent(path, targetElement) {
   // Create a unique key for this import based on the target element
   const lockKey = targetElement.id || targetElement.getAttribute('data-component-id') || targetElement;
@@ -87,21 +101,29 @@ export async function importComponent(path, targetElement) {
 
             // For inline module scripts, use cache or create blob
             if (!componentCache[virtualUrl]) {
-              // Transform relative import paths to absolute URLs
-              let content = node.textContent.replace(
-                /import\s+([^'"]+)\s+from\s+["']([^"']+)["']/g,
-                (match, bindings, importPath) => {
-                  // Convert relative OR root-based (e.g. /src/...) to absolute URLs
-                  if (!/^https?:\/\//.test(importPath)) {
-                    const absoluteUrl = new URL(
-                      importPath,
-                      globalThis.location.origin
-                    ).href;
-                    return `import ${bindings} from "${absoluteUrl}"`;
-                  }
-                  return match;
+              // Transform relative/root-based import paths to absolute URLs.
+              // Required because inline modules are loaded from a blob: URL,
+              // whose base URL cannot resolve root-based ("/...") or relative
+              // specifiers against the page origin.
+              const toAbsolute = (importPath) => {
+                if (/^https?:\/\//.test(importPath)) {
+                  return importPath;
                 }
-              );
+                return new URL(importPath, globalThis.location.origin).href;
+              };
+
+              let content = node.textContent
+                // Named/default/namespace imports: import X from "path"
+                .replace(
+                  /import\s+([^'"]+)\s+from\s+["']([^"']+)["']/g,
+                  (match, bindings, importPath) =>
+                    `import ${bindings} from "${toAbsolute(importPath)}"`
+                )
+                // Bare side-effect imports: import "path"
+                .replace(
+                  /import\s+["']([^"']+)["']/g,
+                  (match, importPath) => `import "${toAbsolute(importPath)}"`
+                );
 
               // Add sourceURL to the content
               content += `\n//# sourceURL=${virtualUrl}`;
@@ -136,7 +158,7 @@ export async function importComponent(path, targetElement) {
               script.onload = resolve;
               script.onerror = reject;
             });
-            loadPromises.push(promise);
+            loadPromises.push(withAssetTimeout(promise));
           }
 
           targetElement.appendChild(script);
@@ -152,7 +174,7 @@ export async function importComponent(path, targetElement) {
             clone.onload = resolve;
             clone.onerror = reject;
           });
-          loadPromises.push(promise);
+          loadPromises.push(withAssetTimeout(promise));
         }
 
         targetElement.appendChild(clone);
@@ -165,12 +187,6 @@ export async function importComponent(path, targetElement) {
     // Wait for all tracked external scripts/styles to finish loading
     await Promise.all(loadPromises);
 
-    // Remove loading indicator
-    const loadingEl = targetElement.querySelector(':scope > .loading');
-    if (loadingEl) {
-      targetElement.removeChild(loadingEl);
-    }
-
     // // Load any nested components
     // await loadComponents([targetElement]);
 
@@ -180,6 +196,15 @@ export async function importComponent(path, targetElement) {
     console.error("Error importing component:", error);
     throw error;
   } finally {
+    // Always remove the loading indicator, even on failure, so a rejected
+    // import can never leave the component stuck on the shimmer placeholder.
+    if (targetElement) {
+      const loadingEl = targetElement.querySelector(":scope > .loading");
+      if (loadingEl) {
+        targetElement.removeChild(loadingEl);
+      }
+    }
+
     // Release the lock when done, regardless of success or failure
     importLocks.delete(lockKey);
   }

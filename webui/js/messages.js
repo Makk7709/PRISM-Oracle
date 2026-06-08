@@ -13,6 +13,24 @@ const chatHistory = document.getElementById("chat-history");
 
 let messageGroup = null;
 
+// Empreinte compacte (djb2) du contenu d'un message. Sert à éviter de
+// re-rendre (réécriture innerHTML + re-append de groupe) un message dont
+// rien n'a changé : le poll renvoie les logs à chaque cycle et re-dessiner
+// un message identique provoquait le clignotement des bulles.
+function _messageSignature(type, heading, content, temp, kvps) {
+  let raw;
+  try {
+    raw = JSON.stringify([type, heading, content, temp, kvps]);
+  } catch {
+    return null; // non sérialisable → toujours re-rendre
+  }
+  let h = 5381;
+  for (let i = 0; i < raw.length; i++) {
+    h = ((h << 5) + h + raw.charCodeAt(i)) | 0;
+  }
+  return `${raw.length.toString(36)}:${(h >>> 0).toString(36)}`;
+}
+
 // Simplified implementation - no complex interactions needed
 
 export function setMessage(id, type, heading, content, temp, kvps = null) {
@@ -20,7 +38,16 @@ export function setMessage(id, type, heading, content, temp, kvps = null) {
   let messageContainer = document.getElementById(`message-${id}`);
   let isNewMessage = false;
 
+  const signature = _messageSignature(type, heading, content, temp, kvps);
+
   if (messageContainer) {
+    // Rien n'a changé depuis le dernier rendu : on saute tout (handler +
+    // re-append). Évite la réécriture innerHTML / le re-append de groupe à
+    // chaque poll, donc le clignotement, tout en laissant passer les messages
+    // dont le contenu évolue réellement (streaming agent/response).
+    if (signature !== null && messageContainer.dataset.msgSig === signature) {
+      return messageContainer;
+    }
     // Don't clear innerHTML - we'll do incremental updates
     // messageContainer.innerHTML = "";
   } else {
@@ -31,6 +58,8 @@ export function setMessage(id, type, heading, content, temp, kvps = null) {
     messageContainer.id = `message-${id}`;
     messageContainer.classList.add("message-container", `${sender}-container`);
   }
+
+  if (signature !== null) messageContainer.dataset.msgSig = signature;
 
   const handler = getHandler(type);
   handler(messageContainer, id, type, heading, content, temp, kvps);
@@ -71,7 +100,12 @@ export function setMessage(id, type, heading, content, temp, kvps = null) {
       messageGroup.setAttribute("data-group-type", groupType);
     }
     messageGroup.appendChild(messageContainer);
-    chatHistory.appendChild(messageGroup);
+    // N'attacher le groupe que s'il n'est pas déjà le dernier enfant : ré-appeler
+    // appendChild sur un groupe déjà en place le déplace (remove+add) et relance
+    // l'animation korevFadeIn → flash inutile.
+    if (chatHistory.lastElementChild !== messageGroup) {
+      chatHistory.appendChild(messageGroup);
+    }
   }
 
   // Simplified implementation - no setup needed
