@@ -21,7 +21,11 @@ const model = {
   // Update visibility based on current context
   updateVisibility() {
     const hasContext = !!getContext();
-    this.isVisible = !hasContext;
+    const nextVisible = !hasContext;
+    // Évite de réévaluer Alpine/x-show 20×/s quand rien ne change
+    if (this.isVisible !== nextVisible) {
+      this.isVisible = nextVisible;
+    }
   },
 
   // Hide welcome screen

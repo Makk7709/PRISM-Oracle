@@ -91,8 +91,11 @@ const model = {
 
   // NEW: Add notification to toast stack
   addToToastStack(notification) {
-    // If notification has a group, remove any existing toasts with the same group
-    if (notification.group?.trim() !== "") {
+    // If notification has a group, remove any existing toasts with the same group.
+    // NB: `group?.trim() !== ""` est FAUX quand group est absent (undefined !== "") —
+    // régression S6582 qui dédupliquait toutes les notifs sans groupe à chaque poll.
+    const groupKey = notification.group?.trim();
+    if (groupKey) {
       const existingToast = this.toastStack.find(
         (t) => t.group === notification.group
       );

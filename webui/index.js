@@ -294,7 +294,11 @@ export async function poll() {
     }
 
     // if the chat has been reset, restart this poll as it may have been called with incorrect log_from
-    if (lastLogGuid != response.log_guid) {
+    // Ignore ""↔"" (task contexts sans log_guid) to éviter un clear+repoll inutile
+    if (
+      lastLogGuid != response.log_guid &&
+      (response.log_guid || lastLogGuid)
+    ) {
       const chatHistoryEl = document.getElementById("chat-history");
       if (chatHistoryEl) chatHistoryEl.innerHTML = "";
       lastLogVersion = 0;
@@ -354,16 +358,20 @@ export async function poll() {
       }
 
       if (!contextInChats && !contextInTasks) {
-        if (chatsStore.contexts.length > 0) {
-          // If it doesn't exist in the list but other contexts do, fall back to the first
-          const firstChatId = chatsStore.firstId();
-          if (firstChatId) {
-            setContext(firstChatId);
-            chatsStore.setSelected(firstChatId);
+        // Ne pas voler la sélection juste après un select/chat_create : la liste
+        // contexts peut lagguer d'un cycle de poll.
+        const selectedAt = globalThis._contextSelectedAt || 0;
+        const withinGrace = Date.now() - selectedAt < 5000;
+        if (!withinGrace) {
+          if (chatsStore.contexts.length > 0) {
+            const firstChatId = chatsStore.firstId();
+            if (firstChatId) {
+              setContext(firstChatId);
+              chatsStore.setSelected(firstChatId);
+            }
+          } else if (typeof deselectChat === "function") {
+            deselectChat();
           }
-        } else if (typeof deselectChat === "function") {
-          // No contexts remain – clear state so the welcome screen can surface
-          deselectChat();
         }
       }
     } else {
@@ -485,6 +493,7 @@ globalThis.newContext = newContext;
 export const setContext = function (id) {
   if (id == context) return;
   context = id;
+  globalThis._contextSelectedAt = Date.now();
   // Always reset the log tracking variables when switching contexts
   // This ensures we get fresh data from the backend
   lastLogGuid = "";
