@@ -350,30 +350,16 @@ export async function poll() {
       // Update selection in both stores
       chatsStore.setSelected(context);
 
-      const contextInChats = chatsStore.contains(context);
-      const contextInTasks = tasksStore.contains(context);
-
-      if (contextInTasks) {
+      if (tasksStore.contains(context)) {
         tasksStore.setSelected(context);
       }
 
-      if (!contextInChats && !contextInTasks) {
-        // Ne pas voler la sélection juste après un select/chat_create : la liste
-        // contexts peut lagguer d'un cycle de poll.
-        const selectedAt = globalThis._contextSelectedAt || 0;
-        const withinGrace = Date.now() - selectedAt < 5000;
-        if (!withinGrace) {
-          if (chatsStore.contexts.length > 0) {
-            const firstChatId = chatsStore.firstId();
-            if (firstChatId) {
-              setContext(firstChatId);
-              chatsStore.setSelected(firstChatId);
-            }
-          } else if (typeof deselectChat === "function") {
-            deselectChat();
-          }
-        }
-      }
+      // NE PAS voler/désélectionner ici. À ce stade le backend a déjà confirmé que
+      // `context` est le contexte courant (sinon on aurait `return` plus haut, l.288,
+      // ou reçu `deselect_chat`, l.283). L'absence du contexte de la liste latérale
+      // n'est qu'un décalage de poll / filtrage multi-tenant, PAS une raison de
+      // réinitialiser : voler la sélection appelait setContext()/deselect →
+      // chat-history.innerHTML = "" → flash blanc en boucle pendant le streaming.
     } else {
       // No implicit chat restore when no context is selected.
     }
@@ -493,7 +479,6 @@ globalThis.newContext = newContext;
 export const setContext = function (id) {
   if (id == context) return;
   context = id;
-  globalThis._contextSelectedAt = Date.now();
   // Always reset the log tracking variables when switching contexts
   // This ensures we get fresh data from the backend
   lastLogGuid = "";
