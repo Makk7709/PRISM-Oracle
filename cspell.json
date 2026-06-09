@@ -43,7 +43,8 @@
     "websocket",
     "monologue",
     "pourvoi",
-    "ECLI"
+    "ECLI",
+    "HMAC"
   ],
   "ignorePaths": [
     "node_modules",

@@ -1,3 +1,4 @@
+<!-- cspell:words requete fraicheur prouvee banniere bloquee DELEG -->
 # Pipeline Evidence, pas à pas — pourquoi chaque étape est là où elle est
 
 > **Destinataire** : Aya (ingénierie)
@@ -19,7 +20,7 @@ validée, (3) la sortie est **signée** (intégrité + authenticité), (4) en ca
 Pour tenir ça proprement, l'architecture impose **quatre points uniques** :
 
 | Point unique | Fichier | Rôle |
-|---|---|---|
+| --- | --- | --- |
 | **1 entonnoir** d'entrée | `agent.py` (`Agent.monologue`) | toute requête passe par la même boucle |
 | **1 routeur** de criticité | `python/helpers/criticality_router.py` | seule source de vérité « est-ce critique ? » |
 | **1 gate** de sortie | `python/helpers/critical_output.py` | seule porte qui décide + signe |
@@ -65,12 +66,14 @@ flowchart TD
 ## 3. Le pipeline pas à pas (avec le « pourquoi ici »)
 
 ### E0 — Entrée : un seul point d'arrivée
+
 - **Quoi** : HTTPS → Caddy (reverse proxy) → `evidence-backend` → `Agent.monologue` (`agent.py`).
 - **Pourquoi ici / pourquoi ainsi** : tout converge vers **une** boucle agent. C'est la condition pour
   que les étapes suivantes (routeur, gate) soient **non contournables** : il n'existe pas de « porte de
   derrière » qui produirait une réponse sans traverser la boucle.
 
 ### E1 — Aiguillage **très tôt** : requête legal ou pas ? (`monologue_start`)
+
 - **Quoi** : une extension `monologue_start` détecte si la requête relève du **pipeline legal/adversarial**
   (profil, env, ou auto-détection). Réf : `python/extensions/legal_safe_mode/_10_legal_safe_integration.py`.
 - **Pourquoi AUSSI TÔT (avant la génération LLM)** : le pipeline legal **remplace** la génération normale
@@ -82,6 +85,7 @@ flowchart TD
   être écrasée par une réponse LLM non validée → fuite de sortie critique.
 
 ### E2a / E3a — Chemin **pipeline** (legal détecté)
+
 - **E2a** : le pipeline legal exécute ses phases et **pose le contexte de signature** sur l'agent
   (`_pipeline_final_response`, `_skip_llm`, `_consensus_result`, `_pipeline_requires_consensus`,
   `_output_policy`, `_pipeline_criticality_level`).
@@ -96,10 +100,12 @@ flowchart TD
                         from python.helpers.critical_output import finalize_pipeline_short_circuit
                         _fin = finalize_pipeline_short_circuit(self, pipeline_final_response)
 ```
+
 - **Pourquoi le short-circuit appelle le MÊME gate** : voir §4 (convergence). Le pipeline a sa propre
   façon de produire la réponse, mais **pas** sa propre façon de la signer : il n'y a qu'une signature.
 
 ### E2b — Chemin **chat** (génération LLM normale)
+
 - **Quoi** : la boucle LLM produit la réponse, éventuellement en **déléguant** à un sous-agent
   (`call_subordinate`).
 - **Point clé — où s'exécute le consensus ?** Sur le chemin chat, le consensus n'est exécuté **que** si la
@@ -113,6 +119,7 @@ flowchart TD
     pas un bug, c'est la garantie. Détail dans `MISSION_AYA_01` §1.4.
 
 ### E3b — Outil `response.py` : le point d'émission du chat
+
 - **Quoi** : `ResponseTool.execute()` est la **sortie unique** du chemin chat. Il appelle le routeur (E4)
   puis le gate (E5).
 
@@ -131,6 +138,7 @@ flowchart TD
 ```
 
 ### E4 — Classification : `criticality_router.assess()`
+
 - **Quoi** : décide `requires_consensus` et le `level` (LEVEL_1 / LEVEL_2 / LEVEL_3).
 - **Pourquoi AVANT le gate** : le gate a besoin de savoir s'il doit **exiger un consensus** et quel
   comportement appliquer. La criticité est l'**entrée** de toute la matrice de décision ADR-010.
@@ -162,6 +170,7 @@ Le gate exécute **quatre sous-étapes dans un ordre précis**. **L'ordre n'est 
 étape dépend du résultat de la précédente, et la signature doit venir **en dernier**.
 
 #### E5.1 — Vérifier le consensus *(et éventuellement bloquer)* — **EN PREMIER**
+
 - **Quoi** : si `requires_consensus=True` et que le `consensus_result` n'est **pas** `APPROVED` →
   `FAIL_CLOSED` (ou `FAIL_SOFT_BANNER` si une policy l'autorise **explicitement**).
 
@@ -177,11 +186,13 @@ Le gate exécute **quatre sous-étapes dans un ordre précis**. **L'ordre n'est 
         logger.warning("FAIL-CLOSED [%s]: %s", correlation_id, reason)
         return CriticalOutputResult(decision=CriticalOutputDecision.FAIL_CLOSED, can_emit=False, ...)
 ```
+
 - **Pourquoi EN PREMIER** : inutile (et dangereux) de signer quelque chose qu'on va de toute façon
   refuser. Si la décision est « bloquer », on **sort immédiatement**, sans produire de signature qui
   pourrait être confondue avec une validation.
 
 #### E5.2 — Fraîcheur des données — **AVANT la signature**
+
 - **Quoi** : si la sortie est critique et que la fraîcheur n'est **pas** prouvée (`recency_verified≠True`),
   on force `human_review_required=True` et on **ajoute une bannière « potentiellement obsolète »** au texte.
 
@@ -196,12 +207,14 @@ Le gate exécute **quatre sous-étapes dans un ordre précis**. **L'ordre n'est 
             output_text=emitted_text, input_text=input_text, consensus_view=view,
             ...
 ```
+
 - **Pourquoi AVANT la signature (et c'est crucial)** : la bannière fait **partie du texte émis**. Si on
   signait d'abord puis on ajoutait la bannière, le texte affiché ne correspondrait **plus** à ce qui a été
   signé → la vérification anti-tamper renverrait `False` (ou pire, on tromperait l'auditeur). **On signe
   exactement ce que l'utilisateur voit, ni plus ni moins.**
 
 #### E5.3 — Signature — **EN DERNIER**
+
 - **Quoi** : `sign_evidence_output()` scelle **9 champs** (dont `output_hash`, `consensus_result_hash`,
   `criticality_level`, `timestamp`, `model`, `human_review_required`) en RSA-PSS-SHA256 (fallback HMAC).
 - **Pourquoi EN DERNIER** : une signature ne vaut que si **plus rien ne bouge après**. Elle doit couvrir
@@ -213,11 +226,12 @@ Le gate exécute **quatre sous-étapes dans un ordre précis**. **L'ordre n'est 
   **critique** → `FAIL_CLOSED` (on ne sort pas une réponse critique non signée).
 
 ### E6 — Émission : une seule sortie, cinq issues possibles
+
 Le gate renvoie un `CriticalOutputResult` ; `response.py` / le short-circuit émettent le texte (+ la
 `signed_output` si présente). Les issues (matrice ADR-010) :
 
 | Décision | Quand | Effet |
-|---|---|---|
+| --- | --- | --- |
 | `EMIT_SIGNED` | critique + consensus APPROVED + secret présent | sortie signée opposable |
 | `EMIT_NONCRITICAL_SIGNED` | non critique (LEVEL 1/2 sans opt-in) | signée, jamais bloquée |
 | `FAIL_CLOSED` | critique sans consensus valide, ou secret absent en prod | **bloquée** (message fail-closed) |
@@ -231,7 +245,7 @@ Le gate renvoie un `CriticalOutputResult` ; `response.py` / le short-circuit ém
 Il y a **deux** points d'émission, mais **une seule** doctrine de sortie :
 
 | Chemin | Déclencheur | Émission | Appelle |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Chat** | requête non-legal | `python/tools/response.py` | `finalize_critical_output()` |
 | **Pipeline** | legal détecté en `monologue_start` | `agent.py` (short-circuit) | `finalize_pipeline_short_circuit()` → `finalize_critical_output()` |
 
@@ -247,7 +261,7 @@ Il y a **deux** points d'émission, mais **une seule** doctrine de sortie :
 ## 5. Le réflexe à retenir : « et si on inversait ? »
 
 | Si on déplaçait… | …ça casserait |
-|---|---|
+| --- | --- |
 | l'aiguillage legal **après** le LLM (au lieu d'avant) | une réponse legal validée pourrait être écrasée par une sortie LLM non validée |
 | le consensus **dans** `response.py` (au lieu de la délégation) | impossible : au moment de sceller, on ne peut plus faire débattre des LLM ; on ne fait que vérifier |
 | le check consensus **après** la signature | on signerait des réponses qu'on bloque ensuite → signature ambiguë |
@@ -258,6 +272,7 @@ Il y a **deux** points d'émission, mais **une seule** doctrine de sortie :
 ---
 
 ## 6. Pour aller plus loin
+
 - Doctrine complète et matrice : `docs/adr/ADR-010-critical-output-doctrine.md`.
 - Cartographie + chantier de validation E2E : `docs/missions/MISSION_AYA_01_cartographie_et_validation_e2e.md`.
 - D'où vient `_consensus_result`, PRISM vs débat, signature RSA/HMAC : `MISSION_AYA_01` §1.4 à §1.6.
@@ -265,8 +280,3 @@ Il y a **deux** points d'émission, mais **une seule** doctrine de sortie :
 
 > Si tu constates un écart entre ce document et le code en le déroulant : **note-le** (le code fait foi),
 > et signale-le — ce document doit rester un reflet fidèle du pipeline réel.
-
-
-
-
-
