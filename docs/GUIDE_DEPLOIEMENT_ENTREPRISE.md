@@ -679,7 +679,7 @@ Accéder aux **Settings** (icône engrenage en bas de la sidebar) :
 | Paramètre | Valeur recommandée | Description |
 |-----------|-------------------|-------------|
 | Chat Model Provider | `openrouter` | Fournisseur principal |
-| Chat Model | `anthropic/claude-opus-4.7` | Modèle principal (raisonnement avancé, capacités agentiques) |
+| Chat Model | `anthropic/claude-opus-4.8` | Modèle principal (raisonnement avancé, capacités agentiques) |
 | Utility Model | `openai/gpt-4.1-mini` | Modèle utilitaire (plus rapide, moins cher) |
 | Embedding Model | `huggingface` / `all-MiniLM-L6-v2` | Recherche sémantique (LOCAL, gratuit) |
 | Temperature | `0.5` | Équilibre créativité/précision |

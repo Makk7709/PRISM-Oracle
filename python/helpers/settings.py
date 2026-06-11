@@ -1508,7 +1508,7 @@ def convert_out(settings: Settings) -> SettingsOutput:
     # OpenRouter models (recommended for consensus - diverse providers)
     arbiter_model_options: list[FieldOption] = [
         # ═══ TIER 0: Latest Flagship Models (2025-2026) ═══
-        {"value": "openrouter/anthropic/claude-opus-4.7", "label": "🔥 Claude Opus 4.7 (OpenRouter) ⭐"},
+        {"value": "openrouter/anthropic/claude-opus-4.8", "label": "🔥 Claude Opus 4.8 (OpenRouter) ⭐"},
         {"value": "openrouter/openai/gpt-5.2", "label": "🔥 ChatGPT 5.2 (OpenRouter) ⭐"},
         {"value": "openrouter/openai/gpt-5", "label": "🔥 ChatGPT 5 (OpenRouter)"},
         {"value": "openrouter/openai/o3-mini", "label": "🔥 OpenAI o3-mini (OpenRouter)"},
@@ -1922,7 +1922,7 @@ def get_default_settings() -> Settings:
     return Settings(
         version=_get_version(),
         chat_model_provider="openrouter",
-        chat_model_name="anthropic/claude-opus-4.7",
+        chat_model_name="anthropic/claude-opus-4.8",
         chat_model_api_base="",
         chat_model_kwargs={"temperature": "1"},
         chat_model_ctx_length=100000,
