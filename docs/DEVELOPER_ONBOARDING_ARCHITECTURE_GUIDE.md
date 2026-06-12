@@ -26,6 +26,7 @@
 KOREV Evidence est une plateforme multi-agents d'IA de confiance, conçue pour des environnements professionnels exigeants (cabinets d'avocats, médecins, chercheurs, consultants, finance). L'idée directrice : un utilisateur interagit avec un agent principal qui peut **déléguer** à des agents spécialisés (juridique, médical, recherche, sécurité, finance, stratégie, marketing, cybersécurité...), orchestrer des **consensus** entre agents, et produire des livrables traçables (rapports PDF, contrats, dossiers stratégiques, images, analyses).
 
 Les différenciants par rapport à un ChatGPT-like :
+
 - **Auditabilité** : chaque action d'agent est loggée, les sources sont tracées, et les réponses critiques passent par un pipeline de validation multi-agents
 - **Multi-tenant strict** : isolation par organisation (UUID canonique), rôles OWNER/MEMBER, fail-closed
 - **Pipelines métier spécialisés** : juridique (FTS5 Légifrance), médical (PRISM consensus + FAERS), stratégique (4 agents + consolidation LLM), rédaction contractuelle (Act Leak Guard fail-closed)
@@ -34,7 +35,7 @@ Les différenciants par rapport à un ChatGPT-like :
 
 ## 1.2 Architecture Macro
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        COUCHE RÉSEAU                            │
 │  Internet → Caddy (HTTPS :443) → Flask Backend (:5050)          │
@@ -87,7 +88,7 @@ Les différenciants par rapport à un ChatGPT-like :
 
 Voici le parcours complet d'un message utilisateur, du clic au résultat :
 
-```
+```text
 1. FRONTEND (Alpine.js)
    └─ sendMessage() → POST /message_async {text, context, message_id}
        └─ Avec X-CSRF-Token dans le header
@@ -145,6 +146,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 | **_example** | Template | Illustre la structure pour créer de nouveaux profils |
 
 **Profils avec extensions propres :**
+
 - `legal_safe/extensions/monologue_start/_10_legal_safe_pipeline.py` — pipeline juridique complet
 - `medical/extensions/agent_init/_10_medical_tools.py` — outils médicaux (evidence synthesis, FAERS, trials)
 - `medical/tools/` — 5 outils spécialisés : `evidence_synthesis.py`, `faers_signal_detection.py`, `clinical_trials_intel.py`, `prism_integration.py`, `response.py`
@@ -154,6 +156,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 ## 1.5 Mécanismes d'IA de Confiance
 
 ### Traçabilité
+
 - Chaque action d'agent est loggée dans `context.log` (type, heading, content, kvps)
 - Les logs sont persistés dans les fichiers de chat (`tmp/chats/{ctxid}/chat.json`)
 - **Evidence Pack** (`python/helpers/evidence.py`) : objet structuré qui encapsule les sources, citations et métadonnées de confiance pour chaque réponse validée par le consensus
@@ -163,6 +166,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 - Security audit logging (`python/security/security_audit.py`) — logs structurés sans PII
 
 ### Garde-fous
+
 - **Température forcée à 0** pour les profils critiques (legal_safe, legal_drafting_guarded) — pas d'improvisation
 - **CriticalityRouter** (`python/helpers/criticality_router.py`) : détecte automatiquement les sujets nécessitant un consensus (basé sur des patterns LEVEL 3 critiques ou `force_consensus=True`, pas sur le profil agent)
 - **Validation multi-LLM a 2-3 tours** : Round 1 (analyse independante par 3 LLMs en parallele via `asyncio.gather`), Round 2 (debat croise — **saute si unanimite** au Round 1, unanimite = `confidence >= 0.8` + zero hallucinations), Round 3 (synthese et verdict par **un seul LLM** — l'arbitre principal `arbiters[0]`, temperature=0.1). En pratique, les sessions unanimes ne passent que par 2 rounds. Le verdict final est la decision de Round 3, pas un vote a quorum (`quorum_ratio` est defini dans `DebateConfig` mais n'est pas utilise pour la decision). En cas d'echec de Round 3, un verdict heuristique est calcule depuis Round 1 (confidence moyenne + comptage hallucinations). Si non approuve : fail-closed (reponse originale non retournee). **NB :** `temperature=0.1` s'applique a tous les rounds, pas seulement Round 3 — ce n'est pas temperature=0, donc une marge d'indeterminisme subsiste.
@@ -185,6 +189,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 - **Exécution gardée** : `ExecutionGuard` (désactivé actuellement — remplacé par le prompt-based execution policy)
 
 ### Isolation multi-tenant (v5.0)
+
 - **Organisation canonique** (`python/helpers/organization.py`) : chaque tenant est identifié par `organization_uuid` + `organization_id` (slug normalisé) + `organization_display` (affichage UI)
 - **Normalisation** : `normalize_org_id()` assure une comparaison case-insensitive et slug-safe ("DICA France" → "dica-france")
 - **Isolation stricte** : `python/security/authorization.py` — `AccessPrincipal` avec scoping org/workspace/user, `can_access_context()`, `can_access_task()`, `can_access_workspace()`
@@ -199,6 +204,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 ## 1.6 Pipelines Métier Spécialisés
 
 ### Pipeline Juridique (`legal_safe`)
+
 - **Index SQLite FTS5** : ~5000+ décisions de la Cour de cassation dans `data/legal/index/legal_index.sqlite`
 - **Ingestion** : `python/legal_sources/` — connecteurs PISTE / Judilibre / Légifrance (APIs officielles françaises)
 - **Pipeline** : `python/helpers/legal_pipeline.py` (1807 lignes) — recherche → retrieval → classification → judge → consensus
@@ -207,6 +213,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 - **124 tests** dédiés au pipeline juridique
 
 ### Pipeline Rédaction Contractuelle (`legal_drafting_guarded`)
+
 - **Module** : `python/helpers/contract_drafting/` (7 fichiers : orchestrator, gate, leak_guard, governance, export_control, templates, models)
 - **Templates** : Conditions Particulières + Conditions Générales + 6 Annexes (SLA, DPA RGPD art.28, réversibilité, grille tarifaire)
 - **Act Leak Guard** : 16 patterns P0 bloquants (cession code source, transfert IP, garanties absolues) + 9 patterns P1
@@ -214,6 +221,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 - **Séparation des rôles** : `legal_drafting_guarded` = RÉDACTEUR, `legal_safe` = JUGE
 
 ### Pipeline Stratégique (`strategic_orchestrator`)
+
 - **Module** : `python/helpers/strategic_orchestrator.py` (v2.0)
 - **Détection** : `detect_strategic_document()` identifie les requêtes de dossiers stratégiques
 - **4 agents spécialisés** : researcher, finance, marketing, legal (exécution séquentielle avec contexte inter-agents enrichi via `_extract_key_content()`)
@@ -223,6 +231,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 - **Hook** : `python/extensions/monologue_start/_15_strategic_enforcement.py` — court-circuite le LLM principal
 
 ### Pipeline Médical (`medical`)
+
 - **Outils dédiés** dans `agents/medical/tools/` : evidence_synthesis, faers_signal_detection, clinical_trials_intel, prism_integration
 - **BioMCP** : 23+ outils (PubMed, ClinicalTrials.gov, OpenFDA, Genomics)
 - **Pharmacovigilance FAERS** : signal detection avec PRR, ROR, IC
@@ -232,6 +241,7 @@ Le système supporte **12 profils**. Chaque profil est un répertoire sous `agen
 ## 1.7 Protocole A2A (Agent-to-Agent)
 
 Evidence implémente le protocole Agent-to-Agent pour la communication inter-agents distante :
+
 - **Serveur** : `python/helpers/fasta2a_server.py` — `AgentZeroWorker` + `DynamicA2AProxy`, monté à `/a2a`
 - **Client** : `python/helpers/fasta2a_client.py` — `AgentConnection`, bearer/A2A_TOKEN, découverte via `/.well-known/agent.json`
 - **Outil** : `python/tools/a2a_chat.py` — `A2AChatTool` pour les interactions agent-to-agent depuis le chat
@@ -281,12 +291,14 @@ Le systeme genere automatiquement un rapport d'audit structure pour chaque sessi
 **Stockage :** Les rapports sont persistes dans `tmp/chats/{ctxid}/audit_report.md` (et optionnellement `.pdf`) via `audit_report_storage.py`. Retention par defaut : **1825 jours** (5 ans), configurable via `EVIDENCE_RETENTION_DAYS`. Purge automatique via `purge_expired_reports()`. L'endpoint `/audit_reports` (GET/POST) permet leur consultation avec controle d'acces fin (`can_access_audit_reports` — OWNER, DPO, RSSI, COMPLIANCE_OFFICER).
 
 **Limites actuelles (honnetete) :**
+
 - Le `RiskRegister` statique (7 risques types) est desormais **complete par le Dynamic Risk Register** (`python/helpers/dynamic_risk_register.py`) qui calcule un score de risque dynamique par session a partir de 6 facteurs ponderes. Le registre statique reste present pour le rapport d'audit formel.
 - Le `ProcessingRegister` est un **template statique** enrichi par le username et l'organisation de la session. Pas d'analyse dynamique des traitements reels.
 - La `ComplianceGrid` couvre 5 articles : Art. 9, 13, 14, 17 AI Act + RGPD Art. 30. Les autres articles AI Act ne sont pas evalues.
 - Le **Replay Engine** (§1.14) capture un snapshot complet (query, config, response, hashes) et permet la **comparaison post-hoc** via similarite Jaccard et verification d'integrite SHA-256. **Il ne re-execute pas** la decision via LLM — c'est du snapshot + comparaison, pas du replay au sens strict. Le non-determinisme inherent aux LLMs (meme a temperature=0) rend une re-execution exacte techniquement impraticable pour v1.
 
 **Fichiers cles :**
+
 - `python/helpers/audit_report_renderer.py` — assembleur des 10 blocs
 - `python/helpers/integrity_block.py` — hashes + signatures
 - `python/helpers/session_envelope.py` — metadonnees session
@@ -302,6 +314,7 @@ Le systeme genere automatiquement un rapport d'audit structure pour chaque sessi
 ## 1.12 Personnalisation du Chat
 
 Le systeme supporte une personnalisation fine de l'interaction via `python/helpers/chat_style.py` :
+
 - **Adresse** : tutoiement / vouvoiement
 - **Ton** : formel, cordial, direct, bienveillant
 - **Humanisation** : minimal, modere, eleve
@@ -314,6 +327,7 @@ L'extension `python/extensions/system_prompt/_05_chat_style.py` injecte les inst
 ## 1.13 Rate Limiting
 
 Un systeme de rate limiting protege les endpoints critiques :
+
 - **Backend memory** (`python/security/rate_limit/memory_backend.py`) — pour les deployements mono-instance
 - **Backend Redis** (`python/security/rate_limit/redis_backend.py`) — pour les deployements multi-workers
 - **Limiter** (`python/security/rate_limit/limiter.py`) — facade unifiee, backoff exponentiel, LRU eviction
@@ -326,11 +340,13 @@ Le rate limiting est applique sur `/login` (anti-brute-force) et les endpoints A
 Le systeme capture un **snapshot complet** de chaque session pour permettre la **comparaison post-hoc** et la **verification d'integrite**. C'est la brique centrale de preuve pour l'auditabilite AI Act Art. 13 (transparence) et Art. 17 (tracabilite). **NB :** Le moteur ne re-execute pas la decision via LLM (re-execution deterministe non implementee en v1 — voir §1.11 Limites). Il compare des snapshots et detecte les alterations.
 
 **Architecture :**
+
 - **`python/helpers/replay_engine.py`** — Moteur de capture, persistance, comparaison
 - **`python/extensions/monologue_end/_35_replay_snapshot.py`** — Capture automatique apres chaque monologue
 - **`python/api/replay.py`** — API : consultation snapshot, verification integrite, comparaison
 
 **Contenu d'un snapshot (`SessionSnapshot`) :**
+
 - `query` (requete utilisateur)
 - `system_prompt_hash` (SHA-256 du prompt systeme)
 - `history_hash` (SHA-256 de l'historique)
@@ -345,6 +361,7 @@ Le systeme capture un **snapshot complet** de chaque session pour permettre la *
 - `integrity_hash` (SHA-256 des champs critiques — tamper detection)
 
 **Comparaison de divergence :**
+
 - `NONE` (hash identique)
 - `MINOR` (>95% similarite Jaccard)
 - `SIGNIFICANT` (70-95%, ou ratio de longueur <0.5)
@@ -363,18 +380,21 @@ Le systeme capture un **snapshot complet** de chaque session pour permettre la *
 Le systeme implemente un workflow de validation humaine conforme AI Act Art. 14 (controle humain). Chaque decision critique peut etre soumise a un reviewer humain. **NB v1 :** Le workflow est entierement fonctionnel (creation, decision, audit trail), mais le **blocage effectif de la reponse** dans la chaine de livraison n'est pas encore integre au runtime (voir NB CRITIQUE ci-dessous). L'integration dans `poll.py` est un chantier prioritaire.
 
 **Architecture :**
+
 - **`python/helpers/human_review.py`** — Logique metier : creation, soumission, blocage
 - **`python/api/human_review.py`** — API : liste, detail, decision
 - **`python/extensions/monologue_end/_36_risk_assessment.py`** — Declenchement automatique via Risk Engine
 
 **Etats du workflow :**
-```
+
+```text
 PENDING_REVIEW → APPROVED (deblocage)
                → REJECTED (blocage maintenu)
                → EXPIRED  (non utilise en v1 — reserve pour TTL futur)
 ```
 
 **Chaque decision est journalisee avec :**
+
 - `reviewer_id` + `reviewer_name`
 - `decided_at` (timestamp ISO 8601)
 - `justification` (texte libre obligatoire)
@@ -382,6 +402,7 @@ PENDING_REVIEW → APPROVED (deblocage)
 - `override_response` (reponse corrigee)
 
 **Declenchement :**
+
 - `RISK_ENGINE` — automatique si le risk score atteint HIGH ou CRITICAL
 - `MANUAL` — declenchement explicite via API
 - `POLICY` — regle de politique configurable
@@ -402,6 +423,7 @@ PENDING_REVIEW → APPROVED (deblocage)
 Le systeme calcule un **score de risque dynamique** par session a partir de 6 facteurs ponderes. Il **complete** le `RiskRegister` statique (qui reste present pour les rapports d'audit formels) par un moteur de scoring en temps reel.
 
 **Architecture :**
+
 - **`python/helpers/dynamic_risk_register.py`** — Moteur de scoring, dashboard, historisation
 - **`python/api/risk_dashboard.py`** — API : dashboard agrege, evaluation manuelle
 - **`python/extensions/monologue_end/_36_risk_assessment.py`** — Evaluation automatique + declenchement human review
@@ -418,12 +440,14 @@ Le systeme calcule un **score de risque dynamique** par session a partir de 6 fa
 | `tool_call_volume` | 5% | Volume d'appels outils (>20 = 0.8) |
 
 **Classification :**
+
 - `LOW` : score < 0.30
 - `MEDIUM` : score >= 0.30
 - `HIGH` : score >= 0.60 → **declenche HUMAN_REVIEW automatiquement**
 - `CRITICAL` : score >= 0.85 → **declenche HUMAN_REVIEW automatiquement**
 
 **Dashboard systeme (`/risk_dashboard`) :**
+
 - Total sessions evaluees
 - Distribution par niveau de risque
 - Score moyen et max
@@ -470,6 +494,7 @@ Les trois briques (Replay + Human Review + Risk Engine) sont couvertes par une s
 ### 🟠 ÉLEVÉ : Pas de sandbox pour l'exécution de code
 
 `code_execution_tool.py` exécute du Python/Node/shell avec les privilèges du processus backend. En production Docker, c'est l'utilisateur `evidence` dans le container. Mais :
+
 - Pas de container séparé, pas de seccomp, pas de cgroups dédiés
 - Le code peut lire/écrire tout ce que le processus backend peut lire/écrire
 - Un agent hallucinant pourrait exécuter `rm -rf /app/tmp/` et détruire toutes les données
@@ -479,10 +504,12 @@ Les trois briques (Replay + Human Review + Risk Engine) sont couvertes par une s
 Tous les chats sont dans `tmp/chats/<ctxid>/` (un dossier par context, **pas** de sous-dossier par utilisateur). L'ownership est un champ `username` dans le JSON.
 
 **Mitigations existantes (partielles) :**
+
 - `can_access_context()` est appele dans `use_context()` et `poll.py` — l'isolation est **enforcie au niveau API**
 - Un utilisateur ne peut pas lister/charger les chats d'un autre via l'interface web
 
 **Risques restants :**
+
 - Un acces direct au volume Docker contourne cette protection (pas d'isolation filesystem)
 - Au startup, TOUS les chats sont charges en memoire (`load_tmp_chats()`) — ne scale pas
 - L'import de chat (`chat_load`) re-attribue le contexte au compte importateur (design intentionnel, mais a documenter en politique d'usage)
@@ -512,12 +539,14 @@ Les deux vecteurs historiques de boucles infinies sont désormais bornés par le
 **Scénario historique #2 (neutralisé) :** Un agent boucle sur un tool partiel → `check_iteration()` + `check_tool_calls()` stoppent l'exécution.
 
 **Risques résiduels :**
+
 - Les appels `call_utility_model()` (hors monologue) ne décomptent pas du budget LLM global — risque faible, impact limité
 - Les extensions `monologue_start` s'exécutent avant le check d'itération — ne peuvent pas contourner le garde mais ralentissent la détection d'un cycle de 1 itération
 
 ### Hallucinations croisées
 
 Le consensus multi-agents (3 rounds) est un excellent garde-fou, MAIS :
+
 - Les agents partagent le même `AgentContext` (mémoire, projet, config)
 - Un agent qui écrit dans la mémoire FAISS peut influencer un autre qui la lit
 - La consolidation mémoire utilise un LLM — un LLM qui hallucine pendant la consolidation corrompt la mémoire pour tous les agents suivants
@@ -529,6 +558,7 @@ Le subordinate a sa propre `History` mais partage le `AgentContext`. Quand il re
 ### Flags implicites de pipeline
 
 Le mécanisme de coordination utilise des flags mutables sur l'objet Agent :
+
 - `_pipeline_final_response`
 - `_pipeline_validated_response`
 - `_consensus_result`
@@ -557,16 +587,19 @@ Le consensus multi-agents est implémenté dans `python/tools/call_subordinate.p
 C'est le risque le plus dangereux du système. Un LLM qui invente une référence juridique (arrêt de Cour de cassation, article de loi) peut induire un professionnel du droit en erreur. Voici les garde-fous en place et leurs limites :
 
 **Garde-fous actifs :**
+
 - Le profil `legal_safe` force `temperature=0` (via `agents/legal_safe/extensions/monologue_start/_10_legal_safe_pipeline.py` qui appelle `python/extensions/legal_safe_mode/_10_legal_safe_integration.py`, ligne 534). Cela réduit la créativité du LLM et favorise les réponses factuelles.
 - Le prompt système de `legal_safe` exige des citations explicites et une classification en 3 niveaux de confiance (NIVEAU 1 = source vérifiée, NIVEAU 2 = probable, NIVEAU 3 = incertain).
 - L'index juridique SQLite FTS5 (`data/legal/index/legal_index.sqlite`) sert de source de vérité. La recherche FTS5 est effectuée par `python/helpers/legal_orchestrator.py` et `python/helpers/legal_retrieval.py`. Le pipeline dans `python/helpers/legal_pipeline.py` consomme les résultats (via `source_chunk_ids`) pour la validation et le jugement (`judge_legal_draft()`).
 
 **Limites actuelles (honnêteté) :**
+
 - Le LLM peut citer un arrêt avec un numéro légèrement modifié (ex: "Cass. civ. 1, 12 mars 2019, n°18-12.345" au lieu de "18-12.346"). L'index FTS5 ne fait pas de vérification automatique de numéros de pourvoi.
 - Le consensus valide la cohérence de la réponse entre agents, pas la véracité des sources. Deux LLMs qui hallucinent le même arrêt se valideront mutuellement.
 - Il n'existe pas de pipeline automatique de "fact-checking juridique" (cross-reference avec Légifrance ou Jurica en temps réel). C'est un chantier futur.
 
 **Procédure de vérification manuelle :**
+
 1. Dans le chat, identifie les citations juridiques (format "Cass.", "CE", "Art. L.", "Art. R.").
 2. Recherche dans l'index : `docker exec evidence-backend python3 -c "import sqlite3; conn = sqlite3.connect('/app/data/legal/index/legal_index.sqlite'); print(conn.execute('SELECT doc_id, title FROM docs WHERE title LIKE \"%mot-clé%\"').fetchall())"`.
 3. Si la référence n'est pas dans l'index, elle est potentiellement hallucinée. Flag le chat et remonte l'information.
@@ -615,16 +648,19 @@ Quand un agent délègue puis que le subordinate redélègue, la trace se dilue.
 > **Message direct au Lead Engineer :** Cette liste peut donner le vertige. C'est normal. La tentation sera forte de "tout refaire proprement". **Résiste.** Voici le cadre de décision qui te dit quoi traiter en urgence et quoi laisser tranquille.
 
 **PATCHER IMMÉDIATEMENT (Semaine 1-2) — Sécurité :**
+
 - ~~Les failles de path traversal dans `file_info.py`, `download_work_dir_file.py`, `api_files_get.py`.~~ **FAIT (mars 2026)** — corrige via `safe_path_join()` (voir §2.1).
 - L'isolation des chats (`persist_chat.py`). Le pattern existe déjà pour les projets et les images : sous-dossiers par utilisateur + contrôle d'accès dans l'API. C'est du copier-adapter.
 
 **ACCEPTER PROVISOIREMENT (Mois 1-3) — Architecture :**
+
 - **L'architecture filesystem (JSON au lieu de SQL).** Ne tente PAS de migrer vers PostgreSQL ou SQLite pour les chats et settings dans les 3 premiers mois. Raisons : (a) ça fonctionne pour le volume actuel (~11 utilisateurs, ~50-100 chats), (b) une migration SGBD touche TOUT le code (persist_chat, projects, settings, file_browser), (c) le risque de régression est énorme tant que tu ne maîtrises pas la codebase. Planifie cette migration quand le volume atteindra 500+ chats ou 50+ utilisateurs simultanés, avec des benchmarks réels.
 - **Le polling HTTP.** Inélégant mais fonctionnel. La migration WebSocket est un Chantier de Fond (Semaine 3-4), pas une urgence de Semaine 1.
 - **Le frontend monolithique (`index.html` 1300 lignes).** Ça fait mal aux yeux, mais ça ne génère pas de bugs tant que les changements sont localisés. Un refactoring frontend complet est un projet de 2-3 semaines à planifier au trimestre suivant.
 - **`asyncio.run()` dans `__init__`.** Anti-pattern connu, mais le corriger nécessite de repenser l'initialisation des agents. À planifier quand tu migreras vers un framework ASGI.
 
 **SURVEILLER ACTIVEMENT (Monitoring) :**
+
 - La fuite de file descriptors. Le `ulimits` à 65536 est un pansement. Mets en place un monitoring (`docker exec evidence-backend bash -c "ls /proc/1/fd | wc -l"` dans un cron toutes les heures). Quand les FD remontent vers 1000+, un `docker compose restart evidence-backend` règle le problème temporairement. La cause racine (connexions aiohttp non fermées, index FAISS non libérés) est un chantier d'investigation pour le mois 2.
 
 ## 2.6 Confusion de nommage : PRISM / Evidence / KOREV
@@ -644,16 +680,19 @@ Quand un agent délègue puis que le subordinate redélègue, la trace se dilue.
 ## 2.7 Montée en charge — Pires scénarios
 
 **Scénario 1 : 50 utilisateurs simultanés**
+
 - Le polling HTTP (25-250ms par user) génère 200-2000 requêtes/seconde juste pour le poll
 - Flask en mode synchrone (Werkzeug) ne supporte pas cette charge
 - Les chats sont tous chargés en mémoire — avec 50 users actifs et 20 chats chacun, c'est 1000 `AgentContext` en RAM
 
 **Scénario 2 : Agent en boucle** ✅ (mitigé par ExecutionBudget v4.0)
+
 - ~~Un agent qui itère 50 fois dans sa monologue (pas de hard limit) accumule du contexte à chaque tour~~ → Borné à `max_iterations=25` par défaut
 - ~~Le context window du LLM explose → erreurs API → retry → plus d'itérations → plus de mémoire~~ → Borné à `max_llm_calls=30` et `deadline_seconds=300`
 - Le file descriptor leak s'accélère (chaque appel LLM ouvre des connexions) — ⚠ ce risque persiste indépendamment du budget
 
 **Scénario 3 : Indexation légale massive**
+
 - L'index SQLite FTS5 est un fichier unique, pas de sharding
 - WAL aide la concurrence lecture/écriture mais pas la performance brute
 - 100K documents → requêtes de plusieurs secondes
@@ -783,7 +822,7 @@ curl -s https://<DOMAINE>/healthz
 
 ## 3.2 Arborescence des Fichiers Critiques
 
-```
+```text
 .
 ├── agent.py                 # ⭐ Cœur : AgentContext, Agent, monologue loop
 ├── models.py                # Configuration LLM (ModelConfig, providers)
@@ -983,6 +1022,7 @@ curl -s https://<DOMAINE>/healthz           # Doit retourner 200
 ### Architecture décisionnelle
 
 Quand tu veux ajouter une fonctionnalité, demande-toi :
+
 1. **C'est un outil ?** → `python/tools/nom_tool.py` + prompt dans `prompts/agent.system.tool.nom_tool.md`
 2. **C'est un hook sur le pipeline ?** → Extension dans `python/extensions/<point>/`
 3. **C'est un nouveau type d'agent ?** → Nouveau profil dans `agents/`
@@ -1013,6 +1053,7 @@ abs_path = os.path.join("/app", path)      # "/app/../../etc/passwd"
 ```
 
 La fonction `safe_path_join()` (dans `python/security/path_safety.py`) corrige ça en 3 étapes :
+
 1. **Résolution** : elle appelle `Path.resolve()` (équivalent pathlib de `os.path.realpath()`) pour résoudre tous les `..`, symlinks et chemins relatifs en un chemin absolu canonique.
 2. **Vérification de confinement** : elle vérifie que le chemin résolu commence bien par le répertoire de base (`/app/`). Si le résultat est `/etc/passwd`, il ne commence pas par `/app/` → rejeté.
 3. **Rejet des symlinks** (optionnel en production) : pour empêcher un attaquant qui aurait créé un symlink `/app/data/lien → /etc/`.
@@ -1052,11 +1093,13 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 **Cible :** `tmp/chats/{username}/` avec contrôle d'accès dans l'API.  
 
 **Pourquoi c'est prioritaire :**
+
 - Un utilisateur peut théoriquement accéder aux chats d'un autre
 - Au startup, tous les chats sont chargés en mémoire (ne scale pas)
 - C'est le même pattern que ce qui a été fait pour les images et les projets
 
 **Plan d'attaque :**
+
 1. Modifier `persist_chat.py` : `save_tmp_chat()` et `load_tmp_chats()` pour utiliser des sous-dossiers par user
 2. Migrer les chats existants (script one-shot, comme pour les images)
 3. Ajouter un contrôle d'accès dans `chat_load.py` (vérifier `session['username']` vs chat owner)
@@ -1069,11 +1112,13 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 **Cible :** WebSocket (ou SSE) pour le streaming temps réel.
 
 **Pourquoi :**
+
 - Le polling génère une charge réseau et serveur disproportionnée
 - La latence perçue est mauvaise (250ms entre le moment où l'agent répond et l'affichage)
 - Flask supporte les WebSockets via `flask-sock` ou migration vers ASGI avec `quart`
 
 **Plan d'attaque :**
+
 1. Évaluer `flask-sock` vs migration Quart (ASGI natif)
 2. Implémenter un endpoint `/ws` qui stream les logs du contexte en temps réel
 3. Adapter `webui/index.js` : remplacer `startPolling()` par un `WebSocket`
@@ -1106,7 +1151,6 @@ Chaque profil a un `_context.md` mais ils sont inégaux en qualité. Uniformiser
 | `webui/js/messages.js` | ~1077 | Moyen | Rendu des messages — complexe |
 | `webui/js/scheduler.js` | ~1835 | Moyen | Planificateur de taches |
 | `models.py` | ~930 | Moyen | Providers LLM |
-
 
 ## Annexe B : Glossaire
 

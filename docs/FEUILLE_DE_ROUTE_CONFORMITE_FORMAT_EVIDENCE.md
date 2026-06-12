@@ -14,6 +14,7 @@ Audit du 31 mars 2026 : le rapport optimal Evidence (11 blocs) a ete compare au 
 
 Le moteur interne (PRISM, raisonnement, confiance, hallucination, routing, PDF) est solide.  
 Les lacunes se concentrent sur 3 couches :
+
 1. **Enveloppe de session** — metadonnees d'identite, profil, environnement
 2. **Conformite reglementaire** — grille AI Act, RGPD Art. 30, signature RSA des logs
 3. **Assemblage du rapport final** — le JSON metadata, la grille sources FR, la grille conformite
@@ -60,6 +61,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 | 1.8 | Verifier zero regression sur tests existants | ✅ | 0 regression (1 echec pre-existant rebrand) |
 
 ### Criteres de validation SESSION 1
+
 - [x] `SessionEnvelope` instanciable avec tous les champs
 - [x] `session_id` genere au format `KRV-SES-YYYYMMDD-XXXXXXX`
 - [x] Hash d'integrite reproductible et distingue None vs ""
@@ -71,7 +73,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Auditeur securite contradictoire, zero tolerance, aucune complaisance.
 >
-> ```
+> ```text
 > Tu es un auditeur externe specialise en tracabilite reglementaire et securite
 > applicative. Tu n'as aucun lien avec l'equipe de developpement. Ton role est
 > de demolir toute fausse conformite.
@@ -129,6 +131,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 | 2.8 | Verifier zero regression | ✅ | 0 regression (1 echec pre-existant rebrand) |
 
 ### Criteres de validation SESSION 2
+
 - [x] `UserManager.get_user_profile("amine")` retourne un profil
 - [x] `RouteDecision` porte `ai_act_category` et `data_sensitivity`
 - [x] Mapping coherent pour chaque type de route (9/9 IntentName couvertes)
@@ -140,7 +143,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Auditeur classification reglementaire, expert AI Act et RGPD.
 >
-> ```
+> ```text
 > Tu es un consultant specialise en classification des systemes IA au sens
 > du Reglement europeen AI Act (2024/1689). Ton mandat : verifier que les
 > classifications implementees sont juridiquement defensables, pas
@@ -184,6 +187,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 **Prerequis** : SESSION 1  
 **Risque sur l'existant** : Faible (wrapper observer, pas de modification du flux existant)  
 **Fichiers crees/modifies** :
+
 - `python/helpers/pipeline_tracker.py` (nouveau — 280 lignes)
 - `python/helpers/strategic_orchestrator.py` (modifie — observer autour de `call_agent`)
 - `python/tools/call_subordinate.py` (modifie — observer autour de `subordinate.monologue()`)
@@ -203,6 +207,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 | 3.8 | Verifier zero regression (SESSION 1 : 37/37, SESSION 2 : 46/46) | ✅ | 83/83 passed |
 
 ### Criteres de validation SESSION 3
+
 - [x] `PipelineTracker` collecte les agents actives avec duree (`time.monotonic()`)
 - [x] `get_non_activated()` retourne la liste complementaire (registre - actives, trie)
 - [x] Integration non-intrusive (observer pattern, `try/except` fail-safe)
@@ -233,7 +238,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Architecte systeme hostile aux abstractions inutiles.
 >
-> ```
+> ```text
 > Tu es un architecte logiciel senior. Tu consideres que tout observer
 > pattern est suspect jusqu'a preuve du contraire. Ton role : verifier
 > que le PipelineTracker est fiable sous stress, qu'il ne ment pas,
@@ -281,6 +286,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 **Prerequis** : Aucun (independant des sessions 1-3)  
 **Risque sur l'existant** : Faible (extension des dataclass existantes)  
 **Fichiers crees/modifies** :
+
 - `python/helpers/source_taxonomy.py` (nouveau — 250 lignes)
 - `python/helpers/legal_agent_contracts.py` (modifie — 4 champs optionnels sur SourceNote + to_dict)
 - `python/helpers/legal_orchestrator.py` (modifie — classify_source integre dans build_source_notes_from_retrieval)
@@ -300,6 +306,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 | 4.8 | Verifier zero regression : 129/129 (S1-S3) + 29/29 legal contracts | ✅ | 248/248 total |
 
 ### Criteres de validation SESSION 4
+
 - [x] `SourceNote` porte `source_type_fr`, `source_origin`, `reliability_percent`, `agent_attribution`
 - [x] Inference automatique correcte pour Cass.Com, CJUE, Art. L, Legifrance, CEDH, CE, circulaires, avis CNIL
 - [x] Pipeline legal inchange en comportement (29/29 tests legal contracts)
@@ -328,7 +335,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Juriste specialise en sources du droit, hostile aux classifications approximatives.
 >
-> ```
+> ```text
 > Tu es un juriste documentaliste expert en bases de donnees juridiques
 > francaises et europeennes. Tu connais Legifrance, EUR-Lex, DACS, CNIL
 > sur le bout des doigts. Ton role : verifier que la taxonomie implementee
@@ -377,6 +384,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 **Prerequis** : SESSION 1 (SessionEnvelope), SESSION 3 (PipelineTracker)  
 **Risque sur l'existant** : Nul (ajout pur)  
 **Fichiers crees** :
+
 - `python/helpers/compliance_grid.py` (nouveau — 300 lignes)
 - `tests/test_session5_compliance_grid.py` (nouveau — 38 tests)
 
@@ -395,6 +403,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 | 5.9 | Ecrire 38 tests (enum, check, art13-14-17-9-30, grid, anti-washing, to_dict) | ✅ | Test `test_no_check_is_conforme_anti_washing` |
 
 ### Criteres de validation SESSION 5
+
 - [x] `ComplianceGrid.evaluate()` retourne 5 checks
 - [x] Chaque check a une preuve technique reelle (pas de placeholder)
 - [x] Statut derive automatiquement des donnees de session
@@ -424,7 +433,7 @@ Ce document est le plan d'action. Chaque session est atomique, testable, et ne c
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Auditeur de conformite AI Act certifie, zero tolerance pour le "compliance washing".
 >
-> ```
+> ```text
 > Tu es un auditeur independant mandate pour verifier la conformite d'un
 > systeme IA au Reglement europeen AI Act (2024/1689). Tu as deja vu
 > 50 systemes qui pretendent etre conformes avec des grilles bidon.
@@ -521,13 +530,14 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 |---|---|:---:|---|
 | 6.1 | Analyser message loop, extension system, agent.data, pipeline flow | ✅ | `_pipeline_final_response` lu dans `agent.py` apres `monologue_start` |
 | 6.2 | Creer `_05_session_envelope_init.py` dans `message_loop_start/` : instancier `SessionEnvelope`, stocker sur `agent.data["_session_envelope"]` | ✅ | username, organization, query, profile depuis agent.context/config |
-| 6.3 | Creer `_20_audit_metadata_append.py` dans `monologue_start/` : apres hooks pipeline (_10 legal, _15 strategic), appeler `.complete()` + hash response + injecter audit block | ✅ | response_hash calcule sur l'original AVANT append |
+| 6.3 | Creer `_20_audit_metadata_append.py` dans `monologue_start/` : apres hooks pipeline (_10 legal,_15 strategic), appeler `.complete()` + hash response + injecter audit block | ✅ | response_hash calcule sur l'original AVANT append |
 | 6.4 | Injecter `SessionEnvelope.to_report_table()` dans le pipeline response | ✅ | Section "Identite de la session" avec session_id, hash, timestamps |
 | 6.5 | Recuperer `PipelineTracker` depuis `StrategicResult.pipeline_tracker` ou `agent.data["_pipeline_tracker"]`, injecter `tracker.to_report_table()` + agents non actives | ✅ | Resolution cascade : strategic_result → agent.data fallback |
 | 6.6 | Ecrire 25 tests : init (9), append (11), integration chain (5) | ✅ | 25/25 passed |
 | 6.7 | Verifier zero regression (S1-S5 : 257 tests) | ✅ | 282/282 passed (257 anciens + 25 nouveaux) |
 
 ### Criteres de validation SESSION 6
+
 - [x] Pipeline response enrichie avec `KRV-SES-YYYYMMDD-XXXXXXX`
 - [x] Hash d'integrite SHA-256 dans le rapport (response_hash + integrity_hash)
 - [x] Liste des agents actives avec durees dans le rapport (PipelineTracker)
@@ -620,6 +630,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 **Verdict test E2E strategique** : **SUCCES** — Tous les modules SESSION 6.1 (SessionEnvelope, PipelineTracker, audit metadata, profil humain, organisation) sont **visibles et fonctionnels en production** sur le chemin pipeline strategique.
 
 **Points d'attention** :
+
 - `evidence_version` affiche "unknown" — le resolver git/settings ne parvient pas a resoudre la version en environnement Docker. A corriger (bug mineur, non bloquant pour la conformite).
 - **UX CRITIQUE** : Le pipeline strategique a pris **~17 minutes** (1019s) sans aucun feedback visible pour l'utilisateur. L'interface reste sur "generating" sans indication de progression → l'utilisateur croit a un freeze. **Necessite un systeme de feedback temps reel** (progression agents, etape en cours, temps estime). Voir SESSION 9 tache 9.11.
 
@@ -628,7 +639,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : SRE senior + Integration engineer hostile aux effets de bord.
 >
-> ```
+> ```text
 > Tu es un SRE senior qui a vu des "petites integrations" casser des
 > systemes de production. Ton role : verifier que le cablage de
 > SessionEnvelope et PipelineTracker dans le flux reel ne degrade
@@ -703,6 +714,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 7A.7 | Auto-audit contradictoire SESSION 7A | ⬜ | — | Voir prompt ci-dessous |
 
 ### Criteres de validation SESSION 7A
+
 - [ ] Un dossier strategique affiche le bloc "Grille de conformite reglementaire" (5 articles AI Act, statuts honnetes)
 - [ ] Le bloc "Metadonnees techniques" affiche session_id, model_primary, agents, confidence, processing_time reels
 - [ ] La table des sources affiche `source_type_fr` et `reliability_percent` quand disponibles
@@ -717,7 +729,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Auditeur AI Act + Data engineer, zero tolerance pour les metriques decoratives.
 >
-> ```
+> ```text
 > Tu es un binome auditeur AI Act + data engineer. L'auditeur verifie
 > que la grille de conformite est honnete, le data engineer verifie
 > que les metadonnees sont reelles. Ensemble, vous n'acceptez aucune
@@ -816,6 +828,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 - **Perimetre agent** : `agent.number == 0` uniquement (pas d'audit leger repete sur chaque subordonne).
 
 ### Criteres de validation SESSION 7B
+
 - [x] Un prompt classique complexe (ex: "Redige un contrat CDI") : seuil >= 100 mots sur le corps — **couvert par tests unitaires** (E2E prod : 7B.5)
 - [x] Un prompt simple (ex: "Bonjour") n'affiche PAS de bloc audit — **teste** (`test_extension_skips_short_response`)
 - [x] Le flux pipeline strategique : **aucun hook 7B** — correction annexe : **un seul** titre `### Grille de conformite` dans S7A (doublon retire dans `_20_audit_metadata_append`)
@@ -830,7 +843,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Architecte systeme + QA senior, focus regression et UX.
 >
-> ```
+> ```text
 > Tu es un binome architecte systeme + QA senior. L'architecte verifie
 > que le mecanisme d'injection est propre et n'introduit pas de couplage
 > dangereux. Le QA verifie que rien n'est casse.
@@ -896,6 +909,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 8.10 | Verifier zero regression | ✅ | 157 tests passes, 2 tests S6 adaptes au nouveau titre |
 
 ### Criteres de validation SESSION 8
+
 - [x] Rapport complet avec tous les blocs presents et coherents
 - [x] Hashes calcules sur les donnees reelles de la session
 - [x] Signature HMAC-SHA256 verifiable
@@ -908,7 +922,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Cryptographe + Directeur qualite Big Four.
 >
-> ```
+> ```text
 > Tu es un binome cryptographe applique + directeur qualite d'un
 > cabinet d'audit international. Le cryptographe verifie la solidite
 > des primitives crypto, le directeur qualite verifie la structure
@@ -969,6 +983,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 9.13 | Integrer les events de progression avec `PipelineTracker` (S3) : emettre un event a chaque `start_step()` / `complete_step()` | ✅ | Cable dans `strategic_orchestrator.py` (boucle agents + synthese) et `call_subordinate.py` (delegations individuelles). 12 tests unitaires. |
 
 ### Criteres de validation SESSION 9
+
 - [x] Rapport genere automatiquement a chaque fin de session
 - [x] Stocke avec meme ACL que chat.json
 - [x] Export PDF fonctionnel
@@ -984,7 +999,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : SRE senior obsede par la fiabilite + DPO obsede par les fuites de donnees.
 >
-> ```
+> ```text
 > Tu es un binome SRE senior + DPO. Le SRE verifie que rien ne casse
 > en production, le DPO verifie que les donnees d'audit sont protegees.
 >
@@ -1044,6 +1059,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 | 10.8 | Tests + regression | ✅ | 50 tests S10 + 453 total S1-S10, 0 regression |
 
 ### Criteres de validation SESSION 10
+
 - [x] Signature RSA-2048 verifiable par un tiers (RSA-PSS-SHA256, test sign+verify)
 - [x] Rotation des cles fonctionnelle (old key verifiable via registry, test historical key)
 - [x] Rapports accessibles uniquement aux roles autorises (OWNER, DPO, RSSI, COMPLIANCE_OFFICER)
@@ -1055,7 +1071,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer obligatoirement avant de valider cette session.**
 > Persona : Pentester + RSSI, test d'intrusion final avant mise en production.
 >
-> ```
+> ```text
 > Tu es un pentester mandate par le RSSI pour valider la mise en
 > production du systeme de rapport d'audit. Tu cherches a casser
 > chaque garantie de securite annoncee. Si tu y arrives, le systeme
@@ -1094,7 +1110,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 > **Prompt a executer une seule fois, apres que toutes les sessions sont validees.**
 > Persona : Directeur technique + DPO, revue finale avant go-live.
 >
-> ```
+> ```text
 > Tu es le binome DPO + CTO de l'entreprise. Vous faites la revue
 > finale avant de declarer le systeme de rapport d'audit conforme.
 > Vous avez un seul objectif : pourriez-vous presenter ce rapport
@@ -1138,7 +1154,7 @@ Les 5 briques sont solides individuellement (257 tests unitaires passent). Elles
 
 ## Matrice de dependances (v2 — Scenario B)
 
-```
+```text
 PHASE 1 : CONSTRUCTION DES BRIQUES (S1-S5) ✅ FAIT
 SESSION 1 (SessionEnvelope)      ✅
 SESSION 2 (Classification)       ✅
@@ -1255,7 +1271,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | Fichier | Action | Detail |
 |---|---|---|
 | `python/extensions/monologue_start/_03_session_envelope_init.py` | **CREE (S6) + CORRIGE (S6.1)** | Extension `SessionEnvelopeInit` dans `monologue_start` (corrige C1 — etait dans `message_loop_start`). Instancie `SessionEnvelope` avec username, organization, query. Resout le profil humain via `UserManager` (corrige D1). Fail-safe `try/except`. |
-| `python/extensions/monologue_start/_20_audit_metadata_append.py` | **CREE** | Extension `AuditMetadataAppend` : apres hooks pipeline (_10 legal, _15 strategic), hash la response originale (SHA-256), appelle `envelope.complete()`, injecte `SessionEnvelope.to_report_table()` + `PipelineTracker.to_report_table()` dans `_pipeline_final_response`. Resolution cascade tracker : `StrategicResult.pipeline_tracker` → `agent.data["_pipeline_tracker"]`. |
+| `python/extensions/monologue_start/_20_audit_metadata_append.py` | **CREE** | Extension `AuditMetadataAppend` : apres hooks pipeline (_10 legal,_15 strategic), hash la response originale (SHA-256), appelle `envelope.complete()`, injecte `SessionEnvelope.to_report_table()` + `PipelineTracker.to_report_table()` dans `_pipeline_final_response`. Resolution cascade tracker : `StrategicResult.pipeline_tracker` → `agent.data["_pipeline_tracker"]`. |
 | `python/helpers/session_envelope.py` | **MODIFIE (S6.1)** | `to_report_table()` inclut maintenant la ligne "Organisation" (corrige D3). |
 | `python/helpers/extension.py` | **MODIFIE (S6.1)** | Ajout `invalidate_extension_cache()` pour purger le cache (corrige D4). |
 | `tests/test_session6_audit_wiring.py` | **CREE (S6) + ENRICHI (S6.1)** | 40 tests : SessionEnvelopeInit (9), AuditMetadataAppend (11), Integration chain (5), D1 human profile (5), D3 organisation (3), D4 cache (3), C1 placement (3), integration S6.1 (1) |
@@ -1425,6 +1441,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 > 11 ecarts identifies. 2 corriges (E-01 tokens, E-02 version — v1.2.0). 9 restants.
 >
 > **Processus obligatoire par session** :
+>
 > 1. Implementation + tests unitaires
 > 2. Audit parano hostile (relecture contradictoire du diff complet)
 > 3. Correction de tous les defauts identifies
@@ -1473,6 +1490,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 11.9 | **VERIFICATION POST-DEPLOY** | ✅ | — | confidence_score + ai_act_category visibles |
 
 ### Criteres de validation SESSION 11
+
 - [x] `confidence_score` affiche une valeur numerique dans le rapport d'audit strategique
 - [x] `ai_act_category` affiche une categorie reelle (pas `unknown`)
 - [x] Zero regression sur les flux existants
@@ -1484,7 +1502,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 > **Persona** : Architecte securite + auditeur AI Act.
 >
-> ```
+> ```text
 > Tu es un architecte securite senior qui audite le cablage d'une
 > RouteDecision strategique. Ton objectif : verifier que les valeurs
 > affichees dans le rapport sont REELLES, pas decoratives.
@@ -1538,6 +1556,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 12.10 | **VERIFICATION POST-DEPLOY** | ✅ | — | Hash requete + flags dynamiques confirmes |
 
 ### Criteres de validation SESSION 12
+
 - [x] `Hash requete (SHA-256)` affiche `sha256:xxx` (pas `— (pas de requete)`)
 - [x] `has_human_review` resolu dynamiquement
 - [x] `has_consensus` resolu dynamiquement
@@ -1550,7 +1569,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 > **Persona** : DPO + cryptographe, zero tolerance pour les traces manquantes.
 >
-> ```
+> ```text
 > Tu es un DPO senior et un cryptographe applique. Le DPO verifie que
 > chaque requete utilisateur est tracee. Le cryptographe verifie que
 > les hashes sont calcules sur les bonnes donnees.
@@ -1603,6 +1622,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 13.10 | **VERIFICATION POST-DEPLOY** : RSA-PSS-SHA256 actif en prod | ✅ | — | HMAC fallback elimine |
 
 ### Criteres de validation SESSION 13
+
 - [x] `Hash document (SHA-256)` affiche `sha256:xxx` pour les pipelines strategiques
 - [x] `Methode` affiche `RSA-PSS-SHA256 (non-repudiation)` au lieu du fallback HMAC
 - [x] Signature verifiable avec la cle publique
@@ -1614,7 +1634,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 > **Persona** : Pentester + RSSI.
 >
-> ```
+> ```text
 > Tu es un pentester mandate pour valider la crypto en production.
 >
 > 1. RSA KEY SECURITY — Ou est la cle privee ? Permissions du fichier ?
@@ -1660,6 +1680,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 14.10 | **VERIFICATION POST-DEPLOY** : transparence + Art. 13 CONFORME | ✅ | — | |
 
 ### Criteres de validation SESSION 14
+
 - [x] Section "Transparence du raisonnement" presente dans le rapport
 - [x] Langage lisible par un DPO non-technique (pas de jargon code)
 - [x] Aucune information CoT sensible exposee (pas de prompts internes, pas de traces brutes)
@@ -1671,7 +1692,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 > **Persona** : DPO non-technique + juriste AI Act.
 >
-> ```
+> ```text
 > Tu es un DPO qui n'a AUCUNE formation technique et un juriste
 > specialise AI Act. Votre question unique : un citoyen qui demande
 > "comment votre IA a-t-elle produit cette reponse ?" obtient-il
@@ -1716,6 +1737,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 15.10 | **VERIFICATION POST-DEPLOY** : registres + Art. 9/RGPD 30 CONFORME | ✅ | — | |
 
 ### Criteres de validation SESSION 15
+
 - [x] `RiskRegister` genere une grille de risques coherente par domaine
 - [x] `ProcessingRegister` contient toutes les informations Art. 30 RGPD
 - [x] Art. 17 ameliore grace aux metriques de monitoring
@@ -1728,7 +1750,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 
 > **Persona** : Auditeur CNIL + consultant AI Act certifie.
 >
-> ```
+> ```text
 > Tu es un auditeur CNIL mandate pour verifier le registre Art. 30
 > et un consultant certifie AI Act qui verifie les registres Art. 9
 > et Art. 17.
@@ -1775,6 +1797,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 | 16.8 | Verification croisee : GitHub == serveur == rapport == v1.3.0 | ✅ | — | RSA-PSS-SHA256 actif, 10 blocs rapport |
 
 ### Criteres de validation SESSION 16
+
 - [x] 5 rapports E2E complets et conformes (58 tests, 741 total)
 - [x] Audit contradictoire GLOBAL 9/10 ACCEPTE
 - [x] Tous les ecarts E-01 a E-11 corriges (11/11)
@@ -1808,6 +1831,7 @@ Progression lineaire S6→S7→S8→S9→S10. Chaque session cable ET teste en E
 > | Art. 17 AI Act — QMS | ⚠️ PARTIEL (donnees entrainement, procedures correction partielles) |
 >
 > **Prochaines etapes potentielles :**
+>
 > - Art. 14 : horodatage formel des decisions de supervision humaine
 > - Art. 17 : documentation gestion des donnees d'entrainement, procedures de correction automatisees
 > - Audit externe reel (CNIL, ANSSI, cabinet Big Four)
@@ -1842,7 +1866,7 @@ Chaque session contient un bloc **AUTO-AUDIT CONTRADICTOIRE** obligatoire.
 
 ### Format du verdict
 
-```
+```text
 SESSION N — AUTO-AUDIT CONTRADICTOIRE
 Date : YYYY-MM-DD
 Auditeur : [persona utilisee]

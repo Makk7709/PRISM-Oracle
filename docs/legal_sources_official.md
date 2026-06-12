@@ -184,37 +184,40 @@ def compute_content_hash(text: str) -> str:
 
 ### Source non whitelisted
 
-```
+```text
 NonWhitelistedPublisherError: Publisher 'blog_juridique' not in whitelist
 ```
 
 **Cause** : La source provient d'un publisher non autorisé.
 
-**Solution** : 
+**Solution** :
+
 - Utiliser uniquement des sources officielles
 - Ou demander l'ajout du publisher à la whitelist (avec justification)
 
 ### Hash mismatch
 
-```
+```text
 ContractValidationError: SourceNote.excerpt_hash: Hash mismatch: expected abc123, got xyz789
 ```
 
 **Cause** : L'excerpt a été modifié après création de la SourceNote.
 
 **Solution** :
+
 - Recalculer le hash avec l'excerpt actuel
 - Ou recharger l'excerpt depuis la source originale
 
 ### Provenance incomplète
 
-```
+```text
 ContractValidationError: Missing provenance fields: origin_url, license_name
 ```
 
 **Cause** : La provenance n'a pas tous les champs requis.
 
 **Solution** :
+
 - Ajouter les champs manquants
 - Vérifier que la source originale fournit ces informations
 
@@ -254,6 +257,7 @@ article = response.json()
 ## Changelog
 
 ### v1.0.0 (P4)
+
 - Définition de la whitelist publishers (FR + EU)
 - Schéma de provenance étendu
 - Scripts d'ingestion et validation

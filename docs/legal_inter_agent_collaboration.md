@@ -1,3 +1,4 @@
+<!-- cspell:words LEGIARTI echr etat cjue cedh legifrance -->
 # Legal Inter-Agent Collaboration
 
 > **P4** — Contrats et permissions pour la collaboration inter-agents dans le pipeline juridique.
@@ -10,7 +11,7 @@
 
 Les sous-agents ne produisent **jamais** de réponse finale. Ils produisent uniquement des **artefacts structurés** :
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        INTERDIT POUR LES SOUS-AGENTS                     │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -54,6 +55,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 ```
 
 **Contraintes** :
+
 - `facts` non vide (minimum 1)
 - Aucun texte contenant des patterns de "réponse finale"
 
@@ -83,6 +85,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 ```
 
 **Contraintes** :
+
 - `publisher` **doit être dans la whitelist** (voir ci-dessous)
 - `excerpt_hash` doit correspondre au hash SHA256 de `excerpt`
 - `origin_url` doit être une URL valide (http/https)
@@ -107,6 +110,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 ```
 
 **Contraintes** :
+
 - `claim_type` : `cited` ou `hypothesis`
 - Si `cited` → `source_note` **obligatoire** avec publisher whitelisted
 - Si `hypothesis` → `basis_if_hypothesis` **obligatoire**
@@ -134,6 +138,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 ```
 
 **Contraintes** :
+
 - Au moins un élément dans `issues`, `missing_info`, ou `contradictions`
 - `severity` : `low`, `medium`, `high`, ou `critical`
 - `high`/`critical` = bloquant
@@ -143,7 +148,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 ## Publisher Whitelist
 
 | Publisher | Code | Juridiction |
-|-----------|------|-------------|
+| --- | --- | --- |
 | Légifrance | `legifrance` | FR |
 | Cour de cassation | `cour_de_cassation` | FR |
 | Conseil d'État | `conseil_etat` | FR |
@@ -158,7 +163,7 @@ Toute violation de contrat entraîne un **rejet immédiat** avec log.
 
 ## Flux de Données
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                         FLUX INTER-AGENTS                                     │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -247,7 +252,7 @@ detect_final_answer("L'article 1103 dispose que...")  # False
 ### Types d'erreurs
 
 | Exception | Cause | Action |
-|-----------|-------|--------|
+| --- | --- | --- |
 | `ContractValidationError` | Champ manquant/invalide | Log + REFUSAL |
 | `FinalAnswerDetectedError` | Sous-agent produit une réponse | Log + REJECT artifact |
 | `NonWhitelistedPublisherError` | Publisher non autorisé | Log + REJECT source |
@@ -269,6 +274,7 @@ detect_final_answer("L'article 1103 dispose que...")  # False
 ## Changelog
 
 ### v1.0.0 (P4)
+
 - Définition des 4 artefacts : FactExtraction, SourceNote, ClaimProposal, Critique
 - Publisher whitelist (FR + EU)
 - Détection de réponse finale

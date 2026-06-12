@@ -1,7 +1,7 @@
 # Étude de Marché KOREV Evidence — APPROVED (Evidence-Grade)
 
 > ✅ **Ce document illustre une étude de marché conforme aux standards Evidence**
-> 
+>
 > Chaque affirmation est sourcée, chaque projection est basée sur des données vérifiables.
 
 ---
@@ -214,7 +214,7 @@ L'opportunité de marché est validée par les données. Le segment B2B professi
 | Churn estimé | Impact sur LTV | Mesurer dès M3 |
 | Pas de primary research N>50 | Représentativité | Étude quali Q2 |
 
-### Ce document aurait été FAIL_CLOSED si :
+### Ce document aurait été FAIL_CLOSED si
 
 - [ ] ~~Sources totales < 5~~ → 8 sources ✅
 - [ ] ~~Sources publiques < 3~~ → 6 sources publiques ✅

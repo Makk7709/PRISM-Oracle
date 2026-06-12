@@ -2,7 +2,7 @@
 
 ## Statut de la suite de tests
 
-```
+```text
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    PRISM + EVIDENCE — VERIFICATION SUMMARY                     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -33,21 +33,25 @@
 ## Zones NON testées (Gaps identifiés)
 
 ### 1. Tests de charge / Performance
+
 - **Gap**: Pas de test de charge avec 100+ propositions simultanées
 - **Risque**: Medium — Comportement sous charge non validé
 - **Recommandation**: Ajouter benchmark CI
 
 ### 2. Persistance / Recovery
+
 - **Gap**: Pas de test de reprise après crash
 - **Risque**: Low — Dossiers en mémoire uniquement
 - **Recommandation**: Si persistance ajoutée, tester
 
 ### 3. Rate limiting LLM
+
 - **Gap**: Pas de test des limites de rate OpenRouter
 - **Risque**: Low — Géré par timeout
 - **Recommandation**: Mock rate limit 429
 
 ### 4. Consensus avec >3 arbitres
+
 - **Gap**: Tests uniquement avec 3 arbitres
 - **Risque**: Low — Quorum calculé dynamiquement
 - **Recommandation**: Ajouter test avec 5 arbitres
@@ -57,6 +61,7 @@
 ## 3 Tests "Killer" additionnels recommandés
 
 ### Test Killer #1: Adversarial Timing Attack
+
 ```python
 async def test_adversarial_timing():
     """
@@ -82,6 +87,7 @@ assert status["status"] == ConsensusStatus.INFRA_FAILURE
 ```
 
 ### Test Killer #2: Byzantine Arbiter
+
 ```python
 async def test_byzantine_arbiter():
     """
@@ -106,6 +112,7 @@ async def test_byzantine_arbiter():
 ```
 
 ### Test Killer #3: Memory Exhaustion
+
 ```python
 async def test_memory_exhaustion():
     """
@@ -129,6 +136,7 @@ async def test_memory_exhaustion():
 ```
 
 ### Test Performance: Budget Latence
+
 ```python
 async def test_latency_budget():
     """
@@ -190,7 +198,7 @@ python tests/e2e/test_e2e_scenarios.py
 
 ## Verdict final
 
-```
+```text
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   ✅ READY FOR INTERNAL RELEASE                                              ║

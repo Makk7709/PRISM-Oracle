@@ -49,6 +49,7 @@ Conformément à ADR-010 §D7/D8 et au choix de conception validé :
 ## 3. Fichiers modifiés / créés / supprimés
 
 ### Créés
+
 | Fichier | Rôle |
 |---|---|
 | `python/helpers/critical_output.py` | Gate consolidé + signature 9 champs + vérification (cœur ADR-010). |
@@ -61,6 +62,7 @@ Conformément à ADR-010 §D7/D8 et au choix de conception validé :
 | `tests/test_legal_pipeline_signed_output.py` | **(P1-1)** 13 tests (mapping 6 statuts + finalisation legal + anti-tamper + fail-closed + E2E extension réelle). |
 
 ### Modifiés
+
 | Fichier | Changement |
 |---|---|
 | `python/tools/response.py` | Suppression du **code mort** (gate inatteignable + `_create_reliability_warning`) ; câblage du gate consolidé actif ; sortie signée exposée via `Response.additional["signed_output"]`. |
@@ -75,6 +77,7 @@ Conformément à ADR-010 §D7/D8 et au choix de conception validé :
 | `tests/test_observability_logs.py` | Retrait du test du wrapper MCP supprimé ; conserve router/engine. |
 
 ### Supprimés (modules orphelins, 0 appelant production — vérifié)
+
 | Fichier | Justification |
 |---|---|
 | `python/helpers/consensus_integration.py` | `ResearchPipeline` legacy : aucun import production (tests/`__main__` seulement). |
@@ -83,7 +86,8 @@ Conformément à ADR-010 §D7/D8 et au choix de conception validé :
 
 **Bilan diff (phase chat)** : 12 fichiers, +165 / −1407 lignes (net **−1242** : suppression de dette).
 **Ajout P1-1 (chemin legal)** : 2 fichiers créés (`legal_signing.py`, `test_legal_pipeline_signed_output.py`)
-+ 4 fichiers modifiés (`agent.py`, extension legal_safe, `critical_output.py`, docs), sans suppression
+
+- 4 fichiers modifiés (`agent.py`, extension legal_safe, `critical_output.py`, docs), sans suppression
 de comportement métier (le rendu des pipelines existants est conservé, encapsulé par la signature).
 
 ---
@@ -107,6 +111,7 @@ La signature couvre les **9 champs** : `input_hash`, `output_hash`, `consensus_r
 ## 5. Preuves de tests
 
 **Commande exacte :**
+
 ```bash
 EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   .venv-ci311/bin/python -m pytest \
@@ -116,9 +121,11 @@ EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   tests/test_consensus_entrypoint_delegation.py \
   tests/test_observability_logs.py -q
 ```
+
 **Résultat : `22 passed`.**
 
 Régression élargie (consensus + intégrité + criticité) :
+
 ```bash
 EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   .venv-ci311/bin/python -m pytest \
@@ -126,6 +133,7 @@ EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   tests/test_evidence_prism_integration.py tests/test_session8_integrity_renderer.py \
   tests/test_session10_hardening.py tests/test_session13_document_hash_rsa.py -q --timeout=120
 ```
+
 **Résultat : `168 passed`.**
 
 Couverture doctrinale (9 cas exigés) :
@@ -149,10 +157,12 @@ Couverture doctrinale (9 cas exigés) :
 ### Preuves P1-1 — chemin pipeline legal
 
 **Commande exacte :**
+
 ```bash
 EVIDENCE_ENV=development CONSENSUS_SIMULATION=true \
   python3 -m pytest tests/test_legal_pipeline_signed_output.py -q
 ```
+
 **Résultat : `13 passed`.**
 
 | Cas P1-1 | Test | Verdict |

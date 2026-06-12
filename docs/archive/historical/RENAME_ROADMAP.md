@@ -18,9 +18,9 @@
 |-----------|-------------|----------|
 | Documentation (*.md) | ~350 | docs/, agents/, knowledge/ |
 | Code Python (*.py) | ~150 | python/, tests/, tools/ |
-| Configuration (*.json, *.yaml) | ~50 | conf/, mcp_config*.json |
+| Configuration (*.json,*.yaml) | ~50 | conf/, mcp_config*.json |
 | Scripts (*.sh) | ~20 | scripts/, deploy/ |
-| WebUI (*.html, *.js) | ~30 | webui/ |
+| WebUI (*.html,*.js) | ~30 | webui/ |
 
 **Total estimé** : ~600 occurrences (hors logs)
 
@@ -37,34 +37,41 @@
 ## Feuille de Route (7 Étapes)
 
 ### Étape 1: Backup ✅
+
 ```bash
 git stash  # ou commit préalable
 ```
 
 ### Étape 2: Documentation (docs/, agents/, knowledge/)
+
 - Priorité: HAUTE
 - Risque de casse: FAIBLE
 - Fichiers: *.md
 
 ### Étape 3: Tests
+
 - Priorité: HAUTE  
 - Risque de casse: MOYEN (noms de classes, imports)
 - Fichiers: tests/*.py, tests/*.md
 
 ### Étape 4: Code Python (python/helpers/)
+
 - Priorité: CRITIQUE
 - Risque de casse: ÉLEVÉ
 - Validation: Run tests après chaque batch
 
 ### Étape 5: Configuration
+
 - Priorité: MOYENNE
-- Fichiers: *.json, *.yaml, *.yml
+- Fichiers: *.json,*.yaml, *.yml
 
 ### Étape 6: WebUI
+
 - Priorité: MOYENNE
 - Fichiers: webui/*.html, webui/*.js
 
 ### Étape 7: Scripts & Deploy
+
 - Priorité: BASSE
 - Fichiers: scripts/*.sh, deploy/
 

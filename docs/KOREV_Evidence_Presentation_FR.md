@@ -10,6 +10,7 @@
 KOREV Evidence est un **assistant IA multi-agents** conçu pour les professionnels qui ont besoin de réponses fiables et sourcées dans des domaines sensibles : médical, juridique, recherche, finance.
 
 **Ce qu'il fait concrètement :**
+
 - Analyse des documents (PDF, rapports, bilans)
 - Recherche dans des bases de données spécialisées (PubMed, essais cliniques, Arxiv, brevets)
 - Synthèse de littérature avec citations vérifiables
@@ -18,6 +19,7 @@ KOREV Evidence est un **assistant IA multi-agents** conçu pour les professionne
 - Assistance juridique sourcée (droit FR/EU)
 
 **Ce qui le différencie d'un chatbot classique :**
+
 - Chaque affirmation est liée à une source (PMID, article de loi, label FDA)
 - Un système de consensus multi-LLM valide les réponses critiques
 - En cas de doute, le système refuse plutôt que d'inventer (fail-closed)
@@ -54,6 +56,7 @@ KOREV Evidence est un **assistant IA multi-agents** conçu pour les professionne
 **Domaines :** Droit du travail, fiscal, contrats, sociétés, RGPD, consommation
 
 **Ce que KOREV Evidence ne fait PAS en juridique :**
+
 - Rédiger des contrats ou actes juridiques
 - Donner un avis définitif sur un litige
 - Traiter le droit pénal, immigration, famille
@@ -113,12 +116,14 @@ KOREV Evidence est un **assistant IA multi-agents** conçu pour les professionne
 #### Agent Multitask — Orchestrateur intelligent
 
 L'agent multitask est le chef d'orchestre qui :
+
 - **Analyse** chaque requête et détermine le niveau de complexité
 - **Délègue** automatiquement vers l'agent spécialisé approprié
 - **Coordonne** les tâches multi-domaines
 - **Arbitre** en cas de conflit entre priorités
 
 **Classification automatique :**
+
 - Niveau 1 (simple) → réponse directe immédiate
 - Niveau 2 (professionnel) → réponse structurée avec sources
 - Niveau 3 (critique) → délégation + consensus si nécessaire
@@ -198,12 +203,14 @@ KOREV Evidence dispose d'un outil `code_execution` permettant :
 | **Terminal** | Commandes shell, installation de packages, gestion de fichiers |
 
 **Timeouts configurés :**
+
 - Premier output : 30s (code) / 90s (output long)
 - Entre outputs : 15s / 45s
 - Exécution max : 180s / 300s
 
 **Ce que cela permet :**
-```
+
+```bash
 # Installer un outil manquant
 pip install pandas matplotlib
 
@@ -292,6 +299,7 @@ KOREV Evidence peut auditer vos applications :
 | **Mode hors ligne** | Disponible (fonctionnalités limitées) |
 
 **Limites connues :**
+
 - Pas de chiffrement des données au repos vérifié
 - Pas de redaction PII automatique implémentée
 - Logs de session en mémoire (persistance disque non vérifiée)
@@ -306,7 +314,7 @@ KOREV Evidence est un système d'orchestration multi-agents conçu pour les doma
 
 ## Architecture générale
 
-```
+```text
 Requête utilisateur
        │
        ▼
@@ -351,6 +359,7 @@ Requête utilisateur
 | Contexte par agent | Chaque agent a son propre `_context.md` et prompts | Vérifié |
 
 **Agents documentés :**
+
 - `legal_safe` — Analyse juridique FR/EU, sourcing obligatoire
 - `medical` — Raisonnement médical avec schéma claims/citations
 - `researcher`, `finance`, `sales`, `marketing`, `developer`, `hacker`, `default` — Définis par prompts
@@ -368,6 +377,7 @@ Requête utilisateur
 | Fail-closed | NO_CONSENSUS et INFRA_FAILURE ne valident jamais | Vérifié |
 
 **Fonctionnement :**
+
 - Le système interroge plusieurs LLM (arbitres)
 - Chaque arbitre vote indépendamment
 - Le consensus est calculé sur les votes effectifs uniquement
@@ -398,6 +408,7 @@ Requête utilisateur
 | Métriques routeur | Enregistrement des décisions de routage | Partiel |
 
 **Limites :**
+
 - Le routeur déterministe nécessite l'activation du flag `DETERMINISTIC_ROUTER_V2`
 - La détection d'injection dépend du routeur déterministe
 
@@ -413,6 +424,7 @@ Requête utilisateur
 | Claims non sourcés refusés | Les affirmations sans source sont rejetées | Vérifié (tests) |
 
 **Schéma médical :**
+
 ```json
 {
   "claims": [{"statement": "...", "citation": "..."}],
@@ -468,6 +480,7 @@ Requête utilisateur
 | Build local | Dockerfile fourni | Vérifié |
 
 **Commandes de déploiement :**
+
 ```bash
 # Build local
 docker build -f DockerfileLocal -t korev-evidence:local .
@@ -489,6 +502,7 @@ KOREV Evidence dispose d'agents pré-configurés pour différents domaines :
 **Pour qui :** Laboratoires pharma, professionnels de santé, chercheurs biomédicaux
 
 **Capacités :**
+
 - Profils de sécurité complets avec sources (labels, RCTs, FAERS)
 - Efficacité comparée entre traitements
 - Détection de signaux pharmacovigilance (PRR, ROR, IC)
@@ -499,6 +513,7 @@ KOREV Evidence dispose d'agents pré-configurés pour différents domaines :
 **Format de sortie :** JSON structuré avec claims sourcés, grades de preuve (GRADE), confiance
 
 **Garde-fous :**
+
 - Refus automatique des prescriptions personnalisées
 - Détection des urgences médicales → orientation SAMU
 - Signal ≠ causalité systématiquement rappelé
@@ -509,12 +524,14 @@ KOREV Evidence dispose d'agents pré-configurés pour différents domaines :
 **Pour qui :** Entreprises, juristes, particuliers (information générale)
 
 **Capacités :**
+
 - Recherche d'articles de loi (Légifrance)
 - Analyse RGPD et conformité
 - Droit du travail, fiscal, contrats, sociétés FR/EU
 - Classification automatique du niveau de risque
 
 **Limites explicites :**
+
 - Pas de rédaction d'actes (contrats, statuts)
 - Pas d'avis définitif sur litiges
 - Orientation avocat systématique pour cas complexes
@@ -524,6 +541,7 @@ KOREV Evidence dispose d'agents pré-configurés pour différents domaines :
 **Pour qui :** Analystes, chercheurs, consultants
 
 **Capacités :**
+
 - Synthèse de littérature académique multi-sources
 - Analyse de marché et veille concurrentielle
 - Intégration de données hétérogènes
@@ -537,6 +555,7 @@ KOREV Evidence dispose d'agents pré-configurés pour différents domaines :
 **Fonction :** Analyse chaque requête et la route vers l'agent approprié ou répond directement.
 
 **Comportement :**
+
 - Questions simples (définitions, calculs) → réponse immédiate
 - Analyses professionnelles → réponse structurée
 - Cas critiques (litiges, médical) → délégation + consensus
@@ -604,6 +623,7 @@ make audit-smoke
 ```
 
 **Couverture des tests :**
+
 - Tests consensus/quorum : `tests/test_prism_*.py`
 - Tests routeur : `tests/test_router_determinism.py`, `tests/test_injection_handling.py`
 - Tests criticité : `tests/test_criticality_router.py`
@@ -659,6 +679,7 @@ make audit-smoke
 ### Déploiement
 
 **Option 1 : Docker (recommandé)**
+
 ```bash
 # Build
 docker build -f DockerfileLocal -t korev-evidence:local .
@@ -668,6 +689,7 @@ docker compose -f deploy/docker-compose.yml up -d
 ```
 
 **Option 2 : Local (développement)**
+
 ```bash
 # Installation
 python -m venv venv
@@ -706,7 +728,7 @@ python run_ui.py
 
 ### Domaine médical
 
-```
+```text
 "Profil de sécurité cardiovasculaire du semaglutide avec sources PMID"
 
 "Compare l'efficacité des anti-IL17 vs anti-IL23 dans le psoriasis modéré à sévère"
@@ -718,7 +740,7 @@ python run_ui.py
 
 ### Domaine juridique
 
-```
+```text
 "Quelles sont les obligations RGPD pour un site e-commerce B2C en France ?"
 
 "Délai de prescription pour un licenciement abusif en France"
@@ -728,7 +750,7 @@ python run_ui.py
 
 ### Recherche
 
-```
+```text
 "État de l'art sur les transformers en NLP, papers 2023-2024 avec citations"
 
 "Landscape des startups en quantum computing, levées de fonds 2024"
@@ -738,7 +760,7 @@ python run_ui.py
 
 ### Marketing & Sales (PME)
 
-```
+```text
 "Crée-moi une séquence de prospection email B2B pour vendre un SaaS de facturation"
 
 "Rédige 10 posts LinkedIn engageants pour un cabinet de conseil RH"
@@ -752,7 +774,7 @@ python run_ui.py
 
 ### Finance & Stratégie
 
-```
+```text
 "Modélise un DCF pour une startup SaaS avec 500k ARR et 30% de croissance"
 
 "Market sizing TAM/SAM/SOM pour le marché français de la foodtech"
@@ -764,7 +786,7 @@ python run_ui.py
 
 ### Développement & Tech
 
-```
+```text
 "Crée une API REST en FastAPI avec auth JWT, PostgreSQL et Docker"
 
 "Refactorise ce code Python pour améliorer la performance"
@@ -778,7 +800,7 @@ python run_ui.py
 
 ### Automatisation & Terminal
 
-```
+```text
 "Télécharge les données de ce site et crée un rapport PDF"
 
 "Clone ce repo, installe les dépendances et lance les tests"

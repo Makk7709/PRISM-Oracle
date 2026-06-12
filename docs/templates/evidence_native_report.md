@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD056 -- les placeholders {LOW|MEDIUM|HIGH} contiennent des pipes que le linter compte comme des colonnes de tableau -->
 # KOREV Evidence — Template Rapport Evidence-Native
 
 > **Version**: 1.0.0  
@@ -147,7 +148,7 @@ Les tables marquées `[REQUIRED]` doivent contenir **au moins une entrée**.
 
 ### Matrice de criticité
 
-```
+```text
                         IMPACT
                 LOW    MEDIUM    HIGH    CRITICAL
 PROBABILITÉ  ┌─────────────────────────────────────┐
@@ -205,7 +206,7 @@ L=Low, M=Medium, H=High, C=Critical
 
 ### Vue d'ensemble
 
-```
+```json
 {SCHÉMA_ARCHITECTURE_ASCII}
 ```
 
@@ -263,7 +264,7 @@ L=Low, M=Medium, H=High, C=Critical
 
 ### Diagramme de Gantt simplifié
 
-```
+```text
 Semaine     1  2  3  4  5  6  7  8  9  10 11 12
 Phase 1     ████████████
 Phase 2                 ████████████
@@ -272,7 +273,7 @@ Phase 3                             ████████████
 
 ### Dépendances critiques
 
-```
+```json
 {ACTION_1} ──► {ACTION_3} ──► {ACTION_5}
     │              │
     └──► {ACTION_2}├──► {ACTION_4} ──► {ACTION_6}
@@ -342,11 +343,13 @@ Phase 3                             ████████████
 ### Avertissements
 
 ⚠️ **Ce rapport ne constitue pas** :
+
 - Un audit de conformité certifié
 - Un conseil juridique
 - Une garantie de sécurité
 
 ⚠️ **Conditions de validité** :
+
 - Les hypothèses listées en section C doivent rester vraies
 - Le contexte client doit correspondre au périmètre défini
 - Les informations fournies doivent être exactes et à jour

@@ -25,6 +25,7 @@
 ## Qu'est-ce que KOREV Evidence ?
 
 KOREV Evidence est un assistant IA avancé conçu pour vous aider dans vos tâches quotidiennes. Il peut :
+
 - Rechercher des informations scientifiques et académiques (via 10+ serveurs MCP spécialisés)
 - Analyser des documents PDF et effectuer de l'OCR
 - Générer et assembler des rapports PDF
@@ -68,7 +69,7 @@ KOREV Evidence est un assistant IA avancé conçu pour vous aider dans vos tâch
 
 ## Architecture
 
-```
+```text
 Internet / LAN
       │
   [ Caddy ]  ← Reverse proxy (HTTPS, headers sécurité)
@@ -104,7 +105,7 @@ docker compose version
 
 ### Sur Windows / Mac (poste local)
 
-1. Téléchargez Docker Desktop : **https://www.docker.com/products/docker-desktop/**
+1. Téléchargez Docker Desktop : **<https://www.docker.com/products/docker-desktop/>**
 2. Installez et lancez Docker Desktop
 3. **Important** : dans Settings > Resources, allouez au minimum **8 Go de RAM**
 
@@ -130,6 +131,7 @@ cd PRISM-Oracle
 ### Option B : Depuis une archive
 
 Décompressez l'archive fournie :
+
 ```bash
 tar xzf korev-evidence-v1.0.0.tar.gz
 cd korev-evidence
@@ -137,7 +139,7 @@ cd korev-evidence
 
 ### Structure du dossier
 
-```
+```text
 PRISM-Oracle/                          ← Dossier racine du projet
 ├── deploy/
 │   ├── Dockerfile.backend             ← Image Docker backend
@@ -197,7 +199,7 @@ Par défaut, Caddy écoute en HTTP sur le port 80. Pour activer HTTPS :
 1. Associez un nom de domaine à l'IP de votre serveur (DNS A record)
 2. Éditez `deploy/config/Caddyfile` — remplacez la première ligne :
 
-```
+```text
 # Avant (HTTP uniquement) :
 :80 {
 
@@ -245,6 +247,7 @@ scripts\install-windows.bat
 ```
 
 Le script gère automatiquement :
+
 - Vérification des prérequis (Docker, ports, espace disque)
 - Initialisation des sous-modules MCP (Semantic Scholar, OpenAlex)
 - Validation du fichier `.env` et des clés API
@@ -271,7 +274,7 @@ docker compose logs -f evidence-backend
 
 **Vérifier les serveurs MCP** (dans les logs) :
 
-```
+```json
 [entrypoint] ✓ Production MCP config installed
 [entrypoint] ✓ uvx: mcp-server-fetch ready
 [entrypoint] ✓ uvx: arxiv-mcp-server ready
@@ -292,7 +295,7 @@ docker compose up -d evidence-backend evidence-caddy
 
 ### Résultat attendu
 
-```
+```text
 NAME                STATUS              PORTS
 evidence-backend    Up (healthy)        5050/tcp
 evidence-caddy      Up (healthy)        0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
@@ -311,16 +314,19 @@ Accédez à l'interface : **http://VOTRE_IP** (ou **https://VOTRE_DOMAINE** si H
 ### Python 3.11+
 
 **Windows :**
-1. Téléchargez sur **https://www.python.org/downloads/**
+
+1. Téléchargez sur **<https://www.python.org/downloads/>**
 2. **IMPORTANT** : Cochez **"Add Python to PATH"**
 3. Installez
 
 **Mac :**
+
 ```bash
 brew install python@3.11
 ```
 
 **Ubuntu / Debian :**
+
 ```bash
 sudo apt update && sudo apt install -y python3.11 python3.11-venv
 ```
@@ -339,6 +345,7 @@ sudo apt install -y nodejs
 ### Dépendances système (PDF, OCR, images)
 
 **Ubuntu / Debian :**
+
 ```bash
 sudo apt install -y \
     tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
@@ -349,12 +356,14 @@ sudo apt install -y \
 ```
 
 **Mac :**
+
 ```bash
 brew install tesseract pango cairo poppler
 ```
 
 **Windows :**
-- Installez Tesseract OCR depuis **https://github.com/UB-Mannheim/tesseract/wiki**
+
+- Installez Tesseract OCR depuis **<https://github.com/UB-Mannheim/tesseract/wiki>**
 - Les dépendances WeasyPrint sont incluses via pip
 
 > Sans ces dépendances, la génération de PDF et l'OCR ne fonctionneront pas.
@@ -380,7 +389,7 @@ cp .env.example .env
 python run_ui.py
 ```
 
-Accédez à **http://localhost:5050**
+Accédez à **<http://localhost:5050>**
 
 ---
 
@@ -392,23 +401,26 @@ Evidence utilise **OpenRouter** comme fournisseur principal pour accéder à tou
 
 ### Clé OpenRouter (REQUISE)
 
-1. Allez sur **https://openrouter.ai/**
+1. Allez sur **<https://openrouter.ai/>**
 2. Créez un compte ou connectez-vous
 3. Allez dans **Keys** (menu en haut)
 4. Cliquez sur **"Create Key"**
 5. Copiez la clé (commence par `sk-or-v1-...`)
 6. Collez-la dans `.env` :
-   ```
+
+   ```text
    API_KEY_OPENROUTER=sk-or-v1-votre-cle-ici
    ```
 
 ### Clé OpenAI (OPTIONNEL)
 
 Pour la génération d'images (GPT-Image, DALL-E) :
-1. Allez sur **https://platform.openai.com/api-keys**
+
+1. Allez sur **<https://platform.openai.com/api-keys>**
 2. Créez une clé
 3. Collez-la dans `.env` :
-   ```
+
+   ```text
    API_KEY_OPENAI=sk-votre-cle-ici
    ```
 
@@ -418,10 +430,10 @@ Ces clés enrichissent les capacités de recherche d'Evidence (voir [Section 6](
 
 | Service | Lien inscription | Quota gratuit |
 |---------|-----------------|---------------|
-| **Firecrawl** | https://www.firecrawl.dev | 500 crédits |
-| **Tavily** | https://tavily.com | 1 000 req/mois |
-| **Brave Search** | https://brave.com/search/api | 2 000 req/mois |
-| **PubMed (NCBI)** | https://www.ncbi.nlm.nih.gov/account/settings | Illimité |
+| **Firecrawl** | <https://www.firecrawl.dev> | 500 crédits |
+| **Tavily** | <https://tavily.com> | 1 000 req/mois |
+| **Brave Search** | <https://brave.com/search/api> | 2 000 req/mois |
+| **PubMed (NCBI)** | <https://www.ncbi.nlm.nih.gov/account/settings> | Illimité |
 
 ---
 
@@ -463,6 +475,7 @@ NCBI_API_KEY=xxxxxxxxxxxxxxxx
 ```
 
 Après modification, redémarrez le backend :
+
 ```bash
 cd PRISM-Oracle/deploy
 docker compose restart evidence-backend
@@ -491,8 +504,8 @@ Au démarrage du container Docker, le script `docker-entrypoint.sh` :
 | Méthode | URL |
 |---------|-----|
 | Docker (serveur) | **http://VOTRE_IP** ou **https://VOTRE_DOMAINE** |
-| Docker (local) | **http://localhost** |
-| Locale | **http://localhost:5050** |
+| Docker (local) | **<http://localhost>** |
+| Locale | **<http://localhost:5050>** |
 
 3. Connectez-vous avec les identifiants configurés dans `.env` (`AUTH_LOGIN` / `AUTH_PASSWORD`) ou dans `users.json` (mode multi-utilisateur)
 
@@ -510,6 +523,7 @@ Au démarrage du container Docker, le script `docker-entrypoint.sh` :
 ## Écran d'accueil
 
 Vous devriez voir l'interface **KOREV Evidence** avec :
+
 - Le logo et le titre "KOREV Evidence"
 - Un champ pour taper vos questions
 - La barre latérale avec les conversations
@@ -518,7 +532,8 @@ Vous devriez voir l'interface **KOREV Evidence** avec :
 ## Premier test
 
 Tapez une question :
-```
+
+```text
 Bonjour, peux-tu te présenter ?
 ```
 
@@ -548,19 +563,21 @@ python run_ui.py
 ## Arrêter Evidence
 
 ### Docker
+
 ```bash
 cd PRISM-Oracle/deploy
 docker compose down
 ```
 
 ### Local
+
 - Appuyez sur **Ctrl + C** dans le terminal
 
 ---
 
 # 9. Mise à jour
 
-### Mode Docker
+## Mode Docker
 
 ```bash
 # Depuis la racine du projet
@@ -573,7 +590,7 @@ git pull
 
 > Les données (conversations, fichiers uploadés, images générées, mémoire de l'agent) sont persistées dans des volumes Docker. La mise à jour ne supprime rien.
 
-### Mode Local
+## Mode Local
 
 ```bash
 cd PRISM-Oracle
@@ -591,15 +608,19 @@ pip install -r requirements.txt --upgrade
 ### "Cannot connect to the Docker daemon"
 
 **Solution :**
+
 1. Lancez Docker Desktop (local) ou le service Docker (serveur) :
+
    ```bash
    sudo systemctl start docker
    ```
+
 2. Vérifiez : `docker info`
 
 ### Le conteneur ne démarre pas
 
 **Solution :**
+
 ```bash
 # Consulter les logs
 docker compose logs evidence-backend
@@ -616,12 +637,14 @@ docker compose up -d
 ### Build échoue avec "cannot allocate memory"
 
 **Solution :**
+
 - Serveur : vérifiez `free -h`, minimum 4 Go disponibles pendant le build
 - Docker Desktop : Settings > Resources > augmenter la mémoire à 8 Go+
 
 ### L'interface ne charge pas
 
 **Solution :**
+
 1. Vérifiez les conteneurs : `docker compose ps`
 2. Attendez 180 secondes (le backend a un `start_period` de 180s)
 3. Testez le health check : `curl http://localhost/healthz`
@@ -643,11 +666,13 @@ docker compose logs --tail=100 evidence-caddy
 ### Les serveurs MCP ne se lancent pas
 
 **Vérification :**
+
 ```bash
 docker compose logs evidence-backend | grep -i "MCP\|entrypoint"
 ```
 
 **Causes courantes :**
+
 - `MCP config loaded: 0 servers` → Le fichier `mcp_config.json` est vide ou corrompu. L'entrypoint devrait installer la config production automatiquement. Vérifiez que `deploy/mcp_config.production.json` existe.
 - `uvx: command not found` → Le package `uv` n'est pas installé dans l'image Docker. Reconstruisez : `docker compose build --no-cache evidence-backend`
 - `Semantic Scholar MCP: server.py not found` → Les sous-modules MCP n'ont pas été initialisés. Exécutez `git submodule update --init --recursive` depuis la racine du projet et reconstruisez.
@@ -655,6 +680,7 @@ docker compose logs evidence-backend | grep -i "MCP\|entrypoint"
 ### Un serveur MCP spécifique ne répond pas
 
 **Solution :**
+
 1. Vérifiez que la clé API est configurée dans `deploy/.env` (Firecrawl, Tavily, Brave, PubMed)
 2. Le premier appel à un serveur npx peut prendre 30 secondes (téléchargement du package)
 3. Redémarrez le backend : `docker compose restart evidence-backend`
@@ -664,6 +690,7 @@ docker compose logs evidence-backend | grep -i "MCP\|entrypoint"
 ### "Erreur de clé API"
 
 **Solution :**
+
 1. Vérifiez la clé dans `.env` (pas d'espaces, pas de guillemets)
 2. Vérifiez votre crédit sur le compte OpenRouter/OpenAI
 3. Relancez après modification : `docker compose restart evidence-backend`
@@ -675,6 +702,7 @@ docker compose logs evidence-backend | grep -i "MCP\|entrypoint"
 ### Mes données ont disparu après un redémarrage
 
 Les données sont stockées dans des volumes Docker persistants. Vérifiez qu'ils existent :
+
 ```bash
 docker volume ls | grep evidence
 ```
@@ -690,6 +718,7 @@ Volumes attendus : `evidence-data`, `evidence-logs`, `evidence-audit`, `evidence
 ## Informations à fournir
 
 En cas de problème :
+
 1. Système d'exploitation et version
 2. Méthode d'installation (Docker ou locale)
 3. Sortie de `docker compose ps` et `docker compose logs --tail=50 evidence-backend`
@@ -719,7 +748,7 @@ docker volume ls | grep evidence
 
 ## Contact
 
-- **Email** : support@korev.ai
+- **Email** : <support@korev.ai>
 
 ---
 

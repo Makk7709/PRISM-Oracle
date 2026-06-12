@@ -45,7 +45,7 @@ C'est un système multi-agents composé de **12 agents spécialisés** (juridiqu
 
 ## 1.2. Architecture technique
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                        SERVEUR CENTRAL                            │
 │                                                                  │
@@ -112,7 +112,7 @@ C'est un système multi-agents composé de **12 agents spécialisés** (juridiqu
 
 ### Option A — Production recommandée (`deploy/`)
 
-```
+```text
 Serveur entreprise (Linux ou Windows Server)
 ├── Docker Compose (deploy/)
 │   ├── evidence-backend  (Flask, Python 3.11 + Node.js, port interne 5050)
@@ -137,7 +137,7 @@ Serveur entreprise (Linux ou Windows Server)
 
 ### Option B — Développement / test rapide (`docker/run/`)
 
-```
+```text
 Serveur
 ├── Docker Compose (docker/run/)
 │   └── korev-evidence (tout-en-un, port 50080 sur l'hôte)
@@ -179,7 +179,7 @@ Accès → http://<IP_SERVEUR>:50080/
 
 ## 3.1. Checklist serveur
 
-```
+```text
 □  Le serveur est allumé et accessible en SSH ou RDP
 □  L'OS est à jour (apt update && apt upgrade ou Windows Update)
 □  Le serveur a une IP fixe sur le réseau local (ex: 192.168.1.100)
@@ -194,7 +194,7 @@ Accès → http://<IP_SERVEUR>:50080/
 
 ## 3.2. Checklist réseau
 
-```
+```text
 □  Les 7 postes Windows peuvent pinger l'IP du serveur
 □  Le DNS local peut résoudre un nom (ex: evidence.local) vers l'IP serveur
      OU les postes utiliseront directement l'IP (http://192.168.1.100)
@@ -214,7 +214,7 @@ Accès → http://<IP_SERVEUR>:50080/
 **KOREV Evidence nécessite au minimum UNE clé API de modèle IA.**
 Le donneur d'ordre (le client) doit fournir :
 
-```
+```text
 □  Clé API OpenRouter (OBLIGATOIRE) — https://openrouter.ai/keys
      Format : sk-or-v1-xxxxxxxxxxxx
      Coût estimé : ~50-200€/mois selon l'usage
@@ -398,6 +398,7 @@ docker compose logs -f --tail=50
 ```
 
 > **Architecture Docker :**
+>
 > - `evidence-backend` : Flask + WebUI + MCP (port interne 5050, **non exposé**)
 > - `evidence-caddy` : Reverse proxy Caddy (ports **80/443** exposés sur le LAN)
 > - Les postes accèdent à `http://<IP_SERVEUR>/` (port 80, standard)
@@ -536,6 +537,7 @@ python3 -c "from python.security.auth import hash_password; print(hash_password(
 ```
 
 > **Rôles :**
+>
 > - `user` : accès à son workspace + dossier commun uniquement. **Pas d'accès aux paramètres système** (clés API, modèles IA, configuration MCP).
 > - `admin` : accès à TOUS les workspaces + gestion des utilisateurs + **accès exclusif aux paramètres système** (bouton "Paramètres" visible uniquement pour les admin).
 
@@ -615,7 +617,7 @@ docker compose ps
 
 Après le premier login de chaque utilisateur, la structure suivante est automatiquement créée :
 
-```
+```text
 /app/shared/                      (volume Docker evidence-shared)
 ├── users/
 │   ├── nicolas/
@@ -651,12 +653,14 @@ Après le premier login de chaque utilisateur, la structure suivante est automat
 | **amine** (admin) | Lecture + Écriture | Lecture + Écriture (tous) | Lecture + Écriture | Oui |
 
 > **Sécurité :** L'isolation est appliquée à DEUX niveaux :
+>
 > 1. **Côté Evidence (Python)** : le `WorkspaceManager` valide chaque accès fichier et rejette les tentatives de traversée de répertoire (`../`, symlinks, etc.)
 > 2. **Côté Samba (SMB)** : chaque partage réseau est restreint par utilisateur Samba
 
 ## 6.3. Mode mono-utilisateur (fallback)
 
 Si `users.json` n'existe PAS, Evidence fonctionne comme avant :
+
 - Un seul couple `AUTH_LOGIN`/`AUTH_PASSWORD` défini dans `.env`
 - Pas de workspace par utilisateur
 - Pas de dossier partagé
@@ -720,7 +724,8 @@ Les MCP (Model Context Protocol) servers sont des connecteurs de recherche. Ils 
 | `puppeteer` | Automatisation navigateur | Chromium |
 
 **Vérification :** après le démarrage, les logs doivent afficher :
-```
+
+```text
 ✓ MCP config loaded from .../mcp_config.json: 11 servers
 MCPClientBase (web_fetch): Tools updated. Found 1 tools.
 MCPClientBase (arxiv_papers): Tools updated. Found 4 tools.
@@ -735,7 +740,7 @@ MCPClientBase (semantic_scholar): Tools updated. Found 12 tools.
 
 Ouvrir le chat Evidence et taper :
 
-```
+```text
 Bonjour, quel est ton nom et quels agents sont disponibles ?
 ```
 
@@ -743,7 +748,7 @@ Bonjour, quel est ton nom et quels agents sont disponibles ?
 
 ## 8.2. Test de recherche (MCP)
 
-```
+```text
 Recherche les 3 derniers articles sur l'IA générative dans la santé sur ArXiv
 ```
 
@@ -751,7 +756,7 @@ Recherche les 3 derniers articles sur l'IA générative dans la santé sur ArXiv
 
 ## 8.3. Test d'exécution Python
 
-```
+```text
 Écris un script Python qui génère un graphique de la fonction sinus et sauvegarde-le
 ```
 
@@ -759,7 +764,7 @@ Recherche les 3 derniers articles sur l'IA générative dans la santé sur ArXiv
 
 ## 8.4. Test de génération PDF
 
-```
+```text
 Rédige un rapport de 2 pages sur les avantages de l'IA en entreprise et génère-le en PDF
 ```
 
@@ -829,6 +834,7 @@ Rédige un rapport de 2 pages sur les avantages de l'IA en entreprise et génèr
 **Les postes Windows n'ont RIEN à installer.**
 KOREV Evidence est une application web servie par le serveur central.
 Les utilisateurs accèdent via :
+
 1. **Un navigateur web** (Chrome/Edge) pour l'interface IA Evidence
 2. **Un lecteur réseau SMB** (M:\ et N:\) pour leurs dossiers personnels et le dossier commun
 
@@ -836,7 +842,7 @@ Les utilisateurs accèdent via :
 
 ### Étape 1 — Vérifier la connectivité
 
-```
+```text
 # Ouvrir CMD ou PowerShell sur le poste Windows
 ping 192.168.1.100
 # (remplacer par l'IP réelle du serveur)
@@ -895,7 +901,7 @@ ping 192.168.1.100
 
 #### Vérification rapide
 
-```
+```text
 # Sur le poste, ouvrir CMD :
 dir M:\documents
 # Résultat attendu : le dossier est vide (ou contient les fichiers déjà déposés)
@@ -908,7 +914,7 @@ dir N:\
 
 Si le DNS local n'est pas configuré, ajouter l'entrée manuellement :
 
-```
+```text
 # Ouvrir le Bloc-notes en tant qu'administrateur
 # Fichier → Ouvrir → C:\Windows\System32\drivers\etc\hosts
 
@@ -930,7 +936,7 @@ Ensuite les utilisateurs accèdent à `http://evidence.local` (deploy/ avec Cadd
 
 Pour une expérience optimale, vérifier sur chaque poste :
 
-```
+```text
 □  Chrome/Edge est à jour (version 120+)
 □  Pas de bloqueur de publicité interférant avec Evidence
 □  Le zoom du navigateur est à 100%
@@ -1004,6 +1010,7 @@ Write-Host "  Login : $Username"
 ```
 
 **Utilisation :**
+
 ```powershell
 # En tant qu'administrateur sur le poste de Nicolas
 .\deploy_evidence_workstation.ps1 -ServerIP "192.168.1.100" -Username "nicolas" -Password "MotDePasseNicolas2026!"
@@ -1068,7 +1075,7 @@ L'authentification multi-utilisateurs est configurée via `deploy/users.json` (v
 
 Chaque mot de passe est stocké en **Argon2id** (hachage cryptographique, jamais en clair).
 
-```
+```text
 Résumé de la configuration :
   - deploy/users.json     → comptes Evidence (hash Argon2)
   - deploy/.env           → comptes Samba (plaintext, exigé par Samba)
@@ -1246,7 +1253,7 @@ docker exec evidence-backend du -sh /app/shared/users/*/
 
 ## 12.1. Structure des fichiers
 
-```
+```text
 /opt/korev-evidence/
 ├── .env.example                   # Template configuration (à la racine)
 ├── run_ui.py                      # Point d'entrée du serveur Flask
@@ -1337,6 +1344,7 @@ docker exec evidence-backend du -sh /app/shared/users/*/
 | `role` | `user` = accès à son workspace + commun (pas de paramètres). `admin` = accès à tout + paramètres système |
 
 **Générer un hash :**
+
 ```bash
 python3 -c "from python.security.auth import hash_password; print(hash_password('MonMotDePasse'))"
 ```
@@ -1356,6 +1364,7 @@ En cas de problème non résolu par ce guide :
 **Classification : CONFIDENTIEL — Prestataires uniquement**
 
 **Changelog v3.0 (2026-03-31) :**
+
 - Isolation multi-tenant par organisation (organization_uuid canonical, normalisation case-insensitive)
 - 12 agents spécialisés (ajout : legal_drafting_guarded, hacker)
 - Pipeline rédaction contractuelle (Act Leak Guard, Gate fail-closed, templates CP/CG + 6 annexes)
@@ -1372,10 +1381,12 @@ En cas de problème non résolu par ce guide :
 - Deterministic Router v2 (routage policy-driven, anti-injection, 40+ keywords board-level)
 
 **Changelog v2.1 :**
+
 - Accès aux paramètres système réservé au rôle `admin` (frontend + backend 403)
 - Documentation des rôles mise à jour (user vs admin)
 
 **Changelog v2.0 :**
+
 - Ajout du système multi-utilisateurs (`users.json`, `UserManager`, `WorkspaceManager`)
 - Ajout du partage SMB (container Samba) pour les dossiers par utilisateur
 - Ajout de l'isolation stricte des workspaces (audit trail, protection path traversal)

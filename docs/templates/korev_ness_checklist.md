@@ -9,8 +9,10 @@
 ## Critères obligatoires (Core)
 
 ### 1. Decision Governance Block
+
 **Question**: Le rapport contient-il un bloc de gouvernance en en-tête?  
 **Vérification**:
+
 - [ ] Criticité explicite (LOW/MEDIUM/HIGH)
 - [ ] Mode de validation (SINGLE/DEBATE/CONSENSUS)
 - [ ] Quorum spécifié (2/3 votes effectifs)
@@ -22,8 +24,10 @@
 ---
 
 ### 2. Registre des Risques (Threat Model)
+
 **Question**: Chaque recommandation est-elle liée à un risque identifié?  
 **Vérification**:
+
 - [ ] Table des risques avec ID unique
 - [ ] Impact et probabilité pour chaque risque
 - [ ] Score de criticité calculé
@@ -34,8 +38,10 @@
 ---
 
 ### 3. Alternatives Écartées
+
 **Question**: Les décisions structurantes montrent-elles les options rejetées?  
 **Vérification**:
+
 - [ ] Au moins 2 alternatives par décision structurante
 - [ ] Avantages/inconvénients de chaque option
 - [ ] Raison explicite du rejet
@@ -45,8 +51,10 @@
 ---
 
 ### 4. Hypothèses Explicites
+
 **Question**: Les hypothèses sur lesquelles repose l'analyse sont-elles listées?  
 **Vérification**:
+
 - [ ] Table des hypothèses avec ID
 - [ ] Impact si l'hypothèse est fausse
 - [ ] Indication si vérifiable
@@ -56,8 +64,10 @@
 ---
 
 ### 5. Badges de Confiance
+
 **Question**: Chaque affirmation a-t-elle un badge de confiance?  
 **Vérification**:
+
 - [ ] Badges VERIFIED/PARTIAL/UNVERIFIED présents
 - [ ] Aucune affirmation critique sans badge
 - [ ] Définition des badges en annexe
@@ -69,8 +79,10 @@
 ## Critères différenciants (Evidence-native)
 
 ### 6. Preuves & Vérification
+
 **Question**: Les commandes de vérification sont-elles fournies?  
 **Vérification**:
+
 - [ ] Section "Preuves & Vérification" présente
 - [ ] Commandes reproductibles (make/pytest)
 - [ ] Résultats attendus documentés
@@ -81,8 +93,10 @@
 ---
 
 ### 7. FAIL_CLOSED Appliqué
+
 **Question**: Le rapport refuse-t-il de conclure sur les points incertains?  
 **Vérification**:
+
 - [ ] Section "Limites & FAIL_CLOSED" présente
 - [ ] Points FAIL_CLOSED listés avec raisons
 - [ ] Informations manquantes identifiées
@@ -93,8 +107,10 @@
 ---
 
 ### 8. Traçabilité Claims → Sources
+
 **Question**: Chaque claim est-il relié à une source?  
 **Vérification**:
+
 - [ ] Table des sources avec fiabilité
 - [ ] Lien claim → source ID
 - [ ] Claims non sourcés marqués UNVERIFIED
@@ -104,8 +120,10 @@
 ---
 
 ### 9. Plan Actionnable (30/60/90)
+
 **Question**: Le plan de mise en œuvre est-il structuré et priorisé?  
 **Vérification**:
+
 - [ ] Phases 30/60/90 jours définies
 - [ ] Actions avec responsables
 - [ ] Dépendances identifiées
@@ -116,8 +134,10 @@
 ---
 
 ### 10. Périmètre IN/OUT Explicite
+
 **Question**: Le périmètre est-il clairement délimité?  
 **Vérification**:
+
 - [ ] Section "Contexte & Périmètre" présente
 - [ ] Liste IN (ce qui est inclus)
 - [ ] Liste OUT (ce qui est exclu)
@@ -162,7 +182,7 @@ python -m python.helpers.reporting.evidence_native validate path/to/report.md
 
 ## Exemple de scoring
 
-```
+```text
 Rapport "Architecture SI Plialpes"
 ────────────────────────────────────
 □ Decision Governance Block     [0] - ABSENT

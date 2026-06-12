@@ -5,7 +5,7 @@ Guide complet pour l'ingestion des données juridiques françaises dans KOREV Ev
 **Version**: `legal_sources@v1.0-enterprise`
 
 > **AVERTISSEMENT IMPORTANT**
-> 
+>
 > **Ce module garantit la provenance et la traçabilité des sources, pas l'exhaustivité ni l'interprétation juridique.**
 >
 > Le droit opposable n'est authentifié que sur les sites officiels.
@@ -22,7 +22,7 @@ Guide complet pour l'ingestion des données juridiques françaises dans KOREV Ev
 
 Pour accéder aux APIs Légifrance et Judilibre, vous devez :
 
-1. Créer un compte sur https://piste.gouv.fr
+1. Créer un compte sur <https://piste.gouv.fr>
 2. Accepter les CGU des APIs souhaitées
 3. Créer un projet et obtenir vos credentials
 
@@ -75,7 +75,7 @@ python -m legal_sources stats
 
 ### Répertoires
 
-```
+```text
 data/legal/
 ├── raw/           # Fichiers téléchargés bruts (cache)
 ├── processed/     # Documents normalisés (LegalDoc)
@@ -168,6 +168,7 @@ python -m legal_sources verify
 ```
 
 Vérifie :
+
 - Stabilité des doc_id et chunk_id
 - Complétude des provenances
 - Cohérence des données
@@ -210,6 +211,7 @@ print(audit["citations"])
 ### Recherche
 
 Les chunks sont indexés avec :
+
 - Texte pour recherche sémantique (embeddings)
 - Métadonnées pour recherche lexicale (source, date, type)
 - Citation et pinpoint pour référence précise

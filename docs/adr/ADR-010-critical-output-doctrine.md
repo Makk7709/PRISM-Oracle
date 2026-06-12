@@ -31,12 +31,14 @@ ADR-009 a explicitement reporté l'arbitrage fail-closed/fail-soft à une « Tra
 ## Décision — Doctrine de sortie critique
 
 ### D1 — Routage obligatoire
+
 Toute requête est évaluée par `criticality_router.assess(...)`. Le `criticality_level` et le booléen
 `consensus_required` produits sont **autoritatifs** et propagés jusqu'à la finalisation de la sortie.
 Il existe **une seule** source de vérité pour `consensus_required` (le router) ; les déclencheurs
 spécifiques (legal_pipeline) doivent **converger** vers cette source, pas la dupliquer.
 
 **Taxonomie de criticité (champ explicite `CriticalityAssessment.level`, ajout 2026-06-01) :**
+
 - **LEVEL 1** — requête simple (définition, résumé, météo, calcul) : jamais de consensus, *sauf opt-in
   explicite de l'utilisateur*.
 - **LEVEL 2** — zone professionnelle (analyse, comparaison, conseil) : **pas** de consensus par défaut,
@@ -52,24 +54,28 @@ fail-closed des sorties critiques (le gate `critical_output` continue de s'appuy
 `requires_consensus`, pas sur le label `level`).
 
 ### D2 — Consensus obligatoire si requis
+
 Si `consensus_required = true`, un `consensus_result` **valide** (statut terminal `APPROVED` /
 `REJECTED` / `NO_CONSENSUS` / `INFRA_FAILURE`, schéma `ConsensusResultSchema` respecté) est
 **obligatoire**. Il est produit par **l'unique API canonique** `run_consensus(...)` (cf. ADR-008),
 peuplé, et transmis jusqu'à la sortie.
 
 ### D3 — Fail-closed par défaut
+
 Si `consensus_required = true` et que `consensus_result` est **absent, invalide, en timeout critique,
 ou incohérent**, la sortie critique est **bloquée (fail-closed)**. Le blocage est explicite, tracé
 (`trace_id`/`correlation_id`), et renvoie un motif structuré — **jamais** un `success` maquillé sur un
 `consensus_result` vide.
 
 ### D4 — Fail-soft seulement si policy explicite
+
 Le fail-soft (émettre avec bannière « NON VALIDÉ » au lieu de bloquer) n'est autorisé **que** si une
 **policy explicite** l'active pour le niveau de criticité concerné (`policy.fail_soft_allowed = true`).
 En l'absence de policy explicite, le comportement est fail-closed. **Aucune** activation implicite,
 **aucune** bannière par défaut, **aucun** fail-open silencieux sur exception.
 
 ### D5 — Signature obligatoire et opposable
+
 Toute sortie critique porte une **signature vérifiable** (HMAC-SHA256, ou RSA-PSS si configuré). La
 signature couvre **au minimum** :
 `input_hash`, `output_hash`, `consensus_result_hash`, `criticality_level`, `policy_id`/`policy_version`,
@@ -78,12 +84,14 @@ signature couvre **au minimum** :
 **Une sortie critique non signée est une sortie non opposable** : elle doit échouer explicitement.
 
 ### D6 — Fail-closed si secret absent en production
+
 En environnement de production, si le secret de signature (`EVIDENCE_HMAC_KEY` ou clé RSA) est absent,
 toute sortie critique est **bloquée (fail-closed)**. L'avalement silencieux actuel de l'exception de
 signature (section d'intégrité omise) est **proscrit** pour les sorties critiques. Le fail-soft sur
 secret absent reste tolérable **hors** chemin critique (rapports informatifs non opposables) uniquement.
 
 ### D7 — Une seule API consensus, un seul gate alimenté
+
 Il existe **une** API interne canonique de consensus (`run_consensus`) et **un** point de finalisation
 critique qui consomme `consensus_result` et appose la signature. Les intégrations consensus
 redondantes/orphelines (`consensus_integration`, `consensus_mcp_integration`,
@@ -91,11 +99,13 @@ redondantes/orphelines (`consensus_integration`, `consensus_mcp_integration`,
 redirection stricte** — jamais maintenues comme chemins parallèles actifs.
 
 ### D8 — Consolidation, pas de nouvelle couche
+
 La doctrine est implémentée en **consolidant les couches existantes** (gate de décision + bloc
 d'intégrité/`AuditReportRenderer`), point de passage déjà universel sur les chemins classic et
 pipeline. **Aucune nouvelle couche d'abstraction** ni seconde API consensus n'est introduite.
 
 ### D9 — Fraîcheur des données (recency) — doctrine stricte
+
 Une sortie critique repose souvent sur des données **sensibles au temps** (lois en vigueur, taux,
 données marché, faits d'entreprise). Deux mécanismes complémentaires l'encadrent :
 
@@ -135,11 +145,13 @@ données marché, faits d'entreprise). Deux mécanismes complémentaires l'encad
 ## Conséquences
 
 ### Positives
+
 - Chaîne opposable de bout en bout : entrée → router → consensus → `consensus_result` → signature.
 - La signature lie cryptographiquement la décision de consensus et la policy au payload.
 - Comportement déterministe et défendable devant un auditeur réglementaire.
 
 ### Négatives / risques
+
 - Réintroduction d'un blocage dur : nécessite que `consensus_result` soit réellement alimenté
   (sinon régression « tout bloqué »). Mitigation : critères D1-D2 + tests E2E avant activation.
 - La signature étendue change le payload signé : **incompatible** avec les signatures historiques
@@ -147,6 +159,7 @@ données marché, faits d'entreprise). Deux mécanismes complémentaires l'encad
   l'algorithme v1 (verify rétro-compatible par version).
 
 ## Critères d'acceptation (clôture de la Tranche B d'ADR-009)
+
 1. `consensus_result` alimenté et consommé sur le chemin de sortie critique. ✅ à prouver (Phase 4)
 2. Bannière fail-soft limitée au cas policy-explicite (jamais par défaut). ✅ à prouver (Phase 7)
 3. Doctrine écrite (présent ADR). ✅
@@ -154,6 +167,7 @@ données marché, faits d'entreprise). Deux mécanismes complémentaires l'encad
 5. Aucune régression « bannière/blocage systématique » hors critique. ✅ à prouver (Phase 7-8)
 
 ## Références
+
 - `docs/audit/critical_request_path_map.md` (cartographie réelle vs attendue).
 - `docs/adr/ADR-009-response-gate-disabled.md` (état transitoire ; Tranche B résolue ici).
 - `docs/adr/ADR-008-consensus-v1-to-v2-migration.md` (`run_consensus` canonique).

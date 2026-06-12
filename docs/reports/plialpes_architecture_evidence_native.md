@@ -107,7 +107,7 @@
 
 ### Matrice de criticité
 
-```
+```text
                         IMPACT
                 LOW    MEDIUM    HIGH    CRITICAL
 PROBABILITÉ  ┌─────────────────────────────────────┐
@@ -179,14 +179,13 @@ L=Low, M=Medium, H=High, C=Critical
 | WORM appliance | Restore rapide | CAPEX ~30k€ | Budget initial trop élevé |
 | NAS local | Existant | Atteignable ransomware | Risque critique |
 
-
 ---
 
 ## F. Architecture Cible
 
 ### Vue d'ensemble
 
-```
+```text
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                            INTERNET                                      │
@@ -264,7 +263,6 @@ L=Low, M=Medium, H=High, C=Critical
 | Formation équipes | RH + IT | PSSI | 100% formés | `UNVERIFIED` |
 | Audit NIS2 externe | Auditeur | Tout | Rapport conformité | `UNVERIFIED` |
 
-
 ---
 
 ## H. Preuves & Vérification
@@ -307,11 +305,13 @@ L=Low, M=Medium, H=High, C=Critical
 ### Avertissements
 
 ⚠️ **Ce rapport ne constitue pas** :
+
 - Un audit de conformité certifié
 - Un conseil juridique
 - Une garantie de sécurité
 
 ⚠️ **Conditions de validité** :
+
 - Les hypothèses listées en section C doivent rester vraies
 - Le contexte client doit correspondre au périmètre défini
 - Les informations fournies doivent être exactes et à jour

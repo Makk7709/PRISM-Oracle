@@ -6,7 +6,7 @@
 
 > Source canonique unique : [`docs/METRICS_CANONICAL_SOURCE.md`](../docs/METRICS_CANONICAL_SOURCE.md). Le chiffre `2 768` cité dans les versions antérieures de ce document est un snapshot historique (Q1 2026), conservé en historique de révision pour traçabilité.
 
-```
+```text
 tests/
 ├── security/               # auth, authorization, rate limiting, multi-tenant, CSRF, path traversal
 ├── e2e/                    # scénarios end-to-end (PRISM, multi-user)
@@ -24,16 +24,19 @@ tests/
 ## Commandes rapides
 
 ### FAST GATE (~5 secondes)
+
 ```bash
 pytest tests/test_prism_contract.py tests/test_prism_tally_quorum.py -q
 ```
 
 ### SECURITY GATE (~30 secondes)
+
 ```bash
 pytest tests/security/ -q
 ```
 
 ### FULL GATE (tous les tests)
+
 ```bash
 python -m pytest tests/ -q
 ```
@@ -41,6 +44,7 @@ python -m pytest tests/ -q
 ## Couverture par domaine
 
 ### Sécurité & Multi-Tenant (31 fichiers)
+
 | Fichier | Tests | Description |
 |---------|-------|-------------|
 | `test_auth.py` | Auth Argon2, sessions | Login, logout, hash validation |
@@ -60,6 +64,7 @@ python -m pytest tests/ -q
 | `test_file_writer_path_traversal.py` | File writer safety | Écriture hors workspace bloquée |
 
 ### Consensus & PRISM (8 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_prism_contract.py` | Schéma JSON vote strict |
@@ -72,6 +77,7 @@ python -m pytest tests/ -q
 | `test_consensus_no_simulation_prod.py` | Pas de simulation en prod |
 
 ### Pipeline Juridique (14 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_legal_pipeline.py` | Pipeline complet (index FTS5, retrieval, classification) |
@@ -86,6 +92,7 @@ python -m pytest tests/ -q
 | `test_legal_versioning.py` | Versioning juridique |
 
 ### Pipeline Rédaction Contractuelle (4 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_contract_drafting.py` | Templates, Act Leak Guard, Gate d'audit |
@@ -94,6 +101,7 @@ python -m pytest tests/ -q
 | `test_contract_drafting_tdd_strict.py` | TDD strict |
 
 ### Pipeline Stratégique (4 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_strategic_orchestrator.py` | Détection, orchestration 4 agents |
@@ -102,6 +110,7 @@ python -m pytest tests/ -q
 | `test_strategic_pipeline_e2e.py` | Pipeline E2E (agents → consolidation → PDF) |
 
 ### Router v2 (4 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_router.py` | Routage policy-driven, keywords, multi-intent |
@@ -110,6 +119,7 @@ python -m pytest tests/ -q
 | `test_router_metrics.py` | Métriques du router |
 
 ### Organisation & Multi-Tenant (3 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_organization_canonical.py` | normalize_org_id(), slugification, collision detection |
@@ -117,6 +127,7 @@ python -m pytest tests/ -q
 | `test_chat_rename.py` | Renommage chats (scope multi-tenant) |
 
 ### Métacognition & Reasoning (4 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_metacognition.py` | ReasoningEngine |
@@ -125,12 +136,14 @@ python -m pytest tests/ -q
 | `test_criticality_router.py` | Routage criticité |
 
 ### Médical (2 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_medical_agent_hardening.py` | Durcissement agent médical |
 | `test_medical_contract_kill.py` | Kill switch médical |
 
 ### PDF & OCR (10 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_ocr_engine.py` | Moteur OCR (Tesseract) |
@@ -145,6 +158,7 @@ python -m pytest tests/ -q
 | `test_pdf_ocr_tool.py` | Outil PDF OCR |
 
 ### Observabilité (3 fichiers)
+
 | Fichier | Description |
 |---------|-------------|
 | `test_observability_logs.py` | Logs structurés JSON |
@@ -152,6 +166,7 @@ python -m pytest tests/ -q
 | `security/test_observability_runtime.py` | Runtime observability |
 
 ### Divers
+
 | Fichier | Description |
 |---------|-------------|
 | `test_execution_budget.py` | Garde-fous anti-boucles infinies (34 tests) |
@@ -169,21 +184,27 @@ python -m pytest tests/ -q
 ## Invariants testés
 
 ### 1. Fail-closed
+
 Toute erreur, timeout, ou incertitude → REJECT. Jamais d'approbation par défaut.
 
 ### 2. Isolation multi-tenant
+
 Aucune donnée d'une organisation ne fuit vers une autre. Testé par matrix cross-org.
 
 ### 3. Quorum 2/3
+
 Minimum 2/3 des votes valides pour une décision consensus.
 
 ### 4. Anti-bypass
+
 Outils interdits non appelés. Sanitization du contenu. Pas d'injection de prompt.
 
 ### 5. Déterminisme
+
 temp=0 forcé pour les profils critiques. Mêmes inputs → mêmes outputs.
 
 ### 6. Non-dilution (métacognition)
+
 Les signaux d'escalade ne peuvent que durcir, jamais s'adoucir.
 
 ## Contraintes qualité
@@ -197,12 +218,16 @@ Les signaux d'escalade ne peuvent que durcir, jamais s'adoucir.
 ## Troubleshooting
 
 ### Erreur `unsupported operand type(s) for |: 'type' and 'NoneType'`
+
 Python 3.9 ne supporte pas la syntaxe `X | None`. Solutions :
+
 - Utiliser Python 3.10+
 - Ajouter `from __future__ import annotations` en haut du fichier
 
 ### Import error (whisper, etc.)
+
 Certains modules lourds (whisper, kokoro) ne sont disponibles que dans Docker.
+
 ```bash
 pytest tests/ -k "not whisper" -q
 ```

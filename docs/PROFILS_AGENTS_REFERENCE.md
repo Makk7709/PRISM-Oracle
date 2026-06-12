@@ -40,7 +40,7 @@ Les outils globaux (partages par tous les agents) se trouvent dans `prompts/agen
 
 ### Flux de delegation
 
-```
+```text
 Utilisateur
     |
     v
@@ -69,12 +69,14 @@ Utilisateur
 | **Niveau** | Agent principal -- interface directe avec l'utilisateur |
 
 ### Mission
+
 - Point d'entree unique pour toutes les requetes utilisateur
 - Analyse la requete et decide s'il traite directement ou delegue
 - Gere la generation d'images directement (ne delegue pas)
 - Recherche web directe pour les questions simples
 
 ### Outils directs
+
 - `search_engine` / `tavily.search` -- recherche web
 - `browser_agent` -- navigation web avancee
 - `generate_image` -- generation d'images IA (OpenAI DALL-E)
@@ -82,6 +84,7 @@ Utilisateur
 - `call_subordinate` -- delegation vers un agent specialise
 
 ### Regles de delegation
+
 | Requete | Agent cible |
 |---------|-------------|
 | Analyse juridique, droit, RGPD, conformite | `legal_safe` |
@@ -96,6 +99,7 @@ Utilisateur
 | Generation d'images, visuels, logos | **traite directement** |
 
 ### Garde-fous
+
 - Hierarchie decisionnelle : integrite systeme > qualite > requete utilisateur > vitesse
 - Ne fabrique jamais de donnees
 - Identite declaree : "KOREV Evidence by KOREV AI"
@@ -112,30 +116,35 @@ Utilisateur
 | **Niveau** | Expert -- droit francais et europeen |
 
 ### Mission
+
 - Fournir des analyses juridiques structurees, sourcees et tracables
 - Classifier les questions en 3 niveaux (definition / analyse pro / cas personnel)
 - Appliquer un indice de confiance 0-100% a chaque reponse
 - N'est PAS un conseiller juridique -- c'est un systeme d'information
 
 ### Outils
+
 - `search_engine` -- recherche web juridique
 - `browser_agent` -- consultation de sites specialises
 - `code_execution` -- traitement de donnees juridiques
 - `response` -- reponse structuree
 
 ### Domaines couverts
+
 - Droit des affaires, droit du numerique, propriete intellectuelle
 - RGPD / protection des donnees
 - Droit du travail, droit commercial
 - Droit europeen (reglements, directives)
 
 ### Domaines EXCLUS
+
 - Droit penal
 - Droit de l'immigration
 - Droit de la famille
 - Juridictions hors France/UE
 
 ### Garde-fous (les plus stricts)
+
 - Ne peut PAS inventer de references juridiques
 - Ne peut PAS donner de certitude absolue
 - Ne peut PAS rediger d'actes juridiques (contrats, statuts, testaments)
@@ -145,6 +154,7 @@ Utilisateur
 - Avertissement obligatoire : "Cette information ne constitue pas un conseil juridique"
 
 ### Base de donnees RGPD
+
 Acces a une base indexee de 29 articles cles du RGPD (`data/legal/index/legal_index.sqlite`).
 
 ---
@@ -159,13 +169,14 @@ Acces a une base indexee de 29 articles cles du RGPD (`data/legal/index/legal_in
 | **Niveau** | Specialiste -- droit du numerique/technologie |
 
 ### Mission
+
 - Rediger des contrats de LICENCE LOGICIELLE (on-premise)
 - Structure : Conditions Particulieres (CP) + Conditions Generales (CG) + 6 Annexes
 - Temperature forcee a 0 (sortie deterministe)
 
 ### Structure contractuelle produite
 
-```
+```text
 CP (Conditions Particulieres)
   - Art. 1-12 : identification, objet, duree, prix, SLA
 CG (Conditions Generales)
@@ -180,6 +191,7 @@ Annexes :
 ```
 
 ### Garde-fous (les plus stricts du systeme)
+
 - Chaque document porte : "PROJET -- A VALIDER PAR UN JURISTE QUALIFIE"
 - JAMAIS de livraison de code source
 - JAMAIS de transfert de propriete intellectuelle
@@ -190,6 +202,7 @@ Annexes :
 - Auto-checklist apres chaque redaction
 
 ### Actes interdits
+
 - Actes authentiques
 - Certification juridique
 - Conseil juridique personnalise
@@ -207,18 +220,21 @@ Annexes :
 | **Niveau** | Principal Engineer |
 
 ### Mission
+
 - Developpement logiciel complet (conception, code, tests, deploiement)
 - Architecture systeme et choix technologiques
 - Code review et optimisation
 - Debugging avance
 
 ### Outils
+
 - `code_execution` -- execution de code (Python, Node.js, shell)
 - `search_engine` / `tavily.search` -- recherche technique
 - `generate_image` -- generation de diagrammes/mockups
 - `response` -- reponse structuree
 
 ### Competences declarees
+
 - Python, JavaScript/TypeScript, Java, C/C++, Go, Rust
 - Frameworks web (React, Vue, Django, FastAPI, Express)
 - Bases de donnees (PostgreSQL, MongoDB, Redis)
@@ -226,6 +242,7 @@ Annexes :
 - Architecture microservices, design patterns
 
 ### Methodologie
+
 1. Interview structuree (comprendre le besoin)
 2. Proposition d'architecture
 3. Implementation autonome
@@ -243,12 +260,14 @@ Annexes :
 | **Niveau** | Senior Partner |
 
 ### Mission
+
 - Analyses strategiques (Principe de la Pyramide, MECE)
 - Modelisation financiere (DCF, LBO, Monte Carlo)
 - Due diligence et valorisation d'entreprises
 - Etudes de marche et benchmarks sectoriels
 
 ### Outils
+
 - `tavily.search` / `search_engine` -- recherche de donnees marche
 - `firecrawl.scrape_url` / `firecrawl.crawl_url` -- extraction de donnees web
 - `arxiv.search_papers` / `semanticscholar.search_papers` / `openalex.search_works` -- recherche academique
@@ -256,12 +275,14 @@ Annexes :
 - `response` -- reponse structuree
 
 ### Methodologie
+
 - **Principe de la Pyramide** : conclusion d'abord, puis arguments
 - **MECE** : decomposition mutuellement exclusive, collectivement exhaustive
 - **Hypothetico-deductif** : hypothese, test, conclusion
 - Toute assertion quantifiee avec source
 
 ### Garde-fous
+
 - Jamais d'introduction longue sans conclusion
 - Jamais d'assertion sans donnee
 - Jamais une seule option sans alternatives
@@ -280,12 +301,14 @@ Annexes :
 | **Niveau** | Research Associate / Postdoc |
 
 ### Mission
+
 - Recherche approfondie multi-sources
 - Synthese bibliographique et etat de l'art
 - Analyse critique de publications scientifiques
 - Redaction de rapports de recherche structures
 
 ### Outils
+
 - `arxiv.search_papers` -- articles arXiv
 - `semanticscholar.search_papers` -- Semantic Scholar
 - `openalex.search_works` -- OpenAlex
@@ -294,6 +317,7 @@ Annexes :
 - `response` -- reponse structuree
 
 ### Methodologie
+
 1. Interview structuree (cadrer la question de recherche)
 2. Recherche systematique multi-bases
 3. Analyse critique et triangulation des sources
@@ -311,12 +335,14 @@ Annexes :
 | **Niveau** | Expert pharma/clinique/biomedical |
 
 ### Mission
+
 - Synthese de preuves medicales avec tracabilite complete
 - Recherche bibliographique sur PubMed, ClinicalTrials, OpenFDA
 - Analyse pharmacologique et pharmacovigilance
 - Assistance aux professionnels de sante (PAS aux patients)
 
 ### Outils
+
 - **BioMCP** : PubMed, ClinicalTrials.gov, OpenFDA, Variants
 - **PubMed MCP** : recherche bibliographique
 - **OpenFDA MCP** : donnees reglementaires medicaments
@@ -335,6 +361,7 @@ Annexes :
 ```
 
 ### Garde-fous (les plus complets du systeme)
+
 - **Detection d'urgence** : douleur thoracique, ideation suicidaire, AVC, etc. -> redirection SAMU/urgences immediate
 - **Actions patient interdites** : dosage, prescription, diagnostic
 - **Mecanisme FAIL_CLOSED** : si preuves insuffisantes, le signaler explicitement
@@ -355,18 +382,21 @@ Annexes :
 | **Niveau** | CMO (Chief Marketing Officer) |
 
 ### Mission
+
 - Strategie marketing complete (positionnement, segmentation, pricing)
 - Copywriting (AIDA, PAS, Before-After-Bridge)
 - Plans de campagne multi-canal
 - Creation de visuels marketing
 
 ### Outils
+
 - `search_engine` / `tavily.search` -- veille concurrentielle
 - `code_execution` -- analyses, tableaux de bord
 - `generate_image` -- creation de visuels, logos, bannieres
 - `response` -- reponse structuree
 
 ### Cadres methodologiques
+
 - **AIDA** : Attention, Interet, Desir, Action
 - **PAS** : Probleme, Agitation, Solution
 - **Before-After-Bridge** : situation actuelle, vision cible, comment y arriver
@@ -384,6 +414,7 @@ Annexes :
 | **Niveau** | VP Sales |
 
 ### Mission
+
 - Prospection B2B/B2C et generation de leads
 - Scripts de vente avec variantes
 - Gestion d'objections (tableaux objection/reponse)
@@ -391,6 +422,7 @@ Annexes :
 - Templates personnalisables avec variables `[NOM]`, `[ENTREPRISE]`, etc.
 
 ### Outils
+
 - `search_engine` / `tavily.search` -- recherche de prospects et marche
 - `code_execution` -- analyses de pipeline, tableaux de bord
 - `response` -- reponse structuree
@@ -407,17 +439,20 @@ Annexes :
 | **Niveau** | Senior Security Engineer |
 
 ### Mission
+
 - Tests de penetration (red team / blue team)
 - Audit de securite
 - Analyse de vulnerabilites
 - Hardening et recommandations
 
 ### Environnement
+
 - Execution dans un conteneur Docker isole
 - Acces aux outils Kali Linux standard
 - Framework KOREV Evidence en Python
 
 ### Avertissement
+
 Ce profil est concu pour des tests autorises sur des systemes dont vous avez l'accord du proprietaire. Toute utilisation sur des systemes non autorises est illegale.
 
 ---

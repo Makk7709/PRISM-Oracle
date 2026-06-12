@@ -1,6 +1,7 @@
 # RAPPORT DE CONTRÔLE FINAL — Multi-User Workspace
 
 ## Date : 2026-02-08
+
 ## Résultat global : 69/69 tests GREEN — LIVRABLE VALIDÉ
 
 ---
@@ -8,6 +9,7 @@
 ## VÉRIFICATION RÈGLE PAR RÈGLE
 
 ### R1 — MULTI-AUTH OBLIGATOIRE ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | N utilisateurs supportés | ✅ | `UserManager` charge `users.json` avec N entrées |
@@ -18,6 +20,7 @@
 | **Tests** | **16/16** | `test_multi_user_auth.py` |
 
 ### R2 — SESSION IDENTIFIÉE ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | `session['username']` après login | ✅ | `run_ui.py:login_handler` → `session['username'] = result['username']` |
@@ -27,6 +30,7 @@
 | **Tests** | **10/10** | `test_multi_user_flask.py` |
 
 ### R3 — ISOLATION STRICTE DES WORKSPACES ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Répertoire par utilisateur | ✅ | `{root}/users/{username}/` créé par `ensure_workspace()` |
@@ -36,6 +40,7 @@
 | **Tests** | **6/6** | T05 (3) + T06 (3) |
 
 ### R4 — INTERDICTION DE TRAVERSÉE ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Lecture hors workspace → `PermissionError` | ✅ | `_check_access()` avec `resolve()` |
@@ -46,6 +51,7 @@
 | **Tests** | **12/12** | T07 (4) + T08 (4) + T09 (3) + T10 (1) |
 
 ### R5 — FILE WRITER SCOPÉ ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Écriture dans `{workspace}/rapports/` | ✅ | `get_output_dir()` retourne rapports/ |
@@ -53,6 +59,7 @@
 | **Tests** | **1/1** | T12 |
 
 ### R6 — CODE EXECUTION SCOPÉ ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | CWD = workspace utilisateur | ✅ | `get_exec_cwd()` retourne le workspace |
@@ -61,6 +68,7 @@
 | **Tests** | **5/5** | T13 (2) + T14 (3) |
 
 ### R7 — ADMIN VOIT TOUT ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Admin lit fichiers d'autres users | ✅ | `_check_access(role="admin")` autorise sous `_root` |
@@ -68,6 +76,7 @@
 | **Tests** | **2/2** | T15 |
 
 ### R8 — AUDIT TRAIL ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Write loguée (user, op, path, success) | ✅ | `_audit_log()` en JSONL |
@@ -77,6 +86,7 @@
 | **Tests** | **3/3** | T16 |
 
 ### R9 — DOCKER & SMB ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Volume `evidence-shared` monté | ✅ | `docker-compose.yml` ligne volumes |
@@ -88,6 +98,7 @@
 | **Tests** | **2/2** | T17 (structure vérifiée) |
 
 ### R10 — RÉTRO-COMPATIBILITÉ ✅
+
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Pas de `users.json` → mono-user | ✅ | `_fallback_mono_user()` dans `UserManager` |
@@ -129,6 +140,7 @@
 ## FICHIERS CRÉÉS / MODIFIÉS
 
 ### Nouveaux fichiers
+
 | Fichier | Rôle |
 |---------|------|
 | `python/helpers/user_manager.py` | Gestionnaire multi-user auth |
@@ -141,6 +153,7 @@
 | `tests/e2e/test_multi_user_e2e.py` | Tests E2E T17-T20 (13 tests) |
 
 ### Fichiers modifiés
+
 | Fichier | Modification |
 |---------|-------------|
 | `run_ui.py` | Import UserManager/WorkspaceManager, init dans create_app(), login multi-user, session username/role/workspace |
@@ -151,7 +164,7 @@
 
 ## VERDICT FINAL
 
-```
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║   TESTS : 69/69 GREEN                                   ║

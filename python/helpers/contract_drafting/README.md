@@ -5,12 +5,13 @@
 Pipeline industriel **fail-closed** pour la generation de projets de contrats de licence logiciel ON-PREM.
 
 **Separation stricte des roles :**
+
 - `legal_drafting_guarded` = REDACTEUR (produit le projet)
 - `legal_safe` = JUGE (gate d'audit, veto absolu)
 
 ## Architecture Pipeline
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    REQUETE UTILISATEUR                        │
 │         "Redige un contrat de licence ON-PREM"               │
@@ -113,6 +114,7 @@ Pipeline industriel **fail-closed** pour la generation de projets de contrats de
 ## Checklist P0/P1 (Audit Interne)
 
 ### P0 — BLOQUANTS (1 seul = contrat bloque)
+
 - [ ] Remise/livraison/cession code source
 - [ ] Cession propriete intellectuelle
 - [ ] Transfert savoir-faire
@@ -125,6 +127,7 @@ Pipeline industriel **fail-closed** pour la generation de projets de contrats de
 - [ ] Disclaimer absent
 
 ### P1 — WARNINGS (sigales, n'empechent pas la release)
+
 - [ ] SLA 24/7 non encadre
 - [ ] Disponibilite 99.99%+ promise
 - [ ] Garantie/obligation de resultat

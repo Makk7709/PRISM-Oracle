@@ -79,10 +79,12 @@
 ### 3.1. Section 7.3 — shell_interface (CRITIQUE)
 
 **Problème :** Le guide indiquait :
+
 - Docker → `ssh`
 - Installation locale → `local`
 
 **Code réel :** `settings.py` L1885 :
+
 ```python
 shell_interface="local" if runtime.is_dockerized() else "ssh"
 ```

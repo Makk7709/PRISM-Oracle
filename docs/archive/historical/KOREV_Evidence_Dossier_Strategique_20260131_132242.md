@@ -27,16 +27,19 @@ methodology: "Evidence-grade — Hypothèses explicites, sources européennes, F
 **KOREV Evidence doit se positionner comme l'infrastructure de confiance pour l'IA en environnement régulé**, en anticipant les exigences de l'AI Act européen (application août 2026-2027).
 
 **Pourquoi maintenant :**
+
 - L'AI Act impose des obligations de traçabilité et d'auditabilité dès août 2027 pour les systèmes high-risk
 - 8% des entreprises européennes utilisent l'IA (Eurostat 2024), mais la quasi-totalité sans infrastructure de conformité
 - Le marché de la "compliance IA" n'est pas encore structuré — fenêtre d'opportunité de 18-24 mois
 
 **Conditions de succès :**
+
 1. Atteindre 35 clients payants d'ici fin 2027 (validation product-market fit)
 2. Démontrer une réduction mesurable (>50%) des hallucinations via le consensus multi-LLM
 3. Établir des partenariats avec 2-3 cabinets d'audit ou avocats pour légitimité sectorielle
 
 **Conditions d'échec :**
+
 1. Les grandes plateformes (OpenAI, Anthropic) atteignent la conformité AI Act avant que KOREV n'ait établi sa base clients
 2. Le marché ne valorise pas la différence entre IA généraliste et IA evidence-grade
 3. Incapacité à démontrer le ROI de la traçabilité aux décideurs métier
@@ -54,7 +57,7 @@ methodology: "Evidence-grade — Hypothèses explicites, sources européennes, F
 ### Ce que le marché ne résout pas aujourd'hui
 
 | Problème | Solutions actuelles | Limite |
-|----------|--------------------|---------| 
+|----------|--------------------|---------|
 | Hallucinations des LLM | Prompts améliorés, RAG | Aucune garantie, pas de traçabilité |
 | Auditabilité des décisions IA | Logs basiques | Pas de lien décision → source |
 | Conformité AI Act | En attente | Aucune solution native sur le marché |
@@ -97,7 +100,6 @@ methodology: "Evidence-grade — Hypothèses explicites, sources européennes, F
 | H-GTM-01 | Le cycle de vente en ETI est de 6-12 mois pour un nouveau software B2B. | HIGH | syntec_numerique_2024 | Si >50% des deals closent en < 3 mois |
 | H-GTM-02 | Le pricing premium (>1000€/mois) est acceptable pour les use cases critiques. | MEDIUM | Benchmark marché (estimations) | Si > 70% des prospects considèrent le prix comme bloquant |
 
-
 ---
 
 ## D. Analyse marché (France & UE)
@@ -117,6 +119,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 | Grandes entreprises | 287 entreprises | 500 k€+ | INSEE 2024 |
 
 **Pénétration actuelle de l'IA :**
+
 - 8% des entreprises UE utilisent l'IA (Eurostat 2024)
 - 9% en France (légèrement au-dessus de la moyenne UE)
 - 30% des grandes entreprises vs 5% des PME
@@ -184,6 +187,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 ### Conclusion : Pricing premium (1 250-1 667 €/mois) justifié par la réduction de risque
 
 **Logique de valeur :**
+
 - Coût d'une erreur juridique/médicale : 10 000 - 1 000 000 €
 - Coût d'un expert pour vérifier une analyse IA : 200-500 €/heure
 - KOREV Evidence : 1 500 €/mois pour réduire ces risques
@@ -242,7 +246,8 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 
 ![Break-even](./charts/breakeven_analysis.png)
 
-**Point mort atteint :** 
+**Point mort atteint :**
+
 - Scénario central : ~80 clients × 1 500 €/mois = 1,44 M€ ARR
 - Équipe : ~15 personnes
 - Horizon : 2028 (Y3)
@@ -252,6 +257,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 ![Sensibilité](./charts/sensitivity_analysis.png)
 
 **Variables les plus critiques :**
+
 1. **Nombre de clients** (±25% → ±25% sur ARR)
 2. **ARPA** (±20% → ±22% sur ARR)
 3. **Churn** (+5pts → -15% sur ARR)
@@ -261,6 +267,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 ## H. Trajectoire de déploiement
 
 ### Phase 1 : Validation (2025-2026)
+
 **Objectif :** Prouver le product-market fit avec 10-15 clients payants
 
 | Jalon | Date cible | Critère Go/No-Go |
@@ -270,6 +277,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 | 10 clients total | Q4 2026 | Churn < 20% |
 
 ### Phase 2 : Croissance (2027-2028)
+
 **Objectif :** Atteindre 80 clients et la rentabilité
 
 | Jalon | Date cible | Critère Go/No-Go |
@@ -279,6 +287,7 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 | 80 clients | Q4 2028 | ARR > 1,4 M€ |
 
 ### Phase 3 : Expansion (2029-2030)
+
 **Objectif :** Leadership marché France, expansion EU
 
 | Jalon | Date cible | Critère Go/No-Go |
@@ -373,12 +382,12 @@ Le marché de l'IA evidence-grade en France est estimé à **300 M€** (SAM) po
 
 ## Sources citées
 
-- **ICT usage in enterprises - 2024** — https://ec.europa.eu/eurostat/statistics-explained/index.php/ICT_usage_in_enterprises
-- **EU AI Act - Regulation 2024/1689** — https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689
-- **Baromètre IA Bpifrance Le Lab - 2024** — https://lelab.bpifrance.fr/
-- **INSEE - Caractéristiques des entreprises 2024** — https://www.insee.fr/fr/statistiques/
-- **IDC European AI Spending Guide 2024** — https://www.idc.com/getdoc.jsp?containerId=prEUR252368224
-- **Syntec Numérique - Marché du logiciel en France 2024** — https://syntec-numerique.fr/
+- **ICT usage in enterprises - 2024** — <https://ec.europa.eu/eurostat/statistics-explained/index.php/ICT_usage_in_enterprises>
+- **EU AI Act - Regulation 2024/1689** — <https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689>
+- **Baromètre IA Bpifrance Le Lab - 2024** — <https://lelab.bpifrance.fr/>
+- **INSEE - Caractéristiques des entreprises 2024** — <https://www.insee.fr/fr/statistiques/>
+- **IDC European AI Spending Guide 2024** — <https://www.idc.com/getdoc.jsp?containerId=prEUR252368224>
+- **Syntec Numérique - Marché du logiciel en France 2024** — <https://syntec-numerique.fr/>
 
 ---
 

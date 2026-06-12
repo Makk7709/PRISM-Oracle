@@ -1,0 +1,45 @@
+{
+  // Configuration markdownlint pour KOREV Evidence.
+  // Perimetre : documentation uniquement. Les fichiers consommes par les LLM
+  // (prompts/, agents/, knowledge/) sont exclus : leur formatage est du
+  // contenu verbatim envoye au modele, le reformater changerait le
+  // comportement des agents.
+  "ignores": [
+    "node_modules/**",
+    "webui/vendor/**",
+    "venv/**",
+    ".venv*/**",
+    "mcp_servers/**",
+    "tmp/**",
+    "prompts/**",
+    "agents/**",
+    "knowledge/**",
+    "memory/**",
+    "logs/**"
+  ],
+  "config": {
+    "default": true,
+    // Longueur de ligne : purement stylistique, la doc utilise volontairement
+    // des lignes longues (tableaux, URLs, exemples de commandes).
+    "MD013": false,
+    // HTML inline volontaire dans la doc (badges, <br>, details/summary).
+    "MD033": false,
+    // Premiere ligne ≠ titre : directives cspell ou citations en tete de fichier.
+    "MD041": false,
+    // Titres dupliques toleres entre sections differentes (docs de sessions,
+    // changelogs) mais pas entre freres directs.
+    "MD024": { "siblings_only": true },
+    // Plusieurs H1 par document : les guides longs (deploiement, installation)
+    // utilisent un H1 par chapitre, choix editorial assume.
+    "MD025": false,
+    // Gras utilise comme libelle (pas comme titre) : choix editorial,
+    // le convertir en heading changerait la structure/TOC des documents.
+    "MD036": false,
+    // Listes numerotees coupees par des blocs de code non indentes :
+    // re-indenter tous les blocs changerait le rendu, tolere.
+    "MD029": false,
+    // Alertes GitHub ([!NOTE]/[!TIP]/[!WARNING]) consecutives separees par une
+    // ligne vide : blocs distincts volontaires, pas une citation coupee.
+    "MD028": false
+  }
+}

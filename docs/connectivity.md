@@ -4,7 +4,7 @@ This guide covers the different ways to connect to KOREV Evidence from external 
 
 **Note:** You can find your specific URLs and API tokens in your KOREV Evidence instance under `Settings > External Services`.
 
-### API Token Information
+## API Token Information
 
 The API token is automatically generated from your username and password. This same token is used for External API endpoints, MCP server connections, and A2A communication. The token will change if you update your credentials.
 
@@ -21,14 +21,16 @@ Send messages to KOREV Evidence and receive responses. Supports text messages, f
 ### API Reference
 
 **Parameters:**
-*   `context_id` (string, optional): Existing chat context ID
-*   `message` (string, required): The message to send
-*   `attachments` (array, optional): Array of `{filename, base64}` objects
-*   `lifetime_hours` (number, optional): Chat lifetime in hours (default: 24)
+
+* `context_id` (string, optional): Existing chat context ID
+* `message` (string, required): The message to send
+* `attachments` (array, optional): Array of `{filename, base64}` objects
+* `lifetime_hours` (number, optional): Chat lifetime in hours (default: 24)
 
 **Headers:**
-*   `X-API-KEY` (required)
-*   `Content-Type: application/json`
+
+* `X-API-KEY` (required)
+* `Content-Type: application/json`
 
 ### JavaScript Examples
 
@@ -178,12 +180,14 @@ Retrieve log data by context ID, limited to a specified number of entries from t
 ### API Reference
 
 **Parameters:**
-*   `context_id` (string, required): Context ID to get logs from
-*   `length` (integer, optional): Number of log items to return from newest (default: 100)
+
+* `context_id` (string, required): Context ID to get logs from
+* `length` (integer, optional): Number of log items to return from newest (default: 100)
 
 **Headers:**
-*   `X-API-KEY` (required)
-*   `Content-Type: application/json` (for POST)
+
+* `X-API-KEY` (required)
+* `Content-Type: application/json` (for POST)
 
 ### JavaScript Examples
 
@@ -280,11 +284,13 @@ Terminate and remove a chat context to free up resources. Similar to the MCP `fi
 ### API Reference
 
 **Parameters:**
-*   `context_id` (string, required): Context ID of the chat to terminate
+
+* `context_id` (string, required): Context ID of the chat to terminate
 
 **Headers:**
-*   `X-API-KEY` (required)
-*   `Content-Type: application/json`
+
+* `X-API-KEY` (required)
+* `Content-Type: application/json`
 
 ### JavaScript Examples
 
@@ -354,11 +360,13 @@ Reset a chat context to clear conversation history while keeping the `context_id
 ### API Reference
 
 **Parameters:**
-*   `context_id` (string, required): Context ID of the chat to reset
+
+* `context_id` (string, required): Context ID of the chat to reset
 
 **Headers:**
-*   `X-API-KEY` (required)
-*   `Content-Type: application/json`
+
+* `X-API-KEY` (required)
+* `Content-Type: application/json`
 
 ### JavaScript Examples
 
@@ -441,11 +449,13 @@ Retrieve file contents by paths, returning files as base64 encoded data. Useful 
 ### API Reference
 
 **Parameters:**
-*   `paths` (array, required): Array of file paths to retrieve (e.g., `["/app/tmp/uploads/file.txt"]`)
+
+* `paths` (array, required): Array of file paths to retrieve (e.g., `["/app/tmp/uploads/file.txt"]`)
 
 **Headers:**
-*   `X-API-KEY` (required)
-*   `Content-Type: application/json`
+
+* `X-API-KEY` (required)
+* `Content-Type: application/json`
 
 ### JavaScript Examples
 
@@ -543,12 +553,13 @@ attachmentWorkflow();
 KOREV Evidence includes an MCP Server that allows other MCP-compatible clients to connect to it. The server runs on the same URL and port as the Web UI.
 
 It provides two endpoint types:
-- **SSE (`/mcp/sse`):** For clients that support Server-Sent Events.
-- **Streamable HTTP (`/mcp/http/`):** For clients that use streamable HTTP requests.
+
+* **SSE (`/mcp/sse`):** For clients that support Server-Sent Events.
+* **Streamable HTTP (`/mcp/http/`):** For clients that use streamable HTTP requests.
 
 ### Example MCP Server Configuration
 
-Below is an example of a `mcp.json` configuration file that a client could use to connect to the KOREV Evidence MCP server. 
+Below is an example of a `mcp.json` configuration file that a client could use to connect to the KOREV Evidence MCP server.
 
 **Note:** You can find your personalized connection URLs under `Settings > MCP Server > MCP Server`.
 
@@ -576,10 +587,10 @@ KOREV Evidence's A2A Server enables communication with other agents using the Fa
 
 ### A2A Connection URL
 
-To connect another agent to your KOREV Evidence instance, use the following URL format. 
+To connect another agent to your KOREV Evidence instance, use the following URL format.
 
 **Note:** You can find your specific A2A connection URL under `Settings > External Services > A2A Connection`.
 
-```
+```text
 YOUR_KOREV_URL/a2a/t-YOUR_API_TOKEN
 ```

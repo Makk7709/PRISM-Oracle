@@ -3,11 +3,13 @@
 ## Target Model
 
 ### `organizations`
+
 - `id` (PK, text)
 - `name` (unique)
 - `created_at` (timestamp)
 
 ### `users`
+
 - `id` (PK, text)
 - `username` (unique, not null)
 - `password_hash` (not null)
@@ -17,6 +19,7 @@
 - `updated_at`
 
 ### `memberships`
+
 - `id` (PK, text)
 - `user_id` (FK `users.id`, on delete cascade)
 - `organization_id` (FK `organizations.id`, on delete cascade)
@@ -24,6 +27,7 @@
 - Unique (`user_id`, `organization_id`)
 
 ### `chats`
+
 - `id` (PK, text)
 - `owner_user_id` (FK `users.id`)
 - `organization_id` (FK `organizations.id`)
@@ -32,6 +36,7 @@
 - `updated_at`
 
 ### `tasks`
+
 - `id` (PK, text)
 - `chat_id` (nullable FK `chats.id`)
 - `owner_user_id` (FK `users.id`)

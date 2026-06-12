@@ -1,16 +1,19 @@
 # KOREV Evidence Backup/Restore Backend Specification
 
 ## Overview
+
 This specification defines the backend implementation for KOREV Evidence's backup and restore functionality, providing users with the ability to backup and restore their KOREV Evidence configurations, data, and custom files using glob pattern-based selection. The backup functionality is implemented as a dedicated "backup" tab in the settings interface for easy access and organization.
 
 ## Core Requirements
 
 ### Backup Flow
+
 1. User configures backup paths using glob patterns in settings modal
 2. Backend creates zip archive with selected files and metadata
 3. Archive is provided as download to user
 
 ### Restore Flow
+
 1. User uploads backup archive in settings modal
 2. Backend extracts and validates metadata
 3. User confirms file list and destination paths
@@ -21,9 +24,11 @@ This specification defines the backend implementation for KOREV Evidence's backu
 ### 1. Settings Integration
 
 #### Settings Schema Extension
+
 Add backup/restore section with dedicated tab to `python/helpers/settings.py`:
 
 **Integration Notes:**
+
 - Leverages existing settings button handler pattern (follows MCP servers example)
 - Integrates with KOREV Evidence's established error handling and toast notification system
 - Uses existing file operation helpers with RFC support for development mode compatibility
@@ -55,6 +60,7 @@ backup_section: SettingsSection = {
 ```
 
 #### Default Backup Configuration
+
 The backup system now uses **resolved absolute filesystem paths** instead of placeholders, ensuring compatibility across different deployment environments (Docker containers, direct host installations, different users).
 
 ```python
@@ -90,7 +96,8 @@ def _get_default_patterns(self) -> str:
 ```
 
 **Example Resolved Patterns** (varies by environment):
-```
+
+```text
 # Docker container environment
 /app/knowledge/**
 !/app/knowledge/default/**
@@ -111,6 +118,7 @@ def _get_default_patterns(self) -> str:
 ### 2. API Endpoints
 
 #### 2.1 Backup Test Endpoint
+
 **File**: `python/api/backup_test.py`
 
 ```python
@@ -158,6 +166,7 @@ class BackupTest(ApiHandler):
 ```
 
 #### 2.2 Backup Create Endpoint
+
 **File**: `python/api/backup_create.py`
 
 ```python
@@ -207,6 +216,7 @@ class BackupCreate(ApiHandler):
 ```
 
 #### 2.3 Backup Restore Endpoint
+
 **File**: `python/api/backup_restore.py`
 
 ```python
@@ -262,6 +272,7 @@ class BackupRestore(ApiHandler):
 ```
 
 #### 2.4 Backup Restore Preview Endpoint
+
 **File**: `python/api/backup_restore_preview.py`
 
 ```python
@@ -314,6 +325,7 @@ class BackupRestorePreview(ApiHandler):
 ```
 
 #### 2.5 Backup File Preview Grouped Endpoint
+
 **File**: `python/api/backup_preview_grouped.py`
 
 ```python
@@ -363,6 +375,7 @@ class BackupPreviewGrouped(ApiHandler):
 ```
 
 #### 2.6 Backup Progress Stream Endpoint
+
 **File**: `python/api/backup_progress_stream.py`
 
 ```python
@@ -413,6 +426,7 @@ class BackupProgressStream(ApiHandler):
 ```
 
 #### 2.7 Backup Inspect Endpoint
+
 **File**: `python/api/backup_inspect.py`
 
 ```python
@@ -470,6 +484,7 @@ class BackupInspect(ApiHandler):
 ### 3. Backup Service Implementation
 
 #### Core Service Class
+
 **File**: `python/helpers/backup.py`
 
 **RFC Integration Notes:**
@@ -1228,19 +1243,24 @@ class BackupService:
 ### 4. Dependencies
 
 #### Required Python Packages
+
 Add to `requirements.txt`:
-```
+
+```text
 pathspec>=0.10.0  # For gitignore-style pattern matching
 psutil>=5.8.0     # For system information collection
 ```
 
 #### KOREV Evidence Internal Dependencies
+
 The backup system requires these KOREV Evidence helper modules:
+
 - `python.helpers.git` - For version detection using git.get_git_info() (consistent with run_ui.py)
 - `python.helpers.files` - For file operations and path resolution
 - `python.helpers.runtime` - For development/production mode detection
 
 #### Installation Command
+
 ```bash
 pip install pathspec psutil
 ```
@@ -1248,6 +1268,7 @@ pip install pathspec psutil
 ### 5. Error Handling
 
 #### Integration with KOREV Evidence Error System
+
 The backup system integrates with KOREV Evidence's existing error handling infrastructure:
 
 ```python
@@ -1265,6 +1286,7 @@ except Exception as e:
 ```
 
 #### Common Error Scenarios
+
 1. **Invalid Patterns**: Malformed glob patterns
 2. **Permission Errors**: Files/directories not accessible
 3. **Disk Space**: Insufficient space for backup creation
@@ -1272,6 +1294,7 @@ except Exception as e:
 5. **Path Conflicts**: Files outside allowed directories
 
 #### Error Response Format
+
 ```python
 {
     "success": False,
@@ -1287,17 +1310,20 @@ except Exception as e:
 ### 6. Security Considerations
 
 #### Path Security
+
 - Validate all paths to prevent directory traversal attacks
 - Restrict backups to predefined base directories (/a0, /root)
 - Sanitize file names in archives
 - Implement file size limits for uploads/downloads
 
 #### Authentication
+
 - All endpoints require authentication (`requires_auth = True`)
 - All endpoints require loopback (`requires_loopback = True`)
 - No API key access for security
 
 #### File System Protection
+
 - Read-only access to system directories outside allowed paths
 - Size limits for backup archives
 - Timeout limits for backup operations
@@ -1306,12 +1332,14 @@ except Exception as e:
 ### 7. Performance Considerations
 
 #### File Processing
+
 - Limit number of files in test/preview operations (max_files parameter)
 - Stream file processing for large archives
 - Implement progress tracking for large operations
 - Use temporary directories for staging
 
 #### Memory Management
+
 - Stream zip file creation to avoid memory issues
 - Process files individually rather than loading all in memory
 - Clean up temporary files promptly
@@ -1320,6 +1348,7 @@ except Exception as e:
 ### 8. Configuration
 
 #### Default Configuration
+
 ```python
 BACKUP_CONFIG = {
     "max_files_preview": 1000,
@@ -1332,6 +1361,7 @@ BACKUP_CONFIG = {
 ```
 
 #### Future Integration Opportunities
+
 **Task Scheduler Integration:**
 KOREV Evidence's existing task scheduler could be extended to support automated backups:
 
@@ -1352,6 +1382,7 @@ KOREV Evidence's existing task scheduler could be extended to support automated 
 ## Enhanced Metadata Structure and Restore Workflow
 
 ### Version Detection Implementation
+
 The backup system uses the same version detection method as KOREV Evidence's main UI:
 
 ```python
@@ -1368,6 +1399,7 @@ def _get_korev_version(self) -> str:
 This ensures consistency between the backup metadata and the main application version reporting.
 
 ### Metadata.json Format
+
 The backup archive includes a comprehensive `metadata.json` file with the following structure:
 
 ```json
@@ -1408,6 +1440,7 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
 ```
 
 ### Restore Workflow
+
 1. **Upload Archive**: User uploads backup.zip file
 2. **Load Metadata**: System extracts and parses metadata.json
 3. **Display Metadata**: Complete metadata.json shown in ACE JSON editor
@@ -1416,6 +1449,7 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
 6. **Execute Restore**: Files restored according to final metadata configuration
 
 ### JSON Metadata Editing Benefits
+
 - **Single Source of Truth**: metadata.json is the authoritative configuration
 - **Direct Editing**: Users edit JSON arrays directly in ACE editor
 - **Full Control**: Access to all metadata properties, not just patterns
@@ -1425,7 +1459,9 @@ The backup archive includes a comprehensive `metadata.json` file with the follow
 ## Comprehensive Enhancement Summary
 
 ### Enhanced Metadata Structure
+
 The backup metadata has been significantly enhanced to include:
+
 - **System Information**: Platform, architecture, Python version, CPU count, memory, disk usage
 - **Environment Details**: User, timezone, working directory, runtime mode, KOREV Evidence root path
 - **Backup Author**: System identifier (user@hostname) for backup tracking
@@ -1434,24 +1470,28 @@ The backup metadata has been significantly enhanced to include:
 - **Compatibility Data**: KOREV Evidence version and environment for restoration validation
 
 ### Smart File Management
+
 - **Grouped File Preview**: Organize files by directory structure with depth limitation (max 3 levels)
 - **Smart Grouping**: Show directory hierarchies with expandable file counts
 - **Search and Filter**: Real-time filtering by file name or path fragments
 - **Performance Optimization**: Limit preview files (1000 max) and displayed files (50 per group) for UI responsiveness
 
 ### Real-time Progress Streaming
+
 - **Server-Sent Events**: Live backup progress updates via `/backup_progress_stream` endpoint
 - **Multi-stage Progress**: Discovery → Checksums → Backup → Finalization with percentage tracking
 - **File-by-file Updates**: Real-time display of current file being processed
 - **Error Handling**: Graceful error reporting and warning collection during backup process
 
 ### Advanced API Endpoints
+
 1. **`/backup_preview_grouped`**: Get smart file groupings with depth control and search
 2. **`/backup_progress_stream`**: Stream real-time backup progress via SSE
 3. **`/backup_restore_preview`**: Preview restore operations with pattern filtering
 4. **Enhanced `/backup_inspect`**: Return comprehensive metadata with system information
 
 ### System Information Collection
+
 - **Platform Detection**: OS, architecture, Python version, hostname
 - **Resource Information**: CPU count, memory, disk usage via psutil (converted to strings for JSON consistency)
 - **Environment Capture**: User, timezone, paths, runtime mode
@@ -1459,6 +1499,7 @@ The backup metadata has been significantly enhanced to include:
 - **Integrity Verification**: SHA-256 checksums for individual files and complete backup
 
 ### Security and Reliability Enhancements
+
 - **Integrity Verification**: File-level and backup-level checksum validation
 - **Comprehensive Logging**: Detailed progress tracking and error collection
 - **Path Security**: Enhanced validation with system information context
@@ -1469,6 +1510,7 @@ This enhanced backend specification provides a production-ready, comprehensive b
 ### Implementation Status Updates
 
 #### ✅ COMPLETED: Core BackupService Implementation
+
 - **Git Version Integration**: Updated to use `git.get_git_info()` consistent with `run_ui.py`
 - **Type Safety**: Fixed psutil return values to be strings for JSON metadata consistency
 - **Code Quality**: All linting errors resolved, proper import structure
@@ -1477,7 +1519,9 @@ This enhanced backend specification provides a production-ready, comprehensive b
 - **Git Helper Integration**: Uses python.helpers.git.get_git_info() for version detection consistency
 
 #### Next Implementation Phase: API Endpoints
+
 Ready to implement the 8 API endpoints:
+
 1. `backup_test.py` - Pattern testing and file preview
 2. `backup_create.py` - Archive creation and download
 3. `backup_restore.py` - File restoration from archive
@@ -1492,6 +1536,7 @@ Ready to implement the 8 API endpoints:
 ### ✅ **COMPLETED CLEANUP (December 2024)**
 
 #### **Removed Unused Components:**
+
 - ❌ **`backup_download.py`** - Functionality moved to `backup_create` (direct download)
 - ❌ **`backup_progress_stream.py`** - Not implemented in frontend, overengineered
 - ❌ **`_calculate_file_checksums()` method** - Dead code, checksums not properly used
@@ -1499,12 +1544,14 @@ Ready to implement the 8 API endpoints:
 - ❌ **`hashlib` import** - No longer needed after checksum removal
 
 #### **Simplified BackupService:**
+
 - ✅ **Removed checksum calculation** - Was calculated but not properly used, overcomplicating the code
 - ✅ **Streamlined metadata** - Removed unused integrity verification fields
 - ✅ **Fixed `_count_directories()` method** - Had return statement in wrong place
 - ✅ **Cleaner error handling** - Removed unnecessary warning outputs
 
 #### **Enhanced Hidden File Logic:**
+
 The most critical fix was implementing proper explicit pattern handling:
 
 ```python
@@ -1534,6 +1581,7 @@ if not include_hidden and file.startswith('.'):
 ```
 
 #### **Final API Endpoint Set (6 endpoints):**
+
 1. ✅ **`backup_get_defaults`** - Get default metadata configuration
 2. ✅ **`backup_test`** - Test patterns and preview files (dry run)
 3. ✅ **`backup_preview_grouped`** - Get grouped file preview for UI
@@ -1547,6 +1595,7 @@ if not include_hidden and file.startswith('.'):
 **Problem:** When `include_hidden=false`, the system was excluding ALL hidden files, even when they were explicitly specified in patterns like `/app/.env`.
 
 **Solution:** Implemented explicit pattern detection that distinguishes between:
+
 - **Explicit patterns** (like `/app/.env`) - Always included regardless of `include_hidden` setting
 - **Wildcard discoveries** (like `/app/*`) - Respect the `include_hidden` setting
 
@@ -1555,6 +1604,7 @@ if not include_hidden and file.startswith('.'):
 ### **Implementation Status: ✅ PRODUCTION READY**
 
 The backup system is now:
+
 - **Simplified**: Removed unnecessary complexity and dead code
 - **Reliable**: Fixed critical hidden file handling
 - **Efficient**: No unnecessary checksum calculations
@@ -1562,6 +1612,7 @@ The backup system is now:
 - **Complete**: Full backup and restore functionality working
 
 **Key Benefits of Cleanup:**
+
 - ✅ **Simpler maintenance** - Less code to maintain and debug
 - ✅ **Better performance** - No unnecessary checksum calculations
 - ✅ **Correct behavior** - Hidden files now work as expected
@@ -1576,7 +1627,8 @@ The KOREV Evidence backup system is now production-ready and battle-tested! 🚀
 
 The primary goal has been successfully achieved: **All metadata.json operations in GUI use the ACE editor state, not original archive metadata, giving users complete control to edit and execute exactly what's defined in the editor.**
 
-#### **✅ Archive metadata.json Usage** (MINIMAL - only technical requirements):
+#### **✅ Archive metadata.json Usage** (MINIMAL - only technical requirements)
+
 ```python
 # ONLY used for:
 # 1. Initial ACE editor preload (backup_inspect API)
@@ -1589,7 +1641,8 @@ environment_info = original_backup_metadata.get("environment_info", {})
 backed_up_agent_root = environment_info.get("korev_root", "")
 ```
 
-#### **✅ ACE editor metadata Usage** (EVERYTHING ELSE):
+#### **✅ ACE editor metadata Usage** (EVERYTHING ELSE)
+
 ```python
 # Used for ALL user-controllable operations:
 backup_metadata = user_edited_metadata if user_edited_metadata else original_backup_metadata
@@ -1608,12 +1661,14 @@ include_hidden = backup_metadata.get("include_hidden", False)
 ### **Implementation Architecture**
 
 #### **Hybrid Approach - Perfect Balance:**
+
 - **✅ User Control**: ACE editor content drives all restore operations
 - **✅ Technical Compatibility**: Original metadata enables cross-system path translation
 - **✅ Complete Transparency**: Users see and control exactly what will be executed
 - **✅ System Intelligence**: Automatic path translation preserves functionality
 
 #### **API Layer Integration:**
+
 ```python
 # Both preview and restore APIs follow same pattern:
 class BackupRestorePreview(ApiHandler):
@@ -1631,6 +1686,7 @@ class BackupRestorePreview(ApiHandler):
 ```
 
 #### **Service Layer Implementation:**
+
 ```python
 # Service methods intelligently use both metadata sources:
 async def preview_restore(self, user_edited_metadata: Optional[Dict[str, Any]] = None):
@@ -1650,11 +1706,13 @@ async def preview_restore(self, user_edited_metadata: Optional[Dict[str, Any]] =
 ### **Dead Code Cleanup Results**
 
 #### **✅ Removed Unused Method:**
+
 - **`_find_files_to_clean()` method** (39 lines) - Replaced by `_find_files_to_clean_with_user_metadata()`
 - **Functionality**: Was using original archive metadata instead of user-edited metadata
 - **Replacement**: New method properly uses ACE editor content for clean operations
 
 #### **✅ Method Comparison:**
+
 ```python
 # OLD (REMOVED): Used original archive metadata
 async def _find_files_to_clean(self, backup_metadata: Dict[str, Any]):
@@ -1679,18 +1737,21 @@ async def _find_files_to_clean_with_user_metadata(self, user_metadata: Dict[str,
 ### **Technical Benefits Achieved**
 
 #### **✅ Complete User Control:**
+
 - Users can edit any pattern in the ACE editor
 - Changes immediately reflected in preview operations
 - Execute button runs exactly what's shown in editor
 - No hidden operations using different metadata
 
 #### **✅ Cross-System Compatibility:**
+
 - Path translation preserves technical functionality
 - Users don't need to manually adjust paths
 - Works seamlessly between different KOREV Evidence installations
 - Maintains backup portability across environments
 
 #### **✅ Clean Architecture:**
+
 - Single source of truth: ACE editor content
 - Clear separation of concerns: user control vs technical requirements
 - Eliminated dead code and simplified maintenance
@@ -1699,6 +1760,7 @@ async def _find_files_to_clean_with_user_metadata(self, user_metadata: Dict[str,
 ### **Final Status: ✅ PRODUCTION READY**
 
 The KOREV Evidence backup system now provides:
+
 - **✅ Complete user control** via ACE editor state
 - **✅ Cross-system compatibility** through intelligent path translation
 - **✅ Clean, maintainable code** with dead code eliminated

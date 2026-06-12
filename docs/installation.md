@@ -4,13 +4,12 @@ Click to open a video to learn how to install KOREV Evidence:
 
 [![Easy Installation guide](/docs/res/easy_ins_vid.png)](https://www.youtube.com/watch?v=w5v5Kjx51hs)
 
-The following user guide provides instructions for installing and running KOREV Evidence using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](#in-depth-guide-for-full-binaries-installation).
-
+The following user guide provides instructions for installing and running KOREV Evidence using Docker, which is the primary runtime environment for the framework. For developers and contributors, we also provide instructions for setting up the [full development environment](development.md).
 
 ## Windows, macOS and Linux Setup Guide
 
+1. **Install Docker Desktop:**
 
-1. **Install Docker Desktop:** 
 - Docker Desktop provides the runtime environment for KOREV Evidence, ensuring consistent behavior and security across platforms
 - The entire framework runs within a Docker container, providing isolation and easy deployment
 - Available as a user-friendly GUI application for all major operating systems
@@ -23,15 +22,18 @@ The following user guide provides instructions for installing and running KOREV 
 <br><br>
 
 > [!NOTE]
-> **Linux Users:** You can install either Docker Desktop or docker-ce (Community Edition). 
-> For Docker Desktop, follow the instructions for your specific Linux distribution [here](https://docs.docker.com/desktop/install/linux-install/). 
+> **Linux Users:** You can install either Docker Desktop or docker-ce (Community Edition).
+> For Docker Desktop, follow the instructions for your specific Linux distribution [here](https://docs.docker.com/desktop/install/linux-install/).
 > For docker-ce, follow the instructions [here](https://docs.docker.com/engine/install/).
 >
 > If you're using docker-ce, you'll need to add your user to the `docker` group:
+>
 > ```bash
 > sudo usermod -aG docker $USER
 > ```
+>
 > Log out and back in, then run:
+>
 > ```bash
 > docker login
 > ```
@@ -44,14 +46,14 @@ The following user guide provides instructions for installing and running KOREV 
 <img src="res/setup/image-12.png" alt="docker install" width="300"/>
 <br><br>
 
-1.4. Once installed, launch Docker Desktop: 
+1.4. Once installed, launch Docker Desktop:
 
 <img src="res/setup/image-11.png" alt="docker installed" height="100"/>
 <img src="res/setup/image-13.png" alt="docker installed" height="100"/>
 <br><br>
 
 > [!NOTE]
-> **MacOS Configuration:** In Docker Desktop's preferences (Docker menu) → Settings → 
+> **MacOS Configuration:** In Docker Desktop's preferences (Docker menu) → Settings →
 > Advanced, enable "Allow the default Docker socket to be used (requires password)."
 
 ![docker socket macOS](res/setup/macsocket.png)
@@ -61,6 +63,7 @@ The following user guide provides instructions for installing and running KOREV 
 - Note: KOREV Evidence also offers a Hacking Edition based on Kali linux with modified prompts for cybersecurity tasks. The setup is the same as the regular version, just use the korevai/korev-evidence:hacking image instead of korevai/korev-evidence.
 
 2.1. Pull the KOREV Evidence Docker image:
+
 - Search for `korevai/korev-evidence` in Docker Desktop
 - Click the `Pull` button
 - The image will be downloaded to your machine in a few minutes
@@ -93,10 +96,11 @@ The following user guide provides instructions for installing and running KOREV 
   - `/tmp/settings.json` - Your KOREV Evidence settings
 
 > [!TIP]
-> Choose a location that's easy to access and backup. All your KOREV Evidence data 
+> Choose a location that's easy to access and backup. All your KOREV Evidence data
 > will be directly accessible in this directory.
 
 2.3. Run the container:
+
 - In Docker Desktop, go back to the "Images" tab
 - Click the `Run` button next to the `korevai/korev-evidence` image
 - Open the "Optional settings" menu
@@ -106,10 +110,10 @@ Optionally you can map local folders for file persistence:
 > [!CAUTION]
 > Preferred way of persisting KOREV Evidence data is to use the backup and restore feature.
 > By mapping the whole `/app` directory to a local directory, you will run into problems when upgrading KOREV Evidence to a newer version.
+
 - OPTIONAL: Under "Volumes", configure your mapped folders, if needed:
   - Example host path: Your chosen directory (e.g., `C:\korev-evidence\memory`)
   - Example container path: `/app/memory`
-
 
 - Click the `Run` button in the "Images" tab.
 
@@ -122,13 +126,16 @@ Optionally you can map local folders for file persistence:
 
 > [!TIP]
 > Alternatively, run the following command in your terminal:
+>
 > ```bash
 > docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-evidence
 > ```
+>
 > - Replace `$PORT` with the port you want to use (e.g., `50080`)
 > - Replace `/path/to/your/data` with your chosen directory path
 
 2.4. Access the Web UI:
+
 - The framework will take a few seconds to initialize and the Docker logs will look like the image below.
 - Find the mapped port in Docker Desktop (shown as `<PORT>:80`) or click the port right under the container ID as shown in the image below
 
@@ -143,17 +150,20 @@ Optionally you can map local folders for file persistence:
 > You can also access the Web UI by clicking the ports right under the container ID in Docker Desktop.
 
 > [!NOTE]
-> After starting the container, you'll find all KOREV Evidence files in your chosen 
-> directory. You can access and edit these files directly on your machine, and 
+> After starting the container, you'll find all KOREV Evidence files in your chosen
+> directory. You can access and edit these files directly on your machine, and
 > the changes will be immediately reflected in the running container.
 
 3. Configure KOREV Evidence
+
 - Refer to the following sections for a full guide on how to configure KOREV Evidence.
 
 ## Settings Configuration
+
 KOREV Evidence provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings"button with a gear icon in the sidebar.
 
 ### Agent Configuration
+
 - **Prompts Subdirectory:** Choose the subdirectory within `/prompts` for agent behavior customization. The 'default' directory contains the standard prompts.
 - **Memory Subdirectory:** Select the subdirectory for agent memory storage, allowing separation between different instances.
 - **Knowledge Subdirectory:** Specify the location of custom knowledge files to enhance the agent's understanding.
@@ -161,6 +171,7 @@ KOREV Evidence provides a comprehensive settings interface to customize various 
 ![settings](res/setup/settings/1-agentConfig.png)
 
 ### Chat Model Settings
+
 - **Provider:** Select the chat model provider (e.g., Ollama)
 - **Model Name:** Choose the specific model (e.g., llama3.2)
 - **API URL:** URL of the API endpoint for the chat model - only needed for custom providers like Ollama, Azure, etc.
@@ -170,19 +181,23 @@ KOREV Evidence provides a comprehensive settings interface to customize various 
 ![chat model settings](res/setup/settings/2-chat-model.png)
 
 ### Utility Model Configuration
+
 - **Provider & Model:** Select a smaller, faster model for utility tasks like memory organization and summarization
 - **Temperature:** Adjust the determinism of utility responses
 
 ### Embedding Model Settings
+
 - **Provider:** Choose the embedding model provider (e.g., OpenAI)
 - **Model Name:** Select the specific embedding model (e.g., text-embedding-3-small)
 
 ### Speech to Text Options
+
 - **Model Size:** Choose the speech recognition model size
 - **Language Code:** Set the primary language for voice recognition
 - **Silence Settings:** Configure silence threshold, duration, and timeout parameters for voice input
 
 ### API Keys
+
 - Configure API keys for various service providers directly within the Web UI
 - Click `Save` to confirm your settings
 
@@ -192,9 +207,8 @@ KOREV Evidence provides a comprehensive settings interface to customize various 
 > [!NOTE]
 > **GitHub Copilot Limitations:** GitHub Copilot models typically have smaller rate limits and context windows compared to models hosted by other providers like OpenAI, Anthropic, or Azure. Consider this when working with large conversations or high-frequency requests.
 
-
-
 ### Authentication
+
 - **UI Login:** Set username for web interface access
 - **UI Password:** Configure password for web interface security
 - **Root Password:** Manage Docker container root password for SSH access
@@ -202,14 +216,16 @@ KOREV Evidence provides a comprehensive settings interface to customize various 
 ![settings](res/setup/settings/3-auth.png)
 
 ### Development Settings
+
 - **RFC Parameters (local instances only):** configure URLs and ports for remote function calls between instances
 - **RFC Password:** Configure password for remote function calls
-Learn more about Remote Function Calls and their purpose [here](#7-configure-korev-evidence-rfc).
+Learn more about Remote Function Calls and their purpose [here](development.md#step-6-configure-ssh-and-rfc-connection).
 
 > [!IMPORTANT]
 > Always keep your API keys and passwords secure.
 
 # Choosing Your LLMs
+
 The Settings page is the control center for selecting the Large Language Models (LLMs) that power KOREV Evidence.  You can choose different LLMs for different roles:
 
 | LLM Role | Description |
@@ -219,6 +235,7 @@ The Settings page is the control center for selecting the Large Language Models 
 | `embedding_llm` | This LLM is responsible for generating embeddings used for memory retrieval and knowledge base lookups. Changing the `embedding_llm` will re-index all of Korev's memory. |
 
 **How to Change:**
+
 1. Open Settings page in the Web UI.
 2. Choose the provider for the LLM for each role (Chat model, Utility model, Embedding model) and write the model name.
 3. Click "Save" to apply the changes.
@@ -226,9 +243,11 @@ The Settings page is the control center for selecting the Large Language Models 
 ## Important Considerations
 
 ## Installing and Using Ollama (Local Models)
+
 If you're interested in Ollama, which is a powerful tool that allows you to run various large language models locally, here's how to install and use it:
 
-#### First step: installation
+### First step: installation
+
 **On Windows:**
 
 Download Ollama from the official website and install it on your machine.
@@ -236,12 +255,15 @@ Download Ollama from the official website and install it on your machine.
 <button>[Download Ollama Setup](https://ollama.com/download/OllamaSetup.exe)</button>
 
 **On macOS:**
-```
+
+```bash
 brew install ollama
 ```
+
 Otherwise choose macOS installer from the [official website](https://ollama.com/).
 
 **On Linux:**
+
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
@@ -249,9 +271,11 @@ curl -fsSL https://ollama.com/install.sh | sh
 **Finding Model Names:**
 Visit the [Ollama model library](https://ollama.com/library) for a list of available models and their corresponding names.  The format is usually `provider/model-name` (or just `model-name` in some cases).
 
-#### Second step: pulling the model
+### Second step: pulling the model
+
 **On Windows, macOS, and Linux:**
-```
+
+```text
 ollama pull <model-name>
 ```
 
@@ -259,8 +283,9 @@ ollama pull <model-name>
 
 2. A CLI message should confirm the model download on your system
 
-#### Selecting your model within KOREV Evidence
-1. Once you've downloaded your model(s), you must select it in the Settings page of the GUI. 
+### Selecting your model within KOREV Evidence
+
+1. Once you've downloaded your model(s), you must select it in the Settings page of the GUI.
 
 2. Within the Chat model, Utility model, or Embedding model section, choose Ollama as provider.
 
@@ -272,24 +297,28 @@ ollama pull <model-name>
 
 ![ollama](res/setup/settings/4-local-models.png)
 
-#### Managing your downloaded models
+### Managing your downloaded models
+
 Once you've downloaded some models, you might want to check which ones you have available or remove any you no longer need.
 
-- **Listing downloaded models:** 
+- **Listing downloaded models:**
   To see a list of all the models you've downloaded, use the command:
-  ```
+
+  ```text
   ollama list
   ```
+
 - **Removing a model:**
   If you need to remove a downloaded model, you can use the `ollama rm` command followed by the model name:
-  ```
+
+  ```text
   ollama rm <model-name>
   ```
-
 
 - Experiment with different model combinations to find the balance of performance and cost that best suits your needs. E.g., faster and lower latency LLMs will help, and you can also use `faiss_gpu` instead of `faiss_cpu` for the memory.
 
 ## Using KOREV Evidence on your mobile device
+
 KOREV Evidence's Web UI is accessible from any device on your network through the Docker container:
 
 > [!NOTE]
@@ -305,15 +334,16 @@ KOREV Evidence's Web UI is accessible from any device on your network through th
    - Network access: `http://<YOUR_COMPUTER_IP>:<PORT>`
 
 > [!TIP]
+>
 > - Your computer's IP address is usually in the format `192.168.x.x` or `10.0.x.x`
 > - You can find your external IP address by running `ipconfig` (Windows) or `ifconfig` (Linux/Mac)
 > - The port is automatically assigned by Docker unless you specify one
 
 > [!NOTE]
-> If you're running KOREV Evidence directly on your system (legacy approach) instead of 
+> If you're running KOREV Evidence directly on your system (legacy approach) instead of
 > using Docker, you'll need to configure the host manually in `run_ui.py` to run on all interfaces using `host="0.0.0.0"`.
 
-For developers or users who need to run KOREV Evidence directly on their system,see the [In-Depth Guide for Full Binaries Installation](#in-depth-guide-for-full-binaries-installation).
+For developers or users who need to run KOREV Evidence directly on their system, see the [development manual](development.md).
 
 # How to update KOREV Evidence
 
@@ -322,6 +352,7 @@ For developers or users who need to run KOREV Evidence directly on their system,
 > In Settings, Backup and Restore tab will guide you through the process.
 
 1. **If you come from the previous version of KOREV Evidence:**
+
 - Your data is safely stored across various directories and files inside the KOREV Evidence folder.
 - To update to the new Docker runtime version, you might want to backup the following files and directories:
   - `/memory` - Agent's memory
@@ -338,6 +369,7 @@ For developers or users who need to run KOREV Evidence directly on their system,
 > The same goes for chats in `/tmp/chats/`, they might be incompatible with the new version
 
 2. **Update Process (Docker Desktop)**
+
 - Go to Docker Desktop and stop the container from the "Containers" tab
 - Right-click and select "Remove" to remove the container
 - Go to "Images" tab and remove the `korevai/korev-evidence` image or click the three dots to pull the difference and update the Docker image.
@@ -372,9 +404,8 @@ For developers or users who need to run KOREV Evidence directly on their system,
 > docker run -p $PORT:80 -v /path/to/your/data:/korev korevai/korev-evidence
 > ```
 
-      
-### Conclusion
-After following the instructions for your specific operating system, you should have KOREV Evidence successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents. 
+## Conclusion
+
+After following the instructions for your specific operating system, you should have KOREV Evidence successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents.
 
 If you encounter any issues during the installation process, please consult the [Troubleshooting section](troubleshooting.md) of this documentation or refer to the [korev.ai](https://korev.ai) for assistance.
-

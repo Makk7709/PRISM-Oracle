@@ -85,6 +85,7 @@ Suppression de **code CSS commenté** (`S125`, 19 findings) et d'une **règle vi
 ### Paquet S125-sep — séparateurs décoratifs Python (python:S125, 163 findings)
 
 `python:S125` total = **204** findings sur 105 fichiers. Classification automatique :
+
 - **163 séparateurs décoratifs** (`# ────`/`# ═══`) → faux positifs « commented code ».
 - **34 vrais blocs de code commenté** → traités au paquet suivant.
 - **7 « autres »** = commentaires inline sur du vrai code (`return False  # UNSUPPORTED`) → FP.
@@ -109,6 +110,7 @@ fichier est abandonné (anti off-by-one / anti-régression). 14/14 fichiers trai
 abandon**, 130 lignes retirées. Compilation 14/14 OK ; diff = commentaires/vides uniquement.
 
 **Faux positifs conservés (prose, pas du code)** — non touchés :
+
 - `python/helpers/legal_orchestrator.py:296` — `# MEDIUM, HIGH, CRITICAL + non-INFO = required`
   (commentaire explicatif du `return True`).
 - `python/helpers/legal_pipeline.py:1179-1181` — documentation des seuils de consensus
@@ -203,6 +205,7 @@ des 41 lignes du diff (équivalence sémantique confirmée) ; re-scan final → 
 ### Paquet S112-py — exceptions génériques (python:S112, 49 findings → 17 fichiers)
 
 `raise Exception(...)` générique → exception spécifique, choisie par sémantique :
+
 - **ValueError** : validation d'entrée / argument manquant ou invalide (handlers API
   `projects`, `upload*`, `knowledge_*`, `nudge` ; `rfc_files` « Path is not a … » ;
   `rfc` « Invalid RFC hash »).
@@ -214,6 +217,7 @@ des 41 lignes du diff (équivalence sémantique confirmée) ; re-scan final → 
 **46 raises de production convertis** ; 0 `raise Exception(` restant dans les fichiers prod.
 
 **Audit hostile — risque d'interception vérifié** :
+
 - handler API top-level = `except Exception` (`api.py:108`) → toute sous-classe reste
   capturée → 500 inchangé.
 - TOUS les `except RuntimeError` étroits du dépôt inspectés (`defer`, `critical_output`,
@@ -241,6 +245,7 @@ décalé les numéros de ligne.
 
 **4 cas DIFFÉRÉS** (inversion nuirait à la lisibilité / risque de swap disproportionné pour
 un finding cosmétique) :
+
 - `scheduler.js:242` et `:599` — chaînes `if / else if / else` (inverser le 1er test
   imposerait de restructurer toute la chaîne).
 - `scheduler.js:1515` — `else` contenant toute la définition d'un composant (gros bloc).
@@ -260,6 +265,7 @@ et insère la constante `_UPPER` (privée → pas d'export) au niveau module, ap
 import top-level (fin réelle calculée par AST pour gérer les imports multi-lignes).
 
 **26 findings corrigés** (19 fichiers de production), littéraux-**valeurs** uniquement :
+
 - Messages d'erreur : `shell_ssh` (« Shell not connected »), `tty_session`
   (« TTYSpawn is not started »), `scheduler` (« Task UUID is required »), `projects`
   (« Project name is required »), `legal_agent_contracts` (« Must not be empty »).
@@ -274,6 +280,7 @@ import top-level (fin réelle calculée par AST pour gérer les imports multi-li
   (« CONFIDENTIEL - SECRET MÉDICAL »), `judilibre` (« Cour de cassation »).
 
 **15 findings DIFFÉRÉS — extraction non pertinente / risquée (documentés)** :
+
 - **Fixtures de test** (7) : `tests/fixtures/legal_corpus.py` (6), `tests/fixtures/pdf_generator.py`
   (1) — duplication = **données de test** intentionnelles ; extraire des constantes nuit à la
   lisibilité des fixtures (pratique courante : exclure les tests de S1192).
@@ -289,6 +296,7 @@ import top-level (fin réelle calculée par AST pour gérer les imports multi-li
   l'**incohérence de casse est remontée** pour décision produit.
 
 **Audit hostile** :
+
 - **DEF-1 (CRITIQUE, corrigé)** : 1ʳᵉ insertion dans `evidence_document/templates.py` plaçait
   la constante **après son usage** (imports top-level dispersés en milieu de fichier →
   `import re` ~L502 postérieur au dict `TEMPLATES` ~L429). `py_compile` ne détecte pas la
@@ -318,6 +326,7 @@ extensions de masquage/stream + `system_prompt`/`update_check`/`rename_chat`.
 alors que `e` y **est** réutilisé (`raise e` L909) sur le chemin où `original_exception is None` —
 retirer `as e` provoquerait un `NameError` runtime (= la régression déjà revertée en session
 antérieure). **Exclu du fix** (revert ciblé après `ruff --fix`).
+
 - Filet de sécurité AST : aucun handler `except` sans binding (dans les fichiers modifiés) ne
   référence `e` → 0 danger.
 - `py_compile` 13/13 OK ; ruff F841 : 105 → **89** (les 16 visés résolus ; le 1 « fixable »
@@ -325,6 +334,7 @@ antérieure). **Exclu du fix** (revert ciblé après `ruff --fix`).
 
 **Sous-lot B — affectations `var = <expr>` inutilisées (88 traitées, 58 fichiers)** :
 transformation **universellement préservante** (outil AST `tmp/sonar/transform_f841.py`) :
+
 - RHS **sans aucun** `Call`/`Await`/`Yield` → suppression de l'instruction (pur, 0 effet de bord).
 - RHS **contenant un appel** → on garde l'expression (on retire seulement `var =`), préservant
   TOUS les effets de bord. Cas critiques validés : lancements `defer.DeferredTask().start_task()`
@@ -333,6 +343,7 @@ transformation **universellement préservante** (outil AST `tmp/sonar/transform_
   `safe_path_join()` (validation sécurité), constructions/`record_decision()` en tests.
 
 **Audit hostile** :
+
 - **DEF (corrigés en cours de route)** : `ast.get_source_segment` perdait les parenthèses
   englobantes (`x = ( EXPR )`) → 3 `IndentationError`. Corrigé : coupe juste après le `=`
   (les lignes d'origine, donc les parenthèses, sont gardées verbatim) → `py_compile` 58/58 OK.
@@ -407,7 +418,7 @@ seul un chemin **racine-absolu** se résout (contre l'origine). De plus, le rege
 loader ne matche que `import X from "Y"`, alors que les 35 imports HTML sont des imports **à effet de
 bord** `import "/x.js";` (sans `from`) → non réécrits, donc l'absolu y est **obligatoire**.
 
-**Répartition** : 91 findings / 49 fichiers (56 en `.js`, 35 en `.html`). Les 35 HTML *exigent*
+**Répartition** : 91 findings / 49 fichiers (56 en `.js`, 35 en `.html`). Les 35 HTML _exigent_
 l'absolu (blob) ; convertir les 56 `.js` seuls n'apporterait rien et rendrait le codebase incohérent
 (HTML absolu + JS relatif) + fragiliserait (aucun test JS/webui).
 
@@ -453,8 +464,8 @@ de lignes) → classement en 4 groupes.
 ### Groupe D — contrats d'API / familles à signature uniforme (won't-fix par design)
 
 - **Familles de dispatch** (signature uniforme volontaire) : `memory_consolidation._handle_*`
-  + `_extract_search_keywords`/`_analyze_memory_consolidation` (`log_item` ×6), `reasoning_engine._handle_trivial`
-  + `_try_alternative`/`build_decision_tree`, `tty_session._spawn_*` (`echo`, signature cross-plateforme),
+  - `_extract_search_keywords`/`_analyze_memory_consolidation` (`log_item` ×6), `reasoning_engine._handle_trivial`
+  - `_try_alternative`/`build_decision_tree`, `tty_session._spawn_*` (`echo`, signature cross-plateforme),
   `evidence_document/renderer._render_*` + `_build_assumptions_section` (`template` ×3, `strict`).
 - **Miroirs d'interface / API documentée** : `python/api/message.communicate(input)` (miroir de
   `ApiHandler.process(self, input, request)` — retirer déplacerait juste le finding sur l'override),
@@ -466,11 +477,10 @@ de lignes) → classement en 4 groupes.
   `research_pipeline._decompose_with_llm(max_depth)`, `create_fail_closed_response(query_context)`,
   `_format_rejected_conclusion(query)`, `record_timeout(engine)`.
 
-**Bilan S1172** : 3 findings résolus dans le code (1 retrait sûr + 2 correctifs qui *utilisent* le
+**Bilan S1172** : 3 findings résolus dans le code (1 retrait sûr + 2 correctifs qui _utilisent_ le
 paramètre comme prévu, dont **1 vrai renforcement de traçabilité d'audit**) ; 32 documentés
 won't-fix-par-design (familles uniformes, contrats d'API, redondances, stubs, forward-compat). **Aucun
-retrait de signature risqué pour un gain MINOR.** Tests : 80/80 verts (contradictor + métacognition
-+ doctrine) ; ruff ARG : 0 sur les 3 fonctions corrigées.
+retrait de signature risqué pour un gain MINOR.** Tests : 80/80 verts (contradictor + métacognition + doctrine) ; ruff ARG : 0 sur les 3 fonctions corrigées.
 
 ---
 

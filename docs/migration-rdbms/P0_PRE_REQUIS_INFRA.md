@@ -44,6 +44,7 @@ reproductible : `scripts/backup/snapshot_pre_migration.sh`.
 Fichier : `deploy/docker-compose.yml`
 
 Le service `evidence-postgres` est defini avec :
+
 - image `pgvector/pgvector:pg16`
 - volume `evidence-postgres-data`
 - healthcheck `pg_isready` (15s interval)
@@ -75,10 +76,12 @@ Fichier : `deploy/postgres/init/01_extensions.sql`
 ### 5. Backup quotidien + restore
 
 Fichiers :
+
 - `scripts/backup/pg_dump_daily.sh` : dump quotidien
 - `scripts/backup/pg_restore_from_dump.sh` : restore depuis dump
 
 Caracteristiques :
+
 - `pg_dump --clean --if-exists --no-owner --no-acl --quote-all-identifiers`
   Le `--clean --if-exists` est OBLIGATOIRE (cf. DEF-8) : sans lui, le restore
   echoue silencieusement sur les conflits de PK avec les tables creees par
@@ -138,7 +141,7 @@ P0 est valide quand :
 
 P0 est **VALIDE**.
 
-## Pas de P1 sans :
+## Pas de P1 sans
 
 - [ ] Job CI dedie qui execute `pytest -m infra` (point H-3 de l'audit
   hostile du plan)
@@ -172,6 +175,7 @@ le project name etait `p0-test`. Tous les containers exterieurs a ce project
 mais visibles par le daemon Docker ont ete consideres comme orphelins.
 
 **Causes humaines :**
+
 - Sous-estimation de l'effet de `--remove-orphans` hors du repertoire prod.
 - Absence de project name explicite dans le compose staging au moment du
   test.
@@ -186,6 +190,7 @@ mais visibles par le daemon Docker ont ete consideres comme orphelins.
 | Section "Pourquoi PAS `--remove-orphans`" dans le README Postgres | `deploy/postgres/README.md` | Doctrine ecrite pour les futurs operateurs |
 
 **Verification post-correction :**
+
 - Apres restart, prod healthy 4/4 containers en moins de 90 secondes.
 - `evidence-backend /healthz` interne = HTTP 200.
 - `evidence-caddy /healthz` interne = OK.

@@ -48,6 +48,7 @@ pytest tests/test_user_entry_gate.py -v
 ```
 
 **Vérifications OBLIGATOIRES**:
+
 - [ ] `gate_applied=true` dans les logs
 - [ ] `requires_consensus=true` pour domaines critiques
 - [ ] `strict_evidence_mode=true` pour domaines critiques
@@ -55,6 +56,7 @@ pytest tests/test_user_entry_gate.py -v
 - [ ] `override_applied=true` si force_consensus=False sur domaine critique
 
 **Test manuel critique**:
+
 ```python
 from python.helpers.critical_decision_gate import CriticalDecisionGate
 
@@ -81,6 +83,7 @@ pytest tests/test_multitask_consensus_routing.py::TestMultitaskLegalSafeConsensu
 ```
 
 **Vérifications**:
+
 - [ ] `legal_safe` dans `CONSENSUS_REQUIRED_PROFILES`
 - [ ] `requires_consensus=True` TOUJOURS
 - [ ] `strict_evidence_mode=True` activé
@@ -105,12 +108,14 @@ pytest tests/test_research_bypass.py -v
 ```
 
 **Vérifications OBLIGATOIRES**:
+
 - [ ] Profil `researcher` → consensus même sur query vide
 - [ ] Query scientifique via default → consensus
 - [ ] `force_consensus=False` IGNORÉ pour profil `researcher`
 - [ ] `ResearchConsensusIntegration` existe et force consensus
 
 **Test manuel critique**:
+
 ```python
 from python.helpers.criticality_router import CriticalityRouter
 
@@ -154,6 +159,7 @@ pytest tests/test_consensus_no_simulation_prod.py -v
 ```
 
 **Test manuel OBLIGATOIRE**:
+
 ```bash
 # Doit ÉCHOUER avec SimulationError
 EVIDENCE_ENV=production CONSENSUS_SIMULATION=true python -c \
@@ -171,6 +177,7 @@ pytest tests/test_strict_evidence_fail_closed.py -v
 ```
 
 **Vérifications**:
+
 - [ ] `DOMAIN_EVIDENCE_REQUIREMENTS[LEGAL]` exige `min_sources >= 2` + PRIMARY
 - [ ] `DOMAIN_EVIDENCE_REQUIREMENTS[MEDICAL]` exige `min_reliability = HIGH`
 - [ ] Claims sans source → `ClaimStatus.UNSUPPORTED`
@@ -193,6 +200,7 @@ pytest tests/test_strict_evidence_fail_closed.py -v
 **🔴 RÈGLE EXPLICITE OFFLINE (domaines critiques)**:
 
 En `OFFLINE_MODE=true` sur domaine **MEDICAL / LEGAL / SCIENTIFIC**, le système **DOIT REFUSER**:
+
 - Toute recommandation actionnable
 - Tout diagnostic
 - Tout conseil qui pourrait être suivi
@@ -200,6 +208,7 @@ En `OFFLINE_MODE=true` sur domaine **MEDICAL / LEGAL / SCIENTIFIC**, le système
 Même si le LLM principal "répond", la réponse DOIT être **fail-closed**.
 
 **Vérifications OBLIGATOIRES**:
+
 - [ ] Offline + MEDICAL → pas de recommandation de traitement/posologie
 - [ ] Offline + LEGAL → pas de conseil juridique actionnable
 - [ ] Offline + SCIENTIFIC → pas de conclusion définitive non validée
@@ -208,6 +217,7 @@ Même si le LLM principal "répond", la réponse DOIT être **fail-closed**.
 **🔴 CRITÈRE TESTABLE T6**:
 
 En OFFLINE + domaine critique, la réponse DOIT satisfaire:
+
 ```python
 assert result.decision == GateDecision.FAIL_CLOSED
 assert result.claims == []  # AUCUN claim émis
@@ -217,6 +227,7 @@ assert "presc" not in result.output.lower()      # Pas de prescription
 ```
 
 **Test**:
+
 ```python
 from python.helpers.consensus_arbiter import ConsensusOrchestrator, ConsensusConfig
 
@@ -239,6 +250,7 @@ pytest tests/test_long_report_job.py -v
 ```
 
 **Vérifications OBLIGATOIRES**:
+
 - [ ] `max_sections=None` (PAS de limite côté app)
 - [ ] 50+ sections générées avec succès
 - [ ] Fichier `.md` créé par append progressif
@@ -257,6 +269,7 @@ pytest tests/test_chart_image_tools.py -v
 ```
 
 **Vérifications**:
+
 - [ ] `ChartRequest` validé par Pydantic
 - [ ] Pas de champ `code`, `script`, `exec`
 - [ ] `check_prompt_policy()` bloque contenu interdit
@@ -275,6 +288,7 @@ pytest tests/test_final_output_claim_integrity.py -v
 ```
 
 **Format de sortie structuré (claim-first)**:
+
 ```python
 # Structure exigée pour domaines MEDICAL/LEGAL/SCIENTIFIC
 StructuredResponse = {
@@ -295,12 +309,14 @@ StructuredResponse = {
 ```
 
 **Vérifications OBLIGATOIRES**:
+
 - [ ] Domaine critique → sortie structurée `{claims, answer_md, citations}`
 - [ ] Chaque `claim` a un `claim_id` + `source_ids` non vide
 - [ ] Vérification `claim.source_ids ⊆ citations.ids` (cohérence)
 - [ ] Si sortie texte libre → **best effort only**, pas preuve irréfutable
 
 **Test manuel — Vérification structurée (robuste)**:
+
 ```python
 from python.helpers.evidence import EvidencePack, Claim, ClaimStatus
 
@@ -323,6 +339,7 @@ assert claim_unsourced.status == ClaimStatus.UNSUPPORTED
 **🔴 RÈGLE CONTRACTUELLE T9**:
 
 En domaines **MEDICAL / LEGAL / SCIENTIFIC**, le handler **DOIT**:
+
 1. Exiger une sortie structurée `{claims, answer_md, citations}`
 2. Si sortie texte libre → `decision=fail_closed` + marquer "NON VALIDABLE"
 3. Refuser de passer en texte libre "pour dépanner"
@@ -376,7 +393,8 @@ Les kill tests PROUVENT que la suite détecte les régressions.
 python tools/kill_tests.py
 ```
 
-**Résultat attendu**: 
+**Résultat attendu**:
+
 - Phase 1: Tests ÉCHOUENT avec patch appliqué
 - Phase 2: Tests PASSENT après restauration
 
@@ -481,6 +499,7 @@ Chaque requête critique doit contenir ces champs.
 | `override_applied` | bool | `result.override_applied` |
 
 **Méthode de test recommandée**:
+
 ```python
 # Vérifier via l'objet, pas le format de log
 result = gate.enforce_or_route(query, profile)
@@ -512,10 +531,10 @@ Si le schema change, la version est incrémentée → tests avertis du breaking 
 
 | Rôle | Nom | Date | Signature |
 |------|-----|------|-----------|
-| Lead Backend | ____________ | ____/____/____ | ____________ |
-| Architecte IA | ____________ | ____/____/____ | ____________ |
-| QA Lead | ____________ | ____/____/____ | ____________ |
-| Security Review | ____________ | ____/____/____ | ____________ |
+| Lead Backend | ____________ | ****/****/____ | ____________ |
+| Architecte IA | ____________ | ****/****/____ | ____________ |
+| QA Lead | ____________ | ****/****/____ | ____________ |
+| Security Review | ____________ | ****/****/____ | ____________ |
 
 ---
 
@@ -537,6 +556,7 @@ Si le schema change, la version est incrémentée → tests avertis du breaking 
 *\*T2bis (research bypass) est couvert dans `test_research_bypass.py` (pas de fichier séparé).*
 
 **Note FAST vs FULL** :
+
 - **FAST** = subset critique (6 fichiers, 85 tests) — validation rapide des invariants T0–T5, T9
 - **FULL** = suite complète (10 fichiers, 149 tests) — ajoute T6–T8 + tests intégration
 
@@ -545,7 +565,8 @@ FAST ⊂ FULL. Le nombre de tests peut varier selon les ajouts.
 ### Détail des Exécutions
 
 **FAST Tests** (6 fichiers, 85 tests):
-```
+
+```yaml
 Files: test_user_entry_gate, test_research_bypass, test_criticality_router,
        test_consensus_no_simulation_prod, test_strict_evidence_fail_closed,
        test_final_output_claim_integrity
@@ -554,7 +575,8 @@ Result: ✅ PASS
 ```
 
 **FULL Tests** (10 fichiers):
-```
+
+```yaml
 Files: FAST + test_multitask_consensus_routing, test_long_report_job,
        test_chart_image_tools, test_anti_bypass
 Tests: 149 passed, 0 failed
@@ -563,7 +585,8 @@ Result: ✅ PASS
 ```
 
 **Kill Tests**:
-```
+
+```text
 QUORUM_BYPASS          → ✅ PASS (tests broke with patch)
 ABSTAIN_AS_APPROVE     → ✅ PASS (tests broke with patch)
 EVIDENCE_ALWAYS_VALID  → ✅ PASS (tests broke with patch)
@@ -575,7 +598,8 @@ Git status: unchanged — no files modified by kill tests
 ```
 
 **Stress Run (30 itérations)**:
-```
+
+```yaml
 Iterations: 30/30 completed
 Flakes: 0
 Total duration: 165021ms (~2m45s)
@@ -584,7 +608,7 @@ Result: ✅ PASS
 
 ### Verdict Final
 
-```
+```text
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
 ║   ✅ GO                                                        ║

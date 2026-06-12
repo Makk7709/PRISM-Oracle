@@ -1,6 +1,7 @@
 # KOREV Evidence Backup/Restore Frontend Specification
 
 ## Overview
+
 This specification defines the frontend implementation for KOREV Evidence's backup and restore functionality, providing an intuitive user interface with a dedicated "backup" tab in the settings system and following established Alpine.js patterns. The backup functionality gets its own tab for better organization and user experience.
 
 ## Frontend Architecture
@@ -8,6 +9,7 @@ This specification defines the frontend implementation for KOREV Evidence's back
 ### 1. Settings Integration
 
 #### Settings Modal Enhancement
+
 Update `webui/js/settings.js` to handle backup/restore button clicks in the dedicated backup tab:
 
 ```javascript
@@ -28,7 +30,8 @@ async handleFieldButton(field) {
 ### 2. Component Structure
 
 #### Directory Structure
-```
+
+```text
 webui/components/settings/backup/
 ├── backup.html           # Backup creation modal
 ├── restore.html          # Restore modal
@@ -38,7 +41,9 @@ webui/components/settings/backup/
 **Note**: The backup functionality is accessed through a dedicated "backup" tab in the settings interface, providing users with easy access to backup and restore operations without cluttering other settings areas.
 
 #### Enhanced Metadata Structure
+
 The backup system uses a comprehensive `metadata.json` file that includes:
+
 - **Pattern Arrays**: Separate `include_patterns[]` and `exclude_patterns[]` for granular control
 - **System Information**: Platform, environment, and version details
 - **Direct JSON Editing**: Users edit the metadata.json directly in ACE JSON editor
@@ -47,6 +52,7 @@ The backup system uses a comprehensive `metadata.json` file that includes:
 ### 3. Backup Modal Component
 
 #### File: `webui/components/settings/backup/backup.html`
+
 ```html
 <html>
 <head>
@@ -147,6 +153,7 @@ The backup system uses a comprehensive `metadata.json` file that includes:
 ### 4. Restore Modal Component
 
 #### File: `webui/components/settings/backup/restore.html`
+
 ```html
 <html>
 <head>
@@ -326,6 +333,7 @@ The backup system uses a comprehensive `metadata.json` file that includes:
 ### 5. Store Implementation
 
 #### File: `webui/components/settings/backup/backup-store.js`
+
 ```javascript
 import { createStore } from "/js/AlpineStore.js";
 
@@ -1267,15 +1275,19 @@ export { store };
 ### 6. Integration Requirements
 
 #### Settings Tab Integration
+
 The backup functionality is integrated as a dedicated "backup" tab in the settings system, providing:
+
 - **Dedicated Tab**: Clean separation from other settings categories
 - **Easy Access**: Users can quickly find backup/restore functionality
 - **Organized Interface**: Backup operations don't clutter developer or other tabs
 
 #### Settings Button Handler
+
 Update settings field button handling to open backup/restore modals when respective buttons are clicked in the backup tab.
 
 **Integration with existing `handleFieldButton()` method:**
+
 ```javascript
 // In webui/js/settings.js - add to existing handleFieldButton method
 async handleFieldButton(field) {
@@ -1292,10 +1304,13 @@ async handleFieldButton(field) {
 ```
 
 #### Modal System Integration
+
 Use existing `openModal()` and `closeModal()` functions from the global modal system (`webui/js/modals.js`).
 
 #### Toast Notifications
+
 Use existing KOREV Evidence toast system for consistent user feedback:
+
 ```javascript
 // Use established toast patterns
 globalThis.toast("Backup created successfully", "success");
@@ -1304,9 +1319,11 @@ globalThis.toast("Error creating backup", "error");
 ```
 
 #### ACE Editor Integration
+
 The backup system follows KOREV Evidence's established ACE editor patterns **exactly** as implemented in MCP servers:
 
 **Theme Detection (identical to MCP servers):**
+
 ```javascript
 // Exact pattern from webui/components/settings/mcp/client/mcp-servers-store.js
 const container = document.getElementById("backup-metadata-editor");
@@ -1328,6 +1345,7 @@ if (container) {
 ```
 
 **Cleanup Pattern (following MCP servers):**
+
 ```javascript
 onClose() {
     if (this.backupEditor) {
@@ -1339,9 +1357,11 @@ onClose() {
 ```
 
 #### API Integration Patterns
+
 The backup system uses KOREV Evidence's existing API communication methods for consistency:
 
 **Standard API Calls (using global sendJsonData):**
+
 ```javascript
 // Use existing global sendJsonData function (from webui/index.js)
 const response = await sendJsonData("backup_test", {
@@ -1359,6 +1379,7 @@ if (response.success) {
 ```
 
 **File Upload API Calls:**
+
 ```javascript
 // For endpoints that handle file uploads (restore operations)
 const formData = new FormData();
@@ -1374,6 +1395,7 @@ const result = await response.json();
 ```
 
 **Server-Sent Events (progress streaming):**
+
 ```javascript
 // Real-time progress updates using EventSource
 const eventSource = new EventSource('/backup_progress_stream?' + new URLSearchParams({
@@ -1389,9 +1411,11 @@ eventSource.onmessage = (event) => {
 ```
 
 #### Utility Function Integration
+
 The backup system can leverage existing KOREV Evidence utility functions for consistency:
 
 **File Size Formatting:**
+
 ```javascript
 // Check if KOREV Evidence has existing file size utilities
 // If not available, implement following KOREV Evidence's style patterns
@@ -1404,6 +1428,7 @@ formatFileSize(bytes) {
 ```
 
 **Time Formatting (following existing patterns):**
+
 ```javascript
 // Use existing localization helpers if available
 formatTimestamp(timestamp) {
@@ -1413,6 +1438,7 @@ formatTimestamp(timestamp) {
 ```
 
 **Error Handling Integration:**
+
 ```javascript
 // Use existing error handling patterns
 try {
@@ -1427,15 +1453,19 @@ try {
 ### 8. Styling Guidelines
 
 #### CSS Variables
+
 Use existing CSS variables for consistent theming:
+
 - `--c-bg-primary`, `--c-bg-secondary`
 - `--c-text-primary`, `--c-text-secondary`
 - `--c-border`, `--c-error`, `--c-success-bg`
 
 #### Responsive Design
+
 Ensure modals work on mobile devices with appropriate responsive breakpoints.
 
 #### Accessibility
+
 - Proper ARIA labels for form elements
 - Keyboard navigation support
 - Screen reader compatibility
@@ -1443,11 +1473,13 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 ### 9. Error Handling
 
 #### User-Friendly Messages
+
 - Clear error messages for common scenarios
 - Loading states with descriptive messages
 - Success feedback with action confirmation
 
 #### Validation
+
 - Client-side validation for file types
 - Pattern syntax validation
 - File size limits
@@ -1455,6 +1487,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 ## Comprehensive Enhancement Summary
 
 ### Enhanced File Preview System
+
 - **Smart Directory Grouping**: Files organized by directory structure with 3-level depth limitation
 - **Dual View Modes**: Toggle between grouped directory view and flat file list
 - **Real-time Search**: Debounced search filtering by file name or path fragments
@@ -1463,6 +1496,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Export Capabilities**: Export file lists to text files or copy to clipboard
 
 ### Real-time Progress Visualization
+
 - **Live Progress Streaming**: Server-Sent Events for real-time backup/restore progress updates
 - **Multi-stage Progress Bar**: Visual progress indicator with percentage and stage information
 - **File-by-file Display**: Current file being processed with count progress (X/Y files)
@@ -1471,6 +1505,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Status Categorization**: Color-coded progress entries (info, warning, error, success)
 
 ### Comprehensive Metadata Display
+
 - **Enhanced Backup Information**: Basic info grid with creation date, author, version, file count, size, and checksum
 - **Expandable Detailed View**: Collapsible sections for system info, environment details, and backup configuration
 - **System Information Display**: Platform, architecture, Python version, hostname from backup metadata
@@ -1479,6 +1514,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Metadata Export**: Export complete metadata.json for external analysis
 
 ### Consistent UI Standards
+
 - **Standardized Scrollable Areas**: All file lists and progress logs use consistent max-height (350px) with scroll
 - **Monospace Font Usage**: File paths displayed in monospace for improved readability
 - **Responsive Design**: Mobile-friendly layouts with proper breakpoints
@@ -1486,6 +1522,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Loading States**: Comprehensive loading indicators with descriptive messages
 
 ### Advanced User Experience Features
+
 - **Search and Filter**: Real-time file filtering with search term highlighting
 - **Pattern Control Buttons**: "Reset to Original", "Load Defaults", "Preview Files" for pattern management
 - **File Selection Preview**: Comprehensive file preview before backup/restore operations
@@ -1494,6 +1531,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **State Persistence**: Remember user preferences (view mode, expanded groups, etc.)
 
 ### Alpine.js Architecture Enhancements
+
 - **Enhanced Store Management**: Extended backup store with grouped preview, progress tracking, and metadata handling
 - **Event-driven Updates**: Real-time UI updates via Server-Sent Events integration
 - **State Synchronization**: Proper Alpine.js reactive state management for complex UI interactions
@@ -1501,6 +1539,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Performance Optimization**: Debounced search, efficient list rendering, and scroll management
 
 ### Integration Features
+
 - **Settings Modal Integration**: Seamless integration with existing KOREV Evidence settings system
 - **Toast Notifications**: Success/error feedback using existing notification system
 - **Modal System**: Proper integration with KOREV Evidence's modal management
@@ -1508,6 +1547,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Error Handling**: Unified error handling and user feedback mechanisms
 
 ### Accessibility and Usability
+
 - **Keyboard Navigation**: Full keyboard support for all interactive elements
 - **Screen Reader Support**: Proper ARIA labels and semantic HTML structure
 - **Copy-to-Clipboard**: Quick clipboard operations for file lists and metadata
@@ -1517,6 +1557,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 ## Enhanced Restore Workflow with Pattern Editing
 
 ### Metadata-Driven Restore Process
+
 1. **Upload Archive**: User uploads backup.zip file in restore modal
 2. **Parse Metadata**: System extracts and loads complete metadata.json
 3. **Display JSON**: Complete metadata.json shown in ACE JSON editor
@@ -1526,6 +1567,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 7. **Execute Restore**: Files restored according to final metadata configuration
 
 ### JSON Metadata Editing Benefits
+
 - **Single Source of Truth**: metadata.json is the authoritative configuration
 - **Direct Control**: Users edit the exact JSON that will be used for restore
 - **Full Access**: Modify any metadata property, not just patterns
@@ -1533,6 +1575,7 @@ Ensure modals work on mobile devices with appropriate responsive breakpoints.
 - **Transparency**: See exactly what configuration will be applied
 
 ### Enhanced User Experience
+
 - **Intelligent Defaults**: Complete metadata automatically loaded from backup
 - **JSON Editor**: Professional ACE editor with syntax highlighting and validation
 - **Real-time Preview**: See exactly which files will be restored before proceeding
@@ -1547,18 +1590,21 @@ This enhanced frontend specification delivers a professional-grade user interfac
 #### **✅ COMPLETED Components:**
 
 **1. Settings Integration** ✅
+
 - **Backup Tab**: Dedicated "Backup & Restore" tab in settings interface
 - **Button Handlers**: Integrated with existing `handleFieldButton()` method
 - **Modal System**: Uses existing KOREV Evidence modal management
 - **Toast Notifications**: Consistent error/success feedback
 
 **2. Alpine.js Components** ✅
+
 - **Backup Modal**: `webui/components/settings/backup/backup.html`
 - **Restore Modal**: `webui/components/settings/backup/restore.html`
 - **Backup Store**: `webui/components/settings/backup/backup-store.js`
 - **Theme Integration**: Full dark/light mode support with CSS variables
 
 **3. Core Functionality** ✅
+
 - **JSON Metadata Editing**: ACE editor with syntax highlighting and validation
 - **File Preview**: Grouped directory view with search and filtering
 - **Real-time Operations**: Live backup creation and restore progress
@@ -1566,6 +1612,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 - **Progress Monitoring**: File-by-file progress tracking and logging
 
 **4. User Experience Features** ✅
+
 - **Drag & Drop**: File upload for restore operations
 - **Search & Filter**: Real-time file filtering by name/path
 - **Export Options**: File lists and metadata export
@@ -1575,6 +1622,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 #### **✅ Backend Integration:**
 
 **API Endpoints Used:**
+
 1. **`/backup_get_defaults`** - Get default patterns with resolved absolute paths
 2. **`/backup_test`** - Pattern testing and dry run functionality
 3. **`/backup_preview_grouped`** - Smart file grouping for UI display
@@ -1584,6 +1632,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 7. **`/backup_restore`** - Execute file restoration
 
 **Communication Patterns:**
+
 - **Standard API**: Uses global `sendJsonData()` for consistency
 - **File Upload**: FormData for archive uploads with proper validation
 - **Error Handling**: Follows KOREV Evidence error formatting and toast patterns
@@ -1592,18 +1641,21 @@ This enhanced frontend specification delivers a professional-grade user interfac
 #### **✅ Key Technical Achievements:**
 
 **Enhanced Metadata Management:**
+
 - **Direct JSON Editing**: Users edit metadata.json directly in ACE editor
 - **Pattern Arrays**: Separate include_patterns/exclude_patterns for granular control
 - **Real-time Validation**: JSON syntax checking and structure validation
 - **System Information**: Complete backup context with platform/environment details
 
 **Advanced File Operations:**
+
 - **Smart Grouping**: Directory-based organization with depth limitation
 - **Hidden File Support**: Proper explicit vs wildcard pattern handling
 - **Search & Filter**: Debounced search with real-time results
 - **Export Capabilities**: File lists and metadata export functionality
 
 **Professional UI/UX:**
+
 - **Consistent Styling**: Follows KOREV Evidence design patterns and CSS variables
 - **Loading States**: Comprehensive progress indicators and status messages
 - **Error Recovery**: Clear error messages with suggested fixes
@@ -1612,12 +1664,14 @@ This enhanced frontend specification delivers a professional-grade user interfac
 #### **✅ Frontend Architecture Benefits:**
 
 **Alpine.js Integration:**
+
 - **Store Pattern**: Uses proven `createStore()` pattern from MCP servers
 - **Component Lifecycle**: Proper initialization and cleanup following KOREV Evidence patterns
 - **Reactive State**: Real-time UI updates with Alpine's reactivity system
 - **Event Handling**: Leverages Alpine's declarative event system
 
 **Code Reuse:**
+
 - **ACE Editor Setup**: Identical theme detection and configuration as MCP servers
 - **Modal Management**: Uses existing KOREV Evidence modal and overlay systems
 - **API Communication**: Consistent with KOREV Evidence's established API patterns
@@ -1626,24 +1680,28 @@ This enhanced frontend specification delivers a professional-grade user interfac
 ### **Implementation Quality Metrics:**
 
 **Code Quality:** ✅
+
 - Follows KOREV Evidence coding conventions
 - Proper error handling and validation
 - Clean separation of concerns
 - Comprehensive documentation
 
 **User Experience:** ✅
+
 - Intuitive backup/restore workflow
 - Real-time feedback and progress tracking
 - Responsive design for all screen sizes
 - Consistent with KOREV Evidence UI patterns
 
 **Performance:** ✅
+
 - Efficient file preview with grouping
 - Debounced search and filtering
 - Proper memory management and cleanup
 - Optimized for large file sets
 
 **Reliability:** ✅
+
 - Comprehensive error handling
 - Input validation and sanitization
 - Proper file upload handling
@@ -1652,6 +1710,7 @@ This enhanced frontend specification delivers a professional-grade user interfac
 ### **Final Status: 🚀 PRODUCTION READY**
 
 The KOREV Evidence backup frontend is now:
+
 - **Complete**: All planned features implemented and tested
 - **Integrated**: Seamlessly integrated with existing KOREV Evidence infrastructure
 - **Reliable**: Comprehensive error handling and edge case coverage

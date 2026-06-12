@@ -30,7 +30,7 @@ KOREV Evidence est une plateforme d'agents IA de confiance, construite à partir
 
 ### Diff Git vérifié (commits d'Amine Mohamed uniquement)
 
-```
+```text
 134 commits, +174 785 insertions, -13 727 suppressions
 731 files changed, 170 375 net insertions
 Période : 15 janvier 2026 → 11 février 2026 (28 jours, 17 jours actifs)
@@ -55,6 +55,7 @@ Période : 15 janvier 2026 → 11 février 2026 (28 jours, 17 jours actifs)
 ### 2.2 Ce que fournit Agent Zero au 10 janvier 2026
 
 À la date où Amine Mohamed commence son travail, la base Agent Zero comprend :
+
 - Un framework d'agent conversationnel (boucle agent/outil, gestion modèles)
 - Une WebUI basique (182 fichiers hors vendor, 30 643 lignes)
 - Des outils génériques (code execution, memory, knowledge, delegation)
@@ -68,6 +69,7 @@ Période : 15 janvier 2026 → 11 février 2026 (28 jours, 17 jours actifs)
 ### 2.3 Licence MIT — Implications juridiques
 
 La licence MIT accorde explicitement et irrévocablement :
+
 - Le droit d'utiliser, copier, modifier et distribuer le logiciel
 - Le droit d'usage **commercial** sans restriction
 - Le droit de créer des **œuvres dérivées** propriétaires
@@ -84,7 +86,7 @@ Le travail propriétaire est mesuré par le **diff entre le dernier commit upstr
 
 ### 3.2 Volume global
 
-```
+```bash
 git diff 9a3a92b6..HEAD :
   731 files changed, 170 375 insertions(+), 13 967 deletions(-)
 ```
@@ -113,6 +115,7 @@ git diff 9a3a92b6..HEAD :
 | Jours actifs de développement | 17 |
 
 Ce diff est **reproductible et vérifiable** par tout auditeur :
+
 ```bash
 git log --all --author='Amine' --shortstat --format=''
 git diff 9a3a92b6..HEAD --stat
@@ -497,6 +500,7 @@ Le coût de reproduction ne capture qu'une partie de la valeur de l'actif. Un co
 ### 6.6 Note sur la productivité observée
 
 Amine Mohamed a réalisé ce travail en **17 jours actifs** (134 commits, +174 785 lignes). Cette productivité élevée s'explique par :
+
 - Une expertise approfondie du framework Agent Zero, acquise bien avant le fork
 - L'expérience accumulée sur le projet antérieur PRISM (algorithmes de consensus, moteur PDF)
 - Un travail intensif et soutenu (commits quotidiens, weekends inclus)
@@ -531,6 +535,7 @@ Le coût de reproduction par une équipe ne disposant pas de cette expertise pr�
 ### 7.3 Transparence sur la base open-source
 
 La base Agent Zero (licence MIT) est explicitement identifiée :
+
 - Premier commit upstream : `8cef5e1e` du 10 juin 2024
 - Dernier commit upstream : `9a3a92b6` du 10 janvier 2026
 - État upstream avant travail propriétaire : 1 221 fichiers, 28 403 lignes Python, 210 fichiers Python

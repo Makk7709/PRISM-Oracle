@@ -150,15 +150,18 @@ flowchart TD
 ## 5. `consensus_result` — peuplé vs consommé
 
 ### Peuplé (PRISM)
+
 - `engine.run_consensus` → `ConsensusDecision` (L317-327)
 - `seek_consensus` → `ConsensusResult` (L675-684)
 - `research_consensus_integration.research` → `ResearchConclusion.consensus_result` (L488) — **orphelin**
 - `legal_orchestrator` → dict (L1070-1096) — consommé par `legal_pipeline` (L1607-1688)
 
 ### Peuplé (non-PRISM, sur l'agent)
+
 - `call_subordinate.py:374-379` (adversarial) et `:448-452` (subordinate pipeline) → `set_data("_consensus_result")`
 
 ### Consommé sur le chemin de sortie par défaut
+
 - **PERSONNE.** Lecture uniquement dans le bloc mort `response.py:97-118`.
 - `_consensus_result` n'est **jamais purgé** dans `agent.py` → donnée potentiellement périmée si le gate était réactivé tel quel.
 

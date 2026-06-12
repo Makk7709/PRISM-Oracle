@@ -80,12 +80,14 @@ pytest tests/test_legal_*.py -k 'not nightly' -v
 ```
 
 **Ce qui est testé** :
+
 - P0.7 invariants (46 tests)
 - P0.8-P1 orchestrator (26 tests)
 - P2 runtime wiring (11 tests)
 - P3 idempotence & budget (20+ tests)
 
 **Ce qui n'est PAS testé** :
+
 - FTS5 index retrieval
 - E2E avec corpus réel
 
@@ -107,6 +109,7 @@ pytest tests/test_legal_*.py -v
 ```
 
 **Ce qui est testé** :
+
 - Tout le FAST gate
 - FTS5 index retrieval réel
 - E2E avec corpus de 20 documents
@@ -128,7 +131,7 @@ python scripts/build_legal_index_test.py --validate-only
 
 ### Structure de l'index
 
-```
+```text
 data/legal_index/
 ├── index.sqlite          # Index FTS5
 ├── build_report.json     # Rapport de build
@@ -139,10 +142,13 @@ data/legal_index/
 
 1. Modifier `tests/fixtures/legal_corpus.py`
 2. Valider la provenance :
+
    ```bash
    python scripts/build_legal_index_test.py --validate-only
    ```
+
 3. Reconstruire l'index :
+
    ```bash
    python scripts/build_legal_index_test.py --output data/legal_index
    ```
@@ -195,11 +201,13 @@ Chaque document doit avoir :
 ### Debug d'un REFUSAL
 
 1. Vérifier les logs JSON :
+
    ```bash
    grep "correlation_id" logs/legal_pipeline.log | jq .
    ```
 
 2. Chercher l'événement `legal_pipeline_end` :
+
    ```json
    {
      "event": "legal_pipeline_end",
@@ -257,15 +265,17 @@ print(json.dumps(get_legal_pipeline_metrics().to_dict(), indent=2))
 
 ### "Index not available"
 
-```
+```text
 LEGAL_INDEX_AVAILABLE = False
 ```
 
 **Causes** :
+
 - Module `python.legal_sources.indexing` non importable
 - Index SQLite absent ou corrompu
 
 **Solutions** :
+
 1. Vérifier l'installation : `pip install -e .`
 2. Reconstruire l'index : `python scripts/build_legal_index_test.py`
 
@@ -287,7 +297,8 @@ LEGAL_INDEX_AVAILABLE = False
 
 **Cause** : La requête a déjà été exécutée avec les mêmes paramètres.
 
-**Solution** : 
+**Solution** :
+
 - C'est le comportement attendu (P3.1)
 - Pour forcer le recalcul : `LEGAL_PIPELINE_IDEMPOTENCE=0`
 - Ou modifier la query/context
@@ -299,10 +310,12 @@ LEGAL_INDEX_AVAILABLE = False
 ```
 
 **Causes** :
+
 - LLM arbiters trop lents
 - Réseau lent vers les LLM
 
 **Solutions** :
+
 1. Augmenter `LEGAL_BUDGET_CONSENSUS_MS`
 2. Vérifier la latence LLM
 3. En test : utiliser `LEGAL_CONSENSUS_SIMULATION=1`
@@ -351,6 +364,7 @@ L'article 1128 du Code civil énonce les trois conditions...
 ## Changelog
 
 ### v1.0.0 (P3)
+
 - Initial ops documentation
 - Feature flags reference
 - Budget configuration

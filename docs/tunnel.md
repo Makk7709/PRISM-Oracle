@@ -41,7 +41,7 @@ If you encounter issues with the tunnel feature:
 
 To add basic authentication to your KOREV Evidence instance when using tunnels, you can set the following environment variables:
 
-```
+```text
 AUTH_LOGIN=your_username
 AUTH_PASSWORD=your_password
 ```

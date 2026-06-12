@@ -24,10 +24,13 @@ Auteur audit : Staff Engineer IA (TDD strict, posture hostile)
 ### 2.1 Ou le flag etait calcule
 
 - `python/helpers/router/router.py:377` :
+
   ```python
   requires_contradictor = is_board_level and len(intents) >= 2
   ```
+
 - `python/helpers/strategic_pipeline.py:186` :
+
   ```python
   new_requires_contradictor = len(new_intents) >= 2
   ```
@@ -36,9 +39,11 @@ Auteur audit : Staff Engineer IA (TDD strict, posture hostile)
 
 - Aucun `if decision.requires_contradictor:` en lecture, hors definition / serialisation / tests router.
   Commande de verification :
-  ```
+
+  ```text
   grep -rn "\.requires_contradictor[^=]" .
   ```
+
   Resultat avant correction : **0 consommateur applicatif**.
 - Aucun dossier `agents/contradictor/`.
 - Aucun module `python/helpers/contradictor/`.
@@ -99,6 +104,7 @@ Auteur audit : Staff Engineer IA (TDD strict, posture hostile)
 
 1. Ajout de `"contradictor": "contradictor"` dans le `intent_to_profile` applicatif (l. 666-675 avant patch, l. ~670-685 apres patch).
 2. Hook explicite apres la validation consensus :
+
    ```python
    if route_decision is not None:
        try:
@@ -120,6 +126,7 @@ Auteur audit : Staff Engineer IA (TDD strict, posture hostile)
        except Exception as _contradictor_exc:
            logger.error(...)
    ```
+
 3. Garde-fou fail-safe : toute exception dans le pipeline contradictoire est logguee mais ne casse pas la reponse au client (defense en profondeur, sans masquer l'erreur).
 
 ### 3.4 Logs audit structures
@@ -210,7 +217,7 @@ Liste des classes/tests :
 
 #### 4.4.1 Tests RED initiaux (verification que les tests echouent pour la bonne raison)
 
-```
+```text
 pytest tests/test_contradictor_agent.py -vv
 ```
 
@@ -218,14 +225,14 @@ Resultat : 17 `ModuleNotFoundError: No module named 'python.helpers.contradictor
 
 #### 4.4.2 Tests verts apres implementation
 
-```
+```text
 pytest tests/test_contradictor_agent.py -vv
 ======================== 19 passed, 3 warnings in 4.46s ========================
 ```
 
 #### 4.4.3 Suite router/routing/strategic/consensus/criticality (regression)
 
-```
+```text
 pytest tests/test_router.py tests/test_router_determinism.py tests/test_router_contract_safety.py \
        tests/test_router_metrics.py tests/test_strategic_pipeline_e2e.py \
        tests/test_strategic_route_decision.py tests/test_criticality_router.py \
@@ -235,7 +242,7 @@ pytest tests/test_router.py tests/test_router_determinism.py tests/test_router_c
 
 #### 4.4.4 Pattern d'audit recommande dans le cahier des charges
 
-```
+```text
 pytest tests -k "router or routing or subordinate or consensus or strategic_pipeline or delegation or contradictor" -q
 ========= 454 passed, 3 skipped, 3553 deselected, 6 warnings in 10.52s =========
 ```
@@ -244,20 +251,21 @@ Les 3 skipped sont des tests qui exigent de vraies API keys (`test_consensus_rea
 
 #### 4.4.5 Pytest complet (hors security/e2e/integration/infra)
 
-```
+```text
 pytest tests --ignore=tests/security --ignore=tests/e2e --ignore=tests/integration --ignore=tests/infra -q
 ===== 92 failed, 3381 passed, 35 skipped, 26 warnings in 325.61s (0:05:25) =====
 ```
 
 **Verification que ces 92 failures pre-existaient** : sequence executee avec `git stash` (changements remis a leur etat HEAD) puis re-execution sur les 4 fichiers en cause :
 
-```
+```text
 pytest tests/test_pdf_migration_parity.py tests/test_rebrand_agent_zero.py \
        tests/test_session16_e2e_final.py tests/test_session9_storage_tokens.py -q
 ================= 80 failed, 121 passed, 3 warnings in 13.55s ==================
 ```
 
 Les failures se reproduisent SANS les modifications contradictor. Il s'agit d'une dette pre-existante portant sur :
+
 - `test_pdf_migration_parity.py` : parite PDF backends (pymupdf/pdfplumber) — sans rapport avec le routing/contradictor.
 - `test_rebrand_agent_zero.py` : sweep textuel "agent_zero" → "evidence" — sans rapport.
 - `test_session16_e2e_final.py` : E2E rapports/integrity_block — sans rapport.
@@ -267,13 +275,13 @@ Le contradicteur n'introduit **aucune** regression. La preuve negative (stash + 
 
 ### 4.5 Verification grep finale
 
-```
+```text
 grep -rn "\.requires_contradictor[^=]" .
 ```
 
 Resultat (apres correction) :
 
-```
+```text
 python/helpers/contradictor/orchestration.py:79  "requires_contradictor": bool(route_decision.requires_contradictor),
 python/helpers/contradictor/orchestration.py:146 if not route_decision.requires_contradictor:
 tests/test_contradictor_agent.py:250  assert decision.requires_contradictor, (...)
@@ -310,6 +318,7 @@ Le flag est desormais **consomme** (orchestration.py:146), **trace** (audit log)
 ### Q6. Peut-il imposer un veto non controle ?
 
 **Non.** Le contradicteur ne dispose d'AUCUN mecanisme de veto. Il emet :
+
 - une revue structuree (`ContradictorReview`),
 - un boolean `human_review_required` consommable par l'aval,
 - des logs audit.
@@ -319,6 +328,7 @@ Le declenchement de `human_review_required` est strictement gouverne par `is_hum
 ### Q7. Les logs suffisent-ils a prouver son invocation ?
 
 **Oui.** Chaque execution emet :
+
 - un log `[CONTRADICTOR] decision | ...` avec 12 champs structures (Q9).
 - un log specifique selon le statut (`[CONTRADICTOR] timeout`, `[CONTRADICTOR] schema_fail`, `[CONTRADICTOR] error`, `[CONTRADICTOR] success`).
 

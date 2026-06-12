@@ -136,11 +136,13 @@ Le principal risque corrigé : `docs/consensus/ARCHITECTURE_CURRENT.md` présent
 **Actions critiques restantes** : aucune (les contradictions misleading ont été traitées).
 
 **Actions recommandées** :
+
 - Statuer sur `MULTI_TENANT_AUTHZ_AUDIT_MATRIX` / `PERSISTENT_IDENTITY_MIGRATION_PLAN` (actif vs historique).
 - Recréer ou retirer les 2 fichiers d'onboarding référencés mais absents.
 - Ajouter un renvoi `OUTPUT_CONTRACT.md → critical_output`.
 
 **Actions facultatives** :
+
 - Déplacer `market_study_*` / `plialpes_*` vers `docs/examples/`.
 - Index unique daté pour le dossier commissaire.
 - Migrer/supprimer les modules de recherche dépréciés (P1).

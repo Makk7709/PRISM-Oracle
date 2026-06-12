@@ -24,6 +24,7 @@
 KOREV Evidence est un systeme d'assistance juridique base sur l'IA, concu pour les professionnels du droit. Il ne remplace pas un avocat : il fournit des **analyses structurees, sourcees et tracables** dans un cadre de securite strict.
 
 **Principes fondamentaux :**
+
 - **Fail-closed** : le systeme refuse plutot que de deviner
 - **Zero affirmation sans source** : toute assertion doit etre citee ou marquee hypothese
 - **Temperature 0** : sorties deterministes, reproductibles
@@ -67,6 +68,7 @@ Le mode Legal-Safe produit des analyses au format **FIRAC** :
 | **HIGH** | M&A, IPO, restructuration, contentieux | Oui (unanimite) |
 
 **Detection automatique par patterns :**
+
 - HIGH : M&A (5.0), IPO (5.0), due diligence (5.0), cession d'entreprise (5.0), cassation (4.0)
 - MEDIUM : contrat (2.0), clause (2.0), RGPD (2.5), propriete intellectuelle (2.5)
 
@@ -89,11 +91,13 @@ La gate d'audit (`gate.py`) est un systeme de validation fail-closed qui appliqu
 5. **SECTION_COMPLETENESS** — Verification que toutes les sections obligatoires sont presentes et non vides (P0 si absente)
 
 **Invariants :**
+
 - `P0 detecte` ⟹ `REJECT` (aucune exception)
 - `can_release = True` ⟺ `verdict = APPROVE`
 - `Exception interne` ⟹ `REJECT` (fail-closed)
 
 **Verdicts :**
+
 - `APPROVE` : zero P0, contrat liberable
 - `REJECT` : au moins un P0 detecte, export bloque
 
@@ -111,6 +115,7 @@ KOREV Evidence utilise un systeme de consensus a 3 arbitres IA independants :
 | Simulation en production | **INTERDITE** |
 
 **Criteres d'evaluation par chaque arbitre :**
+
 1. L'action est-elle reversible ?
 2. Y a-t-il un risque de perte de donnees ou d'information erronee ?
 3. L'action respecte-t-elle les principes ethiques et scientifiques ?
@@ -120,7 +125,7 @@ KOREV Evidence utilise un systeme de consensus a 3 arbitres IA independants :
 
 ### 2.6 Pipeline de redaction contractuelle (Fail-Closed)
 
-```
+```text
 REQUETE → ROUTER → LEGAL_DRAFTING_GUARDED → ACT LEAK GUARD → LEGAL_SAFE GATE
                                                                     |
                                                              PASS ← → FAIL
@@ -130,6 +135,7 @@ REQUETE → ROUTER → LEGAL_DRAFTING_GUARDED → ACT LEAK GUARD → LEGAL_SAFE 
 ```
 
 **Structure de sortie :**
+
 - Conditions Particulieres (CP) — prevalence sur CG
 - Conditions Generales (CG) — responsabilite plafonnee
 - Annexe 1 : Description du logiciel
@@ -190,7 +196,8 @@ REQUETE → ROUTER → LEGAL_DRAFTING_GUARDED → ACT LEAK GUARD → LEGAL_SAFE 
 | Contrat vide | **NON** |
 
 **Stamp d'export :** Chaque contrat exporte porte la mention :
-```
+
+```text
 VALIDE PAR LEGAL_SAFE GATE — PASS
 Date: YYYY-MM-DD HH:MM
 Correlation ID: [UUID]
@@ -209,6 +216,7 @@ PROJET — A VALIDER PAR UN JURISTE QUALIFIE
 ### 2.10 Domaines supportes et non supportes
 
 **Supportes (FR/EU) :**
+
 - Droit du travail (licenciement, harcelement, contrats)
 - Droit fiscal (TVA, redressement, optimisation)
 - RGPD / Protection des donnees (CNIL, DPO, violations)
@@ -218,12 +226,14 @@ PROJET — A VALIDER PAR UN JURISTE QUALIFIE
 - Propriete intellectuelle
 
 **Non supportes (refus poli) :**
+
 - Droit penal → "Consultez un avocat penaliste"
 - Droit de l'immigration
 - Droit de la famille
 - Juridictions hors FR/EU
 
 **Actes interdits :**
+
 - Redaction d'actes juridiques (sauf via legal_drafting_guarded)
 - Representation juridique
 - Depot de plainte ou assignation
@@ -255,7 +265,7 @@ Chaque projet de contrat porte :
 
 ### 3.1 Pipeline fail-closed
 
-```
+```text
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   REDACTION   │ ──→ │  LEAK GUARD   │ ──→ │  GATE AUDIT  │
 │  (drafting)   │     │ (22 P0, 14 P1)│     │ (5 checks)   │
@@ -274,7 +284,7 @@ Chaque projet de contrat porte :
 
 ### 3.2 Consensus multi-LLM
 
-```
+```text
 ┌─────────────────┐
 │ Proposition      │
 │ juridique        │
@@ -402,7 +412,7 @@ KOREV_ENV=development python3 -m pytest tests/test_demo_cabinet_avocats.py -v
 
 ### 5.2 Resultats
 
-```
+```text
 AXE 1 — FIABILITE JURIDIQUE
   [AXE1-01] Claims UNSUPPORTED rejetees ................... PASS
   [AXE1-02] Temperature forcee a 0 ........................ PASS
@@ -532,7 +542,7 @@ Les analyses juridiques passent par des LLM cloud (OpenRouter → OpenAI, Anthro
 
 ## 8. Recommandations
 
-### Pour un cabinet d'avocats evaluant KOREV Evidence :
+### Pour un cabinet d'avocats evaluant KOREV Evidence
 
 1. **Usage recommande** : analyses preliminaires, veille juridique, structuration de dossiers
 2. **Usage deconseille** : production de documents finaux sans relecture humaine
@@ -540,7 +550,7 @@ Les analyses juridiques passent par des LLM cloud (OpenRouter → OpenAI, Anthro
 4. **Deploiement** : ON-PREM pour les dossiers sous secret professionnel
 5. **Formation** : les utilisateurs doivent comprendre les disclaimers et les limites
 
-### Pour executer la suite de certification :
+### Pour executer la suite de certification
 
 ```bash
 # Suite complete demonstration cabinet (41 tests)

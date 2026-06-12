@@ -5,12 +5,14 @@
 ### Résumé Exécutif
 
 **AVANT :** `import run_ui` déclenchait `import litellm` via la cascade :
-```
+
+```text
 run_ui → ApiHandler → agent → models → litellm
 run_ui → runtime → settings → models → litellm
 ```
 
 **APRÈS :**
+
 - ✅ `create_app()` factory : crée l'app Flask SANS dépendances LLM
 - ✅ Imports lourds déplacés dans `run()` et `init_evidence()` (runtime only)
 - ✅ Tests E2E `/login` fonctionnent SANS litellm installé
@@ -48,7 +50,7 @@ $ pytest tests/security/ -q
 
 ### Architecture
 
-```
+```text
 AVANT:
   import run_ui
     └─→ from python.helpers.api import ApiHandler
@@ -86,6 +88,7 @@ APRÈS:
 **AVANT :** CI échouait avec `argon2-cffi not installed` et `ModuleNotFoundError: litellm`.
 
 **APRÈS :**
+
 - ✅ `argon2-cffi` et `redis` ajoutés à `requirements.txt` (runtime deps)
 - ✅ Tests Redis exclus du job `security-gate` (pas de Redis service)
 - ✅ Tests Redis dans job dédié `redis-multi-worker` avec Redis service
@@ -132,6 +135,7 @@ Required test coverage of 90% reached.
 **AVANT :** Rate limiting in-memory simple, non partagé entre workers, IP extraction naïve.
 
 **APRÈS :**
+
 - ✅ Backend pluggable : Memory (dev) / Redis (prod multi-worker)
 - ✅ IP extraction proxy-aware : X-Forwarded-For, X-Real-IP supportés
 - ✅ LRU + TTL cap : anti-DoS soft (50k entrées max, éviction automatique)
@@ -177,6 +181,7 @@ Required test coverage of 95% reached. Total coverage: 98.31%
 ### Coverage 98.31% — Misses Documentation
 
 Les 7 lignes non couvertes (sur 413) sont :
+
 - `limiter.py:108-109` : `logger.info()` branch Redis available
 - `memory_backend.py:226,233` : Edge cases get_info avec violations + window étendue  
 - `redis_backend.py:222,283,290` : Branches retry_after dans cas limites timing
@@ -194,6 +199,7 @@ $ pytest tests/security/test_login_rate_limit_e2e.py -v
 **Fichier** : `tests/security/test_login_rate_limit_e2e.py`
 
 Ce test prouve que **personne ne peut débrancher le rate limiting par inadvertance** :
+
 - Flask test client → 6 tentatives invalides → 429
 - Headers `Retry-After` et `X-RateLimit-*` présents
 - Time provider injecté (pas de `sleep()`)
@@ -212,7 +218,9 @@ Ce test prouve que **personne ne peut débrancher le rate limiting par inadverta
 **Service Redis requis** : `redis:7` (docker service)
 **Protection branche** : PR + review obligatoire avant merge main
 
+```bash
 # Test multi-worker Redis (prouve le partage d'état)
+
 $ pytest tests/security/test_rate_limit_redis.py::TestRedisBackendMultiWorker -v
 tests/security/test_rate_limit_redis.py::TestRedisBackendMultiWorker::test_shared_state_between_two_limiters PASSED
 tests/security/test_rate_limit_redis.py::TestRedisBackendMultiWorker::test_cumulative_blocking_across_workers PASSED
@@ -257,7 +265,8 @@ KOREV_BEHIND_PROXY=true  # Active ProxyFix + trust X-Forwarded-For
 
 **AVANT :** 6 vulnérabilités critiques (mots de passe clair, injection shell, upload non validé, path traversal, pas de rate limiting, cookies non sécurisés).
 
-**APRÈS :** 
+**APRÈS :**
+
 - ✅ Mots de passe : Argon2id (memory-hard, timing-safe)
 - ✅ Rate limiting : 5 tentatives/min login, backoff progressif
 - ✅ Shell : `create_subprocess_exec` obligatoire
@@ -357,11 +366,13 @@ make audit-verify && make audit-smoke
 ## 2026-01-28 — Corrections majeures (v1.1)
 
 ### Résumé
+
 Correction de l'audit pour atteindre `make audit-verify` PASS.
 
 ### Corrections effectuées
 
 #### 1. Collision ClaimID C-006 résolue
+
 - **Problème** : C-006 était utilisé par B-005 (Evidence Pack) ET B-009 (Débat collaboratif)
 - **Solution** :
   - B-005 conserve C-006 (Evidence Pack)
@@ -374,15 +385,18 @@ Correction de l'audit pour atteindre `make audit-verify` PASS.
   - Appendix A : ajout de C-021, correction de C-006 pour B-005
 
 #### 2. Statut B-017 rétrogradé
+
 - **Problème** : B-017 (Audit log persistant) avait statut "Partial" mais mention "persistant" sans preuve runtime
 - **Solution** : Statut changé en **Unverified** avec limites explicites :
   - "Persistance non démontrée par le code ; volume docker configuré mais aucun code d'écriture trouvé. UNVERIFIED"
 
 #### 3. Suppression des duplications
+
 - **Problème** : Le document contenait 8+ copies du même audit (~4644 lignes)
 - **Solution** : Tronqué à la première copie complète (~500 lignes), marqueur `<!-- END AUDIT -->` ajouté
 
 #### 4. Format CTO Brief corrigé
+
 - **Problème** : Les titres de sous-sections étaient interprétés comme des claims sans ClaimID
 - **Solution** : Titres convertis en format **bold** pour les exclure du lint
 
@@ -420,7 +434,7 @@ make audit-smoke
 
 ### Statut final
 
-```
+```json
 [PASS] Lint documentaire — 19 brique(s) validée(s)
 [PASS] Tous les fichiers référencés existent (29 fichiers)
 [PASS] Audit verification complète — 0 échec

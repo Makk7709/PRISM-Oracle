@@ -91,6 +91,7 @@ Test : `tests/test_mcp_init_timeout.py`. → **traite le symptôme (deadlock)**.
 secondaire si `browser_session.close()` levait).
 
 Tests : `tests/test_event_loop_fd_leak.py`
+
 - `test_terminate_closes_the_loop` (déterministe, portable) — RED avant / GREEN après.
 - `test_restart_does_not_keep_old_loop_open` — l'ancienne boucle est fermée, pas accumulée.
 - `test_no_fd_leak_across_terminate_cycles` (Linux/`proc`) — 15 cycles, croissance FD < 8.
@@ -100,7 +101,7 @@ Tests : `tests/test_event_loop_fd_leak.py`
 Script de repro exécuté **dans le conteneur prod** (ancien `terminate` vs nouveau,
 20 cycles create→terminate, références de boucles conservées) :
 
-```
+```text
 ANCIEN (sans close):  delta = +60 FD  (= exactement 3 FD / boucle)
 NOUVEAU (avec close): delta = +0  FD
 ```
@@ -130,14 +131,14 @@ résiduel Critique/Important**.
 - **P2 — périmètre du verrou `MCPConfig.__lock`** : ne pas le tenir pendant le spawn/les
   appels d'outils (défense en profondeur contre tout futur blocage).
 - **Filet recommandé (non implémenté ici)** : watchdog FD en lecture seule — log structuré
-  + alerte quand `len(/proc/self/fd)` franchit un seuil, pour détecter toute régression tôt
+  - alerte quand `len(/proc/self/fd)` franchit un seuil, pour détecter toute régression tôt
   (sans auto-kill, pour éviter d'induire une coupure).
 
 ## 8. Validation post-déploiement attendue
 
 Après déploiement, contrôler sur le conteneur live, à plusieurs heures d'intervalle :
 
-```
+```bash
 ls /proc/1/fd | wc -l
 ls -l /proc/1/fd | grep -c 'anon_inode:\[eventpoll\]'
 ```

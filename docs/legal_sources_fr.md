@@ -9,7 +9,7 @@ Ce document recense les sources officielles de données juridiques françaises, 
 **Version**: `legal_sources@v1.0-enterprise`
 
 > **AVERTISSEMENT IMPORTANT**
-> 
+>
 > **Ce module garantit la provenance et la traçabilité des sources, pas l'exhaustivité ni l'interprétation juridique.**
 >
 > Le droit opposable n'est authentifié que sur les sites officiels (legifrance.gouv.fr, courdecassation.fr, conseil-etat.fr, conseil-constitutionnel.fr).
@@ -39,9 +39,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `source_id` | `legi` |
-| `source_home_url` | https://www.legifrance.gouv.fr |
-| `dataset_url` | https://www.data.gouv.fr/fr/datasets/legi-codes-lois-et-reglements-consolides/ |
-| `api_doc_url` | https://piste.gouv.fr/api-catalog (API Légifrance) |
+| `source_home_url` | <https://www.legifrance.gouv.fr> |
+| `dataset_url` | <https://www.data.gouv.fr/fr/datasets/legi-codes-lois-et-reglements-consolides/> |
+| `api_doc_url` | <https://piste.gouv.fr/api-catalog> (API Légifrance) |
 | `producer` | DILA (Direction de l'Information Légale et Administrative) |
 
 #### Licence et CGU
@@ -49,9 +49,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `license_name` | Licence Ouverte 2.0 (Etalab) |
-| `license_url` | https://www.etalab.gouv.fr/licence-ouverte-open-licence/ |
+| `license_url` | <https://www.etalab.gouv.fr/licence-ouverte-open-licence/> |
 | `terms_name` | CGU PISTE + CGU Légifrance |
-| `terms_url` | https://piste.gouv.fr/cgu |
+| `terms_url` | <https://piste.gouv.fr/cgu> |
 | `access_mode` | `API_KEY_CGU` |
 
 #### Obligations du réutilisateur
@@ -72,7 +72,7 @@ Ce document recense les sources officielles de données juridiques françaises, 
 
 #### Notes
 
-- Accès FTPS: contacter donnees-dila@dila.gouv.fr
+- Accès FTPS: contacter <donnees-dila@dila.gouv.fr>
 - API PISTE: inscription gratuite, quotas par jeton
 - 73 codes officiels en vigueur + 29 abrogés
 
@@ -85,9 +85,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `source_id` | `jorf` |
-| `source_home_url` | https://www.legifrance.gouv.fr/jorf |
-| `dataset_url` | https://www.data.gouv.fr/fr/datasets/jorf/ |
-| `api_doc_url` | https://piste.gouv.fr/api-catalog (API Légifrance) |
+| `source_home_url` | <https://www.legifrance.gouv.fr/jorf> |
+| `dataset_url` | <https://www.data.gouv.fr/fr/datasets/jorf/> |
+| `api_doc_url` | <https://piste.gouv.fr/api-catalog> (API Légifrance) |
 | `producer` | DILA |
 
 #### Licence et CGU
@@ -95,9 +95,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `license_name` | Licence Ouverte 2.0 (Etalab) |
-| `license_url` | https://www.etalab.gouv.fr/licence-ouverte-open-licence/ |
+| `license_url` | <https://www.etalab.gouv.fr/licence-ouverte-open-licence/> |
 | `terms_name` | CGU PISTE |
-| `terms_url` | https://piste.gouv.fr/cgu |
+| `terms_url` | <https://piste.gouv.fr/cgu> |
 | `access_mode` | `API_KEY_CGU` |
 
 #### Métadonnées techniques
@@ -118,9 +118,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `source_id` | `cass` |
-| `source_home_url` | https://www.courdecassation.fr |
-| `dataset_url` | https://www.data.gouv.fr/fr/dataservices/api-judilibre/ |
-| `api_doc_url` | https://piste.gouv.fr/api-catalog (API Judilibre) |
+| `source_home_url` | <https://www.courdecassation.fr> |
+| `dataset_url` | <https://www.data.gouv.fr/fr/dataservices/api-judilibre/> |
+| `api_doc_url` | <https://piste.gouv.fr/api-catalog> (API Judilibre) |
 | `producer` | Cour de cassation |
 
 #### Licence et CGU
@@ -128,9 +128,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `license_name` | Licence Ouverte 2.0 (Etalab) |
-| `license_url` | https://www.etalab.gouv.fr/licence-ouverte-open-licence/ |
+| `license_url` | <https://www.etalab.gouv.fr/licence-ouverte-open-licence/> |
 | `terms_name` | CGU Réutilisation Cour de cassation |
-| `terms_url` | https://www.courdecassation.fr/conditions-generales-dutilisation-pour-la-reutilisation-des-donnees-issues-des-decisions-de-justice |
+| `terms_url` | <https://www.courdecassation.fr/conditions-generales-dutilisation-pour-la-reutilisation-des-donnees-issues-des-decisions-de-justice> |
 | `access_mode` | `API_KEY_CGU` |
 
 #### Obligations spécifiques
@@ -159,7 +159,7 @@ Ce document recense les sources officielles de données juridiques françaises, 
 
 #### Contact
 
-- Email: judilibre.courdecassation@justice.fr
+- Email: <judilibre.courdecassation@justice.fr>
 
 ---
 
@@ -170,8 +170,8 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `source_id` | `jade` |
-| `source_home_url` | https://www.conseil-etat.fr |
-| `dataset_url` | https://www.data.gouv.fr/fr/datasets/jade/ |
+| `source_home_url` | <https://www.conseil-etat.fr> |
+| `dataset_url` | <https://www.data.gouv.fr/fr/datasets/jade/> |
 | `api_doc_url` | N/A (FTPS uniquement) |
 | `producer` | DILA (données Conseil d'État) |
 
@@ -180,9 +180,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `license_name` | Licence Ouverte 2.0 (Etalab) |
-| `license_url` | https://www.etalab.gouv.fr/licence-ouverte-open-licence/ |
+| `license_url` | <https://www.etalab.gouv.fr/licence-ouverte-open-licence/> |
 | `terms_name` | Conditions DILA FTPS |
-| `terms_url` | https://echanges.dila.gouv.fr/OPENDATA/AVERTISSEMENT-Donnees_a_caractere_personnel.pdf |
+| `terms_url` | <https://echanges.dila.gouv.fr/OPENDATA/AVERTISSEMENT-Donnees_a_caractere_personnel.pdf> |
 | `access_mode` | `REQUEST_TO_ADMIN` |
 
 #### Métadonnées techniques
@@ -195,7 +195,7 @@ Ce document recense les sources officielles de données juridiques françaises, 
 
 #### Alternative moderne
 
-- Portail: https://opendata.conseil-etat.fr/
+- Portail: <https://opendata.conseil-etat.fr/>
 - Conseil d'État: depuis 30/09/2021
 - CAA: depuis 31/03/2022
 - TA: depuis 30/06/2022
@@ -209,9 +209,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `source_id` | `constit` |
-| `source_home_url` | https://www.conseil-constitutionnel.fr |
-| `dataset_url` | https://www.data.gouv.fr/fr/datasets/constit-les-decisions-du-conseil-constitutionnel/ |
-| `api_doc_url` | https://www.conseil-constitutionnel.fr/donnees-ouvertes |
+| `source_home_url` | <https://www.conseil-constitutionnel.fr> |
+| `dataset_url` | <https://www.data.gouv.fr/fr/datasets/constit-les-decisions-du-conseil-constitutionnel/> |
+| `api_doc_url` | <https://www.conseil-constitutionnel.fr/donnees-ouvertes> |
 | `producer` | Conseil constitutionnel |
 
 #### Licence et CGU
@@ -219,9 +219,9 @@ Ce document recense les sources officielles de données juridiques françaises, 
 | Champ | Valeur |
 |-------|--------|
 | `license_name` | Licence Ouverte 2.0 (Etalab) |
-| `license_url` | https://www.etalab.gouv.fr/licence-ouverte-open-licence/ |
+| `license_url` | <https://www.etalab.gouv.fr/licence-ouverte-open-licence/> |
 | `terms_name` | CGU PISTE |
-| `terms_url` | https://piste.gouv.fr/cgu |
+| `terms_url` | <https://piste.gouv.fr/cgu> |
 | `access_mode` | `API_KEY_CGU` |
 
 #### Métadonnées techniques
@@ -250,7 +250,7 @@ Ce document recense les sources officielles de données juridiques françaises, 
 
 ### URL officielle
 
-https://www.etalab.gouv.fr/licence-ouverte-open-licence/
+<https://www.etalab.gouv.fr/licence-ouverte-open-licence/>
 
 ### Droits accordés
 
@@ -279,14 +279,14 @@ https://www.etalab.gouv.fr/licence-ouverte-open-licence/
 
 | Ressource | URL |
 |-----------|-----|
-| Portail | https://piste.gouv.fr |
-| CGU | https://piste.gouv.fr/cgu |
-| OAuth2 Token | https://oauth.piste.gouv.fr/api/oauth/token |
-| Catalogue API | https://piste.gouv.fr/api-catalog |
+| Portail | <https://piste.gouv.fr> |
+| CGU | <https://piste.gouv.fr/cgu> |
+| OAuth2 Token | <https://oauth.piste.gouv.fr/api/oauth/token> |
+| Catalogue API | <https://piste.gouv.fr/api-catalog> |
 
 ### Inscription
 
-1. Créer un compte sur https://piste.gouv.fr
+1. Créer un compte sur <https://piste.gouv.fr>
 2. **Accepter les CGU** de chaque API souhaitée
 3. Créer un projet
 4. Obtenir client_id + client_secret
@@ -338,10 +338,10 @@ Format: `ECLI:FR:[JURIDICTION]:[ANNÉE]:[NUMÉRO]`
 
 | Source | Contact | Type |
 |--------|---------|------|
-| DILA (LEGI, JORF, JADE) | donnees-dila@dila.gouv.fr | Email |
-| Cour de cassation | judilibre.courdecassation@justice.fr | Email |
-| Conseil d'État | opendata@conseil-etat.fr | Email |
-| Conseil constitutionnel | https://www.conseil-constitutionnel.fr/contact | Formulaire |
+| DILA (LEGI, JORF, JADE) | <donnees-dila@dila.gouv.fr> | Email |
+| Cour de cassation | <judilibre.courdecassation@justice.fr> | Email |
+| Conseil d'État | <opendata@conseil-etat.fr> | Email |
+| Conseil constitutionnel | <https://www.conseil-constitutionnel.fr/contact> | Formulaire |
 
 ---
 
@@ -350,6 +350,7 @@ Format: `ECLI:FR:[JURIDICTION]:[ANNÉE]:[NUMÉRO]`
 ### Droit opposable
 
 Le droit opposable n'est **authentifié que sur les sites officiels**:
+
 - legifrance.gouv.fr (LEGI, JORF)
 - courdecassation.fr (CASS)
 - conseil-etat.fr (JADE)
@@ -358,6 +359,7 @@ Le droit opposable n'est **authentifié que sur les sites officiels**:
 ### Quotas API
 
 Les APIs PISTE sont soumises à des quotas par jeton. Surveiller les headers:
+
 - `X-RateLimit-Limit`
 - `X-RateLimit-Remaining`
 - `Retry-After` (sur 429)

@@ -94,7 +94,7 @@ Trois documents architecturaux internes documentaient cet etat
 
 ## 5. Fonctionnement cible
 
-```
+```text
         User question
               |
               v
@@ -177,7 +177,7 @@ Fichier : `tests/test_contradictor_agent.py`
 
 **(a)** Phase RED (tests echouent pour la bonne raison) :
 
-```
+```bash
 $ pytest tests/test_contradictor_agent.py -vv
 17 ERROR  (ModuleNotFoundError: No module named 'python.helpers.contradictor')
  2 FAILED  (AssertionError: "contradictor": "contradictor" not in source)
@@ -185,14 +185,14 @@ $ pytest tests/test_contradictor_agent.py -vv
 
 **(b)** Phase GREEN (tests verts apres implementation) :
 
-```
+```bash
 $ pytest tests/test_contradictor_agent.py -vv
 ======================== 19 passed, 3 warnings in 4.46s ========================
 ```
 
 **(c)** Regression suites adjacentes :
 
-```
+```text
 $ pytest tests/test_router.py tests/test_router_determinism.py \
          tests/test_router_contract_safety.py tests/test_router_metrics.py \
          tests/test_strategic_pipeline_e2e.py tests/test_strategic_route_decision.py \
@@ -203,7 +203,7 @@ $ pytest tests/test_router.py tests/test_router_determinism.py \
 
 **(d)** Pattern d'audit large :
 
-```
+```bash
 $ pytest tests -k "router or routing or subordinate or consensus or strategic_pipeline or delegation or contradictor" -q
 ========= 454 passed, 3 skipped, 3553 deselected, 6 warnings in 10.52s =========
 ```
@@ -212,7 +212,7 @@ $ pytest tests -k "router or routing or subordinate or consensus or strategic_pi
 
 **(e)** Pytest complet (hors security/e2e/integration/infra) :
 
-```
+```bash
 $ pytest tests --ignore=tests/security --ignore=tests/e2e --ignore=tests/integration --ignore=tests/infra -q
 ===== 92 failed, 3381 passed, 35 skipped, 26 warnings in 325.61s (0:05:25) =====
 ```
@@ -220,7 +220,7 @@ $ pytest tests --ignore=tests/security --ignore=tests/e2e --ignore=tests/integra
 **Verification preuve negative** que ces 92 failures pre-existent
 (reproduction sur HEAD non patche via `git stash`) :
 
-```
+```bash
 $ git stash --keep-index --include-untracked
 $ pytest tests/test_pdf_migration_parity.py tests/test_rebrand_agent_zero.py \
          tests/test_session16_e2e_final.py tests/test_session9_storage_tokens.py -q

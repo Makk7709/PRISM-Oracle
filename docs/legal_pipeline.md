@@ -52,7 +52,7 @@ class MissingInfoCode:
 
 ### Comportement fail-closed
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  Si consensus requis mais absent    → REFUSAL (consensus_required)         │
 │  Si consensus requis mais rejeté    → REFUSAL (consensus_rejected)         │
@@ -66,7 +66,7 @@ class MissingInfoCode:
 
 ## Vue d'ensemble
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        EVIDENCE LEGAL PIPELINE                              │
 │                                                                             │
@@ -285,7 +285,7 @@ print(output.to_markdown())
 
 **Query**: "Qu'est-ce que l'article 1134 du code civil?"
 
-```
+```text
 Router → risk_tier=LOW, scope=INFO, jurisdiction=FR
 Draft  → facts=1, rules=1, application=OK
 Judge  → APPROVE (6/6 checks)
@@ -296,7 +296,7 @@ Output → SAFE_ANALYSIS (pas de consensus requis pour LOW)
 
 **Query**: "Analyse clause de non-concurrence dans contrat commercial"
 
-```
+```text
 Router → risk_tier=MEDIUM, scope=OPERATIONAL, jurisdiction=FR
 Draft  → facts=3, rules=2, application=OK, claims=2
 Judge  → APPROVE
@@ -308,7 +308,7 @@ Output → APPROVED_POSITION si consensus OK
 
 **Query**: "Due diligence M&A LBO avec valorisation"
 
-```
+```text
 Router → risk_tier=HIGH, scope=BOARD, jurisdiction=FR
 Draft  → facts=4, rules=3, application=OK, claims=3, risks=4
 Judge  → APPROVE
@@ -369,7 +369,7 @@ output = await run_legal_pipeline(
 
 ### Architecture Runtime
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  run_legal_pipeline(query, route_decision, ...)                 │
 │     ├── 1. Retrieval (exact + search, 2-stage)                  │
@@ -388,6 +388,7 @@ output = await run_legal_pipeline(
 | `LEGAL_ENFORCEMENT_LEVEL` | Niveau d'enforcement (0-3) | `3` (hard) |
 
 **Niveaux d'enforcement:**
+
 - 0 = OFF (REFUSAL systématique)
 - 1 = Audit-only (log mais pas de blocage)
 - 2 = Soft (blocage high-stakes)
@@ -396,6 +397,7 @@ output = await run_legal_pipeline(
 ### Observabilité
 
 **Logs JSON structurés:**
+
 ```json
 {
   "correlation_id": "corr_abc123",
@@ -408,6 +410,7 @@ output = await run_legal_pipeline(
 ```
 
 **Métriques exposées:**
+
 - `legal_pipeline_requests_total`
 - `legal_pipeline_refusals_total` (par raison)
 - `legal_pipeline_provenance_missing_total`
@@ -426,6 +429,7 @@ md_board = render_legal_output_markdown(output, style="board")
 ```
 
 **Styles:**
+
 | Style | Audience | Contenu |
 |-------|----------|---------|
 | `info` | Utilisateurs | Court, pédagogique, sources compactes |
@@ -433,6 +437,7 @@ md_board = render_legal_output_markdown(output, style="board")
 | `board` | Direction | Executive memo, risques classés, décisions |
 
 **Garanties de rendu:**
+
 - ✅ Bandeau toujours en tête
 - ✅ Disclaimer toujours présent
 - ✅ Sources toujours présentes (non-refusal)
@@ -472,6 +477,7 @@ result = await execute_consensus(
 ```
 
 **Comportement fail-closed:**
+
 - Consensus indisponible → status = "PENDING" (pas APPROVED)
 - Timeout → status = "PENDING"
 - HIGH risk en simulation → status = "PENDING"
@@ -491,6 +497,7 @@ ctx = retrieve_from_fts5_index(
 ```
 
 **Variables:**
+
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `LEGAL_USE_FTS5_INDEX` | Utiliser l'index FTS5 | `1` |
@@ -511,6 +518,7 @@ draft = await build_legal_draft_with_llm(
 ```
 
 **Contraintes:**
+
 - Tous les claims doivent être CITED ou HYPOTHESIS
 - UNSUPPORTED claims bloqués pour OPERATIONAL/BOARD
 - Fallback vers draft basique si LLM échoue
@@ -528,6 +536,7 @@ html = render_legal_output(output, format="html")
 ```
 
 **Garanties HTML:**
+
 - Bandeau toujours présent
 - Disclaimer toujours présent
 - Sources toujours présentes (non-refusal)
@@ -550,6 +559,7 @@ if self.should_use_legal_pipeline() and user_text:
 ```
 
 **Feature flags:**
+
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `LEGAL_PIPELINE_HOOK` | Activer le hook router | `1` |
@@ -568,6 +578,7 @@ results = index.search("article 1103", limit=5)
 ```
 
 **Contenu:**
+
 - 7 articles Code civil (1103, 1104, 1112, 1128, 1134, 1240, 1241)
 - 6 articles Code du travail (L1121-1, L1152-1, L1221-1, L1225-1, L1237-11, L3121-27)
 - 7 arrêts Cour de cassation (clause non-concurrence, licenciement, etc.)
@@ -616,6 +627,7 @@ La mission P6.1-VERIFY ajoute une batterie de tests robustes pour le module `leg
 #### Golden files (`tests/golden/legal_diff_cases/`)
 
 13 cas couvrant:
+
 - `01_no_change.json` - Textes identiques
 - `02_add_paragraph.json` - Ajout neutre
 - `03_remove_paragraph.json` - Suppression neutre
@@ -717,7 +729,7 @@ Extensions grammaticales sans NLP externe:
 
 #### Invariants P6.2
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ 🔒 NO-SIGNAL-CHANGE-IGNORED                                         │
 │    Si extract_normative_signals(before) != extract_normative_signals(after)

@@ -3,10 +3,12 @@ Output Contract (Chat UI)
 
 Canonical fields
 ----------------
+
 - `text` (string, required, non-empty): user-visible response
 
 Internal fields (never displayed)
 ---------------------------------
+
 - `thoughts` (string, optional)
 - `debug` (object, optional)
 - `trace` (array, optional)
@@ -16,6 +18,7 @@ Internal fields (never displayed)
 
 Rules
 -----
+
 1) UI must display **only** `text`.
 2) If `text` is missing or empty:
    - Backend: fail-fast OR fallback to `text="Réponse indisponible (erreur de format)."`
@@ -24,12 +27,15 @@ Rules
 
 Examples
 --------
+
 Valid:
+
 ```json
 {"text":"Bonjour","thoughts":"secret","debug":{"x":1}}
 ```
 
 Invalid:
+
 ```json
 {"thoughts":"secret"}
 ```

@@ -16,7 +16,7 @@
 
 ## Résumé Exécutif
 
-Le moteur de raisonnement non-linéaire (reasoning_engine, task_planner, metacognition) est **prêt pour la production**. 
+Le moteur de raisonnement non-linéaire (reasoning_engine, task_planner, metacognition) est **prêt pour la production**.
 
 **FIX P0 APPLIQUÉ**: Correction du bug "escalade diluée" — l'escalade est maintenant calculée à partir de la confiance BRUTE (`outcome.confidence`) et non d'un score composite.
 
@@ -47,6 +47,7 @@ Le moteur de raisonnement non-linéaire (reasoning_engine, task_planner, metacog
 **Fichier**: `python/helpers/metacognition.py`
 
 **Avant** (vulnérable):
+
 ```python
 # Dans la zone 0.2 <= raw < 0.35
 escalation = self._determine_escalation(
@@ -57,6 +58,7 @@ escalation = self._determine_escalation(
 ```
 
 **Après** (sécurisé):
+
 ```python
 raw_confidence = outcome.confidence  # Source de vérité
 
@@ -83,7 +85,7 @@ else:
 
 ### I1. Non-dilution
 
-```
+```text
 ∀ outcome:
   outcome.confidence < safe_refuse_threshold (0.2)
   ⇒ escalation == SAFE_REFUSE
@@ -91,13 +93,14 @@ else:
 
 **Garanti par**: Hard guard ligne 297-306 dans `metacognition.py`
 
-**Testé par**: 
+**Testé par**:
+
 - `test_T1_non_dilution_critical_confidence`
 - `test_T4_missing_info_critical_conf_safe_refuse`
 
 ### I2. Monotonicité
 
-```
+```text
 ∀ base_escalation, signals:
   _apply_hardening_signals(base, signals, flags) >= base (en sévérité)
 ```
@@ -110,7 +113,7 @@ else:
 
 ### I3. No-CoT Leak
 
-```
+```text
 ∀ trace:
   trace.action.lower() not contains ["thought:", "let me think", "step-by-step", ...]
 ```
@@ -121,7 +124,7 @@ else:
 
 ### I4. No User-Content Logs
 
-```
+```text
 ∀ log_entry:
   log_entry not contains ["user_query", "prompt", "completion", "message"]
 ```
@@ -136,7 +139,7 @@ else:
 
 ### 3.1 Exécution Complète
 
-```
+```bash
 $ python3 -m pytest tests/test_reasoning_engine.py tests/test_task_planner.py tests/test_metacognition.py -q
 99 passed in 200.12s (0:03:20)
 ```
@@ -160,7 +163,7 @@ $ python3 -m pytest tests/test_reasoning_engine.py tests/test_task_planner.py te
 | T4a | MISSING_INFO + conf=0.55 → ASK_CLARIFY | ✅ |
 | T4b | MISSING_INFO + conf=0.15 → SAFE_REFUSE (non diluable) | ✅ |
 
-```
+```bash
 $ python3 -m pytest tests/test_metacognition.py::TestPolicyConstitution --collect-only -q
 15 tests collected
 ```
@@ -176,7 +179,7 @@ $ python3 -m pytest tests/test_metacognition.py::TestPolicyConstitution --collec
 | S2b | Stats sans PII | ✅ |
 | S2c | `query_hash` est un hash, pas la requête brute | ✅ |
 
-```
+```bash
 $ python3 -m pytest tests/test_metacognition.py::TestSecurityNoCoTLeak tests/test_metacognition.py::TestSecurityNoUserContentLogs --collect-only -q
 6 tests collected
 ```
@@ -212,6 +215,7 @@ $ python3 -m pytest tests/test_metacognition.py::TestSecurityNoCoTLeak tests/tes
 | ≥ 0.5 | SUFFISANTE | NONE |
 
 **Seuils configurables** (MetacognitionConfig):
+
 - `safe_refuse_threshold: 0.2`
 - `human_review_threshold: 0.35`
 - `escalate_on_confidence_below: 0.5`
@@ -281,12 +285,14 @@ python3 -m pytest tests/test_metacognition.py::TestSecurityNoCoTLeak tests/test_
 **DÉCISION FINALE: ✅ MERGE AUTORISÉ**
 
 Le bug P0 "escalade diluée" est corrigé:
+
 - La confiance BRUTE est maintenant la source de vérité pour les hard guards
 - L'escalade est non-diluable (I1) et monotone (I2)
 - 15 tests de Policy Constitution verrouillent la politique produit
 - 6 tests de sécurité valident les garde-fous No-CoT et No-PII
 
 **Prochaines étapes**:
+
 1. Merge dans main
 2. Configurer CI/CD avec les tests Policy comme gate obligatoire
 3. Monitorer les escalades en production (dashboard)

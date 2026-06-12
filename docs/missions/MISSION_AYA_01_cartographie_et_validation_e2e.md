@@ -107,6 +107,7 @@ requête LEVEL 2 (analyse/comparaison) qui, sinon, n'en aurait pas. Détection p
 - formulations EN : « **by/via/through consensus** », « **second opinion** », « **cross-check by consensus** ».
 
 Comportement :
+
 - Si opt-in détecté **et** `force_consensus is None` → `requires_consensus=True`, `consensus_opt_in=True`.
   L'opt-in **surclasse** même le bypass LEVEL 1 (une simple définition + « /consensus » devient consensus-able).
 - **Précédence** : un `force_consensus` **explicite** du caller (`True` *ou* `False`) **prime** sur l'opt-in user
@@ -125,6 +126,7 @@ Tests : `tests/test_criticality_router_level2_optin.py` (19 cas : niveaux, opt-i
 ### 1.4 D'où vient `_consensus_result` ? (POINT CLÉ À COMPRENDRE)
 
 Sur le **chemin chat direct**, `_consensus_result` n'est peuplé **que** par :
+
 - **la délégation** `python/tools/call_subordinate.py` (branche adversarial `:374`, branche subordinate `:448`) ;
 - **l'extension legal** `python/extensions/legal_safe_mode/_10_legal_safe_integration.py` (`:299`, via `map_legal_consensus`).
 
@@ -140,6 +142,7 @@ mécanismes différents, avec des finalités différentes, sur des chemins diff�
 même chose et sont **mutuellement exclusifs** dans un flux donné.
 
 #### a) PRISM — `run_consensus` (vote multi-arbitres) — *la voie canonique, opposable*
+
 - Réf : `python/consensus/engine.py::run_consensus` via `ConsensusOrchestrator.seek_consensus`.
 - Mécanisme : plusieurs LLM arbitres **votent** une proposition → **quorum**, statut terminal
   (`APPROVED`/`REJECTED`/`NO_CONSENSUS`/`INFRA_FAILURE`), **fail-closed** si aucun vote réel.
@@ -149,6 +152,7 @@ même chose et sont **mutuellement exclusifs** dans un flux donné.
 - Répond à : *« cette **décision** est-elle approuvée (vote formel) ? »*
 
 #### b) Débat collaboratif — `run_collaborative_consensus` (3 rounds) — *vérification anti-hallucination*
+
 - Réf : `python/helpers/collaborative_consensus.py`.
 - Mécanisme : 3 LLM **débattent** en 3 tours — R1 analyse indépendante des claims, R2 débat (chacun voit
   les analyses des autres), R3 synthèse + verdict. Sortie : `DebateVerdict` (approved, confidence, flagged_claims).
@@ -168,6 +172,7 @@ même chose et sont **mutuellement exclusifs** dans un flux donné.
 **saute** le débat pour éviter une double validation (`call_subordinate.py:365-371`).
 
 #### d) Pourquoi les deux — et la dette assumée
+
 - **Finalités différentes (légitime)** : PRISM = **décision** opposable (vote+quorum, signée) ; débat =
   **vérification** de contenu (anti-hallucination) sur le chemin chat délégué.
 - **Divergence historique (dette)** : le débat a été branché sur la délégation chat comme « nouveau système
@@ -248,12 +253,14 @@ exactement comme la doctrine ADR-010 le décrit — sur les **deux** chemins (ch
 ### 2.2 Périmètre
 
 **DANS le périmètre :**
+
 - Comprendre et valider la cartographie §1 (annoter toute divergence constatée).
 - Exécuter des requêtes réelles et capturer les `signed_output` + résultats de `verify_evidence_signature`.
 - Confirmer le statut CI du commit `930870f4`.
 - Exécuter au moins **un** consensus **réel** (sans `CONSENSUS_SIMULATION`).
 
 **HORS périmètre (ne PAS traiter ici) :**
+
 - P1-2 (migration medical/smoke), P1-3 (`collaborative_consensus`), P2 (endpoint de vérification, unification v1/v2).
 - Toute modification de la logique critique. Si tu trouves un défaut → **ticket**, pas de correctif dans ce chantier.
 
@@ -287,7 +294,7 @@ exactement comme la doctrine ADR-010 le décrit — sur les **deux** chemins (ch
 
 ### 2.5 Gabarit du livrable
 
-```
+```text
 # Validation E2E live — chemin critique Evidence (<date>)
 ## Environnement (instance, commit, env vars)
 ## C1 LEVEL 1 — requête / décision attendue / décision obtenue / signed_output / verify

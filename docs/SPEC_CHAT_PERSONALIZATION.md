@@ -9,21 +9,27 @@
 ## Règles absolues
 
 ### R1 — Overlay uniquement
+
 Les paramètres de personnalisation sont des **overlays de style** sur les réponses. Ils ne modifient PAS :
+
 - Les structures des tool calls (JSON tool_name, tool_args)
 - Les règles de sécurité (cite sources, fail-closed, consensus)
 - La logique de routage (orchestrateur → agents)
 
 ### R2 — Options prédéfinies
+
 Les valeurs sont **prédéfinies** (dropdown, pas de texte libre) pour éviter les injections de prompt.
 
 ### R3 — Injection en début de system prompt
+
 Le bloc de style est injecté **au début** du system prompt (avant le rôle principal) pour que le LLM le voie prioritairement.
 
 ### R4 — Rétrocompatibilité
+
 Si les paramètres sont absents ou invalides, le comportement par défaut est neutre (vouvoiement, ton cordial, humanisation modérée).
 
 ### R5 — Non-régression
+
 Les tool calls, le consensus, et les réponses structurées restent inchangés. Les tests existants doivent rester verts.
 
 ---
@@ -40,11 +46,13 @@ Les tool calls, le consensus, et les réponses structurées restent inchangés. 
 | **Nom IA** | `chat_ai_name` | Chaîne max 30 car., sanitisée | `""` |
 
 ### chat_persona
+
 - `homme` : L'assistant s'exprime au masculin (ex: "je suis ravi", "content").
 - `femme` : L'assistant s'exprime au féminin (ex: "je suis ravie", "contente").
 - `ia` : Expression neutre, sans genre explicite.
 
 ### chat_ai_name (R2bis)
+
 - Texte libre sanitisé : lettres, chiffres, espaces, accents français uniquement.
 - Max 30 caractères. Caractères dangereux supprimés (pas d'injection).
 
@@ -53,37 +61,44 @@ Les tool calls, le consensus, et les réponses structurées restent inchangés. 
 ## Instructions générées (exemples)
 
 ### chat_address_tu=true (tutoiement)
-```
+
+```text
 STYLE DE COMMUNICATION — Adresse l'utilisateur en le tutoyant (tu, ton, ta).
 ```
 
 ### chat_address_tu=false (vouvoiement)
-```
+
+```text
 STYLE DE COMMUNICATION — Adresse l'utilisateur en le vouvoyant (vous, votre).
 ```
 
 ### chat_tone
+
 - `formel` : Ton professionnel et distant.
 - `cordial` : Ton chaleureux et respectueux.
 - `direct` : Ton direct, sans formules superflues.
 - `bienveillant` : Ton empathique et encourageant.
 
 ### chat_humanization
+
 - `minimal` : Réponses factuelles, peu de reformulations.
 - `modere` : Reformulations naturelles, transitions fluides.
 - `eleve` : Langage très naturel, variété d'expressions, transitions humaines.
 
 ### chat_verbosity
+
 - `concise` : Réponses courtes, à l'essentiel.
 - `equilibre` : Longueur moyenne.
 - `detaille` : Explications complètes.
 
 ### chat_persona
+
 - `homme` : Tu t'exprimes au masculin (ex: je suis ravi, content).
 - `femme` : Tu t'exprimes au féminin (ex: je suis ravie, contente).
 - `ia` : Expression neutre, sans genre explicite.
 
 ### chat_ai_name
+
 - Si non vide : Tu te présentes sous le nom « X » lorsque pertinent.
 
 ---

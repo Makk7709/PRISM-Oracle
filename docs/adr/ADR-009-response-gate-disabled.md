@@ -73,11 +73,13 @@ La réactivation du gate ne sera effectuée que lorsque **tous** les points suiv
 ## Conséquences
 
 ### Positives
+
 - La fausse garantie de sécurité est levée : la documentation ne ment plus sur l'état du système.
 - La dette est tracée et conditionnée à des critères objectifs et testables.
 - L'implémentation fail-soft de référence reste disponible pour la réactivation.
 
 ### Négatives
+
 - Tant que la Tranche B n'est pas réalisée, **aucune validation de sortie** (consensus/gate/evidence
   stricte) n'est appliquée aux réponses critiques émises par ce point de sortie. Ce risque est
   documenté comme **RISK-01 (CRITIQUE, ouvert)** dans `PROD_READINESS_AUDIT.md`.
@@ -85,6 +87,7 @@ La réactivation du gate ne sera effectuée que lorsque **tous** les points suiv
   jusqu'à réactivation.
 
 ## Références
+
 - `docs/reports/PROD_READINESS_AUDIT.md` (registre de risques RISK-01, RISK-02).
 - `docs/adr/ADR-008-consensus-v1-to-v2-migration.md` (point d'entrée consensus v2).
 - `python/tools/response.py` (`ResponseTool.execute`, `_create_reliability_warning`).

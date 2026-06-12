@@ -10,6 +10,7 @@ PRISM-First Consensus - Target Architecture
 
 Goals (non-negotiable)
 ----------------------
+
 - Single Source of Truth: one entrypoint for any consensus decision.
 - One enum set: stable casing, backward compatible mapping.
 - No simulated approvals in production.
@@ -20,40 +21,49 @@ Goals (non-negotiable)
 
 Core components
 ---------------
+
 A) ConsensusEngine (authoritative)
-   - Location: python/consensus/engine.py
-   - Entry point: run_consensus(evidence_pack, policy) -> ConsensusDecision
-   - Internals:
-     - ConsensusManager (tally, timeouts, quorum)
-     - ArbiterCaller (real LLM votes only)
-   - Guards:
-     - No approval without real votes in production
-     - Schema validation on inputs/outputs
+
+- Location: python/consensus/engine.py
+- Entry point: run_consensus(evidence_pack, policy) -> ConsensusDecision
+- Internals:
+  - ConsensusManager (tally, timeouts, quorum)
+  - ArbiterCaller (real LLM votes only)
+- Guards:
+  - No approval without real votes in production
+  - Schema validation on inputs/outputs
 
 B) EvidenceAdapters (collect only)
-   - MCP/web/docs collection
-   - No decision logic, no simulated votes
-   - Outputs a normalized evidence_pack
+
+- MCP/web/docs collection
+- No decision logic, no simulated votes
+- Outputs a normalized evidence_pack
 
 C) IntegrityChecks (optional, non-decision)
-   - Collaborative debate for hallucination detection
-   - Produces warnings only (never a verdict)
+
+- Collaborative debate for hallucination detection
+- Produces warnings only (never a verdict)
 
 D) CriticalityRouter (3 levels)
-   - L1: simple definition/summary/translation/weather -> direct answer
-   - L2: professional analysis -> structured answer, no consensus
-   - L3: action/decision/real-case -> consensus + audit + graded reliability
-   - Domain detection enriches metadata; does not trigger consensus alone
+
+- L1: simple definition/summary/translation/weather -> direct answer
+- L2: professional analysis -> structured answer, no consensus
+- L3: action/decision/real-case -> consensus + audit + graded reliability
+- Domain detection enriches metadata; does not trigger consensus alone
 
 Unified contracts
 -----------------
+
 Single enum set (source-of-truth in consensus_contracts.py):
+
 - verdict: approve | reject | abstain
 - status: APPROVED | REJECTED | NO_CONSENSUS | INFRA_FAILURE | SKIPPED
 
 Strict validation
 -----------------
+
 All inter-module IO is validated using Pydantic schemas:
+
 - EvidencePackSchema (adapter output)
 - ConsensusPolicySchema (engine input)
 - ConsensusResultSchema (engine output)
@@ -61,7 +71,9 @@ All inter-module IO is validated using Pydantic schemas:
 
 Fail-soft ResponseEnvelope
 --------------------------
+
 ResponseEnvelope fields (always present for critical outputs):
+
 - answer
 - reliability_tiers: [{tier, claims, rationale, sources}]
 - unknowns
@@ -71,6 +83,7 @@ ResponseEnvelope fields (always present for critical outputs):
 
 Example flows
 -------------
+
 Flow L1 (simple):
   Router(L1) -> direct answer
   No consensus, no integrity checks
@@ -86,6 +99,7 @@ Flow L3 (critical):
 
 Migration strategy
 ------------------
+
 - Add feature flag CONSENSUS_ENGINE_V2
 - Default: legacy behavior, but warnings on old entrypoints
 - Staging: enable V2, compare audit logs

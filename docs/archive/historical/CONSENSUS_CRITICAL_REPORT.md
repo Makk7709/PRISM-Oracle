@@ -43,11 +43,13 @@
 **Fichier**: `python/helpers/critical_decision_gate.py`
 
 **Appelé depuis**:
+
 - `python/tools/response.py` (CP1 - sortie finale)
 - `python/tools/call_subordinate.py` (CP2 - délégation)
 - `python/helpers/research_consensus_integration.py` (CP3 - recherche)
 
 **API exposée**:
+
 ```python
 # Entrée: décide du pipeline
 result = enforce_or_route(query, agent_profile)
@@ -63,6 +65,7 @@ result = await validate_final_output(output, agent_profile, evidence_pack)
 **Rôle**: Détection de domaine critique + profils agents
 
 **Règles implémentées**:
+
 - Profils `legal_safe`, `researcher` → TOUJOURS consensus
 - Domaines LEGAL, MEDICAL, SCIENTIFIC → TOUJOURS consensus
 - Actions critiques (publish, recommend, diagnose) → TOUJOURS consensus
@@ -72,6 +75,7 @@ result = await validate_final_output(output, agent_profile, evidence_pack)
 **Fichier**: `python/helpers/deploy_config.py`
 
 **Vérifications au boot**:
+
 - CONSENSUS_SIMULATION=true en production → HARD FAIL
 - Mode offline + arbitres externes → WARN + fail-closed
 - Modules critiques importables
@@ -94,7 +98,7 @@ result = await validate_final_output(output, agent_profile, evidence_pack)
 
 ### 3.2 Tests Associés
 
-```
+```text
 tests/
 ├── test_criticality_router.py          # Détection domaine/profil
 ├── test_consensus_no_simulation_prod.py # Interdiction simulation
@@ -173,7 +177,7 @@ python tools/test_report.py --full --repeat 30
 
 ### 6.2 Résultats
 
-```
+```yaml
 Itérations: 30 (à exécuter)
 Flakes attendus: 0
 Flakes observés: À mesurer
@@ -282,7 +286,7 @@ Statut: PENDING
 
 ### Verdict
 
-```
+```text
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
 ║   VERDICT: READY (sous réserve validation tests)               ║
@@ -304,9 +308,9 @@ Statut: PENDING
 
 | Rôle | Nom | Date | Signature |
 |------|-----|------|-----------|
-| Principal Engineer | ____________ | ____/____/____ | ____________ |
-| QA Lead | ____________ | ____/____/____ | ____________ |
-| Security Review | ____________ | ____/____/____ | ____________ |
+| Principal Engineer | ____________ | ****/****/____ | ____________ |
+| QA Lead | ____________ | ****/****/____ | ____________ |
+| Security Review | ____________ | ****/****/____ | ____________ |
 
 ---
 

@@ -10,7 +10,9 @@ PRISM Consensus - Current Architecture (Snapshot)
 
 Scope
 -----
+
 This document maps the current consensus stack across:
+
 - python/helpers/consensus_manager.py
 - python/helpers/consensus_arbiter.py
 - python/helpers/consensus_contracts.py
@@ -22,6 +24,7 @@ This document maps the current consensus stack across:
 
 Public entrypoints (current)
 ---------------------------
+
 1) python/helpers/consensus_arbiter.py
    - get_consensus_orchestrator()
    - ConsensusOrchestrator.seek_consensus()
@@ -43,6 +46,7 @@ Public entrypoints (current)
 
 Router and triggers
 -------------------
+
 - python/helpers/criticality_router.py
   - Level 1 / 2 / 3 classification exists in code, but tests expect
     domain detection to trigger consensus (legacy mismatch).
@@ -52,6 +56,7 @@ Router and triggers
 
 Call graph (simplified)
 -----------------------
+
 User request
   -> router/router.decide_route(...)  (intent routing)
   -> criticality_router.CriticalityRouter.assess(...)
@@ -65,6 +70,7 @@ User request
 
 Other parallel consensus paths
 ------------------------------
+
 - consensus_integration.ResearchPipeline
   -> MCP collect + engine.run_consensus()
 - consensus_mcp_integration.research_with_consensus
@@ -74,6 +80,7 @@ Other parallel consensus paths
 
 Key collisions and risks
 ------------------------
+
 - Multiple entrypoints exist but now delegate to engine (single decision point).
 - Enum duplication eliminated by importing from consensus_contracts.
 - Simulated votes removed from adapters; engine enforces real votes in production.
@@ -84,6 +91,7 @@ Key collisions and risks
 
 Impact summary
 --------------
+
 The consensus decision is not centralized. The system has multiple
 orchestrators, duplicated contracts, and heuristic approval paths. This
 violates single source of truth, deterministic routing, and auditability.

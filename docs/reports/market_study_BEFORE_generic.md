@@ -1,7 +1,7 @@
 # Étude de Marché KOREV Evidence — Version Générique (AVANT)
 
 > ⚠️ **Ce document illustre ce qui NE DOIT PAS être produit par KOREV Evidence**
-> 
+>
 > Il représente une sortie "chatbot classique" — plausible mais non vérifiable.
 
 ---
@@ -53,6 +53,7 @@ Atteint en Y2 avec ~35 clients à 1 200€/mois.
 ## Positionnement concurrentiel
 
 KOREV se différencie par :
+
 - Consensus multi-LLM
 - Fail-closed
 - Sourcing obligatoire
@@ -84,7 +85,7 @@ Ce document viole les principes Evidence sur **tous les points** :
 ### Verdict
 
 > **Ce document est un PITCH, pas une ÉTUDE.**
-> 
+>
 > En mode Evidence, il aurait dû être **FAIL_CLOSED**.
 
 ---

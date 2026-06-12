@@ -20,7 +20,7 @@ chmod +x deploy-docker.sh
 
 #### Sur Windows
 
-```
+```text
 1. Ouvrez le dossier "scripts"
 2. Double-cliquez sur "deploy-docker.bat"
 3. Suivez les instructions a l'ecran
@@ -28,6 +28,7 @@ chmod +x deploy-docker.sh
 ```
 
 Le script `deploy-docker` fait tout automatiquement :
+
 - Verifie Docker Desktop
 - Configure le fichier `.env`
 - Construit l'image KOREV Evidence (~10-20 min la premiere fois)
@@ -74,17 +75,22 @@ open http://localhost:50080
 ### Prerequis
 
 #### Windows
+
 1. **Python 3.11+** - [Telecharger ici](https://www.python.org/downloads/)
    - IMPORTANT : Cochez "Add Python to PATH" lors de l'installation
 
 #### macOS
+
 1. **Python 3.11+** - Deja installe ou via Homebrew :
+
    ```bash
    brew install python@3.11
    ```
 
 #### Linux
+
 1. **Python 3.11+**
+
    ```bash
    sudo apt install python3.11 python3.11-venv
    ```
@@ -93,7 +99,7 @@ open http://localhost:50080
 
 #### Sur Windows
 
-```
+```text
 1. Ouvrez le dossier "scripts"
 2. Double-cliquez sur "install-windows.bat"
 3. Attendez l'installation des dependances
@@ -130,6 +136,7 @@ DEFAULT_USER_TIMEZONE=Europe/Paris
 ## Mise a jour
 
 ### Docker
+
 ```bash
 cd korev-evidence
 docker compose -f docker/run/docker-compose.yml down
@@ -140,11 +147,13 @@ cd docker/run && docker compose up -d
 ### Installation locale
 
 #### Windows
-```
+
+```text
 Double-cliquez sur scripts/update-windows.bat
 ```
 
 #### macOS / Linux
+
 ```bash
 cd korev-evidence
 git pull
@@ -158,6 +167,7 @@ pip install -r requirements2.txt --upgrade
 ## Lancement manuel
 
 ### Docker
+
 ```bash
 docker start korev-evidence
 # Acces sur http://localhost:50080
@@ -166,6 +176,7 @@ docker start korev-evidence
 ### Installation locale
 
 #### Windows
+
 ```cmd
 cd korev-evidence
 venv\Scripts\activate
@@ -173,6 +184,7 @@ python run_ui.py
 ```
 
 #### macOS / Linux
+
 ```bash
 cd korev-evidence
 source venv/bin/activate
@@ -185,30 +197,34 @@ python run_ui.py
 
 | Mode | URL |
 |------|-----|
-| Docker | **http://localhost:50080** |
-| Local | **http://localhost:5050** |
+| Docker | **<http://localhost:50080>** |
+| Local | **<http://localhost:5050>** |
 
 ---
 
 ## Desinstallation
 
 ### Docker
+
 ```bash
 docker compose -f docker/run/docker-compose.yml down
 docker rmi korev-evidence:local
 ```
 
 ### Installation locale (Windows)
-```
+
+```text
 Double-cliquez sur scripts/uninstall-windows.bat
 ```
 
 Ce script supprime :
+
 - `venv/` (environnement virtuel, ~2-5 GB)
 - `__pycache__/`, `.pytest_cache/`, `*.pyc`
 - `logs/`, `tmp/`
 
 Ce script **NE supprime PAS** :
+
 - `.env` (votre configuration)
 - `data/` (vos donnees)
 - Le code source
@@ -218,19 +234,23 @@ Ce script **NE supprime PAS** :
 ## Depannage
 
 ### Docker Desktop ne demarre pas
+
 - Windows : Verifiez que la virtualisation est activee dans le BIOS
 - macOS : Allez dans Docker Desktop > Settings > Advanced > "Allow the default Docker socket"
 
 ### "Port 50080 deja utilise"
+
 ```bash
 EVIDENCE_PORT=50081 ./scripts/deploy-docker.sh
 ```
 
 ### "Python n'est pas reconnu" (mode local)
+
 - Windows : Reinstallez Python en cochant "Add Python to PATH"
 - Mac : `brew install python@3.11`
 
 ### "Module not found" (mode local)
+
 ```bash
 pip install -r requirements.txt
 pip install -r requirements2.txt
@@ -240,4 +260,4 @@ pip install -r requirements2.txt
 
 ## Support
 
-- **Email** : support@korev.ai
+- **Email** : <support@korev.ai>

@@ -17,6 +17,7 @@ Le profil agent médical a été durci avec **enforcement côté code** (pas jus
 | **Prompt** | `agents/medical/prompts/agent.system.main.role.md` | Instructions agent |
 
 **Protections** :
+
 - **Output Contract** : StructuredResponse validé par Pydantic (pas un mock)
 - **Invariants T9** : `source_ids ⊆ citations.ids`, `pv => grade VL/L`
 - **Fail-Closed** : 6 conditions, enforcement dans le gate
@@ -69,6 +70,7 @@ Le profil agent médical a été durci avec **enforcement côté code** (pas jus
 ```
 
 **Exemples mis à jour :**
+
 - 5 exemples en format StructuredResponse JSON
 - Exemple FAIL_CLOSED explicite
 - Exemple refus d'action avec info générale
@@ -92,7 +94,7 @@ CONSENSUS_REQUIRED_PROFILES: Set[str] = {
 
 ### 3.1 Résultats d'Exécution
 
-```
+```text
 ======================== 71 passed, 2 warnings in 3.62s ========================
 (30 tests medical + 27 criticality_router + 14 strict_evidence)
 ```
@@ -113,7 +115,8 @@ CONSENSUS_REQUIRED_PROFILES: Set[str] = {
 ### 3.3 Architecture Enforcement
 
 **AVANT (v1.0)** : Tests sur mocks internes
-```
+
+```text
 test_medical_agent_hardening.py
 ├── validate_structured_response()  # DÉFINI DANS LE TEST
 ├── detect_red_flags()              # DÉFINI DANS LE TEST
@@ -121,7 +124,8 @@ test_medical_agent_hardening.py
 ```
 
 **MAINTENANT (v2.0)** : Tests sur code production
-```
+
+```text
 test_medical_agent_hardening.py
 ├── from python.helpers.medical_contract import validate_medical_output  # PROD
 ├── from python.helpers.medical_contract import detect_red_flags         # PROD
@@ -135,15 +139,18 @@ python/helpers/critical_decision_gate.py
 ### 3.4 Tests Clés
 
 #### T1: Routing Medical → Consensus Obligatoire
+
 ```python
 def test_medical_profile_always_requires_consensus(self, router):
     assessment = router.assess(query="Hello", agent_profile="medical")
     assert assessment.requires_consensus is True
     assert assessment.strict_evidence_mode is True
 ```
+
 **Résultat** : PASS — Le profil `medical` force TOUJOURS le consensus.
 
 #### T2: Output Contract — Claim sans source = FAIL
+
 ```python
 def test_claim_without_sources_fails(self):
     response = {"tool_args": {"structured_response": {
@@ -153,15 +160,18 @@ def test_claim_without_sources_fails(self):
     assert not is_valid
     assert "empty source_ids" in error
 ```
+
 **Résultat** : PASS — Claims sans sources sont rejetés.
 
 #### T3: Offline → FAIL_CLOSED Strict
+
 ```python
 def test_offline_mode_produces_fail_closed(self):
     offline_response = create_offline_fail_closed_response(...)
     assert offline_response["decision"] == "FAIL_CLOSED"
     assert offline_response["claims"] == []
 ```
+
 **Résultat** : PASS — Mode offline = claims vides, pas de recommandation.
 
 ---
@@ -201,6 +211,7 @@ def test_force_consensus_false_ignored_for_medical(self, prod_router):
     assert assessment.can_bypass is False
     assert assessment.requires_consensus is True
 ```
+
 **Résultat** : PASS
 
 ---
@@ -209,7 +220,7 @@ def test_force_consensus_false_ignored_for_medical(self, prod_router):
 
 ### 5.1 Règle
 
-```
+```text
 OFFLINE_MODE = true + domaine MEDICAL → FAIL_CLOSED + claims = []
 ```
 
@@ -224,6 +235,7 @@ def test_offline_response_has_no_recommendations(self):
     for pattern in forbidden_patterns:
         assert pattern.lower() not in answer.lower()
 ```
+
 **Résultat** : PASS — Aucun langage actionnable en mode offline.
 
 ### 5.3 Format FAIL_CLOSED Offline
@@ -260,7 +272,7 @@ def test_offline_response_has_no_recommendations(self):
 
 ## 7. Archivage
 
-```
+```bash
 Git Hash: 47d91ff6849efcc6dd1cf0e808a0508833e49224
 Date: 2026-01-25
 Branch: main

@@ -1,5 +1,7 @@
 ![KOREV Evidence Logo](res/header.png)
+
 # KOREV Evidence Documentation
+
 To begin with KOREV Evidence, follow the links below for detailed guides on various topics:
 
 - **[Installation](installation.md):** Set up (or [update](installation.md#how-to-update-korev-evidence)) KOREV Evidence on your system.
@@ -11,7 +13,7 @@ To begin with KOREV Evidence, follow the links below for detailed guides on vari
 - **[Contributing](contribution.md):** Learn how to contribute to the KOREV Evidence project.
 - **[Troubleshooting and FAQ](troubleshooting.md):** Find answers to common issues and questions.
 
-### Your experience with KOREV Evidence starts now!
+## Your experience with KOREV Evidence starts now
 
 - **Download KOREV Evidence:** Follow the [installation guide](installation.md) to download and run KOREV Evidence.
 - **Join the Community:** Visit [korev.ai](https://korev.ai) for support and documentation.
@@ -30,7 +32,7 @@ To begin with KOREV Evidence, follow the links below for detailed guides on vari
   - [Installing and Using Ollama](installation.md#installing-and-using-ollama-local-models)
   - [Using KOREV Evidence on Mobile](installation.md#using-korev-evidence-on-your-mobile-device)
   - [How to Update KOREV Evidence](installation.md#how-to-update-korev-evidence)
-  - [Full Binaries Installation](installation.md#in-depth-guide-for-full-binaries-installation)
+  - [Full Binaries Installation](development.md)
 - [Usage Guide](usage.md)
   - [Basic Operations](usage.md#basic-operations)
     - [Restart Framework](usage.md#restart-framework)

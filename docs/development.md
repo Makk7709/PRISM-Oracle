@@ -1,20 +1,19 @@
 # Development manual for KOREV Evidence
+
 This guide will show you how to setup a local development environment for KOREV Evidence in a VS Code compatible IDE, including proper debugger.
 
-
 [![Tutorial video](./res/devguide_vid.png)](https://www.youtube.com/watch?v=KE39P4qBjDk)
-
-
 
 > [!WARNING]
 > This guide is for developers and contributors. It assumes you have a basic understanding of how to use Git/GitHub, Docker, IDEs and Python.
 
 > [!NOTE]
+>
 > - KOREV Evidence runs in a Docker container, this simplifies installation and ensures unified environment and behavior across systems.
 > - Developing and debugging in a container would be complicated though, therefore we use a hybrid approach where the python framework runs on your machine (in VS Code for example) and only connects to a Dockerized instance when it needs to execute code or use other pre-installed functionality like the built-in search engine.
 
+## To follow this guide you will need
 
-## To follow this guide you will need:
 1. VS Code compatible IDE (VS Code or any compatible variant)
 2. Python environment (Conda, venv, uv...)
 3. Docker (Docker Desktop, docker-ce...)
@@ -23,13 +22,14 @@ This guide will show you how to setup a local development environment for KOREV 
 > [!NOTE]
 > I will be using clean VS Code, Conda and Docker Desktop in this example on MacOS.
 
-
 ## Step 0: Install required software
+
 - See the list above and install the software required if you don't already have it.
 - You can choose your own variants, but Python, Docker and a VS Code compatible IDE are required.
 - For Python you can choose your environment manager - base Python venv, Conda, uv...
 
 ## Step 1: Clone or download the repository
+
 - KOREV Evidence is available on GitHub [github.com/korevai/korev-evidence](https://github.com/korevai/korev-evidence).
 - You can download the files using a browser and extract or run `git clone https://github.com/korevai/korev-evidence` in your desired directory.
 
@@ -37,6 +37,7 @@ This guide will show you how to setup a local development environment for KOREV 
 > In my case, I used `cd ~/Desktop` and `git clone https://github.com/korevai/korev-evidence`, so my project folder is `~/Desktop/korev-evidence`.
 
 ## Step 2: Open project folder in your IDE
+
 - I will be using plain and clean VS Code for this example to make sure I don't skip any setup part, you can use any VS Code compatible variant.
 - KOREV Evidence comes with `.vscode` folder that contains basic setup, recommended extensions, and debugger profiles. These will help us a lot.
 
@@ -45,9 +46,11 @@ This guide will show you how to setup a local development environment for KOREV 
 3. You should now have the project open in your IDE
 ![VS Code project](res/dev/devinst-1.png)
 
-# Step 3: Prepare your IDE:
+# Step 3: Prepare your IDE
+
 1. Notice the prompt in lower right corner of the screenshot above to install recommended extensions, this comes from the `.vscode/extensions.json` file. It contains Python language support, debugger and error helper, install them by confirming the popup or manually in Extensions tab of your IDE. These are the extensions mentioned:
-```
+
+```text
 usernamehw.errorlens
 ms-python.debugpy
 ms-python.python
@@ -65,15 +68,17 @@ Now when you select one of the python files in the project, you should see prope
 ![VS Code env terminal](res/dev/devinst-5.png)
 
 3. Install dependencies. Run these two commands in the terminal:
+
 ```bash
 pip install -r requirements.txt
 playwright install chromium
-``` 
+```
+
 These will install all the python packages and browser binaries for playwright (browser agent).
 Errors in the code editor caused by missing packages should now be gone. If not, try reloading the window.
 
-
 ## Step 4: Run KOREV Evidence in the IDE
+
 Great work! Now you should be able to run KOREV Evidence from your IDE including real-time debugging.
 It will not be able to do code execution and few other features requiring the Docker container just yet, but most of the framework will already work.
 
@@ -86,14 +91,13 @@ The framework will run at the default port 5000. If you open `http://localhost:5
 It may take a while the first time. You should see output like the screenshot below. The RFC error is ok for now as we did not yet connect our local development to another instance in docker.
 ![First run](res/dev/devinst-7.png)
 
-
 After inserting my API key in settings, my KOREV Evidence instance works. I can send a simple message and get a response.
 ⚠️ Some tools like code execution will not work yet as they need to be connected to a Dockerized instance.
 
 ![First message](res/dev/devinst-8.png)
 
-
 ## Debugging
+
 - You can try out the debugger already by placing a breakpoint somewhere in the python code.
 - Let's open `python/api/message.py` for example and place a breakpoint at the beginning of the `communicate` function by clicking on the left of the row number. A red dot should appear showing a breakpoint is set.
 
@@ -103,8 +107,8 @@ After inserting my API key in settings, my KOREV Evidence instance works. I can 
 
 ![Debugging](res/dev/devinst-10.png)
 
-
 ## Step 5: Run another instance of KOREV Evidence in Docker
+
 - Some parts of Korev require standardized linux environment, additional web services and preinstalled binaries that would be unneccessarily complex to set up in a local environment.
 - To make development easier, we can use existing Korev instance in docker and forward some requests to be executed there using SSH and RFC (Remote Function Call).
 
@@ -115,8 +119,8 @@ This is how it looks in my example: port `80` is mapped to `8880` on the host an
 ![docker run](res/dev/devinst-11.png)
 ![docker run](res/dev/devinst-12.png)
 
-
 ## Step 6: Configure SSH and RFC connection
+
 - The last step is to configure the local development (VS Code) instance and the dockerized instance to communicate with each other. This is very simple and can be done in the settings in the Web UI of both instances.
 - In my example the dark themed instance is the VS Code one, the light themed one is the dockerized instance.
 
@@ -132,7 +136,6 @@ My Dockerized instance:
 My VS Code instance:
 ![VS Code instance](res/dev/devinst-13.png)
 
-
 # 🎉 Congratulations! 🚀
 
 You have successfully set up a complete KOREV Evidence development environment! You now have:
@@ -144,12 +147,13 @@ You have successfully set up a complete KOREV Evidence development environment! 
 
 You're now ready to contribute to KOREV Evidence, create custom extensions, or modify the framework to suit your needs. Happy coding! 💻✨
 
-
 ## Next steps
+
 - See [extensibility](extensibility.md) for instructions on how to create custom extensions.
 - See [contribution](contribution.md) for instructions on how to contribute to the framework.
 
 ## Want to build your docker image?
+
 - You can use the `DockerfileLocal` to build your docker image.
 - Navigate to your project root in the terminal and run `docker build -f DockerfileLocal -t korev-evidence-local --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .`
 - The `CACHE_DATE` argument is optional, it is used to cache most of the build process and only rebuild the last steps when the files or dependencies change.

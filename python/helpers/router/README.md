@@ -42,18 +42,20 @@ DETERMINISTIC_ROUTER_V2=1
 ```
 
 When enabled:
+
 - Router runs in parallel with existing LLM-based routing
 - Decisions are logged for audit
 - Divergences between LLM choice and router decision are flagged
 - **No behavioral change** to existing flow (audit-only mode)
 
 When disabled (default):
+
 - Router module is not invoked
 - Existing LLM-based routing unchanged
 
 ## Architecture
 
-```
+```text
 python/helpers/router/
 ├── __init__.py           # Exports + feature flag
 ├── routing_contract.py   # Strict schemas (RouteDecision, AgentResult)
@@ -83,6 +85,7 @@ class RouteDecision:
 ### Intent Policy
 
 Each intent has:
+
 - **Keywords**: Weighted terms with word boundaries
 - **Blockers**: Terms that prevent this intent
 - **Threshold**: Minimum score to activate
@@ -91,6 +94,7 @@ Each intent has:
 ### Board-Level Triggers
 
 Strategic keywords that activate board-level mode:
+
 - M&A: `acquisition d'entreprise`, `buyout`, `takeover`, `m&a`, `lbo`, `ipo`
 - Strategic: `stratégie`, `comex`, `direction générale`
 - Fundraising: `levée de fonds`, `série A`
@@ -163,6 +167,7 @@ python -m pytest tests/test_injection*.py -v               # Injection
 Current: **1.1.0**
 
 Changes in 1.1.0:
+
 - Fixed acquisition collision (marketing vs M&A)
 - Finance→Legal rule now requires board-level
 - Injection patterns reduced to override-only
@@ -171,12 +176,13 @@ Changes in 1.1.0:
 
 When enabled, the router logs:
 
-```
+```json
 [ROUTER_V2] a1b2c3d4 | Verdict: proceed | Intents: ['finance', 'legal_safe'] | BoardLevel: True | LLM profile: finance
 [ROUTER_V2_AUDIT] correlation-id | DIVERGENCE: LLM chose 'finance', Router detected ['finance', 'legal_safe']
 ```
 
 Log levels:
+
 - `INFO`: Normal routing decisions
 - `WARNING`: Divergences, injection attempts
 - `ERROR`: Router failures (falls back to existing behavior)

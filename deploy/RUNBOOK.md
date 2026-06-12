@@ -4,7 +4,7 @@
 
 Ce runbook couvre les procédures opérationnelles pour le déploiement DICA de PRISM + Evidence.
 
-```
+```yaml
 Version: 1.0.0
 Mode: Offline-first
 Support: ops@korev.ai
@@ -234,6 +234,7 @@ OFFLINE_MODE=true
 ```
 
 En mode offline:
+
 - Aucun appel réseau externe
 - LLMs utilisent des réponses en cache
 - Recherche limitée aux données locales
@@ -338,18 +339,21 @@ alerts:
 ## 8. Contacts & Escalade
 
 ### Niveau 1: Support Utilisateur
+
 - Vérifier les logs
 - Redémarrer le service
 - Consulter ce runbook
 
 ### Niveau 2: Support Technique
+
 - Générer un bundle diagnostic
-- Contacter: ops@korev.ai
+- Contacter: <ops@korev.ai>
 
 ### Niveau 3: Escalade Critique
+
 - Incidents de sécurité
 - Perte de données
-- Contacter: security@korev.ai
+- Contacter: <security@korev.ai>
 
 ---
 

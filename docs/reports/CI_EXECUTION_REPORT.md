@@ -63,7 +63,7 @@ python -m playwright install --with-deps chromium
 
 ## 3. Gates bloquants — VERT (preuve locale Python 3.11)
 
-```
+```text
 scope     → 134 passed
 fast      → 110 passed
 security  → 464 passed, 1 skipped
@@ -133,12 +133,14 @@ Périmètre : hors `tests/e2e`, `integration`, `infra`, `property`, hors `test_r
 **Pourquoi c'est de l'herméticité, pas une régression :** le test dépend du **temps mural réel** et d'un chemin de timeout **non garanti par le contrat actuel** du moteur. Le projet sait déjà tester un timeout proprement : `tests/test_harness_integrity.py::TestTimeoutWithoutWaiting` utilise un **faux temps** et passe **instantanément**. Le comportement de sortie critique (consensus/gate) n'est pas concerné par ce test.
 
 **Impact :**
+
 - Sur le gate **bloquant** (`scope`/`fast`/`security`) : **aucun** — le test n'y figure pas (`test_reasoning_engine.py` exclu du `fast`).
 - Sur le gate **`full`** : **bloquant de session** (interrompt la collecte des résultats des 30 % restants) → c'est précisément pourquoi `full` est **non bloquant pour le merge** et traité comme signal d'audit.
 - Sur le gate **`unit`** : neutralisé (fichier exclu via `--ignore=tests/test_reasoning_engine.py`).
 
 **Condition de réintégration dans le gate bloquant :**
 Le test redevient éligible au gate bloquant lorsque **l'un** des deux est vrai :
+
 - **(A) Réécriture hermétique** : remplacer `asyncio.sleep(100)` réel par une horloge simulée (pattern `TestTimeoutWithoutWaiting`) **et** asserter le comportement de timeout réellement garanti par le moteur (timeout par-exécuteur), sans dépendre d'un timeout global inexistant ; OU
 - **(B) Implémentation d'un timeout global** dans `ReasoningEngine` honorant `timeout_seconds`, puis assertion déterministe (déclenchement < 1 s en faux temps).
 

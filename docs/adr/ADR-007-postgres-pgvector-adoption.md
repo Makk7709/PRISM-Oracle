@@ -68,9 +68,9 @@ P0 pose les fondations sans aucun impact sur la prod :
    tourner en parallele de la prod (containers nommes `-staging`, volumes et
    reseau separes, ports differents) ou en local sur poste developpeur.
 4. **Init scripts** `deploy/postgres/init/01_extensions.sql` :
-   - extensions : `pgcrypto`, `vector`, `pg_trgm`
-   - schemas applicatifs : `identity`, `chats`, `memory`, `audit`, `legal`
-   - aucune table metier (P1+)
+   + extensions : `pgcrypto`, `vector`, `pg_trgm`
+   + schemas applicatifs : `identity`, `chats`, `memory`, `audit`, `legal`
+   + aucune table metier (P1+)
 5. **Backup quotidien** `scripts/backup/pg_dump_daily.sh` pret a etre
    cron-ne sur le VPS prod a partir de l'activation P1.
 6. **Tests d'infra** `tests/infra/test_postgres_compose.py` (marker `infra`,
@@ -111,10 +111,10 @@ non-regression sur staging ait montre 7 jours de stabilite.
 3. **Reversibilite a chaque phase.** Chaque PR introduisant une phase doit
    livrer un script de rollback teste sur staging.
 4. **Isolation prod / staging stricte.**
-   - Reseau Docker : `evidence-network` (prod) vs `evidence-staging-network`
-   - Volumes : `evidence-postgres-data` (prod) vs `evidence-postgres-data-staging`
-   - Mots de passe : `POSTGRES_PASSWORD` ≠ `POSTGRES_STAGING_PASSWORD`
-   - Aucun montage des cles RSA de prod en staging
+   + Reseau Docker : `evidence-network` (prod) vs `evidence-staging-network`
+   + Volumes : `evidence-postgres-data` (prod) vs `evidence-postgres-data-staging`
+   + Mots de passe : `POSTGRES_PASSWORD` ≠ `POSTGRES_STAGING_PASSWORD`
+   + Aucun montage des cles RSA de prod en staging
 5. **Pas d'exposition publique du SGBD.** Postgres n'est jamais bind sur
    `0.0.0.0`. En prod : non expose. En staging : `127.0.0.1:5433` uniquement.
 6. **Backup verifiable.** Chaque dump est accompagne d'un SHA-256 dans
@@ -154,59 +154,60 @@ P0 est valide quand TOUS les criteres suivants sont remplis :
 
 Si l'un de ces criteres n'est pas rempli, P1 ne demarre pas. Le passage a P1
 exige par ailleurs la mise en place :
-- d'un dump/restore de production teste (point H-1 de l'audit hostile)
-- d'un job CI dedie qui exectue `pytest -m infra` sur Postgres staging
+
++ d'un dump/restore de production teste (point H-1 de l'audit hostile)
++ d'un job CI dedie qui exectue `pytest -m infra` sur Postgres staging
 
 ## Ce que P0 ne fait PAS (a verifier avant tout commit)
 
-- P0 ne modifie aucun fichier dans `python/`. Le code applicatif est
++ P0 ne modifie aucun fichier dans `python/`. Le code applicatif est
   strictement non touche en P0.
-- P0 ne modifie pas `Dockerfile.backend`. Aucune nouvelle dependance Python.
-- P0 ne supprime aucun fichier de prod. Tout est additif.
-- P0 n'expose pas Postgres sur le reseau public.
-- P0 n'introduit aucune dependance Python ajoutee a `requirements.txt`.
++ P0 ne modifie pas `Dockerfile.backend`. Aucune nouvelle dependance Python.
++ P0 ne supprime aucun fichier de prod. Tout est additif.
++ P0 n'expose pas Postgres sur le reseau public.
++ P0 n'introduit aucune dependance Python ajoutee a `requirements.txt`.
 
 ## Consequences
 
 **Positives :**
 
-- Possibilite, des P1, de remplacer `deploy/users.json` (10 lignes editees a
++ Possibilite, des P1, de remplacer `deploy/users.json` (10 lignes editees a
   la main) par une vraie table `identity.users` avec migrations gitees.
-- pgvector remplace a terme FAISS pour la memoire agent : un vrai backup
++ pgvector remplace a terme FAISS pour la memoire agent : un vrai backup
   multi-utilisateur, des requetes hybrides (vector + filtre relationnel),
   et la possibilite de faire de l'analytique transverse.
-- Les artefacts d'audit gagnent une tracabilite relationnelle qui completera
++ Les artefacts d'audit gagnent une tracabilite relationnelle qui completera
   le replay_snapshot existant : `(user_id, ctxid, artefact_path, sha256,
   signed_at)` indexable et requetable.
-- Dette technique adressee de maniere progressive et reversible.
++ Dette technique adressee de maniere progressive et reversible.
 
 **Negatives :**
 
-- Surcoût RAM ~1 GB par instance Postgres (negligeable sur le VPS actuel
++ Surcoût RAM ~1 GB par instance Postgres (negligeable sur le VPS actuel
   8 GB). Le compose staging consomme 1 GB de plus, soit 2 GB total.
-- Operations DB-aware a integrer au runbook (cron pg_dump, surveillance disque,
++ Operations DB-aware a integrer au runbook (cron pg_dump, surveillance disque,
   PITR a configurer en P2).
-- Dependance forte au socle pgvector. Si l'image officielle disparait, il
++ Dependance forte au socle pgvector. Si l'image officielle disparait, il
   faudrait reconstruire (peu probable, c'est l'image de reference).
-- Les tests d'infra exigent Docker disponible, ce qui les rend difficiles a
++ Les tests d'infra exigent Docker disponible, ce qui les rend difficiles a
   executer dans la CI standard. Decision : un job CI dedie installe Docker
   sur le runner et execute `pytest -m infra`.
 
 ## Alternatives rejetees
 
-- **Continuer sur SQLite.** Limite a 1 ecrivain a la fois (locks), pas de
++ **Continuer sur SQLite.** Limite a 1 ecrivain a la fois (locks), pas de
   pgvector natif (extension `sqlite-vss` immature), pas de RBAC. Reserve aux
   donnees auxiliaires comme `legal_index.sqlite`.
-- **MongoDB.** Pas de transactionnalite forte multi-document jusqu'a recemment,
++ **MongoDB.** Pas de transactionnalite forte multi-document jusqu'a recemment,
   pas adapte aux donnees fortement relationnelles (memberships, roles).
-- **Supabase / Firestore (managed).** Couplage cloud, latence variable, prix
++ **Supabase / Firestore (managed).** Couplage cloud, latence variable, prix
   non lineaire avec la croissance. Possible plus tard pour une instance
   dediee aux gros clients.
 
 ## Liens
 
-- ADR-006 : Tool I/O Integrity Contract (`docs/adr/ADR-006-tool-io-integrity-contract.md`)
-- Plan de migration RDBMS : `docs/migration-rdbms/` (a publier en P1)
-- Snapshot pre-P0 : sur le VPS OVH `/home/ubuntu/snapshots/pre-P0-20260505-143731/`
-- Compose staging : `deploy/docker-compose.staging.yml`
-- Tests d'infra : `tests/infra/test_postgres_compose.py`
++ ADR-006 : Tool I/O Integrity Contract (`docs/adr/ADR-006-tool-io-integrity-contract.md`)
++ Plan de migration RDBMS : `docs/migration-rdbms/` (a publier en P1)
++ Snapshot pre-P0 : sur le VPS OVH `/home/ubuntu/snapshots/pre-P0-20260505-143731/`
++ Compose staging : `deploy/docker-compose.staging.yml`
++ Tests d'infra : `tests/infra/test_postgres_compose.py`

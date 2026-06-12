@@ -9,7 +9,9 @@
 ║  LEVEL 1 (requête simple — définition, résumé, explication, météo,           ║
 ║          traduction, calcul) → consensus BYPASSÉ même pour les profils       ║
 ║          critiques (legal_safe, medical, researcher). Voir                   ║
-║          LEVEL1_SIMPLE_PATTERNS.                                             ║
+║          LEVEL1_SIMPLE_PATTERNS. PRIORITÉ FAIL-CLOSED : si la requête        ║
+║          matche AUSSI un pattern LEVEL 3, c'est LEVEL 3 qui gagne (une       ║
+║          formulation simple n'efface pas un cas critique réel).              ║
 ║                                                                              ║
 ║  LEVEL 3 (cas réel, décision à prendre, litige, responsabilité, action       ║
 ║          critique type publish/recommend/diagnose) → consensus REQUIS.       ║
@@ -158,7 +160,9 @@ LEVEL1_SIMPLE_PATTERNS: List[str] = [
     # TRADUCTIONS
     # ─────────────────────────────────────────────────────────────────────────
     r"tradui(?:s|re|sez)\s+",  # "Traduis en anglais"
-    r"(?:en\s+)?(?:anglais|français|espagnol|allemand|italien)",
+    # "en <langue>" : exige la préposition. L'adjectif seul matchait n'importe
+    # quelle phrase ("droit français", "restaurant italien") — audit 2026-06-12.
+    r"\ben\s+(?:anglais|français|espagnol|allemand|italien)\b",
     r"^translate\s+",
     r"how\s+do\s+you\s+say\s+",
     
@@ -228,19 +232,20 @@ LEVEL3_CRITICAL_PATTERNS: List[str] = [
     # ─────────────────────────────────────────────────────────────────────────
     # CAS RÉELS / SITUATIONS PERSONNELLES
     # ─────────────────────────────────────────────────────────────────────────
-    r"(?:mon|ma|mes|notre|nos)\s+(?:cas|situation|problème|litige|employeur|patron|médecin|avocat)",
+    r"(?:mon|ma|mes|notre|nos)\s+(?:cas|situation|problème|litige|employeur|patron|médecin|avocat|droits?|recours|licenciement)",
     r"(?:j['']?ai|nous\s+avons)\s+(?:signé|reçu|été|un\s+litige|un\s+problème)",
-    r"(?:je\s+dois|nous\s+devons)\s+(?:décider|choisir|signer|porter\s+plainte)",
+    r"(?:je\s+dois|nous\s+devons)\s+(?:l[ae]s?\s+)?(?:décider|choisir|signer|porter\s+plainte)",
     r"(?:je\s+suis|nous\s+sommes)\s+(?:licencié|poursuivi|assigné|en\s+litige|accusé)",
     r"que\s+(?:puis[- ]?je|pouvons[- ]?nous)\s+(?:faire|réclamer|exiger)",
-    r"(?:quels?\s+)?(?:recours|droits?|options?)\s+(?:ai[- ]?je|avons[- ]?nous)",
-    r"(?:puis[- ]?je|peut[- ]?on)\s+(?:annuler|résilier|contester|attaquer|poursuivre)",
+    r"(?:quels?\s+)?(?:recours|droits?|options?)\s+(?:que\s+j['']?ai|ai[- ]?je|avons[- ]?nous)",
+    r"(?:puis[- ]?je|peut[- ]?on)\s+(?:l[ae]s?\s+)?(?:annuler|résilier|contester|attaquer|poursuivre)",
+    r"contester\s+(?:mon|ma|mes|ce|cette)\s+",  # "contester mon licenciement / cette décision"
     
     # ─────────────────────────────────────────────────────────────────────────
     # DÉCISIONS À PRENDRE
     # ─────────────────────────────────────────────────────────────────────────
-    r"(?:dois[- ]?je|devons[- ]?nous|faut[- ]?il)\s+(?:signer|accepter|refuser|contester)",
-    r"(?:je\s+dois|nous\s+devons)\s+(?:contester|attaquer|poursuivre|signer|annuler|résilier)",
+    r"(?:dois[- ]?je|devons[- ]?nous|faut[- ]?il)\s+(?:l[ae]s?\s+)?(?:signer|accepter|refuser|contester)",
+    r"(?:je\s+dois|nous\s+devons)\s+(?:l[ae]s?\s+)?(?:contester|attaquer|poursuivre|signer|annuler|résilier)",
     r"(?:should\s+i|should\s+we|do\s+i)\s+(?:invest|investing|buy|sell|trade)",
     r"(?:dois[- ]?je|faut[- ]?il)\s+(?:investir|placer|acheter|vendre|trader)",
     r"(?:est[- ]?ce\s+que\s+)?je\s+(?:risque|peux\s+être\s+poursuivi)",
@@ -259,7 +264,8 @@ LEVEL3_CRITICAL_PATTERNS: List[str] = [
     # ─────────────────────────────────────────────────────────────────────────
     r"(?:ma|notre)\s+(?:responsabilité|faute|obligation)",
     r"(?:risque|risques?)\s+(?:encouru|légal|pénal|financier)",
-    r"(?:dommages|préjudice|indemnisation)\s+(?:réclamer|obtenir|demander)",
+    # Tolère les mots intermédiaires : "dommages et intérêts que je peux réclamer"
+    r"(?:dommages|préjudice|indemnisation).{0,40}?(?:réclamer|obtenir|demander|indemniser)",
     
     # ─────────────────────────────────────────────────────────────────────────
     # CAS MÉDICAUX RÉELS
@@ -409,11 +415,18 @@ CRITICAL_ACTION_PATTERNS: List[str] = [
     r"\b(diagnose|diagnostiquer|prescribe|prescrire)\b",
     r"\b(treat|traiter|cure|guérir)\b",
     
-    # Actions légales
-    r"\b(contract|contracter|sign|signer)\b",
+    # Actions légales — verbes uniquement. Le NOM "contract" matchait
+    # "What is a contract?" et faisait basculer une définition en LEVEL 3
+    # (piège révélé par la priorité L3>L1, audit 2026-06-12).
+    r"\b(contracter|sign|signer)\b",
     r"\b(sue|poursuivre|file.?complaint|porter plainte)\b",
-    
-    # Actions financières à risque
+]
+
+# Verbes de transaction : critiques UNIQUEMENT si un contexte financier est
+# détecté (domaine FINANCE_HIGH_RISK). Hors contexte, ces verbes du langage
+# courant sur-déclenchaient le consensus ("où acheter du bon pain ?",
+# "vendre ma vieille console") — audit 2026-06-12.
+FINANCE_GATED_ACTION_PATTERNS: List[str] = [
     r"\b(buy|acheter|sell|vendre|trade|échanger|invest|investir|placer)\b",
     r"\b(transfer|transférer|wire|virement)\b",
 ]
@@ -550,6 +563,11 @@ class CriticalityRouter:
             re.compile(p, re.IGNORECASE) for p in self.action_patterns
         ]
 
+        # Verbes de transaction conditionnés au contexte financier.
+        self._compiled_finance_action_patterns = [
+            re.compile(p, re.IGNORECASE) for p in FINANCE_GATED_ACTION_PATTERNS
+        ]
+
         # DEF-CR-5 fix: pre-compile LEVEL 1 and LEVEL 3 patterns once at init
         # (was compiled inline at every assess() call before).
         self._compiled_level1_patterns: List[re.Pattern] = []
@@ -650,16 +668,32 @@ class CriticalityRouter:
         # ═══════════════════════════════════════════════════════════════════════
         
         # ─────────────────────────────────────────────────────────────────────
-        # RÈGLE 0: Requêtes LEVEL 1 (simples) → JAMAIS de consensus
+        # RÈGLE 0: Priorité fail-closed — détecter LEVEL 3 AVANT le bypass LEVEL 1
         # ─────────────────────────────────────────────────────────────────────
-        # Définitions, résumés, explications, météo, traduction, calculs...
-        # Même si ça contient des mots juridiques/médicaux!
-        # (query_hash déjà calculé plus haut dans cette méthode — DEF-CR-4 fix : doublon retiré)
-        
+        # Audit 2026-06-12 : le bypass LEVEL 1 était évalué en premier. Une
+        # requête critique réelle enrobée d'une formulation simple ("explique-moi
+        # mes recours après mon licenciement") matchait un pattern LEVEL 1 et
+        # sortait sans consensus. Si la requête matche AUSSI LEVEL 3, le niveau
+        # critique l'emporte TOUJOURS.
+
+        has_critical_action, action_matches = self._detect_critical_action(
+            query,
+            include_finance=(detected_domain == CriticalDomain.FINANCE_HIGH_RISK),
+        )
+        is_level3 = self._is_level3_critical(query) or has_critical_action
+
+        # Bypass LEVEL 1 : définitions, résumés, explications, météo, traduction,
+        # calculs... même si ça contient des mots juridiques/médicaux — mais
+        # UNIQUEMENT si aucun signal LEVEL 3 n'est présent.
         # L'opt-in utilisateur (et a fortiori force_consensus=True) prime sur le
         # bypass LEVEL 1 : si l'utilisateur DEMANDE explicitement un consensus,
         # même une requête simple y est soumise.
-        if self._is_level1_simple(query) and not caller_forced and not user_opt_in:
+        if (
+            not is_level3
+            and self._is_level1_simple(query)
+            and not caller_forced
+            and not user_opt_in
+        ):
             logger.info(f"LEVEL 1 (simple) detected, bypassing consensus: '{query[:50]}...'")
             if detected_domain != CriticalDomain.DEFAULT:
                 reasons.append(f"Domain context: {detected_domain.value}")
@@ -699,14 +733,12 @@ class CriticalityRouter:
         # RÈGLE 1: Requêtes LEVEL 3 (critiques) → consensus REQUIS
         # ─────────────────────────────────────────────────────────────────────
         # Cas réels, décisions à prendre, litiges, responsabilité...
-        
-        has_critical_action, action_matches = self._detect_critical_action(query)
+        # (has_critical_action / is_level3 calculés en RÈGLE 0, avant le bypass)
+
         if has_critical_action:
             matched_patterns.extend(action_matches)
             reasons.append("Critical action detected")
 
-        is_level3 = self._is_level3_critical(query) or has_critical_action
-        
         if is_level3:
             reasons.append("LEVEL 3 - Critical request (real case/decision/liability)")
         
@@ -988,17 +1020,30 @@ class CriticalityRouter:
     def _detect_critical_action(
         self,
         text: str,
+        include_finance: bool = True,
     ) -> Tuple[bool, List[str]]:
         """
         Détecte si une action critique est mentionnée.
-        
+
+        Args:
+            text: Texte à analyser
+            include_finance: si True, les verbes de transaction
+                (acheter/vendre/investir…) comptent comme actions critiques.
+                À activer UNIQUEMENT quand un contexte financier est détecté
+                (domaine FINANCE_HIGH_RISK) — sinon le langage courant
+                sur-déclenche ("où acheter du bon pain ?").
+
         Returns:
             (has_critical, matched_patterns)
         """
         matched = []
         text_lower = text.lower()
-        
-        for pattern in self._compiled_action_patterns:
+
+        patterns = list(self._compiled_action_patterns)
+        if include_finance:
+            patterns.extend(self._compiled_finance_action_patterns)
+
+        for pattern in patterns:
             found = pattern.findall(text_lower)
             if found:
                 matched.extend(found[:2])

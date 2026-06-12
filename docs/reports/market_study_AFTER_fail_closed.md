@@ -1,7 +1,7 @@
 # Étude de Marché KOREV Evidence — FAIL_CLOSED (APRÈS)
 
 > ✅ **Ce document illustre le comportement correct de KOREV Evidence**
-> 
+>
 > Face à une demande d'étude de marché sans données sourcées, le système refuse de conclure.
 
 ---
@@ -95,7 +95,7 @@ Pour générer cette étude de marché en mode Evidence :
 
 #### Données à collecter
 
-```
+```text
 □ TAM marché IA conversationnelle (source: rapport récent)
 □ SAM segment B2B professionnel (méthodologie de segmentation)
 □ Pricing concurrents (URLs publiques)

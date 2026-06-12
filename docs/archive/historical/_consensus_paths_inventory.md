@@ -15,22 +15,26 @@
 ## 1. Entry Points (User Query Reception)
 
 ### 1.1 HTTP API Entry
+
 - **File**: `python/api/message.py`
 - **Class**: `Message(ApiHandler)`
 - **Method**: `process()` → `communicate()` → `context.communicate()`
 - **Flow**:
-  ```
+
+  ```text
   HTTP POST /message → Message.process() → Message.communicate()
     → context.communicate(UserMessage) → AgentContext._process_chain()
     → agent.monologue()
   ```
 
 ### 1.2 Agent Context Communication
+
 - **File**: `agent.py`
 - **Class**: `AgentContext`
 - **Method**: `communicate(msg: UserMessage)`
 - **Flow**:
-  ```
+
+  ```text
   communicate() → run_task(_process_chain)
     → agent.hist_add_user_message(msg)
     → agent.monologue()
@@ -41,11 +45,13 @@
 ## 2. Processing Paths (Query → Response)
 
 ### 2.1 Main Agent Loop
+
 - **File**: `agent.py`
 - **Class**: `Agent`
 - **Method**: `monologue()`
 - **Flow**:
-  ```
+
+  ```text
   monologue():
     while True:
       prepare_prompt() → call_chat_model() → process_tools()
@@ -53,10 +59,12 @@
   ```
 
 ### 2.2 Tool Processing
+
 - **File**: `agent.py`
 - **Method**: `process_tools(msg)`
 - **Flow**:
-  ```
+
+  ```text
   process_tools():
     tool_request = extract_tools.json_parse_dirty(msg)
     tool = get_tool() or mcp_tool
@@ -69,37 +77,46 @@
 ## 3. Exit Points (Response Emission)
 
 ### 3.1 Response Tool (Primary Exit)
+
 - **File**: `python/tools/response.py`
 - **Class**: `Response(Tool)`
 - **Method**: `execute()`
 - **Code**:
+
   ```python
   async def execute(self, **kwargs):
       return Response(message=self.args["text"], break_loop=True)
   ```
+
 - **⚠️ CRITICAL**: This is where ALL final responses exit. **MUST be gated**.
 
 ### 3.2 Subordinate Delegation Return
+
 - **File**: `python/tools/call_subordinate.py`
 - **Class**: `Delegation(Tool)`
 - **Method**: `execute()`
 - **Code**:
+
   ```python
   result = await subordinate.monologue()
   return Response(message=result, break_loop=False)  # Returns to superior
   ```
+
 - **✅ ALREADY GATED**: Consensus validation added for critical profiles.
 
 ### 3.3 Superior Chain Return
+
 - **File**: `agent.py`
 - **Method**: `_process_chain()`
 - **Code**:
+
   ```python
   response = await agent.monologue()
   if superior:
       response = await self._process_chain(superior, response, False)
   return response
   ```
+
 - **Note**: Bubbles up through hierarchy.
 
 ---
@@ -107,17 +124,20 @@
 ## 4. Bypass Paths (Must Be Closed)
 
 ### 4.1 Direct Response Without Tool
+
 - **Risk**: Agent could return without using `response` tool (malformed response)
 - **Mitigation**: Already handled - misformat warning added to history
 - **Status**: ✅ OK
 
 ### 4.2 Direct Research Tool Call
+
 - **File**: `python/helpers/research_executor.py`
 - **Risk**: Direct call to executor bypasses consensus
 - **Mitigation**: Research executor must delegate to `ResearchConsensusIntegration`
 - **Status**: ⚠️ NEEDS WIRING
 
 ### 4.3 MCP Tool Direct Execution
+
 - **File**: `python/helpers/mcp_handler.py`
 - **Risk**: MCP tools can return data without consensus
 - **Mitigation**: Critical domain detection should apply to MCP results
@@ -139,6 +159,7 @@
 ## 6. Required Gate Insertions
 
 ### 6.1 Response Tool Gate (CP1)
+
 ```python
 # In python/tools/response.py
 async def execute(self, **kwargs):
@@ -160,6 +181,7 @@ async def execute(self, **kwargs):
 ```
 
 ### 6.2 Entry Point Gate (CP4)
+
 ```python
 # In agent.py AgentContext.communicate()
 def communicate(self, msg: UserMessage):
@@ -189,6 +211,7 @@ def communicate(self, msg: UserMessage):
 | Choke Points | 4 | 1/4 ✅ |
 
 **Next Steps**:
+
 1. Create `CriticalDecisionGate` module
 2. Wire CP1 (response tool)
 3. Wire CP4 (entry point)

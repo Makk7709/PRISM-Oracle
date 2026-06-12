@@ -1,5 +1,7 @@
 # KOREV Evidence — Objective Audit (Evidence-Based)
+
 ## Executive Summary (FR)
+
 Pipeline multi-agents verifiable par code/tests. [C-001]  
 Routage deterministe disponible mais flag-gate. [C-002]  
 Detection d'injection dans le routeur (usage conditionnel). [C-003]  
@@ -15,6 +17,7 @@ Redaction PII automatique non demontree. UNVERIFIED
 Deploiement documente via Docker compose. [C-012]
 
 ## Executive Summary (EN)
+
 Multi-agent pipeline backed by code/tests. [C-001]  
 Deterministic routing exists but is flag-gated. [C-002]  
 Prompt-injection detection exists in router (conditional). [C-003]  
@@ -30,6 +33,7 @@ Automatic PII redaction not proven. UNVERIFIED
 Deployment documented via Docker compose. [C-012]
 
 ## 1. Scope & Method
+
 - What was inspected (folders, entrypoints)
   - `python/`, `agents/`, `prompts/`, `tests/`, `deploy/`, `docker/`, `docs/`, `webui/`
   - Entrypoints: `initialize.py`, `run_ui.py`, `run_tunnel.py`
@@ -45,6 +49,7 @@ Deployment documented via Docker compose. [C-012]
   - `python test_consensus_simple.py`
 
 ## 2. Capability Matrix
+
 | Capability | Status | ClaimID | Evidence (file/function/test) | How to validate | Notes/limits |
 |---|---|---|---|---|---|
 | Deterministic routing | Partial | C-002 | `python/helpers/router/router.py`; `tests/test_router_determinism.py` | Run router tests | Flag-gated |
@@ -69,7 +74,9 @@ Deployment documented via Docker compose. [C-012]
 | PII redaction | Unverified | C-020 | NOT FOUND | N/A | UNVERIFIED |
 
 ## 2.1 Registre des briques (Brick Register)
+
 ### B-001 — Routage deterministe (Router V2)
+
 - Statut: Partial
 - ClaimID: C-002
 - Preuves:
@@ -84,6 +91,7 @@ Deployment documented via Docker compose. [C-012]
   - Desactive si flag off
 
 ### B-002 — Detection d'injection (Router)
+
 - Statut: Partial
 - ClaimID: C-003
 - Preuves:
@@ -98,6 +106,7 @@ Deployment documented via Docker compose. [C-012]
   - Inactif si router desactive
 
 ### B-003 — Evaluation de criticite (router)
+
 - Statut: Implemented
 - ClaimID: C-004
 - Preuves:
@@ -112,6 +121,7 @@ Deployment documented via Docker compose. [C-012]
   - Regles heuristiques
 
 ### B-004 — Gate fail-closed
+
 - Statut: Partial
 - ClaimID: C-007
 - Preuves:
@@ -125,6 +135,7 @@ Deployment documented via Docker compose. [C-012]
   - Wiring global non demontre
 
 ### B-005 — Evidence Pack
+
 - Statut: Partial
 - ClaimID: C-006
 - Preuves:
@@ -138,6 +149,7 @@ Deployment documented via Docker compose. [C-012]
   - Usage runtime incertain
 
 ### B-006 — Consensus PRISM (2/3)
+
 - Statut: Implemented
 - ClaimID: C-005
 - Preuves:
@@ -153,6 +165,7 @@ Deployment documented via Docker compose. [C-012]
   - Providers LLM requis
 
 ### B-007 — Appel arbitres LLM
+
 - Statut: Partial
 - ClaimID: C-010
 - Preuves:
@@ -166,6 +179,7 @@ Deployment documented via Docker compose. [C-012]
   - Pas de test d'integration
 
 ### B-008 — Guardrail simulation consensus en prod
+
 - Statut: Partial
 - ClaimID: C-013
 - Preuves:
@@ -178,6 +192,7 @@ Deployment documented via Docker compose. [C-012]
   - Non teste automatiquement
 
 ### B-009 — Debat collaboratif (3 rounds)
+
 - Statut: Partial
 - ClaimID: C-021
 - Preuves:
@@ -191,6 +206,7 @@ Deployment documented via Docker compose. [C-012]
   - Pas de test dedie
 
 ### B-010 — Integration debat delegation
+
 - Statut: Partial
 - ClaimID: C-014
 - Preuves:
@@ -203,6 +219,7 @@ Deployment documented via Docker compose. [C-012]
   - Depend du routing
 
 ### B-011 — Pipeline legal orchestre
+
 - Statut: Partial
 - ClaimID: C-009
 - Preuves:
@@ -216,6 +233,7 @@ Deployment documented via Docker compose. [C-012]
   - Index legal externe requis
 
 ### B-012 — Contrat medical (output)
+
 - Statut: Partial
 - ClaimID: C-008
 - Preuves:
@@ -229,6 +247,7 @@ Deployment documented via Docker compose. [C-012]
   - Wiring global non demontre
 
 ### B-013 — Tool policy (images)
+
 - Statut: Partial
 - ClaimID: C-015
 - Preuves:
@@ -241,6 +260,7 @@ Deployment documented via Docker compose. [C-012]
   - Image-only
 
 ### B-014 — Router metrics & audit sampling
+
 - Statut: Partial
 - ClaimID: C-017
 - Preuves:
@@ -254,6 +274,7 @@ Deployment documented via Docker compose. [C-012]
   - Flag router requis
 
 ### B-015 — Securite API (cle/loopback/CSRF)
+
 - Statut: Partial
 - ClaimID: C-011
 - Preuves:
@@ -267,6 +288,7 @@ Deployment documented via Docker compose. [C-012]
   - Per-handler
 
 ### B-016 — Deploiement Docker
+
 - Statut: Partial
 - ClaimID: C-012
 - Preuves:
@@ -280,6 +302,7 @@ Deployment documented via Docker compose. [C-012]
   - Ne prouve pas la sante runtime
 
 ### B-017 — Audit log persistant
+
 - Statut: Unverified
 - ClaimID: C-018
 - Preuves:
@@ -292,6 +315,7 @@ Deployment documented via Docker compose. [C-012]
   - Persistance non demontree par le code ; volume docker configure mais aucun code d'ecriture trouve. UNVERIFIED
 
 ### B-018 — Suivi couts/tokens
+
 - Statut: Unverified
 - ClaimID: C-019
 - Preuves:
@@ -304,6 +328,7 @@ Deployment documented via Docker compose. [C-012]
   - Aucune preuve dans le repo
 
 ### B-019 — Redaction PII automatique
+
 - Statut: Unverified
 - ClaimID: C-020
 - Preuves:
@@ -316,8 +341,10 @@ Deployment documented via Docker compose. [C-012]
   - Seulement des regles prompt
 
 ## 3. System Architecture (As-Built)
+
 - High-level flow diagram (ASCII)
-```
+
+```text
 User Request
    |
    v
@@ -332,6 +359,7 @@ Collaborative Debate (3 rounds)      Evidence Pack + Consensus Engine
    v                                     v
 User Response (envelope + badges) <--- Fail-closed if insufficient
 ```
+
 - Core modules map (with file paths)
   - Routing: `python/helpers/router/router.py`, `python/helpers/router/policy.py`, `python/helpers/router/metrics.py`
   - Criticality: `python/helpers/criticality_router.py`
@@ -345,7 +373,9 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
   - `EVIDENCE_ENV`, `CONSENSUS_SIMULATION`, `OFFLINE_MODE`, `DETERMINISTIC_ROUTER_V2`
 
 ## 4. Specialized Agents Catalog (As-Built)
+
 **legal_safe**
+
 - Name / Role: legal-safe analysis, FR/EU only
 - Inputs / Outputs: JSON `response` (prompt-defined)
 - Tools allowed: prompt-defined tools
@@ -354,6 +384,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Evidence: `agents/legal_safe/_context.md`, `agents/legal_safe/prompts/agent.system.main.role.md`, `tests/test_legal_orchestrator.py`
 
 **medical**
+
 - Name / Role: medical reasoning with claim-first schema
 - Inputs / Outputs: JSON `structured_response` (claims + citations)
 - Tools allowed: prompt-defined MCP tools
@@ -362,6 +393,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Evidence: `agents/medical/_context.md`, `agents/medical/prompts/agent.system.main.role.md`, `python/helpers/medical_contract.py`
 
 **researcher / finance / sales / marketing / developer / hacker / default**
+
 - Name / Role: prompt-defined only
 - Inputs / Outputs: UNVERIFIED
 - Tools allowed: UNVERIFIED
@@ -370,6 +402,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Evidence: `agents/*/_context.md` (where present)
 
 ## 5. Multi-LLM Debate (As-Built)
+
 - Mechanics: 3 rounds; round 2 can be skipped if unanimous [C-021]
 - Roles: arbiters from UI settings or defaults [C-021]
 - Termination rules: fixed rounds with timeouts [C-021]
@@ -377,6 +410,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Evidence: `python/helpers/collaborative_consensus.py` `run_debate()`, `python/tools/call_subordinate.py` `_validate_with_consensus()`
 
 ## 6. Consensus / Arbitration (As-Built)
+
 - Vote schema: APPROVE/REJECT/ABSTAIN + availability [C-005]
 - Quorum rules: 2/3 effective votes; unavailable excluded [C-005]
 - Weighting: none (equal weight) [C-005]
@@ -387,17 +421,20 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
   - Tests: `tests/test_prism_consensus.py`, `tests/test_prism_tally_quorum.py`, `test_consensus_simple.py`
 
 ## 7. Quality, Tests, and Determinism
+
 - Test inventory + commands: see Appendix B
 - Determinism controls: router hashing; arbiter temp=0 [C-002]
 - Known nondeterminism sources: LLM outputs, MCP data, network timeouts UNVERIFIED
 
 ## 8. Observability & Auditability
+
 - Logs/metrics/traces: consensus JSON logs, router metrics [C-017]
 - Correlation IDs: consensus engine correlation_id [C-017]
 - Audit logs & retention: in-memory + docker volume only (persistence UNVERIFIED) [C-018]
 - Cost tracking: NOT FOUND / UNVERIFIED [C-019]
 
 ## 9. Security Posture
+
 - Prompt injection defenses: deterministic router patterns [C-003]
 - Tool policy / sandboxing: image-only tool policy; no sandbox found [C-015]
 - PII handling: prompt minimization only; no redaction [C-020]
@@ -405,6 +442,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Known gaps: no cost tracking, no retention enforcement UNVERIFIED
 
 ## 10. Deployment & Operations
+
 - Installation steps: `docker build -f DockerfileLocal -t korev-evidence:local .` [C-012]
 - Env vars: `.env.example` [C-012]
 - Docker/scripts: `deploy/docker-compose.yml`, `docker/run/docker-compose.yml` [C-012]
@@ -412,6 +450,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Constraints: provider credentials required [C-010]
 
 ## 11. Risks & Blind Spots (Devil's Advocate)
+
 - Prompt-only controls for critical domains [C-020]
 - Simulation misuse risk [C-013]
 - Audit persistence unclear (volume existe, code d'ecriture UNVERIFIED) [C-018]
@@ -419,45 +458,50 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 - Mitigations: unify enforcement in code; add persistence UNVERIFIED
 
 ## 12. Commercial Extract (1 page, FR)
+
 **What it does (verifiable)**
-  - Orchestration multi-agents avec delegation et profils specialises. [C-001]
-  - Consensus multi-LLM (quorum 2/3, fail-closed). [C-005]
-  - Debat collaboratif 3 tours. [C-021]
-  - Pipeline legal + medical avec contrats stricts. [C-008]
+
+- Orchestration multi-agents avec delegation et profils specialises. [C-001]
+- Consensus multi-LLM (quorum 2/3, fail-closed). [C-005]
+- Debat collaboratif 3 tours. [C-021]
+- Pipeline legal + medical avec contrats stricts. [C-008]
 **Differentiators (verifiable)**
-  - Routage deterministe testable. [C-002]
-  - Quorum calcule sur votes effectifs. [C-005]
-  - Contrats medicaux enforces. [C-008]
+- Routage deterministe testable. [C-002]
+- Quorum calcule sur votes effectifs. [C-005]
+- Contrats medicaux enforces. [C-008]
 **Use cases (grounded)**
-  - Validation de reponses critiques. [C-009]
-  - Analyses sourcees avec audit trail in-memory (persistance UNVERIFIED). [C-018]
-  - Cadre de confiance multi-agents. [C-001]
+- Validation de reponses critiques. [C-009]
+- Analyses sourcees avec audit trail in-memory (persistance UNVERIFIED). [C-018]
+- Cadre de confiance multi-agents. [C-001]
 **Proof points (tests, metrics)**
-  - Tests consensus/quorum/injection/determinisme. [C-005]
-  - Logs structures + correlation_id. [C-017]
+- Tests consensus/quorum/injection/determinisme. [C-005]
+- Logs structures + correlation_id. [C-017]
 **What it does NOT do (honesty section)**
-  - Exactitude factuelle garantie: UNVERIFIED
-  - Audit logs persistants: UNVERIFIED
-  - Redaction PII automatique: UNVERIFIED
-  - Suivi couts/tokens: UNVERIFIED
+- Exactitude factuelle garantie: UNVERIFIED
+- Audit logs persistants: UNVERIFIED
+- Redaction PII automatique: UNVERIFIED
+- Suivi couts/tokens: UNVERIFIED
 
 ## 13. CTO Brief (1 page, EN)
+
 **Current state assessment**
-  - Strong: criticality routing + consensus engine with tests. [C-004]
-  - Medium: legal pipeline depends on external index. [C-009]
-  - Weak/unknown: cost tracking, audit retention, PII redaction. UNVERIFIED
+
+- Strong: criticality routing + consensus engine with tests. [C-004]
+- Medium: legal pipeline depends on external index. [C-009]
+- Weak/unknown: cost tracking, audit retention, PII redaction. UNVERIFIED
 **Technical debt hotspots**
-  - Large core modules (legal_orchestrator, criticality_router). [C-009]
-  - Prompt-defined constraints not enforced by runtime. UNVERIFIED
+- Large core modules (legal_orchestrator, criticality_router). [C-009]
+- Prompt-defined constraints not enforced by runtime. UNVERIFIED
 **30/60/90 day priorities**
-  - 30 days: inventory runtime wiring; add metrics persistence. UNVERIFIED
-  - 60 days: enforce policy in code; integrate PII redaction. UNVERIFIED
-  - 90 days: harden logging/retention; add cost tracking. UNVERIFIED
+- 30 days: inventory runtime wiring; add metrics persistence. UNVERIFIED
+- 60 days: enforce policy in code; integrate PII redaction. UNVERIFIED
+- 90 days: harden logging/retention; add cost tracking. UNVERIFIED
 **Hiring expectations & ownership boundaries**
-  - Ownership of consensus/guardrails, routing, legal/medical pipelines. [C-001]
-  - Security ownership for injection/PII enforcement. [C-003]
+- Ownership of consensus/guardrails, routing, legal/medical pipelines. [C-001]
+- Security ownership for injection/PII enforcement. [C-003]
 
 ## Appendix A — Evidence Index
+
 | Claim ID | BrickID | Evidence links (file path + function + test) | Confidence | Notes |
 |---|---|---|---|---|
 | C-001 | B-010 | `python/tools/call_subordinate.py`; `agents/*/_context.md` | Medium | Multi-agent orchestration |
@@ -483,6 +527,7 @@ User Response (envelope + badges) <--- Fail-closed if insufficient
 | C-021 | B-009 | `python/helpers/collaborative_consensus.py` `run_debate()` | Medium | Collaborative debate 3 rounds |
 
 ## Appendix B — Commands & Repro Checklist
+
 - How to run
   - `python run_ui.py`
   - `python run_tunnel.py`

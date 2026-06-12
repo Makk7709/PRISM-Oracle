@@ -44,7 +44,12 @@
     "monologue",
     "pourvoi",
     "ECLI",
-    "HMAC"
+    "HMAC",
+    "FAERS",
+    "faers",
+    "PubMed",
+    "pubmed",
+    "clinicaltrials"
   ],
   "ignorePaths": [
     "node_modules",

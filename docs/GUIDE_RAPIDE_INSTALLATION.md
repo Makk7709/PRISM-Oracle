@@ -1,4 +1,5 @@
 # Guide Rapide d'Installation
+
 ## KOREV Evidence - Version condensée (1 page)
 
 ---
@@ -6,13 +7,14 @@
 ## METHODE RECOMMANDEE : DOCKER (One-Click)
 
 ### Prérequis
+
 - Windows 10/11 (64-bit) ou macOS 11+
 - 8 Go RAM minimum
-- **Docker Desktop** installé : https://docker.com/products/docker-desktop/
+- **Docker Desktop** installé : <https://docker.com/products/docker-desktop/>
 
 ### Installation en 3 étapes
 
-```
+```text
 1. DOCKER DESKTOP
    → Installer Docker Desktop depuis docker.com
    → Lancer Docker Desktop (attendre icône baleine verte)
@@ -42,12 +44,13 @@
 ## METHODE ALTERNATIVE : INSTALLATION LOCALE
 
 ### Prérequis
-- **Python 3.11+** : https://python.org/downloads
+
+- **Python 3.11+** : <https://python.org/downloads>
 - Windows : cocher "Add Python to PATH" lors de l'installation
 
 ### Installation en 3 étapes
 
-```
+```text
 1. PYTHON
    → Télécharger depuis python.org/downloads
    → Installer en cochant "Add Python to PATH"
@@ -85,8 +88,8 @@
 
 | Mode | URL |
 |------|-----|
-| Docker | **http://localhost:50080** |
-| Local | **http://localhost:5050** |
+| Docker | **<http://localhost:50080>** |
+| Local | **<http://localhost:5050>** |
 
 ---
 
@@ -99,13 +102,13 @@
 | "Python non reconnu" (local) | Réinstaller Python avec "Add to PATH" coché |
 | "Module not found" (local) | `pip install -r requirements.txt` |
 | Port 5050 occupé (local) | Changer `WEB_UI_PORT=5051` dans `.env` |
-| Page ne charge pas | Attendre 30s, essayer http://127.0.0.1:50080 |
+| Page ne charge pas | Attendre 30s, essayer <http://127.0.0.1:50080> |
 
 ---
 
 ## Support
 
-- **Email** : support@korev.ai
+- **Email** : <support@korev.ai>
 - **Documentation complète** : voir `MANUEL_INSTALLATION_CLIENT.md`
 
 ---

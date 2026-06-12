@@ -7,11 +7,13 @@ This document describes the end-to-end test suite for the legal pipeline with PR
 **Test File**: `tests/test_legal_pipeline_e2e.py`
 
 **Run Command**:
+
 ```bash
 python tests/test_legal_pipeline_e2e.py
 ```
 
 Or with pytest:
+
 ```bash
 python -m pytest tests/test_legal_pipeline_e2e.py -v -s
 ```
@@ -37,7 +39,7 @@ python -m pytest tests/test_legal_pipeline_e2e.py -v -s
 
 ## Architecture Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        USER MESSAGE                                 │
 │                    "Question juridique..."                          │
@@ -137,12 +139,14 @@ python -m pytest tests/test_legal_pipeline_e2e.py -v -s
 **Purpose**: Verify that the legal pipeline produces structured output.
 
 **Test Steps**:
+
 1. Call `run_legal_pipeline()` with a legal question
 2. Verify result is not None
 3. Verify result has `mode` attribute
 4. Verify result has `answer` attribute with content
 
 **Key Assertion**:
+
 ```python
 assert hasattr(result, 'mode'), "Result must have mode"
 assert len(result.answer) > 50, "Answer must not be too short"
@@ -155,18 +159,21 @@ assert len(result.answer) > 50, "Answer must not be too short"
 **Purpose**: Verify that PRISM consensus makes real API calls, not simulations.
 
 **Test Steps**:
+
 1. Create ConsensusConfig with `simulation_enabled=False`
 2. Configure 3 arbiters (Claude, GPT-4o, Mistral via OpenRouter)
 3. Call `seek_consensus()`
 4. Verify duration > 1000ms (real API calls take time)
 
 **Key Assertion**:
+
 ```python
 assert duration_ms > 1000, "Too fast - probably simulation"
 ```
 
 **Sample Output**:
-```
+
+```yaml
 Arbiters: ['openrouter/anthropic/claude-3.5-sonnet', 
            'openrouter/openai/gpt-4o', 
            'openrouter/mistralai/mistral-large']
@@ -184,6 +191,7 @@ Result: APPROVED (2/3)
 **Key Discovery**: The fix was that responses must be added via `context.log.log()` with `type="response"`, not just `hist_add_ai_response()`.
 
 **Fix Applied** (agent.py):
+
 ```python
 if response.break_loop:
     if response.message:
@@ -205,11 +213,13 @@ if response.break_loop:
 **Purpose**: Verify that pipeline flags correctly bypass the LLM.
 
 **Flags**:
+
 - `_pipeline_final_response`: The pre-computed response
 - `_skip_llm`: Signal to skip LLM call
 - `_pipeline_validated_response`: Signal to bypass critical decision gate
 
 **Test**:
+
 ```python
 agent_data["_pipeline_final_response"] = "Test response"
 agent_data["_skip_llm"] = True
@@ -224,6 +234,7 @@ assert agent_data.get("_skip_llm") is True
 **Purpose**: Verify that the pipeline can generate legal analysis using LLM even without indexed sources.
 
 **Test Steps**:
+
 1. Create LLM call function using OpenRouter
 2. Call `run_legal_pipeline()` with `call_llm_func` parameter
 3. Verify draft is built with `llm_used=true`
@@ -231,12 +242,14 @@ assert agent_data.get("_skip_llm") is True
 5. Verify output mode is `safe_analysis` (not refusal)
 
 **Key Changes Made**:
+
 1. Modified `legal_orchestrator.py` to allow LLM draft even without retrieval results
 2. Modified `legal_pipeline.py` (Judge) to accept LLM-generated citations
 3. Modified `_10_legal_safe_integration.py` to pass `call_llm_func` to pipeline
 
 **Sample Output**:
-```
+
+```yaml
 Mode: LegalOutputMode.SAFE_ANALYSIS
 llm_used: true
 verdict: approve
@@ -252,6 +265,7 @@ transporteur d'exercer une action directe contre le donneur d'ordre..."
 **Purpose**: End-to-end test of the complete flow.
 
 **Stages Verified**:
+
 1. ✅ Pipeline executes and produces output
 2. ✅ Log system accepts the response
 3. ✅ Response appears in `log.output()` (what UI polls)
@@ -284,12 +298,14 @@ transporteur d'exercer une action directe contre le donneur d'ordre..."
 
 **Symptom**: Pipeline always returned `refusal_request_info` with "sources_missing".
 
-**Root Cause**: 
+**Root Cause**:
+
 1. No legal index existed (`data/legal_index`)
 2. Pipeline called without `call_llm_func` parameter
 3. Judge failed on `SOURCES_PRESENT` check
 
 **Fix Applied** (3 files):
+
 1. `legal_orchestrator.py`: Allow LLM draft even without retrieval results
 2. `legal_pipeline.py`: Judge accepts LLM-generated citations
 3. `_10_legal_safe_integration.py`: Pass LLM function to pipeline
@@ -324,18 +340,21 @@ EVIDENCE_ENV=development      # Environment identifier
 ## Running Tests
 
 ### Basic Run
+
 ```bash
 cd /path/to/KOREV_Oracle
 python tests/test_legal_pipeline_e2e.py
 ```
 
 ### With pytest and verbose output
+
 ```bash
 python -m pytest tests/test_legal_pipeline_e2e.py -v -s
 ```
 
 ### Expected Output
-```
+
+```text
 ══════════════════════════════════════════════════════════════════════
 ║  LEGAL PIPELINE E2E TEST SUITE
 ║  Testing: Pipeline → Consensus → Log → UI Display

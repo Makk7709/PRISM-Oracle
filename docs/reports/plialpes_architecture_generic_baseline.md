@@ -37,16 +37,19 @@ Plialpes Industries est une ETI du secteur de la plasturgie avec 250 employés r
 ## Plan de mise en œuvre
 
 ### Phase 1 (30 jours)
+
 - Audit et cartographie
 - Déploiement firewall
 - Migration VPN
 
 ### Phase 2 (60 jours)
+
 - Intégration SOC
 - Configuration backup
 - PSSI v1
 
 ### Phase 3 (90 jours)
+
 - Tests PRA
 - Formation
 - Audit NIS2
