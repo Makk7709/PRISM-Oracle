@@ -13,13 +13,11 @@ Import cascade prevented:
 - `from python.helpers import mcp_server` → `from initialize import ...` (NOT at module level)
 """
 
-import asyncio
 from datetime import timedelta
 import hmac
 import json
 import os
 import secrets
-import hashlib
 import time
 import uuid
 import socket
@@ -51,9 +49,8 @@ from python.security.rate_limit import (
     check_api_rate_limit,
     reset_login_rate_limit,
     rate_limit_response,
-    get_limiter,
 )
-from python.security.auth import verify_password, is_password_hashed, hash_password
+from python.security.auth import verify_password, is_password_hashed
 from python.security.ip import get_client_ip
 try:
     from python.security.security_audit import log_security_event
@@ -154,10 +151,18 @@ def create_app(
     # Allow override for testing
     if testing and os.getenv("EVIDENCE_USERS_JSON"):
         users_json = os.getenv("EVIDENCE_USERS_JSON")
-    
+
+    # Overlay writable pour les changements de mot de passe self-service :
+    # users.json est monté read-only en production (docker-compose `:ro`),
+    # les nouveaux hashes vivent dans data/ (volume evidence-data, persistant).
+    users_overlay = os.getenv("EVIDENCE_USERS_OVERLAY") or os.path.join(
+        get_abs_path("."), "data", "users.local.json"
+    )
+
     app.config['USER_MANAGER'] = UserManager(
         users_json,
         strict=_is_production,
+        overlay_path=users_overlay,
     )
     
     shared_dir = os.getenv("EVIDENCE_SHARED_DIR", "")
@@ -404,6 +409,66 @@ def _register_routes(app: Flask) -> None:
                 
         login_page_content = files.read_file("webui/login.html")
         return render_template_string(login_page_content, error=error)
+
+    @app.route("/change_password", methods=["POST"])
+    @_requires_auth
+    @csrf_protect
+    async def change_password_handler():
+        """Changement de mot de passe self-service (multi-user).
+
+        Protégé par : session authentifiée + CSRF + rate-limit partagé
+        avec /login (même budget anti-bruteforce de l'ancien mot de passe).
+        """
+        client_ip = get_client_ip(request)
+        allowed, retry_after = check_login_rate_limit(client_ip)
+        if not allowed:
+            return (
+                jsonify({
+                    "success": False,
+                    "error": (
+                        f"Trop de tentatives. Réessayez dans {retry_after} secondes."
+                    ),
+                }),
+                429,
+            )
+
+        data = request.get_json(silent=True) or {}
+        current_password = data.get("current_password") or ""
+        new_password = data.get("new_password") or ""
+        username = session.get("username") or ""
+
+        if not current_password or not new_password:
+            return (
+                jsonify({"success": False, "error": "Champs requis manquants."}),
+                400,
+            )
+
+        user_mgr: UserManager = app.config['USER_MANAGER']
+        ok, message = user_mgr.change_password(
+            username, current_password, new_password
+        )
+
+        log_security_event(
+            action="password_change",
+            decision="ALLOW" if ok else "DENY",
+            user=username or None,
+            organization=session.get("organization"),
+            resource_type="account",
+            resource_id=getattr(g, "request_id", "-"),
+            reason=None if ok else message,
+        )
+        app.logger.info(
+            "password_change user=%s ip=%s decision=%s request_id=%s",
+            username,
+            client_ip,
+            "ALLOW" if ok else "DENY",
+            getattr(g, "request_id", "-"),
+        )
+
+        if ok:
+            reset_login_rate_limit(client_ip)
+            return jsonify({"success": True, "message": message})
+        return jsonify({"success": False, "error": message}), 400
 
     @app.route("/logout")
     async def logout_handler():

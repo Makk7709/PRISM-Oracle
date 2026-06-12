@@ -1,6 +1,8 @@
 /**
- * KOREV Evidence — Login Page (Premium)
- * Split layout: brand panel (left) + form panel (right)
+ * KOREV Evidence — Login Page (State of the art)
+ * Split layout : panneau marque (gauche) + panneau formulaire (droite)
+ * 100 % auto-hébergé : aucune ressource externe (CSP self + RGPD).
+ * Toutes les animations sont désactivées via prefers-reduced-motion.
  */
 
 /* ── Tokens ── */
@@ -18,10 +20,12 @@
     --ev-text-muted: #5c5c68;
     --ev-accent: #6366f1;
     --ev-accent-bright: #818cf8;
+    --ev-accent-2: #8b5cf6;
+    --ev-accent-3: #22d3ee;
     --ev-accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
     --ev-accent-glow: rgba(99, 102, 241, 0.15);
     --ev-radius: 10px;
-    --ev-radius-lg: 14px;
+    --ev-radius-lg: 16px;
     --ev-font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
     --ev-font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -37,13 +41,87 @@ body {
     overflow: hidden;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * FOND ANIMÉ — aurora + grain + grille
+ * Couche fixe sous tout le contenu. Uniquement des transforms/opacity
+ * (compositées GPU) pour ne pas déclencher de layout/paint en continu.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.ev-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ev-aurora {
+    position: absolute;
+    width: 55vmax;
+    height: 55vmax;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.32;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+}
+
+.ev-aurora--1 {
+    top: -18vmax;
+    left: -12vmax;
+    background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.55) 0%, transparent 65%);
+    animation: auroraDrift1 26s ease-in-out infinite alternate;
+}
+
+.ev-aurora--2 {
+    bottom: -22vmax;
+    right: -14vmax;
+    background: radial-gradient(circle at 60% 60%, rgba(139, 92, 246, 0.45) 0%, transparent 65%);
+    animation: auroraDrift2 32s ease-in-out infinite alternate;
+}
+
+.ev-aurora--3 {
+    top: 30%;
+    left: 55%;
+    width: 38vmax;
+    height: 38vmax;
+    background: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.18) 0%, transparent 60%);
+    animation: auroraDrift3 38s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift1 {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(9vmax, 7vmax, 0) scale(1.18); }
+}
+
+@keyframes auroraDrift2 {
+    from { transform: translate3d(0, 0, 0) scale(1.1); }
+    to   { transform: translate3d(-8vmax, -6vmax, 0) scale(0.95); }
+}
+
+@keyframes auroraDrift3 {
+    from { transform: translate3d(0, 0, 0) scale(0.9); }
+    to   { transform: translate3d(-12vmax, 8vmax, 0) scale(1.25); }
+}
+
+/* Grain photographique : SVG feTurbulence inline (data:, autorisé par la CSP) */
+.ev-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
 /* ── Layout ── */
 .login-layout {
     display: flex;
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
 }
 
-/* ── Brand Panel (left) ── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PANNEAU MARQUE (gauche)
+ * ═══════════════════════════════════════════════════════════════════════════ */
 .login-brand-panel {
     flex: 0 0 44%;
     display: flex;
@@ -51,18 +129,28 @@ body {
     justify-content: center;
     position: relative;
     padding: 3rem 3.5rem;
-    background: var(--ev-bg-base);
+    background: rgba(13, 13, 15, 0.55);
     overflow: hidden;
 }
 
+/* Grille en perspective avec fondu — défile lentement */
 .login-brand-panel::before {
     content: '';
     position: absolute;
-    inset: 0;
+    inset: -60px;
     background:
-        radial-gradient(ellipse 60% 50% at 20% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 70%),
-        repeating-linear-gradient(-3deg, transparent, transparent 60px, rgba(255, 255, 255, 0.012) 60px, rgba(255, 255, 255, 0.012) 61px);
+        linear-gradient(rgba(129, 140, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(129, 140, 248, 0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 65% at 35% 45%, black 0%, transparent 75%);
+    mask-image: radial-gradient(ellipse 75% 65% at 35% 45%, black 0%, transparent 75%);
+    animation: gridPan 36s linear infinite;
     pointer-events: none;
+}
+
+@keyframes gridPan {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(44px, 44px, 0); }
 }
 
 .login-brand-panel::after {
@@ -72,13 +160,12 @@ body {
     right: 0;
     width: 1px;
     height: 100%;
-    background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.2) 30%, rgba(99, 102, 241, 0.2) 70%, transparent);
+    background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.25) 30%, rgba(99, 102, 241, 0.25) 70%, transparent);
 }
 
 .brand-content {
     position: relative;
     z-index: 1;
-    animation: fadeSlideUp 0.7s ease-out both;
 }
 
 .brand-logo-wrap {
@@ -86,14 +173,15 @@ body {
     width: 80px;
     height: 80px;
     margin-bottom: 2rem;
+    animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .brand-glow {
     position: absolute;
-    inset: -20px;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+    inset: -22px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
     border-radius: 50%;
-    filter: blur(15px);
+    filter: blur(16px);
     animation: glowPulse 4s ease-in-out infinite;
 }
 
@@ -102,7 +190,13 @@ body {
     width: 80px;
     height: 80px;
     border-radius: var(--ev-radius-lg);
-    filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.2));
+    filter: drop-shadow(0 0 22px rgba(99, 102, 241, 0.25));
+    animation: logoFloat 7s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-7px); }
 }
 
 .brand-title {
@@ -113,16 +207,23 @@ body {
     line-height: 1.2;
     color: var(--ev-text-primary);
     overflow: visible;
+    animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
 }
 
 .brand-title em {
     font-style: italic;
-    background: var(--ev-accent-gradient);
+    background: linear-gradient(120deg, #6366f1 0%, #8b5cf6 35%, #a78bfa 55%, #22d3ee 80%, #6366f1 100%);
+    background-size: 250% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     display: inline-block;
     padding-right: 0.15em;
+    animation: gradientSlide 7s linear infinite;
+}
+
+@keyframes gradientSlide {
+    to { background-position: 250% center; }
 }
 
 .brand-tagline {
@@ -131,6 +232,7 @@ body {
     color: var(--ev-text-secondary);
     margin-top: 0.5rem;
     letter-spacing: 0.01em;
+    animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
 }
 
 .brand-separator {
@@ -140,6 +242,13 @@ body {
     border-radius: 1px;
     margin: 2rem 0;
     opacity: 0.6;
+    transform-origin: left center;
+    animation: separatorGrow 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+@keyframes separatorGrow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
 }
 
 .brand-features {
@@ -157,6 +266,22 @@ body {
     font-weight: 400;
     color: var(--ev-text-secondary);
     line-height: 1.5;
+    padding: 0.35rem 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: 8px;
+    transition: background 0.25s ease, transform 0.25s ease, color 0.25s ease;
+    animation: fadeSlideLeft 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Entrée en cascade */
+.brand-features li:nth-child(1) { animation-delay: 0.4s; }
+.brand-features li:nth-child(2) { animation-delay: 0.52s; }
+.brand-features li:nth-child(3) { animation-delay: 0.64s; }
+
+.brand-features li:hover {
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateX(4px);
+    color: var(--ev-text-primary);
 }
 
 .feature-icon {
@@ -170,6 +295,12 @@ body {
     background: rgba(99, 102, 241, 0.08);
     color: var(--ev-accent-bright);
     margin-top: 1px;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand-features li:hover .feature-icon {
+    background: rgba(99, 102, 241, 0.16);
+    box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
 }
 
 .brand-footer {
@@ -177,6 +308,7 @@ body {
     bottom: 2.5rem;
     left: 3.5rem;
     z-index: 1;
+    animation: fadeIn 1s ease 0.9s both;
 }
 
 .brand-copy {
@@ -185,7 +317,9 @@ body {
     letter-spacing: 0.03em;
 }
 
-/* ── Form Panel (right) ── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PANNEAU FORMULAIRE (droite)
+ * ═══════════════════════════════════════════════════════════════════════════ */
 .login-form-panel {
     flex: 1;
     display: flex;
@@ -193,23 +327,66 @@ body {
     justify-content: center;
     padding: 2rem;
     position: relative;
-    background: var(--ev-bg-deep);
-}
-
-.login-form-panel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 80% 40%, rgba(139, 92, 246, 0.04) 0%, transparent 60%);
-    pointer-events: none;
 }
 
 .form-wrapper {
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     position: relative;
     z-index: 1;
-    animation: fadeSlideUp 0.7s ease-out 0.15s both;
+    padding: 2.5rem 2.25rem;
+    border-radius: var(--ev-radius-lg);
+    background: rgba(19, 19, 22, 0.72);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.45),
+        0 4px 18px rgba(0, 0, 0, 0.3);
+    animation: cardEnter 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+@keyframes cardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Bordure en dégradé animé (conic tournant, masqué sur 1px) */
+.form-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+        from var(--ev-angle, 0deg),
+        rgba(99, 102, 241, 0.5),
+        rgba(255, 255, 255, 0.06) 25%,
+        rgba(139, 92, 246, 0.4) 50%,
+        rgba(255, 255, 255, 0.06) 75%,
+        rgba(99, 102, 241, 0.5)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: borderSpin 9s linear infinite;
+    pointer-events: none;
+}
+
+@property --ev-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes borderSpin {
+    to { --ev-angle: 360deg; }
 }
 
 .form-logo-mobile {
@@ -221,7 +398,7 @@ body {
 }
 
 .form-header {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2.25rem;
 }
 
 .form-header h2 {
@@ -247,7 +424,7 @@ body {
 }
 
 .input-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
 }
 
 .input-group label {
@@ -258,6 +435,11 @@ body {
     color: var(--ev-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    transition: color 0.2s ease;
+}
+
+.input-group:focus-within label {
+    color: var(--ev-accent-bright);
 }
 
 .input-wrap {
@@ -287,7 +469,7 @@ body {
     color: var(--ev-text-primary);
     font-family: var(--ev-font-body);
     font-size: 0.9375rem;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-group input::placeholder {
@@ -304,11 +486,66 @@ body {
     outline: none;
     border-color: var(--ev-border-focus);
     background: var(--ev-bg-surface-2);
-    box-shadow: 0 0 0 3px var(--ev-accent-glow), 0 0 20px rgba(99, 102, 241, 0.06);
+    box-shadow: 0 0 0 3px var(--ev-accent-glow), 0 0 22px rgba(99, 102, 241, 0.08);
 }
 
-/* ── Button ── */
-button {
+/* Champ mot de passe : place pour le bouton œil */
+.input-wrap--password input {
+    padding-right: 2.9rem;
+}
+
+/* Bouton afficher/masquer le mot de passe */
+.pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ev-text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.pw-toggle:hover {
+    color: var(--ev-text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pw-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ev-accent-glow);
+}
+
+.pw-toggle .icon-eye-off { display: none; }
+.pw-toggle[aria-pressed="true"] .icon-eye { display: none; }
+.pw-toggle[aria-pressed="true"] .icon-eye-off { display: block; }
+
+/* Indicateur Caps Lock */
+.capslock-hint {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #fbbf24;
+}
+
+.capslock-hint.visible {
+    display: flex;
+    animation: fadeIn 0.2s ease both;
+}
+
+/* ── Bouton submit ── */
+.login-submit {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -323,48 +560,78 @@ button {
     font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     margin-top: 0.75rem;
     position: relative;
     overflow: hidden;
 }
 
-button::before {
+/* Balayage lumineux périodique */
+.login-submit::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity 0.25s;
+    top: 0;
+    left: -80%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.18) 50%, transparent 80%);
+    transform: skewX(-20deg);
+    animation: btnSheen 4.5s ease-in-out infinite;
+    pointer-events: none;
 }
 
-button:hover {
+@keyframes btnSheen {
+    0%, 60% { left: -80%; }
+    100%    { left: 130%; }
+}
+
+.login-submit:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35), 0 2px 8px rgba(99, 102, 241, 0.18);
 }
 
-button:hover::before {
-    opacity: 1;
-}
-
-button:hover .btn-arrow {
+.login-submit:hover .btn-arrow {
     transform: translateX(3px);
 }
 
-button:focus-visible {
+.login-submit:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--ev-bg-deep), 0 0 0 4px var(--ev-accent);
 }
 
-button:active {
+.login-submit:active {
     transform: translateY(0) scale(0.99);
+}
+
+.login-submit:disabled {
+    cursor: wait;
+    opacity: 0.85;
+    transform: none;
 }
 
 .btn-arrow {
     transition: transform 0.25s ease;
 }
 
-/* ── Error ── */
+/* Spinner d'envoi (remplace la flèche pendant le POST) */
+.btn-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+.login-submit.loading .btn-arrow { display: none; }
+.login-submit.loading .btn-spinner { display: block; }
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Erreur ── */
 .error {
     color: #f87171;
     font-size: 0.85rem;
@@ -372,13 +639,21 @@ button:active {
     padding: 0.75rem 1rem;
     background: rgba(248, 113, 113, 0.08);
     border-radius: var(--ev-radius);
-    border: 1px solid rgba(248, 113, 113, 0.15);
+    border: 1px solid rgba(248, 113, 113, 0.18);
     text-align: center;
+    animation: errorShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-/* ── Form Footer ── */
+@keyframes errorShake {
+    10%, 90%      { transform: translateX(-1px); }
+    20%, 80%      { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60%      { transform: translateX(3px); }
+}
+
+/* ── Pied de formulaire ── */
 .form-footer {
-    margin-top: 2.5rem;
+    margin-top: 2.25rem;
     text-align: center;
 }
 
@@ -390,10 +665,28 @@ button:active {
 }
 
 .badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     font-size: 0.7rem;
     font-weight: 400;
     color: var(--ev-text-muted);
     letter-spacing: 0.03em;
+}
+
+.badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+    animation: badgePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
 }
 
 .badge-sep {
@@ -404,24 +697,39 @@ button:active {
     opacity: 0.5;
 }
 
-/* ── Animations ── */
+/* ── Animations génériques ── */
 @keyframes fadeSlideUp {
-    from {
-        opacity: 0;
-        transform: translateY(16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideLeft {
+    from { opacity: 0; transform: translateX(-14px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 @keyframes glowPulse {
     0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.05); }
+    50%      { opacity: 0.85; transform: scale(1.06); }
 }
 
-/* ── Responsive: tablet ── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ACCESSIBILITÉ — mouvement réduit
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ── Responsive : tablette ── */
 @media (max-width: 960px) {
     .login-brand-panel {
         flex: 0 0 38%;
@@ -431,7 +739,7 @@ button:active {
     .brand-title { font-size: 2rem; }
 }
 
-/* ── Responsive: mobile ── */
+/* ── Responsive : mobile ── */
 @media (max-width: 720px) {
     .login-layout {
         flex-direction: column;
@@ -443,7 +751,7 @@ button:active {
 
     .login-form-panel {
         min-height: 100vh;
-        padding: 2rem 1.5rem;
+        padding: 2rem 1.25rem;
     }
 
     .form-logo-mobile {
@@ -455,6 +763,7 @@ button:active {
     }
 
     .form-wrapper {
-        max-width: 360px;
+        max-width: 380px;
+        padding: 2rem 1.5rem;
     }
 }

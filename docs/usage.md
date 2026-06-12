@@ -112,6 +112,19 @@ KOREV Evidence supports direct file attachments in the chat interface for seamle
 > [!TIP]
 > When working with multiple files, you can attach them all at once and then give instructions about what to do with them. The agent will handle them as a batch while keeping you informed of the progress.
 
+### Changing Your Password
+
+In multi-user deployments (accounts defined in `users.json`), each user can change their own password from the UI:
+
+1. In the sidebar bottom bar, click the key icon next to the logout button.
+2. Enter your current password, then the new one (minimum 12 characters, with at least one letter and one digit) and confirm it.
+3. The change is effective immediately — no restart needed — and persists across server restarts and redeployments.
+
+Notes:
+
+* The new password is hashed with Argon2id and stored in a writable overlay file (`data/users.local.json`), because `users.json` is mounted read-only in production.
+* In single-user mode (credentials in `.env`), the password is managed by the administrator and this feature is disabled.
+
 ## Tool Usage
 
 KOREV Evidence's power comes from its ability to use [tools](architecture.md#tools). Here's how to leverage them effectively:

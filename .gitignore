@@ -65,3 +65,7 @@ data/legal/index/*.sqlite-wal
 
 # Deploy secrets / temp configs
 deploy/.env.tmp
+# Comptes utilisateurs production (hashes Argon2 — jamais dans le repo).
+# NB: deploy/users.demo.json (comptes de démo) reste tracké volontairement.
+deploy/users.json
+data/users.local.json

@@ -11,6 +11,8 @@ Spec: docs/SPEC_MULTI_USER_WORKSPACE.md — Rules R1, R2, R10
 import json
 import hmac
 import os
+import re
+import tempfile
 import warnings
 import logging
 from pathlib import Path
@@ -23,11 +25,14 @@ from python.security.auth import (
 )
 from python.helpers.organization import (
     normalize_org_id,
-    get_registry,
     initialize_registry_from_users,
 )
 
 logger = logging.getLogger("user_manager")
+
+# Politique de robustesse des mots de passe (changement self-service)
+PASSWORD_MIN_LENGTH = 12
+PASSWORD_MAX_LENGTH = 128
 
 
 class UserManager:
@@ -41,18 +46,32 @@ class UserManager:
     strict : bool
         If True, reject plaintext passwords with ValueError.
         If False, emit a warning but allow (dev mode only).
+    overlay_path : str, optional
+        Path to a writable overlay file (users.local.json) holding
+        password hashes changed at runtime. Needed because users.json
+        is bind-mounted read-only in production (docker-compose `:ro`).
+        The overlay can ONLY override `password_hash` for users that
+        already exist in users.json — never role/organization (no
+        privilege escalation), and never create new accounts.
     """
 
-    def __init__(self, users_json_path: str, strict: bool = False):
+    def __init__(
+        self,
+        users_json_path: str,
+        strict: bool = False,
+        overlay_path: Optional[str] = None,
+    ):
         self._users: dict = {}
         self._is_mono_user: bool = False
         self._is_auth_required: bool = True
         self._strict = strict
+        self._overlay_path = Path(overlay_path) if overlay_path else None
 
         path = Path(users_json_path)
 
         if path.exists():
             self._load_users_json(path)
+            self._apply_overlay()
         else:
             self._fallback_mono_user()
 
@@ -92,6 +111,44 @@ class UserManager:
         self._is_auth_required = True
         initialize_registry_from_users(users_dict)
         logger.info(f"Loaded {len(self._users)} users from users.json")
+
+    def _apply_overlay(self) -> None:
+        """Apply password overrides from the writable overlay file.
+
+        Fail-closed: invalid JSON, unknown users, or non-Argon2 values
+        are ignored — base users.json remains the source of truth.
+        Only `password_hash` can be overridden (never role/organization).
+        """
+        if self._overlay_path is None or not self._overlay_path.exists():
+            return
+        try:
+            data = json.loads(self._overlay_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Ignoring corrupt users overlay: {e}")
+            return
+
+        overrides = data.get("password_overrides", {})
+        if not isinstance(overrides, dict):
+            logger.warning("Ignoring users overlay: password_overrides is not a dict")
+            return
+
+        applied = 0
+        for username, pw_hash in overrides.items():
+            if username not in self._users:
+                logger.warning(
+                    f"Overlay override for unknown user '{username}' ignored"
+                )
+                continue
+            if not isinstance(pw_hash, str) or not is_password_hashed(pw_hash):
+                logger.warning(
+                    f"Overlay override for '{username}' is not an Argon2 hash — ignored"
+                )
+                continue
+            self._users[username]["password_hash"] = pw_hash
+            applied += 1
+
+        if applied:
+            logger.info(f"Applied {applied} password override(s) from overlay")
 
     def _fallback_mono_user(self) -> None:
         """Fall back to single-user mode using environment variables."""
@@ -178,6 +235,121 @@ class UserManager:
                     "org_role": user_info.get("org_role", "MEMBER"),
                 }
             return None
+
+    # ── Password change (self-service) ──────────────────────────────────
+
+    def change_password(
+        self,
+        username: Optional[str],
+        current_password: Optional[str],
+        new_password: Optional[str],
+    ) -> tuple[bool, str]:
+        """Change a user's password after verifying the current one.
+
+        The new Argon2id hash is persisted to the overlay file
+        (users.json is read-only in production) and applied in memory
+        so the change is effective immediately, without restart.
+
+        Returns
+        -------
+        (ok, message) : tuple[bool, str]
+            ok=True on success. `message` is a user-displayable reason
+            (French) and never leaks sensitive details.
+        """
+        if self._is_mono_user:
+            return (
+                False,
+                "Compte géré par l'administrateur (mode mono-utilisateur) : "
+                "le changement de mot de passe n'est pas disponible ici.",
+            )
+        if not username or not current_password or not new_password:
+            return False, "Champs requis manquants."
+
+        policy_error = self._validate_password_policy(new_password)
+        if policy_error:
+            return False, policy_error
+
+        if new_password == current_password:
+            return False, "Le nouveau mot de passe doit être différent de l'actuel."
+
+        # Vérification timing-safe de l'ancien mot de passe
+        if self.authenticate(username, current_password) is None:
+            return False, "Mot de passe actuel incorrect."
+
+        new_hash = hash_password(new_password)
+        try:
+            self._persist_overlay(username, new_hash)
+        except OSError as e:
+            logger.error(f"Failed to persist password overlay: {e}")
+            return (
+                False,
+                "Échec d'enregistrement du nouveau mot de passe. Réessayez "
+                "ou contactez l'administrateur.",
+            )
+
+        # Application immédiate en mémoire (pas de redémarrage requis)
+        self._users[username]["password_hash"] = new_hash
+        logger.info(f"Password changed for user '{username}'")
+        return True, "Mot de passe mis à jour avec succès."
+
+    @staticmethod
+    def _validate_password_policy(password: str) -> Optional[str]:
+        """Return an error message if the password violates the policy."""
+        if len(password) < PASSWORD_MIN_LENGTH:
+            return (
+                f"Le mot de passe doit contenir au moins "
+                f"{PASSWORD_MIN_LENGTH} caractères."
+            )
+        if len(password) > PASSWORD_MAX_LENGTH:
+            return (
+                f"Le mot de passe ne peut pas dépasser "
+                f"{PASSWORD_MAX_LENGTH} caractères."
+            )
+        if not re.search(r"[A-Za-z]", password):
+            return "Le mot de passe doit contenir au moins une lettre."
+        if not re.search(r"\d", password):
+            return "Le mot de passe doit contenir au moins un chiffre."
+        return None
+
+    def _persist_overlay(self, username: str, new_hash: str) -> None:
+        """Atomically persist a password override to the overlay file.
+
+        Write to a temp file in the same directory then os.replace()
+        (atomic on POSIX). Permissions are restricted to 0600.
+        """
+        if self._overlay_path is None:
+            raise OSError("No overlay path configured for password persistence")
+
+        data: dict = {"password_overrides": {}}
+        if self._overlay_path.exists():
+            try:
+                existing = json.loads(
+                    self._overlay_path.read_text(encoding="utf-8")
+                )
+                if isinstance(existing.get("password_overrides"), dict):
+                    data["password_overrides"] = existing["password_overrides"]
+            except (json.JSONDecodeError, OSError):
+                logger.warning("Overwriting corrupt users overlay")
+
+        data["password_overrides"][username] = new_hash
+
+        self._overlay_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(self._overlay_path.parent), suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(data, fh, indent=2)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.chmod(tmp_path, 0o600)
+            os.replace(tmp_path, self._overlay_path)
+        except OSError:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     # ── User listing ─────────────────────────────────────────────────────
 
