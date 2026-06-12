@@ -653,8 +653,37 @@ body {
 
 /* ── Pied de formulaire ── */
 .form-footer {
-    margin-top: 2.25rem;
+    margin-top: 2rem;
     text-align: center;
+}
+
+/* Note self-service : changement de mot de passe après connexion */
+.selfservice-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--ev-text-secondary);
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 1.25rem;
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    border-radius: var(--ev-radius);
+    animation: fadeIn 0.8s ease 0.7s both;
+}
+
+.selfservice-note svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--ev-accent-bright);
+}
+
+.selfservice-note strong {
+    font-weight: 500;
+    color: var(--ev-text-primary);
 }
 
 .trust-badges {
