@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KOREV Evidence — Connexion</title>
     <link rel="stylesheet" href="/login.css">
-    <link rel="icon" type="image/svg+xml" href="/public/korev-evidence-logo.svg">
+    <link rel="icon" type="image/png" href="/public/korev-evidence-logo-prism.png">
     <!-- Polices auto-hébergées (aucun appel tiers — SonarQube Web:S5725 + RGPD) -->
     <link rel="stylesheet" href="/public/fonts/korev-fonts.css">
 </head>
 <body>
-    <!-- Fond animé : nappes aurora + grain (purement décoratif) -->
+    <!-- Fond animé : nappes aurora + vagues numériques + grain (purement décoratif) -->
     <div class="ev-backdrop" aria-hidden="true">
         <div class="ev-aurora ev-aurora--1"></div>
         <div class="ev-aurora ev-aurora--2"></div>
         <div class="ev-aurora ev-aurora--3"></div>
+        <canvas id="ev-waves" class="ev-waves"></canvas>
         <div class="ev-grain"></div>
     </div>
 
@@ -22,33 +23,77 @@
 
         <div class="login-brand-panel">
             <div class="brand-content">
-                <div class="brand-logo-wrap">
-                    <div class="brand-glow"></div>
-                    <img src="/public/korev-evidence-logo.svg" alt="KOREV Evidence" class="brand-logo">
+                <div class="brand-mark">
+                    <div class="brand-logo-wrap">
+                        <img src="/public/korev-evidence-logo-prism.png" alt="KOREV Evidence" class="brand-logo">
+                        <!-- Point lumineux qui parcourt les arêtes du triangle (décoratif) -->
+                        <svg class="logo-tracer" viewBox="0 0 512 512" aria-hidden="true">
+                            <path class="tracer-trail tracer-trail--far" d="M255 95 L402 368 L109 368 Z" pathLength="100"/>
+                            <path class="tracer-trail tracer-trail--near" d="M255 95 L402 368 L109 368 Z" pathLength="100"/>
+                            <path class="tracer-head" d="M255 95 L402 368 L109 368 Z" pathLength="100"/>
+                        </svg>
+                    </div>
+                    <div class="brand-wordmark">
+                        <span class="brand-name">KOREV <em>Evidence</em></span>
+                        <span class="brand-claim">Plateforme d'agents IA de confiance</span>
+                    </div>
                 </div>
-                <h1 class="brand-title">KOREV <em>Evidence</em></h1>
-                <p class="brand-tagline">Plateforme d'agents IA de confiance</p>
+
+                <h1 class="brand-headline">
+                    L'IA qui <em>prouve</em> <br>ce qu'elle affirme.
+                </h1>
+                <p class="brand-tagline">
+                    Chaque réponse critique est contre-vérifiée par consensus,
+                    signée cryptographiquement et auditable — conçue pour les
+                    secteurs où l'erreur n'est pas une option.
+                </p>
+
                 <div class="brand-separator"></div>
+
                 <ul class="brand-features">
                     <li>
                         <span class="feature-icon">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10.1 5.3L15 6L11.5 9.4L12.3 14.3L8 12L3.7 14.3L4.5 9.4L1 6L5.9 5.3L8 1Z" fill="currentColor" opacity="0.7"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3 2.7a1 1 0 00-1.4 0L6 8.6 4.1 6.7a1 1 0 00-1.4 1.4l2.5 2.5a1 1 0 001.4 0l6.7-6.7a1 1 0 000-1.2z" fill="currentColor" opacity="0.8"/></svg>
                         </span>
-                        12 agents specialises — juridique, medical, finance, strategie
+                        <span><strong>Consensus multi-LLM</strong> — les affirmations critiques sont validées en croisé, fail-closed</span>
                     </li>
                     <li>
                         <span class="feature-icon">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3 2.7a1 1 0 00-1.4 0L6 8.6 4.1 6.7a1 1 0 00-1.4 1.4l2.5 2.5a1 1 0 001.4 0l6.7-6.7a1 1 0 000-1.2z" fill="currentColor" opacity="0.7"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                         </span>
-                        Consensus multi-LLM — validation croisee fail-closed
+                        <span><strong>Chaîne de preuve signée</strong> — HMAC/RSA, horodatée, opposable en audit</span>
                     </li>
                     <li>
                         <span class="feature-icon">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM6 8.5A.5.5 0 016.5 8h3a.5.5 0 01.5.5v3a.5.5 0 01-.5.5h-3a.5.5 0 01-.5-.5v-3z" fill="currentColor" opacity="0.7"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l5.5 2v4c0 3.2-2.3 5.8-5.5 7-3.2-1.2-5.5-3.8-5.5-7v-4l5.5-2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5.8 8l1.6 1.6L10.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </span>
-                        Conforme AI Act — tracabilite et auditabilite completes
+                        <span><strong>Conforme AI Act &amp; RGPD</strong> — traçabilité et auditabilité complètes</span>
                     </li>
                 </ul>
+
+                <div class="brand-stats">
+                    <div class="stat">
+                        <span class="stat-value">12</span>
+                        <span class="stat-label">agents spécialisés</span>
+                    </div>
+                    <div class="stat-sep"></div>
+                    <div class="stat">
+                        <span class="stat-value">3</span>
+                        <span class="stat-label">niveaux de criticité</span>
+                    </div>
+                    <div class="stat-sep"></div>
+                    <div class="stat">
+                        <span class="stat-value">100<small>%</small></span>
+                        <span class="stat-label">traçable</span>
+                    </div>
+                </div>
+
+                <div class="sector-chips" aria-label="Secteurs servis">
+                    <span class="chip">Juridique</span>
+                    <span class="chip">Médical</span>
+                    <span class="chip">Finance</span>
+                    <span class="chip">Stratégie</span>
+                </div>
             </div>
             <div class="brand-footer">
                 <span class="brand-copy">&copy; 2026 Korev AI</span>
@@ -58,9 +103,9 @@
         <div class="login-form-panel">
             <div class="form-wrapper">
                 <div class="form-header">
-                    <img src="/public/korev-evidence-logo.svg" alt="" class="form-logo-mobile">
+                    <img src="/public/korev-evidence-logo-prism.png" alt="" class="form-logo-mobile">
                     <h2>Connexion</h2>
-                    <p class="form-subtitle">Accedez a votre espace securise</p>
+                    <p class="form-subtitle">Accès nominatif — espace sécurisé</p>
                 </div>
                 <form class="login-form" method="POST" action="/login" id="login-form">
                     <div class="input-group">
@@ -153,6 +198,173 @@
                     submitBtn.disabled = false;
                 }, 15000);
             });
+
+            // ── Flux de données violet (canvas, décoratif) ─────────────────
+            // Champ de lignes fines ondulantes + impulsions lumineuses qui
+            // voyagent le long des courbes — métaphore des preuves en transit.
+            var canvas = document.getElementById("ev-waves");
+            var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            if (canvas && canvas.getContext) {
+                var ctx = canvas.getContext("2d");
+                var dpr = Math.min(window.devicePixelRatio || 1, 2);
+                var width = 0;
+                var height = 0;
+
+                function resize() {
+                    width = window.innerWidth;
+                    height = window.innerHeight;
+                    canvas.width = width * dpr;
+                    canvas.height = height * dpr;
+                    canvas.style.width = width + "px";
+                    canvas.style.height = height + "px";
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                }
+                resize();
+                window.addEventListener("resize", resize);
+
+                var LINES = 14;
+                var lines = [];
+                for (var i = 0; i < LINES; i++) {
+                    var depth = i / (LINES - 1); // 0 = lointain, 1 = proche
+                    lines.push({
+                        yRatio: 0.52 + depth * 0.42,
+                        amp: 10 + depth * 26,
+                        freq: 0.0016 + Math.random() * 0.0022,
+                        phase: Math.random() * Math.PI * 2,
+                        drift: (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random() * 0.22),
+                        alpha: 0.05 + depth * 0.13,
+                        lineWidth: 0.5 + depth * 0.7,
+                        pulses: []
+                    });
+                }
+                // 1 à 2 impulsions par ligne, désynchronisées
+                lines.forEach(function (line) {
+                    var n = Math.random() < 0.45 ? 2 : 1;
+                    for (var p = 0; p < n; p++) {
+                        line.pulses.push({
+                            pos: Math.random(),
+                            speed: 0.0004 + Math.random() * 0.0009,
+                            size: 1.1 + Math.random() * 1.4
+                        });
+                    }
+                });
+
+                var t = 0;
+
+                function lineY(line, x) {
+                    return height * line.yRatio
+                        + Math.sin(x * line.freq + line.phase + t * line.drift) * line.amp
+                        + Math.sin(x * line.freq * 2.7 + line.phase * 1.6 + t * line.drift * 1.8) * line.amp * 0.28;
+                }
+
+                function drawLine(line) {
+                    // Trait fin avec fondu horizontal (transparent aux bords)
+                    var grad = ctx.createLinearGradient(0, 0, width, 0);
+                    grad.addColorStop(0, "rgba(139, 92, 246, 0)");
+                    grad.addColorStop(0.18, "rgba(139, 92, 246, " + line.alpha + ")");
+                    grad.addColorStop(0.55, "rgba(167, 139, 250, " + line.alpha * 1.25 + ")");
+                    grad.addColorStop(0.85, "rgba(99, 102, 241, " + line.alpha + ")");
+                    grad.addColorStop(1, "rgba(99, 102, 241, 0)");
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = line.lineWidth;
+                    ctx.beginPath();
+                    for (var x = 0; x <= width; x += 6) {
+                        var y = lineY(line, x);
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+
+                function drawPulses(line) {
+                    line.pulses.forEach(function (pulse) {
+                        pulse.pos += pulse.speed;
+                        if (pulse.pos > 1.08) pulse.pos = -0.08;
+                        var px = pulse.pos * width;
+                        var py = lineY(line, px);
+
+                        // Traînée : court segment de la courbe derrière l'impulsion
+                        var trail = 70 * pulse.size;
+                        var tg = ctx.createLinearGradient(px - trail, 0, px, 0);
+                        tg.addColorStop(0, "rgba(196, 181, 253, 0)");
+                        tg.addColorStop(1, "rgba(196, 181, 253, 0.55)");
+                        ctx.strokeStyle = tg;
+                        ctx.lineWidth = line.lineWidth + 0.4;
+                        ctx.beginPath();
+                        var x0 = Math.max(0, px - trail);
+                        for (var x = x0; x <= Math.min(px, width); x += 4) {
+                            var y = lineY(line, x);
+                            if (x === x0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+
+                        if (px < -10 || px > width + 10) return;
+
+                        // Halo doux
+                        var rg = ctx.createRadialGradient(px, py, 0, px, py, pulse.size * 7);
+                        rg.addColorStop(0, "rgba(196, 181, 253, 0.5)");
+                        rg.addColorStop(1, "rgba(139, 92, 246, 0)");
+                        ctx.fillStyle = rg;
+                        ctx.beginPath();
+                        ctx.arc(px, py, pulse.size * 7, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Cœur lumineux
+                        ctx.fillStyle = "rgba(237, 233, 254, 0.95)";
+                        ctx.beginPath();
+                        ctx.arc(px, py, pulse.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+
+                function drawNodes() {
+                    // Points d'ancrage fixes scintillants sur quelques lignes (nœuds de vérification)
+                    for (var i = 2; i < LINES; i += 3) {
+                        var line = lines[i];
+                        for (var k = 1; k <= 4; k++) {
+                            var x = (width / 5) * k + Math.sin(line.phase + k) * 30;
+                            var y = lineY(line, x);
+                            var tw = 0.35 + Math.sin(t * 1.6 + i * 2.1 + k * 1.7) * 0.3;
+                            ctx.fillStyle = "rgba(196, 181, 253, " + Math.max(0.08, tw) + ")";
+                            ctx.beginPath();
+                            ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+
+                function frame() {
+                    ctx.clearRect(0, 0, width, height);
+                    for (var i = 0; i < LINES; i++) {
+                        drawLine(lines[i]);
+                        drawPulses(lines[i]);
+                    }
+                    drawNodes();
+                }
+
+                function loop() {
+                    t += 0.007;
+                    frame();
+                    rafId = requestAnimationFrame(loop);
+                }
+
+                var rafId = null;
+                if (reducedMotion) {
+                    frame(); // une seule image statique
+                } else {
+                    rafId = requestAnimationFrame(loop);
+                    // Économie d'énergie : pause quand l'onglet est masqué
+                    document.addEventListener("visibilitychange", function () {
+                        if (document.hidden) {
+                            if (rafId) cancelAnimationFrame(rafId);
+                            rafId = null;
+                        } else if (!rafId) {
+                            rafId = requestAnimationFrame(loop);
+                        }
+                    });
+                }
+            }
         })();
     </script>
 </body>

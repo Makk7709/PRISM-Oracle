@@ -67,6 +67,12 @@
 
     .prism-sidebar.hidden {
       margin-left: -250px;
+      /* backdrop-filter fait de la sidebar le bloc conteneur des descendants
+         en position:fixed (dont le bouton toggle flottant) : repliée, il
+         partirait hors écran avec elle. On le neutralise — la sidebar est
+         invisible dans cet état, le flou n'a aucun effet visuel. */
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
 
     /* Top Section */

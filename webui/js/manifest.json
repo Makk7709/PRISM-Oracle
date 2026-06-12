@@ -8,15 +8,15 @@
   "theme_color": "#333333",
   "icons": [
     {
-      "src": "/public/korev-evidence-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/public/korev-evidence-logo-prism.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/public/korev-evidence-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/public/korev-evidence-logo-prism.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

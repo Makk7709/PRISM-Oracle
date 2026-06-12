@@ -19,8 +19,7 @@
     <!-- KOREV Evidence Logo + Status -->
     <div class="prism-sidebar-brand">
       <div class="prism-sidebar-logo">
-        <img src="./public/korev-evidence-logo.svg" alt="KOREV Evidence" width="34" height="34" class="prism-sidebar-logo-img prism-sidebar-logo-img--dark" />
-        <img src="./public/korev-evidence-logo-light.svg" alt="KOREV Evidence" width="34" height="34" class="prism-sidebar-logo-img prism-sidebar-logo-img--light" />
+        <img src="./public/korev-evidence-logo-prism.png" alt="KOREV Evidence" width="34" height="34" class="prism-sidebar-logo-img" />
       </div>
       <div class="prism-sidebar-brand-info">
         <div class="prism-sidebar-brand-title">
@@ -119,27 +118,11 @@
     .prism-sidebar-logo-img {
       width: 34px;
       height: 34px;
-      opacity: 0.9;
     }
     /* Important: do NOT invert the KOREV Evidence logo.
-       The provided SVG already encodes correct colors (black bg, white mark). */
+       Le prisme argenté (PNG détouré) fonctionne sur les deux thèmes. */
     .prism-sidebar-logo-img {
-      filter: none;
-    }
-    .prism-sidebar-logo-img--light {
-      display: none;
-    }
-    [data-theme="light"] .prism-sidebar-logo-img--dark {
-      display: none;
-    }
-    [data-theme="light"] .prism-sidebar-logo-img--light {
-      display: block;
-    }
-    .light-mode .prism-sidebar-logo-img--dark {
-      display: none;
-    }
-    .light-mode .prism-sidebar-logo-img--light {
-      display: block;
+      filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.35));
     }
 
     .prism-sidebar-brand-info {

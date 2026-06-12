@@ -39,7 +39,10 @@ SCHEDULER_FOLDER = "tmp/scheduler"
 
 # Default TTL for RUNNING state before a task is considered crashed and
 # recovered to ERROR. Overridable via EVIDENCE_SCHEDULER_RUN_TTL_SECONDS.
-_DEFAULT_RUN_TTL_SECONDS = 900
+# 900s s'est avéré trop court en production : des runs agents légitimes
+# (veille web + rapport + email) dépassent 15 min et étaient déclarés crashés
+# (incident 2026-06-01, marqueurs ttl_exceeded_903s).
+_DEFAULT_RUN_TTL_SECONDS = 3600
 
 
 def _get_run_ttl_seconds() -> int:
@@ -219,6 +222,11 @@ class BaseTask(BaseModel):
                 self.updated_at = datetime.now(timezone.utc)
             if state is not None:
                 self.state = state
+                if state != TaskState.RUNNING:
+                    # Un run terminé (succès, erreur, reset) ne doit pas laisser
+                    # un running_since périmé que la récupération stale pourrait
+                    # mal interpréter au prochain passage en RUNNING.
+                    self.running_since = None
                 self.updated_at = datetime.now(timezone.utc)
             if system_prompt is not None:
                 self.system_prompt = system_prompt
@@ -456,7 +464,12 @@ class ScheduledTask(BaseTask):
     def get_next_run(self) -> datetime | None:
         with self._lock:
             crontab = CronTab(crontab=self.schedule.to_crontab())  # type: ignore
-            return crontab.next(now=datetime.now(timezone.utc), return_datetime=True)  # type: ignore
+            # Le cron doit être évalué dans le fuseau du schedule (comme
+            # check_schedule), sinon "0 9 * * *" Europe/Paris s'affiche
+            # comme 09:00 UTC, soit 11:00 heure de Paris en été.
+            task_timezone = pytz.timezone(self.schedule.timezone or Localization.get().get_timezone())
+            now_local = datetime.now(timezone.utc).astimezone(task_timezone)
+            return crontab.next(now=now_local, return_datetime=True)  # type: ignore
 
 
 class PlannedTask(BaseTask):
@@ -904,13 +917,25 @@ class SchedulerTaskList(BaseModel):
             return [
                 task for task in self.tasks
                 if task.check_schedule()
-                and task.state == TaskState.IDLE
+                and self._is_runnable_state(task)
                 and validate_task_scope(
                     task_owner=task.username,
                     task_org=task.organization,
                     task_workspace=task.workspace,
                 )[0]
             ]
+
+    @staticmethod
+    def _is_runnable_state(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> bool:
+        """IDLE est toujours éligible. Une tâche cron (ScheduledTask) en ERROR
+        est rééligible à sa prochaine occurrence : sans cela, un run crashé
+        (ou récupéré par le TTL stale-RUNNING) tuait définitivement la tâche
+        (incident production 2026-06-01). Les tâches ad hoc / planifiées en
+        erreur restent exclues : leur relance est une décision manuelle.
+        DISABLED ne repart jamais seul."""
+        if task.state == TaskState.IDLE:
+            return True
+        return task.state == TaskState.ERROR and isinstance(task, ScheduledTask)
 
     def get_task_by_uuid(self, task_uuid: str) -> Union[ScheduledTask, AdHocTask, PlannedTask] | None:
         with self._lock:
@@ -1124,6 +1149,20 @@ class TaskScheduler:
             if task_snapshot.state == TaskState.RUNNING:
                 self._printer.print(f"Scheduler Task '{task_snapshot.name}' already running, skipping")
                 return
+            if task_snapshot.state == TaskState.ERROR:
+                # Reprise automatique d'une tâche cron après échec (trace dédiée)
+                self._printer.print(
+                    f"Scheduler Task '{task_snapshot.name}' retrying after previous failure"
+                )
+                ObservabilityMetrics.get().incr("tasks_error_auto_retries_total")
+                log_observability_event(
+                    event_type="task_error_auto_retry",
+                    status="ALLOW",
+                    username=task_snapshot.username,
+                    organization=task_snapshot.organization,
+                    task_uuid=task_uuid,
+                    correlation_id=f"task:{task_uuid}",
+                )
             valid, reason = validate_task_scope(
                 task_owner=task_snapshot.username,
                 task_org=task_snapshot.organization,
