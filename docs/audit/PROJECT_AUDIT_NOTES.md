@@ -102,12 +102,12 @@ Le repository contient deja une production documentaire substantielle. Les docum
 | Annexe AE-11 (audit licence) | `docs/annexes-externes/AE-11_pip-licenses_2026-05-15.md` + JSON + README | Scan `pip-licenses` complet a J-0 (15 mai 2026), analyse synthetique des familles de licences, verdict 0 GPL/AGPL/SSPL direct. |
 | Architecture verifiee de la delegation | `docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md` | Schema Mermaid de la delegation multi-agents, matrice claim-to-evidence, prompt de controle anti-hallucination. |
 | ADR formels | `docs/adr/ADR-001` a `ADR-007` | Decisions d'architecture documentees : consensus PRISM multi-arbitres, router determinste anti-injection, framework Evidence audit-integrite, abstraction LiteLLM, hooks d'extensions, contrat IO integrite outils, adoption Postgres + pgvector. |
-| Onboarding | `docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`, `docs/missions/MISSION_AYA_01_cartographie_et_validation_e2e.md` | Guide d'onboarding architecture + 1re mission. (À confirmer : `docs/ONBOARDING_AYA_30_60_90.md` et `docs/PLAN_INTEGRATION_LEAD_ENGINEER_30_60_90_INTERNAL.md` référencés historiquement mais **absents du dépôt** au 2026-05-31.) |
+| Onboarding | `docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`, `docs/ONBOARDING_DEVELOPPEUR_30_60_90.md`, `docs/missions/MISSION_AYA_01_cartographie_et_validation_e2e.md` | Guide architecture + plan 30/60/90 + 1re mission. (Les anciens noms `ONBOARDING_AYA_30_60_90.md` / `PLAN_INTEGRATION_LEAD_ENGINEER_30_60_90_INTERNAL.md` sont remplacés par `ONBOARDING_DEVELOPPEUR_30_60_90.md` depuis 2026-06-13.) |
 | Guides operationnels | `docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md`, `docs/MANUEL_INSTALLATION_CLIENT.md`, `docs/GUIDE_RAPIDE_INSTALLATION.md` | Procedures de deploiement et d'installation. (Note : `docs/INFRA_SERVEUR_OVH.md` n'est plus versionne — topologie infra retiree du depot public, conserve en local uniquement.) |
 | Runbook | `deploy/RUNBOOK.md` | Procedure operationnelle de production. |
 | Audit pre-deploiement | `docs/archive/historical/AUDIT_PRE_DEPLOIEMENT_2026-02-11.md`, `docs/archive/historical/AUDIT_OCR_2026-02-11.md` | Audits internes ponctuels (archives historiques, 2026-02-11). |
 | Demonstration cabinet avocats | `docs/DEMONSTRATION_CABINET_AVOCATS.md` + PDF | Plaquette de demonstration metier. |
-| Securite | `SECURITY.md` (racine) | Politique de securite. |
+| Securite | `python/security/`, `.github/workflows/security_ci.yml` | Modules securite et gate CI (pas de `SECURITY.md` racine au 2026-06-13). |
 | Glossaire | `docs/GLOSSARY.md` | Vocabulaire metier et technique du projet. |
 | Profils agents reference | `docs/PROFILS_AGENTS_REFERENCE.md` | Liste de reference des profils agents. |
 | Specifications | `docs/SPEC_MULTI_USER_WORKSPACE.md`, `docs/SPEC_CHAT_PERSONALIZATION.md` | Specifications fonctionnelles strictes. |

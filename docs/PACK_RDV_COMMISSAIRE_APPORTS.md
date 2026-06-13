@@ -68,7 +68,7 @@
 | S6 | `audit-hostile-valorisation/06-plan-de-remediation-priorise.md` | 223 | Plan de remediation P0/P1/P2 |
 | S7 | `audit-hostile-valorisation/07-scorecard-valorisation.md` | 273 | Scorecard 10 dimensions, score 69/100 |
 | S8 | `docs/adr/ADR-001` a `ADR-007` | ~510 cumules | **7 decisions architecturales** (ADR-006 contrat I/O des tools ; ADR-007 adoption Postgres + pgvector) |
-| S9 | `docs/ARCHITECTURE_C4_DIAGRAMS.md` | 251 | Diagrammes C4 a 3 niveaux |
+| S9 | `docs/architecture/C4_DIAGRAMS.md` | 251 | Diagrammes C4 a 3 niveaux |
 | S10 | `docs/GLOSSARY.md` | 91 | Glossaire 30+ termes proprietaires |
 | S11 | `SECURITY.md` | 119 | Politique de securite, divulgation responsable |
 | S12 | `docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md` | 1 196 | Guide d'onboarding (reduit le bus factor) |

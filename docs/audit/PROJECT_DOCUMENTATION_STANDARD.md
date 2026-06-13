@@ -441,8 +441,9 @@ Leur statut (deplace, draft, integre au gate CI ?) n'est pas clarifie par leur e
 - 7 ADR formels dans `docs/adr/`.
 - Annexes externes (AE-11 audit licence).
 - Guides operationnels : `docs/MANUEL_INSTALLATION_CLIENT.md`, `docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md`, `docs/INFRA_SERVEUR_OVH.md`, `deploy/RUNBOOK.md`.
-- Documentation architecture : `docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md`, `docs/ARCHITECTURE_C4_DIAGRAMS.md`.
-- Onboarding : `docs/ONBOARDING_AYA_30_60_90.md`, `docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`, `docs/PLAN_INTEGRATION_LEAD_ENGINEER_30_60_90_INTERNAL.md`.
+- Documentation architecture : `docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md`, `docs/architecture/C4_DIAGRAMS.md`.
+- Onboarding : `docs/ONBOARDING_DEVELOPPEUR_30_60_90.md`, `docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`.
+- Sécurité : `python/security/`, `.github/workflows/security_ci.yml` (pas de `SECURITY.md` racine au 2026-06-13).
 
 ### 9.6 CI / CD
 

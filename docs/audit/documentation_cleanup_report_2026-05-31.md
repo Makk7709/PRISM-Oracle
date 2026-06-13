@@ -90,7 +90,7 @@ Le principal risque corrigé : `docs/consensus/ARCHITECTURE_CURRENT.md` présent
 
 | Élément | Nature | Recommandation |
 |---|---|---|
-| `docs/ONBOARDING_AYA_30_60_90.md`, `docs/PLAN_INTEGRATION_LEAD_ENGINEER_30_60_90_INTERNAL.md` | **Référencés mais absents** du dépôt | Recréer ou retirer définitivement les références |
+| `docs/ONBOARDING_AYA_30_60_90.md`, `docs/ARCHITECTURE_C4_DIAGRAMS.md`, `docs/PLAN_INTEGRATION_LEAD_ENGINEER_30_60_90_INTERNAL.md` | **Référencés mais absents** (résolu 2026-06-13) | `ONBOARDING_AYA_30_60_90.md` → `ONBOARDING_DEVELOPPEUR_30_60_90.md` ; `ARCHITECTURE_C4_DIAGRAMS.md` → `architecture/C4_DIAGRAMS.md` |
 | `docs/reports/MULTI_TENANT_AUTHZ_AUDIT_MATRIX.md`, `PERSISTENT_IDENTITY_MIGRATION_PLAN.md` | Statut actif/terminé **non vérifié en profondeur** | Confirmer (actif vs historique) avant prochaine passe |
 | `docs/reports/market_study_*`, `plialpes_*` | Artefacts illustratifs (sorties de démo BEFORE/AFTER) | Conserver, éventuellement déplacer en `docs/examples/` ultérieurement |
 | `docs/reports/MCP_QUALITY_CONTROL_PROMPT_ULTRA.md`, `docs/AUTO_PROMPT_PRODUCTION_SYNC_AND_VALIDATION.md` | Prompts opérationnels réutilisables | Conserver ; clarifier qu'il s'agit de prompts, pas d'état produit |

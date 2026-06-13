@@ -237,17 +237,22 @@ Le modèle par défaut et les modèles par rôle (chat, utilitaire, embedding) s
 
 ## Documentation de référence
 
+**Index complet** : [`docs/INDEX_DOCUMENTATION.md`](./docs/INDEX_DOCUMENTATION.md)
+
 | Thème | Document |
 |-------|----------|
+| Utilisateur | [`docs/MANUEL_UTILISATEUR.md`](./docs/MANUEL_UTILISATEUR.md) |
+| Conformité client | [`docs/GUIDE_CONFORMITE_CLIENT.md`](./docs/GUIDE_CONFORMITE_CLIENT.md) |
 | Installation client | [`docs/MANUEL_INSTALLATION_CLIENT.md`](./docs/MANUEL_INSTALLATION_CLIENT.md) · [`docs/GUIDE_RAPIDE_INSTALLATION.md`](./docs/GUIDE_RAPIDE_INSTALLATION.md) |
 | Déploiement entreprise | [`docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md`](./docs/GUIDE_DEPLOIEMENT_ENTREPRISE.md) · [`deploy/RUNBOOK.md`](./deploy/RUNBOOK.md) |
-| Architecture (générique) | [`docs/architecture.md`](./docs/architecture.md) |
+| Opérateur / SRE | [`docs/GUIDE_OPERATEUR.md`](./docs/GUIDE_OPERATEUR.md) |
+| Architecture Evidence | [`docs/ARCHITECTURE_EVIDENCE.md`](./docs/ARCHITECTURE_EVIDENCE.md) · [`docs/architecture/C4_DIAGRAMS.md`](./docs/architecture/C4_DIAGRAMS.md) |
+| API REST (71 endpoints) | [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) |
+| Notes de version | [`docs/RELEASE_NOTES.md`](./docs/RELEASE_NOTES.md) |
 | Chemin critique & délégation | [`docs/audit/critical_request_path_map.md`](./docs/audit/critical_request_path_map.md) · [`docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md`](./docs/architecture/EVIDENCE_DELEGATION_ARCHITECTURE_VERIFIED.md) |
 | Doctrine sortie critique | [`docs/adr/ADR-010-critical-output-doctrine.md`](./docs/adr/ADR-010-critical-output-doctrine.md) |
-| Remédiation chemin critique | [`docs/audit/critical_path_remediation_report.md`](./docs/audit/critical_path_remediation_report.md) · [`docs/audit/critical_path_hostile_audit.md`](./docs/audit/critical_path_hostile_audit.md) |
 | ADRs | [`docs/adr/`](./docs/adr/) (ADR-006 → ADR-010) |
-| Onboarding | [`docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`](./docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md) · [`docs/missions/MISSION_AYA_01_cartographie_et_validation_e2e.md`](./docs/missions/MISSION_AYA_01_cartographie_et_validation_e2e.md) |
-| Index des documents (carte) | [`docs/audit/PROJECT_AUDIT_NOTES.md`](./docs/audit/PROJECT_AUDIT_NOTES.md) |
+| Onboarding dev | [`docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md`](./docs/DEVELOPER_ONBOARDING_ARCHITECTURE_GUIDE.md) · [`docs/ONBOARDING_DEVELOPPEUR_30_60_90.md`](./docs/ONBOARDING_DEVELOPPEUR_30_60_90.md) |
 | Métriques (source canonique) | [`docs/METRICS_CANONICAL_SOURCE.md`](./docs/METRICS_CANONICAL_SOURCE.md) |
 
 ---

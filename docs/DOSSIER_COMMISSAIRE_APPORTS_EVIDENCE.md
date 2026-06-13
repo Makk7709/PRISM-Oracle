@@ -51,7 +51,7 @@ Ces éléments ne justifient pas à eux seuls une méthode par multiples de chif
 | Pipeline PDF/OCR | Extraction, fallback OCR, génération PDF professionnelle | `python/helpers/pdf_extraction/`, `python/helpers/evidence_pdf_engine.py` |
 | Sécurité et multi-tenant | Argon2id, RBAC, isolation workspace, logs sécurité | `python/security/`, `python/api/audit_reports.py`, `SECURITY.md` |
 | Audit-proof pipeline | Replay, revue humaine, registre de risques dynamique | `python/helpers/replay_engine.py`, `python/helpers/human_review.py`, `python/helpers/dynamic_risk_register.py` |
-| Tests et documentation | Réduction du risque de reprise, preuve d'intention industrielle | `tests/`, `docs/adr/`, `docs/ARCHITECTURE_C4_DIAGRAMS.md`, `docs/GLOSSARY.md` |
+| Tests et documentation | Réduction du risque de reprise, preuve d'intention industrielle | `tests/`, `docs/adr/`, `docs/architecture/C4_DIAGRAMS.md`, `docs/GLOSSARY.md` (à confirmer : absent du dépôt au 2026-06-13) |
 
 ### 2.2 Actifs immatériels
 
